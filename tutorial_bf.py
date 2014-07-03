@@ -116,14 +116,7 @@ def parse(program):
 # run
 #-----------------------------------------------------------------------
 def run(fp):
-  program_contents = ""
-  while True:
-    read = os.read(fp, 4096)
-    if len(read) == 0:
-      break
-    program_contents += read
-  os.close(fp)
-  program, bm = parse(program_contents)
+  program, bm = parse(fp.read())
   mainloop(program, bm)
 
 #-----------------------------------------------------------------------
@@ -136,7 +129,7 @@ def entry_point(argv):
     print "You must supply a filename"
     return 1
 
-  run(os.open(filename, os.O_RDONLY, 0777))
+  run(open(filename, 'r'))
   return 0
 
 #-----------------------------------------------------------------------

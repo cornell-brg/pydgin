@@ -15,18 +15,18 @@ Quick Start
 
 Running a brainf*ck interpreter in CPython::
 
-  $ python tutorial_bf_part1.py tutorial_99.b
+  $ python tutorial_bf.py tutorial_99.b
 
 Creating a C interpreter for brainf*ck using RPython
 (requires that pypy source is installed):: 
 
   $ PYTHONPATH='/Users/dmlockhart/vc/hg-opensource/pypy' python \
     ~/vc/hg-opensource/pypy/rpython/translator/goal/translate.py \
-    tutorial_bf_part1.py
+    tutorial_bf.py
 
 Running a brainf*ck interpreter translated to C via RPython::
 
-  $ ./tutorial_bf_part1-c tutorial_99.b
+  $ ./tutorial_bf-c tutorial_99.b
 
 Creating a C interpreter for brainf*ck with tracing-JIT compiler using
 RPython (requires that pypy source is installed):: 
