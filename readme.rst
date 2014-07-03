@@ -10,6 +10,8 @@ Beginner References
 - http://morepypy.blogspot.co.uk/2011/04/tutorial-part-2-adding-jit.html
 - https://bitbucket.org/brownan/pypy-tutorial/
 
+- http://pie-interpreter.blogspot.com/2012/12/how-to-make-new-interpreter-with-pypy.html
+
 Quick Start
 -----------
 
@@ -55,4 +57,20 @@ Advanced References
 - http://morepypy.blogspot.com/2011/03/controlling-tracing-of-interpreter-with_21.html
 - http://morepypy.blogspot.com/2011/03/controlling-tracing-of-interpreter-with_26.html
 - http://bitbucket.org/pypy/extradoc/raw/extradoc/talk/icooolps2011/bolz-hints.pdf
+
+
+Untranslatable
+==============
+
+Fails:
+  int( some_str, base=16 )
+Translates, but fails during execution:
+  int( some_str, 16 )
+Works:
+  rpython.rlib.rarithmetic.string_to_int( some_str, base=16 )
+
+Fails:
+  line.split()
+Works:
+  line.split(' ', 3)
 
