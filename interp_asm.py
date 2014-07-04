@@ -77,7 +77,7 @@ def mainloop( insts, src, sink ):
         if sink[ sink_ptr ] != rf[ rt ]:
           print 'Instruction: '+insts[pc]+' failed!'
           raise Exception('Instruction: '+insts[pc]+' failed!')
-        print "SUCCESS"
+        print 'SUCCESS: rf[' + str( rt ) + '] == ' + str( sink[ sink_ptr ] )
         sink_ptr += 1
       elif rd == 10: pass
       else: raise Exception('Invalid mtc0 destination!')
