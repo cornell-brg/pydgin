@@ -48,29 +48,38 @@ reg_map = {
 #-----------------------------------------------------------------------
 # mainloop
 #-----------------------------------------------------------------------
-def mainloop( insts ):
+def mainloop( insts, src, sink ):
   pc = 0
   rf = RegisterFile()
+
+  src_ptr = sink_ptr = 0
 
   while pc < len( insts ):
 
     inst, fields = insts[pc].split( ' ', 1 )
 
-    if   inst == 'mtc0':
+    if   inst == 'mfc0':
+      f0, f1 = fields.split( ' ', 1 )
+      f1 = f1.strip() # TODO: clean this up
+      rd, rt = reg_map[ f0 ], reg_map[ f1 ]
+      if   rd ==  1:
+        rf[ rt ] = src[ src_ptr ]
+        src_ptr += 1
+      elif rd == 17: pass
+      else: raise Exception('Invalid mtc0 destination!')
+
+    elif inst == 'mtc0':
       f0, f1 = fields.split( ' ', 1 )
       f1 = f1.strip() # TODO: clean this up
       rt, rd = reg_map[ f0 ], reg_map[ f1 ]
       if   rd ==  1: pass
-      elif rd ==  2: pass
+      elif rd ==  2:
+        if sink[ sink_ptr ] != rf[ rt ]:
+          print 'Instruction: '+insts[pc]+' failed!'
+          raise Exception('Instruction: '+insts[pc]+' failed!')
+        print "SUCCESS"
+        sink_ptr += 1
       elif rd == 10: pass
-      else: raise Exception('Invalid mtc0 destination!')
-
-    elif inst == 'mfc0':
-      f0, f1 = fields.split( ' ', 1 )
-      f1 = f1.strip() # TODO: clean this up
-      rd, rt = reg_map[ f0 ], reg_map[ f1 ]
-      if   rd ==  1: pass
-      elif rd == 17: pass
       else: raise Exception('Invalid mtc0 destination!')
 
     elif inst == 'addiu':
@@ -163,7 +172,7 @@ def parse( fp ):
 #-----------------------------------------------------------------------
 def run(fp):
   program, src, sink  = parse( fp )
-  mainloop(program)
+  mainloop( program, src, sink )
 
 #-----------------------------------------------------------------------
 # entry_point
