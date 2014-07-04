@@ -5,7 +5,7 @@ from   rpython.rlib.rarithmetic import string_to_int as stoi
 
 def mainloop( insts ):
   pc = 0
-  rf = [0] * 32
+  rf = RegisterFile()
 
   while pc < len( insts ):
 
@@ -32,13 +32,9 @@ def mainloop( insts ):
 class RegisterFile( object ):
   def __init__( self ):
     self.regs = [0] * 32
-  #def __getitem__( self, idx ):
-  #  return self.regs[idx]
-  #def __setitem__( self, idx, value ):
-  #  self.regs[idx] = value
-  def rd( self, idx ):
+  def __getitem__( self, idx ):
     return self.regs[idx]
-  def wr( self, idx, value ):
+  def __setitem__( self, idx, value ):
     self.regs[idx] = value
 
 #-----------------------------------------------------------------------
