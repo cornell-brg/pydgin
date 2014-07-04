@@ -61,12 +61,12 @@ def mainloop( insts, src, sink ):
     if   inst == 'mfc0':
       f0, f1 = fields.split( ' ', 1 )
       f1 = f1.strip() # TODO: clean this up
-      rd, rt = reg_map[ f0 ], reg_map[ f1 ]
+      rt, rd = reg_map[ f0 ], reg_map[ f1 ]
       if   rd ==  1:
         rf[ rt ] = src[ src_ptr ]
         src_ptr += 1
       elif rd == 17: pass
-      else: raise Exception('Invalid mtc0 destination!')
+      else: raise Exception('Invalid mfc0 destination!')
 
     elif inst == 'mtc0':
       f0, f1 = fields.split( ' ', 1 )
