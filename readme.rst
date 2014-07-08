@@ -12,6 +12,8 @@ Beginner References
 
 - http://pie-interpreter.blogspot.com/2012/12/how-to-make-new-interpreter-with-pypy.html
 
+- http://indefinitestudies.org/2010/02/08/creating-a-toy-virtual-machine-with-pypy
+
 Quick Start
 -----------
 
@@ -48,6 +50,21 @@ A more optimized version::
     ~/vc/hg-opensource/pypy/rpython/translator/goal/translate.py \
     --opt=jit tutorial_bf_jit_opt.py
 
+ISA Sim
+-------
+
+CPython::
+
+  $ PYTHONPATH='/Users/dmlockhart/vc/hg-opensource/pypy' python interp_asm.py asm_04.s
+
+RPython::
+
+  $ PYTHONPATH='/Users/dmlockhart/vc/hg-opensource/pypy' python \
+    ~/vc/hg-opensource/pypy/rpython/translator/goal/translate.py
+    interp_asm.py
+  $ ./interp_asm-c asm_04.s
+
+
 
 Advanced References
 -------------------
@@ -57,6 +74,8 @@ Advanced References
 - http://morepypy.blogspot.com/2011/03/controlling-tracing-of-interpreter-with_21.html
 - http://morepypy.blogspot.com/2011/03/controlling-tracing-of-interpreter-with_26.html
 - http://bitbucket.org/pypy/extradoc/raw/extradoc/talk/icooolps2011/bolz-hints.pdf
+- http://pypy.readthedocs.org/en/latest/jit/pyjitpl5.html
+- http://morepypy.blogspot.com/2010/06/jit-for-regular-expression-matching.html
 
 
 Untranslatable
