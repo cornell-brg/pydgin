@@ -76,6 +76,8 @@ Advanced References
 - http://bitbucket.org/pypy/extradoc/raw/extradoc/talk/icooolps2011/bolz-hints.pdf
 - http://pypy.readthedocs.org/en/latest/jit/pyjitpl5.html
 - http://morepypy.blogspot.com/2010/06/jit-for-regular-expression-matching.html
+- https://github.com/samgiles/naulang/blob/master/naulang/compiler/parser.py
+- https://github.com/alex/rply
 
 
 Untranslatable

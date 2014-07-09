@@ -80,7 +80,10 @@ def mainloop( insts, src, sink ):
         rf       = rf
     )
 
-    inst, fields = insts[pc].split( ' ', 1 )
+    if insts[pc] == 'nop':
+      inst = 'nop'
+    else:
+      inst, fields = insts[pc].split( ' ', 1 )
 
     if   inst == 'mfc0':
       f0, f1 = fields.split( ' ', 1 )
@@ -189,6 +192,9 @@ def parse( fp ):
     elif mode == MTC0:
       sink_str += char
 
+  print insts
+  print src
+  print sink
   return insts, src, sink
 
 #-----------------------------------------------------------------------
