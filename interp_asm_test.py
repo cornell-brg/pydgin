@@ -10,6 +10,7 @@ from pisa.pisa_inst_addiu_test import gen_value_test
 from pisa.pisa_inst_addiu_test import gen_random_test
 
 cmd = './interp_asm_jit-c'
+#cmd = 'python interp_asm_jit.py'
 asm = 'test.s'
 
 #-----------------------------------------------------------------------
@@ -42,6 +43,14 @@ def test_asm( test_str ):
     for line in lines:
       asm_file.write( line.lstrip()+'\n' )
 
-  subprocess.check_call( [cmd, asm] )
+  try:
+    subprocess.check_call(
+        (cmd+' '+asm).split(),
+        env={'PYTHONPATH': '/Users/dmlockhart/vc/hg-opensource/pypy'}
+    )
+  except subprocess.CalledProcessError as e:
+    print test_str
+    raise e
+
   print "DONE"
 

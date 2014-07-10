@@ -1,8 +1,38 @@
+#=======================================================================
+# interp_asm_jit.py
+#=======================================================================
+# RPython implementation of Parc ISA interpreter, with JIT.
+
 import sys
 import os
 
 from   rpython.rlib.rarithmetic import string_to_int as stoi
+from   rpython.rlib.rarithmetic import r_uint
 from   rpython.rlib.jit import JitDriver
+
+#=======================================================================
+# Utility Function
+#=======================================================================
+
+#-----------------------------------------------------------------------
+# sext
+#-----------------------------------------------------------------------
+# Sign extend 16-bit immediate fields.
+def sext( value ):
+  if value & 0x8000:
+    return 0xFFFF0000 | value
+  return value
+
+#-----------------------------------------------------------------------
+# trim
+#-----------------------------------------------------------------------
+# Trim arithmetic to 16-bit values.
+def trim( value ):
+  return value & 0xFFFFFFFF
+
+#=======================================================================
+# Regsiter Definitions
+#=======================================================================
 
 #-----------------------------------------------------------------------
 # reg_map
@@ -102,6 +132,7 @@ def mainloop( insts, src, sink ):
       if   rd ==  1: pass
       elif rd ==  2:
         if sink[ sink_ptr ] != rf[ rt ]:
+          print 'sink:', sink[ sink_ptr ], 'rf:', rf[ rt ]
           print 'Instruction: '+insts[pc]+' failed!'
           raise Exception('Instruction: '+insts[pc]+' failed!')
         print 'SUCCESS: rf[' + str( rt ) + '] == ' + str( sink[ sink_ptr ] )
@@ -111,13 +142,13 @@ def mainloop( insts, src, sink ):
 
     elif inst == 'addiu':
       f0, f1, f2 = fields.split( ' ', 3 )
-      rd, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=16 )
-      rf[ rd ] = rf[ rs ] + imm
+      rd, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+      rf[ rd ] = trim( rf[ rs ] + sext( imm ) )
 
     elif inst == 'addu':
       f0, f1, f2 = fields.split( ' ', 3 )
       rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-      rf[ rd ] = rf[ rs ] + rf[ rt ]
+      rf[ rd ] = trim( rf[ rs ] + rf[ rt ] )
 
     elif inst == 'print':
       rt = reg_map[ fields ]
