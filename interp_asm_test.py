@@ -5,6 +5,7 @@ sys.path.append('/Users/dmlockhart/vc/git-brg/parc/pymtl')
 from inspect import getmembers, ismodule, isfunction
 
 import pisa.pisa_inst_addiu_test
+import pisa.pisa_inst_addu_test
 #import pisa
 
 
@@ -29,7 +30,8 @@ for mname, module in getmembers( pisa, ismodule ):
       test_names.append( func_name )
       tests.append( test )
     else:
-      names = [ '{}_{}'.format( func_name, x ) for x, _ in enumerate(test) ]
+      names = [ '{}.{}_{}'.format( mname, func_name, x )
+                for x, _ in enumerate(test) ]
       test_names.extend( names )
       tests.extend( test )
 
