@@ -6,6 +6,11 @@ from inspect import getmembers, ismodule, isfunction
 
 import pisa.pisa_inst_addiu_test
 import pisa.pisa_inst_addu_test
+import pisa.pisa_inst_subu_test
+import pisa.pisa_inst_and_test
+import pisa.pisa_inst_or_test
+import pisa.pisa_inst_xor_test
+import pisa.pisa_inst_nor_test
 #import pisa
 
 

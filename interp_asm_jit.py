@@ -30,6 +30,16 @@ def sext( value ):
 def trim( value ):
   return value & 0xFFFFFFFF
 
+#-----------------------------------------------------------------------
+# register_inst
+#-----------------------------------------------------------------------
+# Utility decorator for building decode table.
+def register_inst( func ):
+  prefix, suffix = func.func_name.split('_')
+  assert prefix == 'execute'
+  decode_table[ suffix ] = func
+  return func
+
 #=======================================================================
 # Regsiter Definitions
 #=======================================================================
@@ -76,16 +86,6 @@ reg_map = {
 #=======================================================================
 
 decode_table = {}
-
-#-----------------------------------------------------------------------
-# register_inst
-#-----------------------------------------------------------------------
-# Utility decorator for building decode table.
-def register_inst( func ):
-  prefix, suffix = func.func_name.split('_')
-  assert prefix == 'execute'
-  decode_table[ suffix ] = func
-  return func
 
 #-----------------------------------------------------------------------
 # mfc0
@@ -145,6 +145,52 @@ def execute_print( p, src, sink, rf, fields ):
   rt = reg_map[ fields ]
   result = fields + ' = ' + str( rf[rt] )
   print result
+
+#-----------------------------------------------------------------------
+# subu
+#-----------------------------------------------------------------------
+@register_inst
+def execute_subu( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  rf[rd] = trim( rf[rs] - rf[rt] )
+
+#-----------------------------------------------------------------------
+# and
+#-----------------------------------------------------------------------
+@register_inst
+def execute_and( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  rf[rd] = rf[rs] & rf[rt]
+
+#-----------------------------------------------------------------------
+# or
+#-----------------------------------------------------------------------
+@register_inst
+def execute_or( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  rf[rd] = rf[rs] | rf[rt]
+
+#-----------------------------------------------------------------------
+# xor
+#-----------------------------------------------------------------------
+@register_inst
+def execute_xor( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  rf[rd] = rf[rs] ^ rf[rt]
+
+#-----------------------------------------------------------------------
+# nor
+#-----------------------------------------------------------------------
+@register_inst
+def execute_nor( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  rf[rd] = trim( ~(rf[rs] | rf[rt]) )
+
 
 #=======================================================================
 # Main Loop
