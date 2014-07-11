@@ -34,10 +34,6 @@ def trim( value ):
 # Regsiter Definitions
 #=======================================================================
 
-#-----------------------------------------------------------------------
-# reg_map
-#-----------------------------------------------------------------------
-
 reg_map = {
   '$0'   :  0,   '$1'   :  1,   '$2'   :  2,   '$3'   :  3,
   '$4'   :  4,   '$5'   :  5,   '$6'   :  6,   '$7'   :  7,
@@ -75,13 +71,91 @@ reg_map = {
   'coreid'    : 17,
 }
 
+#=======================================================================
+# Instruction Definitions
+#=======================================================================
+
+decode_table = {}
+
+#-----------------------------------------------------------------------
+# register_inst
+#-----------------------------------------------------------------------
+# Utility decorator for building decode table.
+def register_inst( func ):
+  prefix, suffix = func.func_name.split('_')
+  assert prefix == 'execute'
+  decode_table[ suffix ] = func
+  return func
+
+#-----------------------------------------------------------------------
+# mfc0
+#-----------------------------------------------------------------------
+@register_inst
+def execute_mfc0( p, src, sink, rf, fields ):
+  f0, f1 = fields.split( ' ', 1 )
+  f1 = f1.strip() # TODO: clean this up
+  rt, rd = reg_map[ f0 ], reg_map[ f1 ]
+  if   rd ==  1:
+    rf[ rt ] = src[ p.src_ptr ]
+    p.src_ptr += 1
+  elif rd == 17: pass
+  else: raise Exception('Invalid mfc0 destination!')
+
+#-----------------------------------------------------------------------
+# mtc0
+#-----------------------------------------------------------------------
+@register_inst
+def execute_mtc0( p, src, sink, rf, fields ):
+  f0, f1 = fields.split( ' ', 1 )
+  f1 = f1.strip() # TODO: clean this up
+  rt, rd = reg_map[ f0 ], reg_map[ f1 ]
+  if   rd ==  1: pass
+  elif rd ==  2:
+    if sink[ p.sink_ptr ] != rf[ rt ]:
+      print 'sink:', sink[ p.sink_ptr ], 'rf:', rf[ rt ]
+      raise Exception('Instruction: mtc0 failed!')
+    print 'SUCCESS: rf[' + str( rt ) + '] == ' + str( sink[ p.sink_ptr ] )
+    p.sink_ptr += 1
+  elif rd == 10: pass
+  else: raise Exception('Invalid mtc0 destination!')
+
+#-----------------------------------------------------------------------
+# addiu
+#-----------------------------------------------------------------------
+@register_inst
+def execute_addiu( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+  rf[ rd ] = trim( rf[ rs ] + sext( imm ) )
+
+#-----------------------------------------------------------------------
+# addu
+#-----------------------------------------------------------------------
+@register_inst
+def execute_addu( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  rf[ rd ] = trim( rf[ rs ] + rf[ rt ] )
+
+#-----------------------------------------------------------------------
+# print
+#-----------------------------------------------------------------------
+@register_inst
+def execute_print( p, src, sink, rf, fields ):
+  rt = reg_map[ fields ]
+  result = fields + ' = ' + str( rf[rt] )
+  print result
+
+#=======================================================================
+# Main Loop
+#=======================================================================
 
 #-----------------------------------------------------------------------
 # jit
 #-----------------------------------------------------------------------
 
 jitdriver = JitDriver( greens =['pc', 'insts',],
-                       reds   =['src_ptr','sink_ptr','src','sink','rf',]
+                       reds   =['ptrs','src','sink','rf',]
                      )
 
 def jitpolicy(driver):
@@ -95,16 +169,15 @@ def mainloop( insts, src, sink ):
   pc = 0
   rf = RegisterFile()
 
-  src_ptr  = 0
-  sink_ptr = 0
+
+  p = Ptrs()
 
   while pc < len( insts ):
 
     jitdriver.jit_merge_point(
         pc       = pc,
         insts    = insts,
-        src_ptr  = src_ptr,
-        sink_ptr = sink_ptr,
+        ptrs     = p,
         src      = src,
         sink     = sink,
         rf       = rf
@@ -114,46 +187,8 @@ def mainloop( insts, src, sink ):
       inst = 'nop'
     else:
       inst, fields = insts[pc].split( ' ', 1 )
+      decode_table[inst]( p, src, sink, rf, fields )
 
-    if   inst == 'mfc0':
-      f0, f1 = fields.split( ' ', 1 )
-      f1 = f1.strip() # TODO: clean this up
-      rt, rd = reg_map[ f0 ], reg_map[ f1 ]
-      if   rd ==  1:
-        rf[ rt ] = src[ src_ptr ]
-        src_ptr += 1
-      elif rd == 17: pass
-      else: raise Exception('Invalid mfc0 destination!')
-
-    elif inst == 'mtc0':
-      f0, f1 = fields.split( ' ', 1 )
-      f1 = f1.strip() # TODO: clean this up
-      rt, rd = reg_map[ f0 ], reg_map[ f1 ]
-      if   rd ==  1: pass
-      elif rd ==  2:
-        if sink[ sink_ptr ] != rf[ rt ]:
-          print 'sink:', sink[ sink_ptr ], 'rf:', rf[ rt ]
-          print 'Instruction: '+insts[pc]+' failed!'
-          raise Exception('Instruction: '+insts[pc]+' failed!')
-        print 'SUCCESS: rf[' + str( rt ) + '] == ' + str( sink[ sink_ptr ] )
-        sink_ptr += 1
-      elif rd == 10: pass
-      else: raise Exception('Invalid mtc0 destination!')
-
-    elif inst == 'addiu':
-      f0, f1, f2 = fields.split( ' ', 3 )
-      rd, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-      rf[ rd ] = trim( rf[ rs ] + sext( imm ) )
-
-    elif inst == 'addu':
-      f0, f1, f2 = fields.split( ' ', 3 )
-      rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-      rf[ rd ] = trim( rf[ rs ] + rf[ rt ] )
-
-    elif inst == 'print':
-      rt = reg_map[ fields ]
-      result = fields + ' = ' + str( rf[rt] )
-      print result
 
     pc += 1
 
@@ -167,6 +202,14 @@ class RegisterFile( object ):
     return self.regs[idx]
   def __setitem__( self, idx, value ):
     self.regs[idx] = value
+
+#-----------------------------------------------------------------------
+# Ptrs
+#-----------------------------------------------------------------------
+class Ptrs( object ):
+  def __init__( self ):
+    self.src_ptr  = 0
+    self.sink_ptr = 0
 
 #-----------------------------------------------------------------------
 # parse
