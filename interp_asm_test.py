@@ -11,8 +11,8 @@ import pisa.pisa_inst_and_test
 import pisa.pisa_inst_or_test
 import pisa.pisa_inst_xor_test
 import pisa.pisa_inst_nor_test
-#import pisa
-
+import pisa.pisa_inst_slt_test
+import pisa.pisa_inst_sltu_test
 
 cmd = './interp_asm_jit-c'
 #cmd = 'python interp_asm_jit.py'

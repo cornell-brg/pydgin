@@ -24,6 +24,15 @@ def sext( value ):
   return value
 
 #-----------------------------------------------------------------------
+# signed
+#-----------------------------------------------------------------------
+def signed( value ):
+  if value & 0x80000000:
+    twos_complement = ~value + 1
+    return -trim( twos_complement )
+  return value
+
+#-----------------------------------------------------------------------
 # trim
 #-----------------------------------------------------------------------
 # Trim arithmetic to 16-bit values.
@@ -190,6 +199,24 @@ def execute_nor( p, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = trim( ~(rf[rs] | rf[rt]) )
+
+#-----------------------------------------------------------------------
+# slt
+#-----------------------------------------------------------------------
+@register_inst
+def execute_slt( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  rf[rd] = signed( rf[rs] ) < signed( rf[rt] )
+
+#-----------------------------------------------------------------------
+# sltu
+#-----------------------------------------------------------------------
+@register_inst
+def execute_sltu( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  rf[rd] = rf[rs] < rf[rt]
 
 
 #=======================================================================
