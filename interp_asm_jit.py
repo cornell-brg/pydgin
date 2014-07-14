@@ -40,6 +40,13 @@ def trim( value ):
   return value & 0xFFFFFFFF
 
 #-----------------------------------------------------------------------
+# trim_5
+#-----------------------------------------------------------------------
+# Trim arithmetic to 5-bit values.
+def trim_5( value ):
+  return value & 0b11111
+
+#-----------------------------------------------------------------------
 # register_inst
 #-----------------------------------------------------------------------
 # Utility decorator for building decode table.
@@ -274,6 +281,65 @@ def execute_sltiu( p, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
   rf[rt] = rf[rs] < sext(imm)
+
+#-----------------------------------------------------------------------
+# Shift instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# sll
+#-----------------------------------------------------------------------
+@register_inst
+def execute_sll( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rt, shamt = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+  rf[rd] = trim( rf[rt] << shamt )
+
+#-----------------------------------------------------------------------
+# srl
+#-----------------------------------------------------------------------
+@register_inst
+def execute_srl( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rt, shamt = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+  rf[rd] = rf[rt] >> shamt
+
+#-----------------------------------------------------------------------
+# sra
+#-----------------------------------------------------------------------
+@register_inst
+def execute_sra( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rt, shamt = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+  rf[rd] = trim( signed( rf[rt] ) >> shamt )
+
+#-----------------------------------------------------------------------
+# sllv
+#-----------------------------------------------------------------------
+@register_inst
+def execute_sllv( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rt, rs  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  rf[rd] = trim( rf[rt] << trim_5( rf[rs] ) )
+
+#-----------------------------------------------------------------------
+# srlv
+#-----------------------------------------------------------------------
+@register_inst
+def execute_srlv( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rt, rs  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  rf[rd] = rf[rt] >> trim_5( rf[rs] )
+
+#-----------------------------------------------------------------------
+# srav
+#-----------------------------------------------------------------------
+@register_inst
+def execute_srav( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rd, rt, rs  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+  # TODO: should it really be masked like this?
+  rf[rd] = trim( signed( rf[rt] ) >> trim_5( rf[rs] ) )
 
 #=======================================================================
 # Main Loop

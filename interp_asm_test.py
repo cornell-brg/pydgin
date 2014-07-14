@@ -20,6 +20,13 @@ import pisa.pisa_inst_xori_test
 import pisa.pisa_inst_slti_test
 import pisa.pisa_inst_sltiu_test
 
+import pisa.pisa_inst_sll_test
+import pisa.pisa_inst_srl_test
+import pisa.pisa_inst_sra_test
+import pisa.pisa_inst_sllv_test
+import pisa.pisa_inst_srlv_test
+import pisa.pisa_inst_srav_test
+
 cmd = './interp_asm_jit-c'
 #cmd = 'python interp_asm_jit.py'
 asm = 'test.s'
