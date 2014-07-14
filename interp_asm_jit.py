@@ -11,7 +11,7 @@ from   rpython.rlib.rarithmetic import r_uint
 from   rpython.rlib.jit import JitDriver
 
 #=======================================================================
-# Utility Function
+# Utility Functions
 #=======================================================================
 
 #-----------------------------------------------------------------------
@@ -97,6 +97,10 @@ reg_map = {
 decode_table = {}
 
 #-----------------------------------------------------------------------
+# Coprocessor 0 Instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
 # mfc0
 #-----------------------------------------------------------------------
 @register_inst
@@ -129,13 +133,8 @@ def execute_mtc0( p, src, sink, rf, fields ):
   else: raise Exception('Invalid mtc0 destination!')
 
 #-----------------------------------------------------------------------
-# addiu
+# Register-register arithmetic, logical, and comparison instructions
 #-----------------------------------------------------------------------
-@register_inst
-def execute_addiu( p, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[ rd ] = trim( rf[ rs ] + sext( imm ) )
 
 #-----------------------------------------------------------------------
 # addu
@@ -218,6 +217,63 @@ def execute_sltu( p, src, sink, rf, fields ):
   rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = rf[rs] < rf[rt]
 
+#-----------------------------------------------------------------------
+# Register-immediate arithmetic, logical, and comparison instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# addiu
+#-----------------------------------------------------------------------
+@register_inst
+def execute_addiu( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+  rf[ rt ] = trim( rf[ rs ] + sext( imm ) )
+
+#-----------------------------------------------------------------------
+# andi
+#-----------------------------------------------------------------------
+@register_inst
+def execute_andi( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+  rf[rt] = rf[rs] & imm #zext
+
+#-----------------------------------------------------------------------
+# ori
+#-----------------------------------------------------------------------
+@register_inst
+def execute_ori( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+  rf[rt] = rf[rs] | imm #zext
+
+#-----------------------------------------------------------------------
+# xori
+#-----------------------------------------------------------------------
+@register_inst
+def execute_xori( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+  rf[rt] = rf[rs] ^ imm #zext
+
+#-----------------------------------------------------------------------
+# slti
+#-----------------------------------------------------------------------
+@register_inst
+def execute_slti( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+  rf[rt] = signed( rf[rs] ) < signed( sext(imm) )
+
+#-----------------------------------------------------------------------
+# sltiu
+#-----------------------------------------------------------------------
+@register_inst
+def execute_sltiu( p, src, sink, rf, fields ):
+  f0, f1, f2 = fields.split( ' ', 3 )
+  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
+  rf[rt] = rf[rs] < sext(imm)
 
 #=======================================================================
 # Main Loop

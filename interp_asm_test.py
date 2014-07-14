@@ -4,7 +4,6 @@ sys.path.append('/Users/dmlockhart/vc/git-brg/parc/pymtl')
 
 from inspect import getmembers, ismodule, isfunction
 
-import pisa.pisa_inst_addiu_test
 import pisa.pisa_inst_addu_test
 import pisa.pisa_inst_subu_test
 import pisa.pisa_inst_and_test
@@ -13,6 +12,13 @@ import pisa.pisa_inst_xor_test
 import pisa.pisa_inst_nor_test
 import pisa.pisa_inst_slt_test
 import pisa.pisa_inst_sltu_test
+
+import pisa.pisa_inst_addiu_test
+import pisa.pisa_inst_andi_test
+import pisa.pisa_inst_ori_test
+import pisa.pisa_inst_xori_test
+import pisa.pisa_inst_slti_test
+import pisa.pisa_inst_sltiu_test
 
 cmd = './interp_asm_jit-c'
 #cmd = 'python interp_asm_jit.py'
