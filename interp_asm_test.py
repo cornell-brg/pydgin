@@ -45,13 +45,15 @@ for mname, module in getmembers( pisa, ismodule ):
       continue
     test = func()
     if isinstance( test, str ):
-      test_names.append( func_name )
+      name = '{}.{}'.format( mname, func_name )
+      test_names.append( name )
       tests.append( test )
     else:
       names = [ '{}.{}_{}'.format( mname, func_name, x )
                 for x, _ in enumerate(test) ]
       test_names.extend( names )
       tests.extend( test )
+
 
 
 #-----------------------------------------------------------------------
