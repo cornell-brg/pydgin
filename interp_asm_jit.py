@@ -113,7 +113,6 @@ decode_table = {}
 @register_inst
 def execute_mfc0( s, src, sink, rf, fields ):
   f0, f1 = fields.split( ' ', 1 )
-  f1 = f1.strip() # TODO: clean this up
   rt, rd = reg_map[ f0 ], reg_map[ f1 ]
   if   rd ==  1:
     rf[ rt ] = src[ s.src_ptr ]
@@ -128,7 +127,6 @@ def execute_mfc0( s, src, sink, rf, fields ):
 @register_inst
 def execute_mtc0( s, src, sink, rf, fields ):
   f0, f1 = fields.split( ' ', 1 )
-  f1 = f1.strip() # TODO: clean this up
   rt, rd = reg_map[ f0 ], reg_map[ f1 ]
   if   rd ==  1: pass
   elif rd ==  2:
@@ -364,6 +362,39 @@ def execute_srav( s, src, sink, rf, fields ):
   rf[rd] = trim( signed( rf[rt] ) >> trim_5( rf[rs] ) )
   s.pc += 1
 
+#-----------------------------------------------------------------------
+# Unconditional jump instructions
+
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# j
+#-----------------------------------------------------------------------
+@register_inst
+def execute_j( s, src, sink, rf, fields ):
+  if fields in s.symtable: jtarg = s.symtable[ fields ]
+  else:                    jtarg = stoi( fields, base=0 )
+  s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg << 2)
+
+#-----------------------------------------------------------------------
+# jal
+#-----------------------------------------------------------------------
+@register_inst
+def execute_jal( s, src, sink, rf, fields ):
+  if fields in s.symtable: jtarg = s.symtable[ fields ]
+  else:                    jtarg = stoi( fields, base=0 )
+  rf[31] = s.pc + 4
+  s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg << 2)
+
+#-----------------------------------------------------------------------
+# lui
+#-----------------------------------------------------------------------
+@register_inst
+def execute_lui( s, src, sink, rf, fields ):
+  f0, f1  = fields.split( ' ', 2 )
+  rt, imm = reg_map[ f0 ], stoi( f1, base=0 )
+  rf[rt] = imm << 16
+  s.pc += 4
 
 #=======================================================================
 # Main Loop
@@ -374,7 +405,7 @@ def execute_srav( s, src, sink, rf, fields ):
 #-----------------------------------------------------------------------
 
 jitdriver = JitDriver( greens =['pc','insts',],
-                       reds   =['state','src','sink',]
+                       reds   =['state','symtable','src','sink',]
                      )
 
 def jitpolicy(driver):
@@ -384,8 +415,8 @@ def jitpolicy(driver):
 #-----------------------------------------------------------------------
 # mainloop
 #-----------------------------------------------------------------------
-def mainloop( insts, src, sink ):
-  s = State()
+def mainloop( insts, symtable, src, sink ):
+  s = State( symtable )
 
   while s.pc < len( insts ):
 
@@ -393,6 +424,7 @@ def mainloop( insts, src, sink ):
         pc       = s.pc,
         state    = s,
         insts    = insts,
+        symtable = symtable,
         src      = src,
         sink     = sink,
     )
@@ -420,11 +452,12 @@ class RegisterFile( object ):
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  def __init__( self ):
+  def __init__( self, symtable ):
     self.src_ptr  = 0
     self.sink_ptr = 0
     self.pc       = 0
     self.rf       = RegisterFile()
+    self.symtable = symtable
 
 #-----------------------------------------------------------------------
 # parse
@@ -438,6 +471,7 @@ def parse( fp ):
   insts    = []
   src      = []
   sink     = []
+  symtable = {}
 
   inst_str = ''
   src_str  = ''
@@ -450,7 +484,7 @@ def parse( fp ):
 
     if char == '\n':
       if inst_str:
-        insts.append( inst_str )
+        insts.append( inst_str.strip() )
         inst_str = ''
       if src_str:
         src.append( stoi( src_str, base=0 ) )
@@ -464,11 +498,15 @@ def parse( fp ):
     elif char == '#':
       mode = COMMENT
 
-    elif char == '<':
+    elif mode == COPY and char == '<':
       mode = MFC0
 
-    elif char == '>':
+    elif mode == COPY and char == '>':
       mode = MTC0
+
+    elif mode == COPY and char == ':':
+      symtable[ inst_str ] = len( insts )
+      mode = COMMENT
 
     elif mode == COPY and char not in [',','(',')'] \
          and not (last == char == ' '):
@@ -481,17 +519,31 @@ def parse( fp ):
     elif mode == MTC0:
       sink_str += char
 
-  print insts
+  print 'Instructions'
+  print '============'
+  for inst in insts:
+    print inst
+  print
+  print 'Source'
+  print '======'
   print src
+  print
+  print 'Sink'
+  print '===='
   print sink
-  return insts, src, sink
+  print
+  print 'Symbol Table'
+  print '============'
+  for key, value in symtable.items():
+    print key, value
+  return insts, symtable, src, sink
 
 #-----------------------------------------------------------------------
 # run
 #-----------------------------------------------------------------------
 def run(fp):
-  program, src, sink  = parse( fp )
-  mainloop( program, src, sink )
+  program, symtable, src, sink  = parse( fp )
+  mainloop( program, symtable, src, sink )
 
 #-----------------------------------------------------------------------
 # entry_point
