@@ -111,33 +111,35 @@ decode_table = {}
 # mfc0
 #-----------------------------------------------------------------------
 @register_inst
-def execute_mfc0( p, src, sink, rf, fields ):
+def execute_mfc0( s, src, sink, rf, fields ):
   f0, f1 = fields.split( ' ', 1 )
   f1 = f1.strip() # TODO: clean this up
   rt, rd = reg_map[ f0 ], reg_map[ f1 ]
   if   rd ==  1:
-    rf[ rt ] = src[ p.src_ptr ]
-    p.src_ptr += 1
+    rf[ rt ] = src[ s.src_ptr ]
+    s.src_ptr += 1
   elif rd == 17: pass
   else: raise Exception('Invalid mfc0 destination!')
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # mtc0
 #-----------------------------------------------------------------------
 @register_inst
-def execute_mtc0( p, src, sink, rf, fields ):
+def execute_mtc0( s, src, sink, rf, fields ):
   f0, f1 = fields.split( ' ', 1 )
   f1 = f1.strip() # TODO: clean this up
   rt, rd = reg_map[ f0 ], reg_map[ f1 ]
   if   rd ==  1: pass
   elif rd ==  2:
-    if sink[ p.sink_ptr ] != rf[ rt ]:
-      print 'sink:', sink[ p.sink_ptr ], 'rf:', rf[ rt ]
+    if sink[ s.sink_ptr ] != rf[ rt ]:
+      print 'sink:', sink[ s.sink_ptr ], 'rf:', rf[ rt ]
       raise Exception('Instruction: mtc0 failed!')
-    print 'SUCCESS: rf[' + str( rt ) + '] == ' + str( sink[ p.sink_ptr ] )
-    p.sink_ptr += 1
+    print 'SUCCESS: rf[' + str( rt ) + '] == ' + str( sink[ s.sink_ptr ] )
+    s.sink_ptr += 1
   elif rd == 10: pass
   else: raise Exception('Invalid mtc0 destination!')
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # Register-register arithmetic, logical, and comparison instructions
@@ -147,82 +149,91 @@ def execute_mtc0( p, src, sink, rf, fields ):
 # addu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_addu( p, src, sink, rf, fields ):
+def execute_addu( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[ rd ] = trim( rf[ rs ] + rf[ rt ] )
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # print
 #-----------------------------------------------------------------------
 @register_inst
-def execute_print( p, src, sink, rf, fields ):
+def execute_print( s, src, sink, rf, fields ):
   rt = reg_map[ fields ]
   result = fields + ' = ' + str( rf[rt] )
   print result
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # subu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_subu( p, src, sink, rf, fields ):
+def execute_subu( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = trim( rf[rs] - rf[rt] )
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # and
 #-----------------------------------------------------------------------
 @register_inst
-def execute_and( p, src, sink, rf, fields ):
+def execute_and( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = rf[rs] & rf[rt]
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # or
 #-----------------------------------------------------------------------
 @register_inst
-def execute_or( p, src, sink, rf, fields ):
+def execute_or( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = rf[rs] | rf[rt]
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # xor
 #-----------------------------------------------------------------------
 @register_inst
-def execute_xor( p, src, sink, rf, fields ):
+def execute_xor( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = rf[rs] ^ rf[rt]
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # nor
 #-----------------------------------------------------------------------
 @register_inst
-def execute_nor( p, src, sink, rf, fields ):
+def execute_nor( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = trim( ~(rf[rs] | rf[rt]) )
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # slt
 #-----------------------------------------------------------------------
 @register_inst
-def execute_slt( p, src, sink, rf, fields ):
+def execute_slt( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = signed( rf[rs] ) < signed( rf[rt] )
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # sltu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sltu( p, src, sink, rf, fields ):
+def execute_sltu( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = rf[rs] < rf[rt]
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # Register-immediate arithmetic, logical, and comparison instructions
@@ -232,55 +243,61 @@ def execute_sltu( p, src, sink, rf, fields ):
 # addiu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_addiu( p, src, sink, rf, fields ):
+def execute_addiu( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
   rf[ rt ] = trim( rf[ rs ] + sext( imm ) )
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # andi
 #-----------------------------------------------------------------------
 @register_inst
-def execute_andi( p, src, sink, rf, fields ):
+def execute_andi( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rt] = rf[rs] & imm #zext
+  rf[rt] = rf[rs] & imm
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # ori
 #-----------------------------------------------------------------------
 @register_inst
-def execute_ori( p, src, sink, rf, fields ):
+def execute_ori( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rt] = rf[rs] | imm #zext
+  rf[rt] = rf[rs] | imm
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # xori
 #-----------------------------------------------------------------------
 @register_inst
-def execute_xori( p, src, sink, rf, fields ):
+def execute_xori( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rt] = rf[rs] ^ imm #zext
+  rf[rt] = rf[rs] ^ imm
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # slti
 #-----------------------------------------------------------------------
 @register_inst
-def execute_slti( p, src, sink, rf, fields ):
+def execute_slti( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
   rf[rt] = signed( rf[rs] ) < signed( sext(imm) )
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # sltiu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sltiu( p, src, sink, rf, fields ):
+def execute_sltiu( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
   rf[rt] = rf[rs] < sext(imm)
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # Shift instructions
@@ -290,56 +307,63 @@ def execute_sltiu( p, src, sink, rf, fields ):
 # sll
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sll( p, src, sink, rf, fields ):
+def execute_sll( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rt, shamt = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
   rf[rd] = trim( rf[rt] << shamt )
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # srl
 #-----------------------------------------------------------------------
 @register_inst
-def execute_srl( p, src, sink, rf, fields ):
+def execute_srl( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rt, shamt = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
   rf[rd] = rf[rt] >> shamt
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # sra
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sra( p, src, sink, rf, fields ):
+def execute_sra( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rt, shamt = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
   rf[rd] = trim( signed( rf[rt] ) >> shamt )
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # sllv
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sllv( p, src, sink, rf, fields ):
+def execute_sllv( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rt, rs  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = trim( rf[rt] << trim_5( rf[rs] ) )
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # srlv
 #-----------------------------------------------------------------------
 @register_inst
-def execute_srlv( p, src, sink, rf, fields ):
+def execute_srlv( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rt, rs  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   rf[rd] = rf[rt] >> trim_5( rf[rs] )
+  s.pc += 1
 
 #-----------------------------------------------------------------------
 # srav
 #-----------------------------------------------------------------------
 @register_inst
-def execute_srav( p, src, sink, rf, fields ):
+def execute_srav( s, src, sink, rf, fields ):
   f0, f1, f2 = fields.split( ' ', 3 )
   rd, rt, rs  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
   # TODO: should it really be masked like this?
   rf[rd] = trim( signed( rf[rt] ) >> trim_5( rf[rs] ) )
+  s.pc += 1
+
 
 #=======================================================================
 # Main Loop
@@ -349,8 +373,8 @@ def execute_srav( p, src, sink, rf, fields ):
 # jit
 #-----------------------------------------------------------------------
 
-jitdriver = JitDriver( greens =['pc', 'insts',],
-                       reds   =['ptrs','src','sink','rf',]
+jitdriver = JitDriver( greens =['pc','insts',],
+                       reds   =['state','src','sink',]
                      )
 
 def jitpolicy(driver):
@@ -361,31 +385,25 @@ def jitpolicy(driver):
 # mainloop
 #-----------------------------------------------------------------------
 def mainloop( insts, src, sink ):
-  pc = 0
-  rf = RegisterFile()
+  s = State()
 
-
-  p = Ptrs()
-
-  while pc < len( insts ):
+  while s.pc < len( insts ):
 
     jitdriver.jit_merge_point(
-        pc       = pc,
+        pc       = s.pc,
+        state    = s,
         insts    = insts,
-        ptrs     = p,
         src      = src,
         sink     = sink,
-        rf       = rf
     )
 
-    if insts[pc] == 'nop':
+    if insts[s.pc] == 'nop':
       inst = 'nop'
+      s.pc += 1
     else:
-      inst, fields = insts[pc].split( ' ', 1 )
-      decode_table[inst]( p, src, sink, rf, fields )
+      inst, fields = insts[s.pc].split( ' ', 1 )
+      decode_table[inst]( s, src, sink, s.rf, fields )
 
-
-    pc += 1
 
 #-----------------------------------------------------------------------
 # RegisterFile
@@ -399,12 +417,14 @@ class RegisterFile( object ):
     self.regs[idx] = value
 
 #-----------------------------------------------------------------------
-# Ptrs
+# State
 #-----------------------------------------------------------------------
-class Ptrs( object ):
+class State( object ):
   def __init__( self ):
     self.src_ptr  = 0
     self.sink_ptr = 0
+    self.pc       = 0
+    self.rf       = RegisterFile()
 
 #-----------------------------------------------------------------------
 # parse
