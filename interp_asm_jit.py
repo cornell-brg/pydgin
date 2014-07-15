@@ -374,7 +374,9 @@ def execute_srav( s, src, sink, rf, fields ):
 def execute_j( s, src, sink, rf, fields ):
   if fields in s.symtable: jtarg = s.symtable[ fields ]
   else:                    jtarg = stoi( fields, base=0 )
-  s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg << 2)
+  #s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg << 2)
+  # TODO: HACKY
+  s.pc = ((s.pc + 1) & 0xF0000000) | jtarg
 
 #-----------------------------------------------------------------------
 # jal
@@ -383,8 +385,12 @@ def execute_j( s, src, sink, rf, fields ):
 def execute_jal( s, src, sink, rf, fields ):
   if fields in s.symtable: jtarg = s.symtable[ fields ]
   else:                    jtarg = stoi( fields, base=0 )
-  rf[31] = s.pc + 4
-  s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg << 2)
+  #rf[31] = s.pc + 4
+  #s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg << 2)
+  # TODO: HACKY
+  rf[31] = 4*s.pc + 4 + 0x400
+  s.pc = ((s.pc + 1) & 0xF0000000) | jtarg
+
 
 #-----------------------------------------------------------------------
 # lui
@@ -394,7 +400,8 @@ def execute_lui( s, src, sink, rf, fields ):
   f0, f1  = fields.split( ' ', 2 )
   rt, imm = reg_map[ f0 ], stoi( f1, base=0 )
   rf[rt] = imm << 16
-  s.pc += 4
+  s.pc += 1
+
 
 #=======================================================================
 # Main Loop
@@ -436,6 +443,8 @@ def mainloop( insts, symtable, src, sink ):
       inst, fields = insts[s.pc].split( ' ', 1 )
       decode_table[inst]( s, src, sink, s.rf, fields )
 
+  if s.sink_ptr != len( sink ):
+    raise Exception('Failed to successfully receive all sink tokens!')
 
 #-----------------------------------------------------------------------
 # RegisterFile
@@ -466,16 +475,23 @@ COPY    = 0
 COMMENT = 1
 MTC0    = 2
 MFC0    = 3
+HI_LO   = 4
+HI      = 5
+LO      = 6
 def parse( fp ):
 
   insts    = []
   src      = []
   sink     = []
   symtable = {}
+  hi       = {}
+  lo       = {}
 
   inst_str = ''
   src_str  = ''
   sink_str = ''
+
+  temp_str = ''
 
   last     = None
   mode     = COPY
@@ -506,7 +522,11 @@ def parse( fp ):
 
     elif mode == COPY and char == ':':
       symtable[ inst_str ] = len( insts )
+      inst_str = ''
       mode = COMMENT
+
+    elif mode == COPY and char == '%':
+      mode = HI_LO
 
     elif mode == COPY and char not in [',','(',')'] \
          and not (last == char == ' '):
@@ -518,6 +538,32 @@ def parse( fp ):
 
     elif mode == MTC0:
       sink_str += char
+
+    elif mode == HI_LO:
+      temp_str += char
+      if   temp_str == 'hi':
+        mode, temp_str = HI, ''
+      elif temp_str == 'lo':
+        mode, temp_str = LO, ''
+
+    elif mode == HI and char not in ['[','(',' ']:
+      if char in [']', ')']:
+        hi[ temp_str ] = len( insts )
+        temp_str = ''
+      else:
+        temp_str += char
+
+    elif mode == LO and char not in ['[','(',' ']:
+      if char in [']', ')']:
+        lo[ temp_str ] = len( insts )
+        temp_str = ''
+      else:
+        temp_str += char
+
+  for label, pc in hi.items():
+    insts[ pc ] += ' ' + hex( symtable[ label ] >> 16 )
+  for label, pc in lo.items():
+    insts[ pc ] += ' ' + hex( symtable[ label ] & 0xFFFF )
 
   print 'Instructions'
   print '============'
