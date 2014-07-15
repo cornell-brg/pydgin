@@ -48,16 +48,14 @@ for mname, module in getmembers( pisa, ismodule ):
     if not (func_name.startswith('gen') and func.__module__.endswith( mname )):
       continue
     test = func()
+
+    name = '{}.{}'.format( mname, func_name )
+    test_names.append( name )
+
     if isinstance( test, str ):
-      name = '{}.{}'.format( mname, func_name )
-      test_names.append( name )
       tests.append( test )
     else:
-      names = [ '{}.{}_{}'.format( mname, func_name, x )
-                for x, _ in enumerate(test) ]
-      test_names.extend( names )
-      tests.extend( test )
-
+      tests.append( ''.join( test ) )
 
 
 #-----------------------------------------------------------------------
