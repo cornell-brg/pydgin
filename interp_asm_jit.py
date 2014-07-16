@@ -465,7 +465,7 @@ def execute_bne( s, src, sink, rf, fields ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_blez( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 3 )
+  f0, f1 = fields.split( ' ', 2 )
   rs     = reg_map[ f0 ]
   if f1 in s.symtable: imm = s.symtable[ f1 ]
   else:                imm = stoi( f1, base=0 )
@@ -482,7 +482,7 @@ def execute_blez( s, src, sink, rf, fields ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_bgtz( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 3 )
+  f0, f1 = fields.split( ' ', 2 )
   rs     = reg_map[ f0 ]
   if f1 in s.symtable: imm = s.symtable[ f1 ]
   else:                imm = stoi( f1, base=0 )
@@ -499,7 +499,7 @@ def execute_bgtz( s, src, sink, rf, fields ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_bltz( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 3 )
+  f0, f1 = fields.split( ' ', 2 )
   rs     = reg_map[ f0 ]
   if f1 in s.symtable: imm = s.symtable[ f1 ]
   else:                imm = stoi( f1, base=0 )
@@ -516,7 +516,7 @@ def execute_bltz( s, src, sink, rf, fields ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_bgez( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 3 )
+  f0, f1 = fields.split( ' ', 2 )
   rs     = reg_map[ f0 ]
   if f1 in s.symtable: imm = s.symtable[ f1 ]
   else:                imm = stoi( f1, base=0 )
