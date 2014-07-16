@@ -30,6 +30,8 @@ import pisa.pisa_inst_srav_test
 import pisa.pisa_inst_lui_test
 import pisa.pisa_inst_j_test
 import pisa.pisa_inst_jal_test
+import pisa.pisa_inst_jr_test
+import pisa.pisa_inst_jalr_test
 
 cmd = './interp_asm_jit-c'
 #cmd = 'python interp_asm_jit.py'
