@@ -6,9 +6,8 @@
 import sys
 import os
 
-from   rpython.rlib.rarithmetic import string_to_int as stoi
-from   rpython.rlib.rarithmetic import r_uint
-from   rpython.rlib.jit import JitDriver
+from rpython.rlib.rarithmetic import string_to_int as stoi
+from rpython.rlib.jit         import JitDriver
 
 #=======================================================================
 # Utility Functions
@@ -551,7 +550,11 @@ def jitpolicy(driver):
 def mainloop( insts, symtable, src, sink ):
   s = State( symtable )
 
+  # main interpreter loop
+
   while s.pc < len( insts ):
+
+    # jit hint: jit_merge_point indicates start of opcode dispatch
 
     jitdriver.jit_merge_point(
         pc       = s.pc,
@@ -562,12 +565,33 @@ def mainloop( insts, symtable, src, sink ):
         sink     = sink,
     )
 
+    old = s.pc
+
+    # skip nop instructions
+
     if insts[s.pc] == 'nop':
       inst = 'nop'
       s.pc += 1
+
+    # instruction dispatch
+
     else:
       inst, fields = insts[s.pc].split( ' ', 1 )
       decode_table[inst]( s, src, sink, s.rf, fields )
+
+    # jit hint: can_enter_jit indicates end of an application level loop
+
+    if s.pc < old:
+      jitdriver.can_enter_jit(
+          pc       = s.pc,
+          state    = s,
+          insts    = insts,
+          symtable = symtable,
+          src      = src,
+          sink     = sink,
+      )
+
+  # verify we successfully completed our program
 
   if s.sink_ptr != len( sink ):
     raise Exception('Failed to successfully receive all sink tokens!')
