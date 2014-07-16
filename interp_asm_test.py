@@ -33,6 +33,13 @@ import pisa.pisa_inst_jal_test
 import pisa.pisa_inst_jr_test
 import pisa.pisa_inst_jalr_test
 
+import pisa.pisa_inst_beq_test
+import pisa.pisa_inst_bne_test
+import pisa.pisa_inst_blez_test
+import pisa.pisa_inst_bltz_test
+import pisa.pisa_inst_bgez_test
+import pisa.pisa_inst_bgtz_test
+
 cmd = './interp_asm_jit-c'
 #cmd = 'python interp_asm_jit.py'
 asm = 'test.s'

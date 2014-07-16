@@ -423,6 +423,112 @@ def execute_lui( s, src, sink, rf, fields ):
   s.pc += 1
 
 
+#-----------------------------------------------------------------------
+# Conditional branch instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# beq
+#-----------------------------------------------------------------------
+@register_inst
+def execute_beq( s, src, sink, rf, fields ):
+  f0, f1, f2  = fields.split( ' ', 3 )
+  rt, rs      = reg_map[ f0 ], reg_map[ f1 ]
+  if f2 in s.symtable: imm = s.symtable[ f2 ]
+  else:                imm = stoi( f2, base=0 )
+
+  # TODO: assuming label is absolute, not offset!
+  if rf[rs] == rf[rt]:
+    s.pc  = imm
+    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+  else:
+    s.pc += 1
+
+#-----------------------------------------------------------------------
+# bne
+#-----------------------------------------------------------------------
+@register_inst
+def execute_bne( s, src, sink, rf, fields ):
+  f0, f1, f2  = fields.split( ' ', 3 )
+  rt, rs      = reg_map[ f0 ], reg_map[ f1 ]
+  if f2 in s.symtable: imm = s.symtable[ f2 ]
+  else:                imm = stoi( f2, base=0 )
+
+  # TODO: assuming label is absolute, not offset!
+  if rf[rs] != rf[rt]:
+    s.pc  = imm
+    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+  else:
+    s.pc += 1
+
+#-----------------------------------------------------------------------
+# blez
+#-----------------------------------------------------------------------
+@register_inst
+def execute_blez( s, src, sink, rf, fields ):
+  f0, f1 = fields.split( ' ', 3 )
+  rs     = reg_map[ f0 ]
+  if f1 in s.symtable: imm = s.symtable[ f1 ]
+  else:                imm = stoi( f1, base=0 )
+
+  # TODO: assuming label is absolute, not offset!
+  if signed( rf[rs] ) <= 0:
+    s.pc  = imm
+    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+  else:
+    s.pc += 1
+
+#-----------------------------------------------------------------------
+# bgtz
+#-----------------------------------------------------------------------
+@register_inst
+def execute_bgtz( s, src, sink, rf, fields ):
+  f0, f1 = fields.split( ' ', 3 )
+  rs     = reg_map[ f0 ]
+  if f1 in s.symtable: imm = s.symtable[ f1 ]
+  else:                imm = stoi( f1, base=0 )
+
+  # TODO: assuming label is absolute, not offset!
+  if signed( rf[rs] ) > 0:
+    s.pc  = imm
+    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+  else:
+    s.pc += 1
+
+#-----------------------------------------------------------------------
+# bltz
+#-----------------------------------------------------------------------
+@register_inst
+def execute_bltz( s, src, sink, rf, fields ):
+  f0, f1 = fields.split( ' ', 3 )
+  rs     = reg_map[ f0 ]
+  if f1 in s.symtable: imm = s.symtable[ f1 ]
+  else:                imm = stoi( f1, base=0 )
+
+  # TODO: assuming label is absolute, not offset!
+  if signed( rf[rs] ) < 0:
+    s.pc  = imm
+    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+  else:
+    s.pc += 1
+
+#-----------------------------------------------------------------------
+# bgez
+#-----------------------------------------------------------------------
+@register_inst
+def execute_bgez( s, src, sink, rf, fields ):
+  f0, f1 = fields.split( ' ', 3 )
+  rs     = reg_map[ f0 ]
+  if f1 in s.symtable: imm = s.symtable[ f1 ]
+  else:                imm = stoi( f1, base=0 )
+
+  # TODO: assuming label is absolute, not offset!
+  if signed( rf[rs] ) >= 0:
+    s.pc  = imm
+    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+  else:
+    s.pc += 1
+
 #=======================================================================
 # Main Loop
 #=======================================================================
