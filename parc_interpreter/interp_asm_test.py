@@ -50,9 +50,17 @@ import pisa.pisa_inst_sw_test
 import pisa.pisa_inst_sh_test
 import pisa.pisa_inst_sb_test
 
-cmd = './interp_asm_jit-c'
-#cmd = 'python interp_asm_jit.py'
-asm = 'test.s'
+#-----------------------------------------------------------------------
+# files
+#-----------------------------------------------------------------------
+
+asm            = 'test.s'
+rpython_binary = './interp_asm_jit-c'
+cpython_script = 'python interp_asm_jit.py'
+
+def pytest_funcarg__cmd(request):
+  if request.config.option.cpython: return cpython_script
+  else:                             return rpython_binary
 
 #-----------------------------------------------------------------------
 # collect tests
@@ -82,7 +90,7 @@ for mname, module in getmembers( pisa, ismodule ):
 #-----------------------------------------------------------------------
 import pytest
 @pytest.mark.parametrize( 'test_str', tests, ids=test_names )
-def test_asm( test_str ):
+def test_asm( cmd, test_str ):
 
   with open(asm, 'w') as asm_file:
     lines = test_str.split('\n')

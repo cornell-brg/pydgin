@@ -80,7 +80,7 @@ CPython::
   $ PYTHONPATH='/Users/dmlockhart/vc/hg-opensource/pypy' \
     python simple_asm.py asm_00.s
 
-RPython::
+RPython with no JIT::
 
   $ PYTHONPATH='/Users/dmlockhart/vc/hg-opensource/pypy' python \
     ~/vc/hg-opensource/pypy/rpython/translator/goal/translate.py \
@@ -102,7 +102,7 @@ CPython::
   $ PYTHONPATH='/Users/dmlockhart/vc/hg-opensource/pypy' \
     python interp_asm.py asm_04.s
 
-RPython::
+RPython with no JIT::
 
   $ PYTHONPATH='/Users/dmlockhart/vc/hg-opensource/pypy' python \
     ~/vc/hg-opensource/pypy/rpython/translator/goal/translate.py \
@@ -118,12 +118,34 @@ an interpreter it expects assembly files, **not** binaries!
 
 It includes a test runner script which can run a full array of PARC
 assembly tests, it requires that PyMTL is installed on the local system.
-To run, the assembly tests::
+To run the assembly tests with CPython::
 
   $ cd parc_interpreter
+  $ py.test interp_asm_test.py --verbose --cpython
 
-TODO
+Before running the assembly tests with RPython, first compile the C
+implmementation.
 
+The C implementation **without** JIT (should take ~30 seconds)::
+
+  $ PYTHONPATH='/Users/dmlockhart/vc/hg-opensource/pypy' python \
+    ~/vc/hg-opensource/pypy/rpython/translator/goal/translate.py \
+    interp_asm_jit.py
+
+The C implementation **with** JIT (should take ~500 seconds)::
+
+  $ PYTHONPATH='/Users/dmlockhart/vc/hg-opensource/pypy' python \
+    ~/vc/hg-opensource/pypy/rpython/translator/goal/translate.py \
+    --opt=jit \
+    interp_asm_jit.py
+
+The run the tests::
+
+  $ py.test interp_asm_test.py --verbose
+
+The the interpreter on an assembly file directly::
+
+  $ ./interp_asm_jit-c test.s
 
 ------------------------------------------------------------------------
 Untranslatable
