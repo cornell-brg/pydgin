@@ -40,8 +40,10 @@ import pisa.pisa_inst_bltz_test
 import pisa.pisa_inst_bgez_test
 import pisa.pisa_inst_bgtz_test
 
+import pisa.pisa_inst_lw_test
+
 cmd = './interp_asm_jit-c'
-#cmd = 'python interp_asm_jit.py'
+cmd = 'python interp_asm_jit.py'
 asm = 'test.s'
 
 #-----------------------------------------------------------------------

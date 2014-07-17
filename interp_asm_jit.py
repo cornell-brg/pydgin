@@ -96,7 +96,8 @@ reg_map = {
   'coreid'    : 17,
 }
 
-reset_vector = 0x400
+reset_vector = 0x00000400
+data_section = 0x00002000
 
 #=======================================================================
 # Instruction Definitions
@@ -528,6 +529,22 @@ def execute_bgez( s, src, sink, rf, fields ):
   else:
     s.pc += 1
 
+#-----------------------------------------------------------------------
+# Load instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# lw
+#-----------------------------------------------------------------------
+@register_inst
+def execute_lw( s, src, sink, rf, fields ):
+  f0, f1,  f2 = fields.split( ' ', 3 )
+  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
+  addr = rf[rs] + sext(imm) - data_section
+  rf[rt] = s.mem[addr:addr+4]
+  print '>>>>>', rs, rf[rs], hex(addr), s.mem[addr:addr+4]
+  s.pc += 1
+
 #=======================================================================
 # Main Loop
 #=======================================================================
@@ -547,8 +564,8 @@ def jitpolicy(driver):
 #-----------------------------------------------------------------------
 # mainloop
 #-----------------------------------------------------------------------
-def mainloop( insts, symtable, src, sink ):
-  s = State( symtable )
+def mainloop( insts, memory, symtable, src, sink ):
+  s = State( memory, symtable )
 
   # main interpreter loop
 
@@ -579,6 +596,8 @@ def mainloop( insts, symtable, src, sink ):
       inst, fields = insts[s.pc].split( ' ', 1 )
       decode_table[inst]( s, src, sink, s.rf, fields )
 
+    print old, ']]]', inst
+
     # jit hint: can_enter_jit indicates end of an application level loop
 
     if s.pc < old:
@@ -608,14 +627,45 @@ class RegisterFile( object ):
     self.regs[idx] = value
 
 #-----------------------------------------------------------------------
+# Memory
+#-----------------------------------------------------------------------
+class Memory( object ):
+  def __init__( self ):
+    self.data = bytearray(2**10)
+
+  def __getitem__( self, idx ):
+    start_addr, num_bytes = self._parse_idx( idx )
+    value = 0
+    for i in reversed( range( num_bytes ) ):
+      value = value << 8
+      value = value | self.data[ start_addr + i ]
+    return value
+
+  def __setitem__( self, idx, value ):
+    start_addr, num_bytes = self._parse_idx( idx )
+    for i in range( num_bytes ):
+      self.data[ start_addr + i ] = value & 0xFF
+      value = value >> 8
+
+  def _parse_idx( self, idx ):
+    if isinstance( idx, slice ):
+      start_addr = idx.start
+      num_bytes  = idx.stop - idx.start
+    else:
+      start_addr = idx
+      num_bytes  = 1
+    return start_addr, num_bytes
+
+#-----------------------------------------------------------------------
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  def __init__( self, symtable ):
+  def __init__( self, memory, symtable ):
     self.src_ptr  = 0
     self.sink_ptr = 0
     self.pc       = 0
     self.rf       = RegisterFile()
+    self.mem      = memory
     self.symtable = symtable
 
 #-----------------------------------------------------------------------
@@ -628,6 +678,7 @@ MFC0    = 3
 HI_LO   = 4
 HI      = 5
 LO      = 6
+DATA    = 7
 def parse( fp ):
 
   insts    = []
@@ -636,6 +687,7 @@ def parse( fp ):
   symtable = {}
   hi       = {}
   lo       = {}
+  data     = []
 
   inst_str = ''
   src_str  = ''
@@ -658,6 +710,9 @@ def parse( fp ):
       if sink_str:
         sink.append( stoi( sink_str, base=0 ) )
         sink_str = ''
+      if temp_str:
+        data.append( temp_str )
+        temp_str = ''
       last = None
       mode = COPY
 
@@ -676,9 +731,18 @@ def parse( fp ):
       mode = COMMENT
 
     elif mode == COPY and char == '%':
+      temp_str = ''
       mode = HI_LO
 
-    elif mode == COPY and char not in [',','(',')'] \
+    elif mode == COPY and char == '.':
+      temp_str = ''
+      mode = DATA
+
+    elif mode == COPY and char == '(':
+      if last != ' ':
+        inst_str += ' '
+
+    elif mode == COPY and char not in [',',')'] \
          and not (last == char == ' '):
       inst_str += char
       last = char
@@ -688,6 +752,11 @@ def parse( fp ):
 
     elif mode == MTC0:
       sink_str += char
+
+    elif mode == DATA:
+      temp_str += char
+      if temp_str == 'data':
+        mode, temp_str = COMMENT, ''
 
     elif mode == HI_LO:
       temp_str += char
@@ -715,6 +784,21 @@ def parse( fp ):
   for label, pc in lo.items():
     insts[ pc ] += ' ' + hex( symtable[ label ] & 0xFFFF )
 
+  addr = 0
+  mem  = Memory()
+  for item in data:
+    size, value = item.split(' ', 1)
+    if   size == 'word':
+      mem[addr:addr+4] = stoi( value, base=0 )
+      addr += 4
+    elif size == 'half':
+      mem[addr:addr+2] = stoi( value, base=0 )
+      addr += 2
+    elif size == 'byte':
+      mem[addr]        = stoi( value, base=0 )
+      addr += 1
+
+  print '*'*70
   print 'Instructions'
   print '============'
   for inst in insts:
@@ -732,14 +816,16 @@ def parse( fp ):
   print '============'
   for key, value in symtable.items():
     print key, value
-  return insts, symtable, src, sink
+  print '*'*70
+
+  return insts, mem, symtable, src, sink
 
 #-----------------------------------------------------------------------
 # run
 #-----------------------------------------------------------------------
 def run(fp):
-  program, symtable, src, sink  = parse( fp )
-  mainloop( program, symtable, src, sink )
+  program, memory, symtable, src, sink  = parse( fp )
+  mainloop( program, memory, symtable, src, sink )
 
 #-----------------------------------------------------------------------
 # entry_point
