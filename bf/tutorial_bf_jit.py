@@ -1,7 +1,7 @@
 import os
 import sys
 
-from tutorial_bf_part1 import Tape, parse
+from tutorial_bf import Tape, parse
 
 #-----------------------------------------------------------------------
 # jitdriver
