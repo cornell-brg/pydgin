@@ -23,6 +23,15 @@ def sext( value ):
   return value
 
 #-----------------------------------------------------------------------
+# sext_byte
+#-----------------------------------------------------------------------
+# Sign extend 8-bit immediate fields.
+def sext_byte( value ):
+  if value & 0x80:
+    return 0xFFFFFF00 | value
+  return value
+
+#-----------------------------------------------------------------------
 # signed
 #-----------------------------------------------------------------------
 def signed( value ):
@@ -544,6 +553,50 @@ def execute_lw( s, src, sink, rf, fields ):
   rf[rt] = s.mem.read( addr, 4 )
   s.pc += 1
 
+#-----------------------------------------------------------------------
+# lh
+#-----------------------------------------------------------------------
+@register_inst
+def execute_lh( s, src, sink, rf, fields ):
+  f0, f1,  f2 = fields.split( ' ', 3 )
+  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
+  addr = rf[rs] + sext(imm) - data_section
+  rf[rt] = sext( s.mem.read( addr, 2 ) )
+  s.pc += 1
+
+#-----------------------------------------------------------------------
+# lhu
+#-----------------------------------------------------------------------
+@register_inst
+def execute_lhu( s, src, sink, rf, fields ):
+  f0, f1,  f2 = fields.split( ' ', 3 )
+  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
+  addr = rf[rs] + sext(imm) - data_section
+  rf[rt] = s.mem.read( addr, 2 )
+  s.pc += 1
+
+#-----------------------------------------------------------------------
+# lb
+#-----------------------------------------------------------------------
+@register_inst
+def execute_lb( s, src, sink, rf, fields ):
+  f0, f1,  f2 = fields.split( ' ', 3 )
+  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
+  addr = rf[rs] + sext(imm) - data_section
+  rf[rt] = sext_byte( s.mem.read( addr, 1 ) )
+  s.pc += 1
+
+#-----------------------------------------------------------------------
+# lbu
+#-----------------------------------------------------------------------
+@register_inst
+def execute_lbu( s, src, sink, rf, fields ):
+  f0, f1,  f2 = fields.split( ' ', 3 )
+  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
+  addr = rf[rs] + sext(imm) - data_section
+  rf[rt] = s.mem.read( addr, 1 )
+  s.pc += 1
+
 #=======================================================================
 # Main Loop
 #=======================================================================
@@ -777,9 +830,11 @@ def parse( fp ):
   mem  = Memory()
   for item in data:
     size, value = item.split(' ', 1)
-    if   size == 'word': num_bytes = 4
-    elif size == 'half': num_bytes = 2
-    elif size == 'byte': num_bytes = 1
+    if   size == 'word':  num_bytes = 4
+    elif size == 'half':  num_bytes = 2
+    elif size == 'hword': num_bytes = 2
+    elif size == 'byte':  num_bytes = 1
+    else: raise Exception('Unsupported memory size!')
     mem.write( addr, num_bytes, stoi( value, base=0 ) )
     addr += num_bytes
 

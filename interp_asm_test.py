@@ -41,14 +41,10 @@ import pisa.pisa_inst_bgez_test
 import pisa.pisa_inst_bgtz_test
 
 import pisa.pisa_inst_lw_test
-#import pisa.pisa_inst_lh_test
-#import pisa.pisa_inst_lhu_test
-#import pisa.pisa_inst_lb_test
+import pisa.pisa_inst_lh_test
+import pisa.pisa_inst_lhu_test
+import pisa.pisa_inst_lb_test
 import pisa.pisa_inst_lbu_test
-
-#import pisa.pisa_inst_sw_test
-#import pisa.pisa_inst_sh_test
-#import pisa.pisa_inst_sb_test
 
 cmd = './interp_asm_jit-c'
 #cmd = 'python interp_asm_jit.py'
