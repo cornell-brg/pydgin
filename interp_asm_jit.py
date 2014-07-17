@@ -597,6 +597,43 @@ def execute_lbu( s, src, sink, rf, fields ):
   rf[rt] = s.mem.read( addr, 1 )
   s.pc += 1
 
+#-----------------------------------------------------------------------
+# Store instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# sw
+#-----------------------------------------------------------------------
+@register_inst
+def execute_sw( s, src, sink, rf, fields ):
+  f0, f1,  f2 = fields.split( ' ', 3 )
+  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
+  addr = rf[rs] + sext(imm) - data_section
+  s.mem.write( addr, 4, rf[rt] )
+  s.pc += 1
+
+#-----------------------------------------------------------------------
+# sh
+#-----------------------------------------------------------------------
+@register_inst
+def execute_sh( s, src, sink, rf, fields ):
+  f0, f1,  f2 = fields.split( ' ', 3 )
+  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
+  addr = rf[rs] + sext(imm) - data_section
+  s.mem.write( addr, 2, rf[rt] )
+  s.pc += 1
+
+#-----------------------------------------------------------------------
+# sb
+#-----------------------------------------------------------------------
+@register_inst
+def execute_sb( s, src, sink, rf, fields ):
+  f0, f1,  f2 = fields.split( ' ', 3 )
+  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
+  addr = rf[rs] + sext(imm) - data_section
+  s.mem.write( addr, 1, rf[rt] )
+  s.pc += 1
+
 #=======================================================================
 # Main Loop
 #=======================================================================
