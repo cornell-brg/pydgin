@@ -541,8 +541,7 @@ def execute_lw( s, src, sink, rf, fields ):
   f0, f1,  f2 = fields.split( ' ', 3 )
   rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
   addr = rf[rs] + sext(imm) - data_section
-  rf[rt] = s.mem[addr:addr+4]
-  print '>>>>>', rs, rf[rs], hex(addr), s.mem[addr:addr+4]
+  rf[rt] = s.mem.read( addr, 4 )
   s.pc += 1
 
 #=======================================================================
@@ -631,30 +630,19 @@ class RegisterFile( object ):
 #-----------------------------------------------------------------------
 class Memory( object ):
   def __init__( self ):
-    self.data = bytearray(2**10)
+    self.data = [' ']*2**10
 
-  def __getitem__( self, idx ):
-    start_addr, num_bytes = self._parse_idx( idx )
+  def read( self, start_addr, num_bytes ):
     value = 0
-    for i in reversed( range( num_bytes ) ):
+    for i in range( num_bytes-1, -1, -1 ):
       value = value << 8
-      value = value | self.data[ start_addr + i ]
+      value = value | ord( self.data[ start_addr + i ] )
     return value
 
-  def __setitem__( self, idx, value ):
-    start_addr, num_bytes = self._parse_idx( idx )
+  def write( self, start_addr, num_bytes, value ):
     for i in range( num_bytes ):
-      self.data[ start_addr + i ] = value & 0xFF
+      self.data[ start_addr + i ] = chr(value & 0xFF)
       value = value >> 8
-
-  def _parse_idx( self, idx ):
-    if isinstance( idx, slice ):
-      start_addr = idx.start
-      num_bytes  = idx.stop - idx.start
-    else:
-      start_addr = idx
-      num_bytes  = 1
-    return start_addr, num_bytes
 
 #-----------------------------------------------------------------------
 # State
@@ -784,19 +772,16 @@ def parse( fp ):
   for label, pc in lo.items():
     insts[ pc ] += ' ' + hex( symtable[ label ] & 0xFFFF )
 
-  addr = 0
+  addr      = 0
+  num_bytes = 0
   mem  = Memory()
   for item in data:
     size, value = item.split(' ', 1)
-    if   size == 'word':
-      mem[addr:addr+4] = stoi( value, base=0 )
-      addr += 4
-    elif size == 'half':
-      mem[addr:addr+2] = stoi( value, base=0 )
-      addr += 2
-    elif size == 'byte':
-      mem[addr]        = stoi( value, base=0 )
-      addr += 1
+    if   size == 'word': num_bytes = 4
+    elif size == 'half': num_bytes = 2
+    elif size == 'byte': num_bytes = 1
+    mem.write( addr, num_bytes, stoi( value, base=0 ) )
+    addr += num_bytes
 
   print '*'*70
   print 'Instructions'
