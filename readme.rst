@@ -151,15 +151,50 @@ The the interpreter on an assembly file directly::
 Untranslatable
 ------------------------------------------------------------------------
 
-Fails:
+Fails::
   int( some_str, base=16 )
-Translates, but fails during execution:
+Translates, but fails during execution::
   int( some_str, 16 )
-Works:
+Works::
   rpython.rlib.rarithmetic.string_to_int( some_str, base=16 )
 
-Fails:
+Fails::
   line.split()
-Works:
+Works::
   line.split(' ', 3)
+
+Fails::
+  with open( filename, 'rb' ) as file_obj: ...
+Works::
+  file_obj = open( filename, 'rb )
+  file_obj.close()
+
+Fails::
+  string = string.ljust( nchars, '0' )
+Works::
+  string = '0'*( nchars - len(string) ) + string
+
+Fails::
+  my_array[start_idx:]
+Works::
+  assert start_idx >= 0
+  my_array[start_idx:]
+
+Fails::
+  assert obj.attr >= 0
+  my_array[obj.attr:]
+Works::
+  start_idx = obj.attr
+  assert start_idx >= 0
+  my_array[start_idx:]
+
+Fails::
+  section_name = start.partition('\0')[0]
+Works::
+  section_name = start.split( '\0', 1 )[0]
+
+Fails::
+  if my_str != None: do_something()
+Works::
+  if my_str != '': do_something()
 
