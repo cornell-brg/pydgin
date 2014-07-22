@@ -36,16 +36,18 @@ rewrite_code      = [
 #-----------------------------------------------------------------------
 def run( mem ):
   s  = State( Memory(mem), None, reset_addr=0x400 )
+  num_inst = 0
 
-  import struct
-  for i in range( 10 ):
-    #string = ''.join(mem[s.pc:s.pc+4])
-    #inst   = struct.unpack('<I', string)[0]
+  while s.status == 0:
 
     print'{:06x}'.format( s.pc ),
     inst = s.mem.read( s.pc, 4 )
-    print '{:08x}'.format( inst ), decode(inst)
+    print '{:08x}'.format( inst ), decode(inst), num_inst
     decode( inst )( s, inst )
+    num_inst += 1
+
+  print 'DONE! Status =', s.status
+  print 'Instructions Executed =', num_inst
 
 #-----------------------------------------------------------------------
 # load_program

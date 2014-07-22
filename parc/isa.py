@@ -135,15 +135,19 @@ def execute_mfc0( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_mtc0( s, inst ):
-  if   rd(inst) ==  1: pass
+  if   rd(inst) ==  1:
+    print 'SETTING STATUS'
+    s.status = s.rf[rt(inst)]
   elif rd(inst) ==  2:
     if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
       print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ rt(inst) ]
       raise Exception('Instruction: mtc0 failed!')
     print 'SUCCESS: s.rf[' + str( rt(inst) ) + '] == ' + str( sink[ s.sink_ptr ] )
     s.sink_ptr += 1
-  elif rd(inst) == 10: pass
-  else: raise Exception('Invalid mtc0 destination!')
+  elif rd(inst) == 10:
+    s.stats_en = s.rf[rt(inst)]
+  else:
+    raise Exception('Invalid mtc0 destination!')
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -372,7 +376,7 @@ def execute_lui( s, inst ):
 @register_inst
 def execute_beq( s, inst ):
   if s.rf[rs(inst)] == s.rf[rt(inst)]:
-    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
   else:
     s.pc += 4
 
@@ -382,7 +386,7 @@ def execute_beq( s, inst ):
 @register_inst
 def execute_bne( s, inst ):
   if s.rf[rs(inst)] != s.rf[rt(inst)]:
-    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
   else:
     s.pc += 4
 
@@ -392,7 +396,7 @@ def execute_bne( s, inst ):
 @register_inst
 def execute_blez( s, inst ):
   if signed( s.rf[rs(inst)] ) <= 0:
-    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
   else:
     s.pc += 4
 
@@ -402,7 +406,7 @@ def execute_blez( s, inst ):
 @register_inst
 def execute_bgtz( s, inst ):
   if signed( s.rf[rs(inst)] ) > 0:
-    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
   else:
     s.pc += 4
 
@@ -412,7 +416,7 @@ def execute_bgtz( s, inst ):
 @register_inst
 def execute_bltz( s, inst ):
   if signed( s.rf[rs(inst)] ) < 0:
-    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
   else:
     s.pc += 4
 
@@ -422,7 +426,7 @@ def execute_bltz( s, inst ):
 @register_inst
 def execute_bgez( s, inst ):
   if signed( s.rf[rs(inst)] ) >= 0:
-    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
   else:
     s.pc += 4
 
