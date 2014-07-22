@@ -1,7 +1,7 @@
 import py
 import re
 
-from utils import rd, rs, rt, imm, jtarg
+from utils import rd, rs, rt, imm, jtarg, shamt
 from utils import trim, trim_5, signed, sext, sext_byte
 
 #=======================================================================
@@ -74,11 +74,11 @@ encodings = [
   ['srlv',     '000000xxxxxxxxxxxxxxx00000000110'],
   ['srav',     '000000xxxxxxxxxxxxxxx00000000111'],
   ['lui',      '00111100000xxxxxxxxxxxxxxxxxxxxx'],
-  ['mul',      '011100xxxxxxxxxxxxxxx00000000010'],
-  ['div',      '100111xxxxxxxxxxxxxxx00000000101'],
-  ['divu',     '100111xxxxxxxxxxxxxxx00000000111'],
-  ['rem',      '100111xxxxxxxxxxxxxxx00000000110'],
-  ['remu',     '100111xxxxxxxxxxxxxxx00000001000'],
+  #['mul',      '011100xxxxxxxxxxxxxxx00000000010'],
+  #['div',      '100111xxxxxxxxxxxxxxx00000000101'],
+  #['divu',     '100111xxxxxxxxxxxxxxx00000000111'],
+  #['rem',      '100111xxxxxxxxxxxxxxx00000000110'],
+  #['remu',     '100111xxxxxxxxxxxxxxx00000001000'],
   ['lw',       '100011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lh',       '100001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lhu',      '100101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
@@ -123,9 +123,9 @@ def execute_nop( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_mfc0( s, inst ):
-  if   rd(inst) ==  1:
-    s.rf[ rt(inst) ] = src[ s.src_ptr ]
-    s.src_ptr += 1
+  if   rd(inst) ==  1: pass
+    #s.rf[ rt(inst) ] = src[ s.src_ptr ]
+    #s.src_ptr += 1
   elif rd(inst) == 17: pass
   else: raise Exception('Invalid mfc0 destination!')
   s.pc += 4
@@ -138,12 +138,12 @@ def execute_mtc0( s, inst ):
   if   rd(inst) ==  1:
     print 'SETTING STATUS'
     s.status = s.rf[rt(inst)]
-  elif rd(inst) ==  2:
-    if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
-      print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ rt(inst) ]
-      raise Exception('Instruction: mtc0 failed!')
-    print 'SUCCESS: s.rf[' + str( rt(inst) ) + '] == ' + str( sink[ s.sink_ptr ] )
-    s.sink_ptr += 1
+  elif rd(inst) ==  2: pass
+    #if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
+    #  print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ rt(inst) ]
+    #  raise Exception('Instruction: mtc0 failed!')
+    #print 'SUCCESS: s.rf[' + str( rt(inst) ) + '] == ' + str( sink[ s.sink_ptr ] )
+    #s.sink_ptr += 1
   elif rd(inst) == 10:
     s.stats_en = s.rf[rt(inst)]
   else:
@@ -279,7 +279,7 @@ def execute_sltiu( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_sll( s, inst ):
-  s.rf[rd(inst)] = trim( s.rf[rt(inst)] << shamt )
+  s.rf[rd(inst)] = trim( s.rf[rt(inst)] << shamt(inst) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -287,7 +287,7 @@ def execute_sll( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_srl( s, inst ):
-  s.rf[rd(inst)] = s.rf[rt(inst)] >> shamt
+  s.rf[rd(inst)] = s.rf[rt(inst)] >> shamt(inst)
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -295,7 +295,7 @@ def execute_srl( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_sra( s, inst ):
-  s.rf[rd(inst)] = trim( signed( s.rf[rt(inst)] ) >> shamt )
+  s.rf[rd(inst)] = trim( signed( s.rf[rt(inst)] ) >> shamt(inst) )
   s.pc += 4
 
 #-----------------------------------------------------------------------

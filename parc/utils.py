@@ -118,3 +118,6 @@ def imm( inst ):
 
 def jtarg( inst ):
   return inst & 0x3FFFFFF
+
+def shamt( inst ):
+  return (inst >> 6) & 0x1F

@@ -40,9 +40,9 @@ def run( mem ):
 
   while s.status == 0:
 
-    print'{:06x}'.format( s.pc ),
+    #print'{:06x}'.format( s.pc ),
     inst = s.mem.read( s.pc, 4 )
-    print '{:08x}'.format( inst ), decode(inst), num_inst
+    #print '{:08x}'.format( inst ), decode(inst), num_inst
     decode( inst )( s, inst )
     num_inst += 1
 
