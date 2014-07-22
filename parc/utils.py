@@ -64,8 +64,11 @@ class RegisterFile( object ):
 # Memory
 #-----------------------------------------------------------------------
 class Memory( object ):
-  def __init__( self ):
-    self.data = [' ']*2**10
+  def __init__( self, data=None ):
+    if not data:
+      self.data = [' ']*2**10
+    else:
+      self.data = data
 
   def read( self, start_addr, num_bytes ):
     value = 0
@@ -90,3 +93,21 @@ class State( object ):
     self.rf       = RegisterFile()
     self.mem      = memory
     self.symtable = symtable
+
+#-----------------------------------------------------------------------
+# Instruction Fields
+#-----------------------------------------------------------------------
+def rd( inst ):
+  return (inst >> 10) & 0x1F
+
+def rs( inst ):
+  return (inst >> 15) & 0x1F
+
+def rt( inst ):
+  return (inst >> 20) & 0x1F
+
+def imm( inst ):
+  return inst & 0xFFFF
+
+def jtarg( inst ):
+  return inst & 0x3FFFFFF

@@ -1,6 +1,9 @@
 import py
 import re
 
+from utils import rd, rs, rt, imm, jtarg
+from utils import trim, trim_5, signed, sext, sext_byte
+
 #=======================================================================
 # Register Definitions
 #=======================================================================
@@ -112,40 +115,36 @@ def register_inst( func ): return func
 # nop
 #-----------------------------------------------------------------------
 @register_inst
-def execute_nop( s, src, sink, rf, fields ):
-  s.pc += 1
+def execute_nop( s, inst ):
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # mfc0
 #-----------------------------------------------------------------------
 @register_inst
-def execute_mfc0( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 1 )
-  rt, rd = reg_map[ f0 ], reg_map[ f1 ]
-  if   rd ==  1:
-    rf[ rt ] = src[ s.src_ptr ]
+def execute_mfc0( s, inst ):
+  if   rd(inst) ==  1:
+    s.rf[ rt(inst) ] = src[ s.src_ptr ]
     s.src_ptr += 1
-  elif rd == 17: pass
+  elif rd(inst) == 17: pass
   else: raise Exception('Invalid mfc0 destination!')
-  s.pc += 1
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # mtc0
 #-----------------------------------------------------------------------
 @register_inst
-def execute_mtc0( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 1 )
-  rt, rd = reg_map[ f0 ], reg_map[ f1 ]
-  if   rd ==  1: pass
-  elif rd ==  2:
-    if sink[ s.sink_ptr ] != rf[ rt ]:
-      print 'sink:', sink[ s.sink_ptr ], 'rf:', rf[ rt ]
+def execute_mtc0( s, inst ):
+  if   rd(inst) ==  1: pass
+  elif rd(inst) ==  2:
+    if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
+      print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ rt(inst) ]
       raise Exception('Instruction: mtc0 failed!')
-    print 'SUCCESS: rf[' + str( rt ) + '] == ' + str( sink[ s.sink_ptr ] )
+    print 'SUCCESS: s.rf[' + str( rt(inst) ) + '] == ' + str( sink[ s.sink_ptr ] )
     s.sink_ptr += 1
-  elif rd == 10: pass
+  elif rd(inst) == 10: pass
   else: raise Exception('Invalid mtc0 destination!')
-  s.pc += 1
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # Register-register arithmetic, logical, and comparison instructions
@@ -155,155 +154,117 @@ def execute_mtc0( s, src, sink, rf, fields ):
 # addu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_addu( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-  rf[ rd ] = trim( rf[ rs ] + rf[ rt ] )
-  s.pc += 1
-
-#-----------------------------------------------------------------------
-# print
-#-----------------------------------------------------------------------
-@register_inst
-def execute_print( s, src, sink, rf, fields ):
-  rt = reg_map[ fields ]
-  result = fields + ' = ' + str( rf[rt] )
-  print result
-  s.pc += 1
+def execute_addu( s, inst ):
+  s.rf[ rd(inst) ] = trim( s.rf[ rs(inst) ] + s.rf[ rt(inst) ] )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # subu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_subu( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-  rf[rd] = trim( rf[rs] - rf[rt] )
-  s.pc += 1
+def execute_subu( s, inst ):
+  s.rf[rd(inst)] = trim( s.rf[rs(inst)] - s.rf[rt(inst)] )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # and
 #-----------------------------------------------------------------------
 @register_inst
-def execute_and( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-  rf[rd] = rf[rs] & rf[rt]
-  s.pc += 1
+def execute_and( s, inst ):
+  s.rf[rd(inst)] = s.rf[rs(inst)] & s.rf[rt(inst)]
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # or
 #-----------------------------------------------------------------------
 @register_inst
-def execute_or( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-  rf[rd] = rf[rs] | rf[rt]
-  s.pc += 1
+def execute_or( s, inst ):
+  s.rf[rd(inst)] = s.rf[rs(inst)] | s.rf[rt(inst)]
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # xor
 #-----------------------------------------------------------------------
 @register_inst
-def execute_xor( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-  rf[rd] = rf[rs] ^ rf[rt]
-  s.pc += 1
+def execute_xor( s, inst ):
+  s.rf[rd(inst)] = s.rf[rs(inst)] ^ s.rf[rt(inst)]
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # nor
 #-----------------------------------------------------------------------
 @register_inst
-def execute_nor( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-  rf[rd] = trim( ~(rf[rs] | rf[rt]) )
-  s.pc += 1
+def execute_nor( s, inst ):
+  s.rf[rd(inst)] = trim( ~(s.rf[rs(inst)] | s.rf[rt(inst)]) )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # slt
 #-----------------------------------------------------------------------
 @register_inst
-def execute_slt( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-  rf[rd] = signed( rf[rs] ) < signed( rf[rt] )
-  s.pc += 1
+def execute_slt( s, inst ):
+  s.rf[rd(inst)] = signed( s.rf[rs(inst)] ) < signed( s.rf[rt(inst)] )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # sltu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sltu( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rs, rt  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-  rf[rd] = rf[rs] < rf[rt]
-  s.pc += 1
+def execute_sltu( s, inst ):
+  s.rf[rd(inst)] = s.rf[rs(inst)] < s.rf[rt(inst)]
+  s.pc += 4
 
 #-----------------------------------------------------------------------
-# Register-immediate arithmetic, logical, and comparison instructions
+# Register-imm(inst)ediate arithmetic, logical, and comparison instructions
 #-----------------------------------------------------------------------
 
 #-----------------------------------------------------------------------
 # addiu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_addiu( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[ rt ] = trim( rf[ rs ] + sext( imm ) )
-  s.pc += 1
+def execute_addiu( s, inst ):
+  s.rf[ rt(inst) ] = trim( s.rf[ rs(inst) ] + sext( imm(inst) ) )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # andi
 #-----------------------------------------------------------------------
 @register_inst
-def execute_andi( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rt] = rf[rs] & imm
-  s.pc += 1
+def execute_andi( s, inst ):
+  s.rf[rt(inst)] = s.rf[rs(inst)] & imm(inst)
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # ori
 #-----------------------------------------------------------------------
 @register_inst
-def execute_ori( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rt] = rf[rs] | imm
-  s.pc += 1
+def execute_ori( s, inst ):
+  s.rf[rt(inst)] = s.rf[rs(inst)] | imm(inst)
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # xori
 #-----------------------------------------------------------------------
 @register_inst
-def execute_xori( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rt] = rf[rs] ^ imm
-  s.pc += 1
+def execute_xori( s, inst ):
+  s.rf[rt(inst)] = s.rf[rs(inst)] ^ imm(inst)
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # slti
 #-----------------------------------------------------------------------
 @register_inst
-def execute_slti( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rt] = signed( rf[rs] ) < signed( sext(imm) )
-  s.pc += 1
+def execute_slti( s, inst ):
+  s.rf[rt(inst)] = signed( s.rf[rs(inst)] ) < signed( sext(imm(inst)) )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # sltiu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sltiu( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rt, rs, imm = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rt] = rf[rs] < sext(imm)
-  s.pc += 1
+def execute_sltiu( s, inst ):
+  s.rf[rt(inst)] = s.rf[rs(inst)] < sext(imm(inst))
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # Shift instructions
@@ -313,62 +274,50 @@ def execute_sltiu( s, src, sink, rf, fields ):
 # sll
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sll( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rt, shamt = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rd] = trim( rf[rt] << shamt )
-  s.pc += 1
+def execute_sll( s, inst ):
+  s.rf[rd(inst)] = trim( s.rf[rt(inst)] << shamt )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # srl
 #-----------------------------------------------------------------------
 @register_inst
-def execute_srl( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rt, shamt = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rd] = rf[rt] >> shamt
-  s.pc += 1
+def execute_srl( s, inst ):
+  s.rf[rd(inst)] = s.rf[rt(inst)] >> shamt
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # sra
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sra( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rt, shamt = reg_map[ f0 ], reg_map[ f1 ], stoi( f2, base=0 )
-  rf[rd] = trim( signed( rf[rt] ) >> shamt )
-  s.pc += 1
+def execute_sra( s, inst ):
+  s.rf[rd(inst)] = trim( signed( s.rf[rt(inst)] ) >> shamt )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # sllv
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sllv( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rt, rs  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-  rf[rd] = trim( rf[rt] << trim_5( rf[rs] ) )
-  s.pc += 1
+def execute_sllv( s, inst ):
+  s.rf[rd(inst)] = trim( s.rf[rt(inst)] << trim_5( s.rf[rs(inst)] ) )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # srlv
 #-----------------------------------------------------------------------
 @register_inst
-def execute_srlv( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rt, rs  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
-  rf[rd] = rf[rt] >> trim_5( rf[rs] )
-  s.pc += 1
+def execute_srlv( s, inst ):
+  s.rf[rd(inst)] = s.rf[rt(inst)] >> trim_5( s.rf[rs(inst)] )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # srav
 #-----------------------------------------------------------------------
 @register_inst
-def execute_srav( s, src, sink, rf, fields ):
-  f0, f1, f2 = fields.split( ' ', 3 )
-  rd, rt, rs  = reg_map[ f0 ], reg_map[ f1 ], reg_map[ f2 ]
+def execute_srav( s, inst ):
   # TODO: should it really be masked like this?
-  rf[rd] = trim( signed( rf[rt] ) >> trim_5( rf[rs] ) )
-  s.pc += 1
+  s.rf[rd(inst)] = trim( signed( s.rf[rt(inst)] ) >> trim_5( s.rf[rs(inst)] ) )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # Unconditional jump instructions
@@ -378,55 +327,39 @@ def execute_srav( s, src, sink, rf, fields ):
 # j
 #-----------------------------------------------------------------------
 @register_inst
-def execute_j( s, src, sink, rf, fields ):
-  if fields in s.symtable: jtarg = s.symtable[ fields ]
-  else:                    jtarg = stoi( fields, base=0 )
-  #s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg << 2)
-  # TODO: HACKY
-  s.pc = ((s.pc + 1) & 0xF0000000) | jtarg
+def execute_j( s, inst ):
+  s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg(inst) << 2)
 
 #-----------------------------------------------------------------------
 # jal
 #-----------------------------------------------------------------------
 @register_inst
-def execute_jal( s, src, sink, rf, fields ):
-  if fields in s.symtable: jtarg = s.symtable[ fields ]
-  else:                    jtarg = stoi( fields, base=0 )
-  #rf[31] = s.pc + 4
-  #s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg << 2)
-  # TODO: HACKY
-  rf[31] = 4*(s.pc + 1) + reset_vector
-  s.pc   = ( (s.pc + 1) & 0xF0000000) | jtarg
+def execute_jal( s, inst ):
+  s.rf[31] = s.pc + 4
+  s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg(inst) << 2)
 
 #-----------------------------------------------------------------------
 # jr
 #-----------------------------------------------------------------------
 @register_inst
-def execute_jr( s, src, sink, rf, fields ):
-  rs   = reg_map[ fields ]
-  s.pc = rf[rs]
+def execute_jr( s, inst ):
+  s.pc = s.rf[rs(inst)]
 
 #-----------------------------------------------------------------------
 # jalr
 #-----------------------------------------------------------------------
 @register_inst
-def execute_jalr( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 2 )
-  rd, rs = reg_map[ f0 ], reg_map[ f1 ]
-  #rf[rd] = s.pc + 4
-  # TODO: HACKY
-  rf[rd] = 4*(s.pc + 1) + reset_vector
-  s.pc   = rf[rs]
+def execute_jalr( s, inst ):
+  s.rf[rd(inst)] = s.pc + 4
+  s.pc   = s.rf[rs(inst)]
 
 #-----------------------------------------------------------------------
 # lui
 #-----------------------------------------------------------------------
 @register_inst
-def execute_lui( s, src, sink, rf, fields ):
-  f0, f1  = fields.split( ' ', 2 )
-  rt, imm = reg_map[ f0 ], stoi( f1, base=0 )
-  rf[rt] = imm << 16
-  s.pc += 1
+def execute_lui( s, inst ):
+  s.rf[ rt(inst) ] = imm(inst) << 16
+  s.pc += 4
 
 
 #-----------------------------------------------------------------------
@@ -437,103 +370,61 @@ def execute_lui( s, src, sink, rf, fields ):
 # beq
 #-----------------------------------------------------------------------
 @register_inst
-def execute_beq( s, src, sink, rf, fields ):
-  f0, f1, f2  = fields.split( ' ', 3 )
-  rt, rs      = reg_map[ f0 ], reg_map[ f1 ]
-  if f2 in s.symtable: imm = s.symtable[ f2 ]
-  else:                imm = stoi( f2, base=0 )
-
-  # TODO: assuming label is absolute, not offset!
-  if rf[rs] == rf[rt]:
-    s.pc  = imm
-    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+def execute_beq( s, inst ):
+  if s.rf[rs(inst)] == s.rf[rt(inst)]:
+    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
   else:
-    s.pc += 1
+    s.pc += 4
 
 #-----------------------------------------------------------------------
 # bne
 #-----------------------------------------------------------------------
 @register_inst
-def execute_bne( s, src, sink, rf, fields ):
-  f0, f1, f2  = fields.split( ' ', 3 )
-  rt, rs      = reg_map[ f0 ], reg_map[ f1 ]
-  if f2 in s.symtable: imm = s.symtable[ f2 ]
-  else:                imm = stoi( f2, base=0 )
-
-  # TODO: assuming label is absolute, not offset!
-  if rf[rs] != rf[rt]:
-    s.pc  = imm
-    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+def execute_bne( s, inst ):
+  if s.rf[rs(inst)] != s.rf[rt(inst)]:
+    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
   else:
-    s.pc += 1
+    s.pc += 4
 
 #-----------------------------------------------------------------------
 # blez
 #-----------------------------------------------------------------------
 @register_inst
-def execute_blez( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 2 )
-  rs     = reg_map[ f0 ]
-  if f1 in s.symtable: imm = s.symtable[ f1 ]
-  else:                imm = stoi( f1, base=0 )
-
-  # TODO: assuming label is absolute, not offset!
-  if signed( rf[rs] ) <= 0:
-    s.pc  = imm
-    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+def execute_blez( s, inst ):
+  if signed( s.rf[rs(inst)] ) <= 0:
+    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
   else:
-    s.pc += 1
+    s.pc += 4
 
 #-----------------------------------------------------------------------
 # bgtz
 #-----------------------------------------------------------------------
 @register_inst
-def execute_bgtz( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 2 )
-  rs     = reg_map[ f0 ]
-  if f1 in s.symtable: imm = s.symtable[ f1 ]
-  else:                imm = stoi( f1, base=0 )
-
-  # TODO: assuming label is absolute, not offset!
-  if signed( rf[rs] ) > 0:
-    s.pc  = imm
-    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+def execute_bgtz( s, inst ):
+  if signed( s.rf[rs(inst)] ) > 0:
+    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
   else:
-    s.pc += 1
+    s.pc += 4
 
 #-----------------------------------------------------------------------
 # bltz
 #-----------------------------------------------------------------------
 @register_inst
-def execute_bltz( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 2 )
-  rs     = reg_map[ f0 ]
-  if f1 in s.symtable: imm = s.symtable[ f1 ]
-  else:                imm = stoi( f1, base=0 )
-
-  # TODO: assuming label is absolute, not offset!
-  if signed( rf[rs] ) < 0:
-    s.pc  = imm
-    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+def execute_bltz( s, inst ):
+  if signed( s.rf[rs(inst)] ) < 0:
+    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
   else:
-    s.pc += 1
+    s.pc += 4
 
 #-----------------------------------------------------------------------
 # bgez
 #-----------------------------------------------------------------------
 @register_inst
-def execute_bgez( s, src, sink, rf, fields ):
-  f0, f1 = fields.split( ' ', 2 )
-  rs     = reg_map[ f0 ]
-  if f1 in s.symtable: imm = s.symtable[ f1 ]
-  else:                imm = stoi( f1, base=0 )
-
-  # TODO: assuming label is absolute, not offset!
-  if signed( rf[rs] ) >= 0:
-    s.pc  = imm
-    #s.pc  = (s.pc + 1 + sext(imm)) << 2
+def execute_bgez( s, inst ):
+  if signed( s.rf[rs(inst)] ) >= 0:
+    s.pc  = s.pc + 4 + (sext(imm(inst)) << 2)
   else:
-    s.pc += 1
+    s.pc += 4
 
 #-----------------------------------------------------------------------
 # Load instructions
@@ -543,56 +434,46 @@ def execute_bgez( s, src, sink, rf, fields ):
 # lw
 #-----------------------------------------------------------------------
 @register_inst
-def execute_lw( s, src, sink, rf, fields ):
-  f0, f1,  f2 = fields.split( ' ', 3 )
-  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
-  addr = rf[rs] + sext(imm) - data_section
-  rf[rt] = s.mem.read( addr, 4 )
-  s.pc += 1
+def execute_lw( s, inst ):
+  addr = s.rf[rs(inst)] + sext(imm(inst))
+  s.rf[rt(inst)] = s.mem.read( addr, 4 )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # lh
 #-----------------------------------------------------------------------
 @register_inst
-def execute_lh( s, src, sink, rf, fields ):
-  f0, f1,  f2 = fields.split( ' ', 3 )
-  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
-  addr = rf[rs] + sext(imm) - data_section
-  rf[rt] = sext( s.mem.read( addr, 2 ) )
-  s.pc += 1
+def execute_lh( s, inst ):
+  addr = s.rf[rs(inst)] + sext(imm(inst))
+  s.rf[rt(inst)] = sext( s.mem.read( addr, 2 ) )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # lhu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_lhu( s, src, sink, rf, fields ):
-  f0, f1,  f2 = fields.split( ' ', 3 )
-  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
-  addr = rf[rs] + sext(imm) - data_section
-  rf[rt] = s.mem.read( addr, 2 )
-  s.pc += 1
+def execute_lhu( s, inst ):
+  addr = s.rf[rs(inst)] + sext(imm(inst))
+  s.rf[rt(inst)] = s.mem.read( addr, 2 )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # lb
 #-----------------------------------------------------------------------
 @register_inst
-def execute_lb( s, src, sink, rf, fields ):
-  f0, f1,  f2 = fields.split( ' ', 3 )
-  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
-  addr = rf[rs] + sext(imm) - data_section
-  rf[rt] = sext_byte( s.mem.read( addr, 1 ) )
-  s.pc += 1
+def execute_lb( s, inst ):
+  addr = s.rf[rs(inst)] + sext(imm(inst))
+  s.rf[rt(inst)] = sext_byte( s.mem.read( addr, 1 ) )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # lbu
 #-----------------------------------------------------------------------
 @register_inst
-def execute_lbu( s, src, sink, rf, fields ):
-  f0, f1,  f2 = fields.split( ' ', 3 )
-  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
-  addr = rf[rs] + sext(imm) - data_section
-  rf[rt] = s.mem.read( addr, 1 )
-  s.pc += 1
+def execute_lbu( s, inst ):
+  addr = s.rf[rs(inst)] + sext(imm(inst))
+  s.rf[rt(inst)] = s.mem.read( addr, 1 )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # Store instructions
@@ -602,96 +483,90 @@ def execute_lbu( s, src, sink, rf, fields ):
 # sw
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sw( s, src, sink, rf, fields ):
-  f0, f1,  f2 = fields.split( ' ', 3 )
-  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
-  addr = rf[rs] + sext(imm) - data_section
-  s.mem.write( addr, 4, rf[rt] )
-  s.pc += 1
+def execute_sw( s, inst ):
+  addr = s.rf[rs(inst)] + sext(imm(inst))
+  s.mem.write( addr, 4, s.rf[rt(inst)] )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # sh
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sh( s, src, sink, rf, fields ):
-  f0, f1,  f2 = fields.split( ' ', 3 )
-  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
-  addr = rf[rs] + sext(imm) - data_section
-  s.mem.write( addr, 2, rf[rt] )
-  s.pc += 1
+def execute_sh( s, inst ):
+  addr = s.rf[rs(inst)] + sext(imm(inst))
+  s.mem.write( addr, 2, s.rf[rt(inst)] )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # sb
 #-----------------------------------------------------------------------
 @register_inst
-def execute_sb( s, src, sink, rf, fields ):
-  f0, f1,  f2 = fields.split( ' ', 3 )
-  rt, imm, rs = reg_map[ f0 ], stoi( f1, base=0 ), reg_map[ f2 ]
-  addr = rf[rs] + sext(imm) - data_section
-  s.mem.write( addr, 1, rf[rt] )
-  s.pc += 1
+def execute_sb( s, inst ):
+  addr = s.rf[rs(inst)] + sext(imm(inst))
+  s.mem.write( addr, 1, s.rf[rt(inst)] )
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # TEMPORARY
 #-----------------------------------------------------------------------
-masks = [
-['mfc0',  0xffe007ff, 0x40000000 ],
-['mtc0',  0xffe007ff, 0x40800000 ],
-['addu',  0xfc0007ff, 0x00000021 ],
-['subu',  0xfc0007ff, 0x00000023 ],
-['and',   0xfc0007ff, 0x00000024 ],
-['or',    0xfc0007ff, 0x00000025 ],
-['xor',   0xfc0007ff, 0x00000026 ],
-['nor',   0xfc0007ff, 0x00000027 ],
-['slt',   0xfc0007ff, 0x0000002a ],
-['sltu',  0xfc0007ff, 0x0000002b ],
-['addiu', 0xfc000000, 0x24000000 ],
-['andi',  0xfc000000, 0x30000000 ],
-['ori',   0xfc000000, 0x34000000 ],
-['xori',  0xfc000000, 0x38000000 ],
-['slti',  0xfc000000, 0x28000000 ],
-['sltiu', 0xfc000000, 0x2c000000 ],
-['sll',   0xffe0003f, 0x00000000 ],
-['srl',   0xffe0003f, 0x00000002 ],
-['sra',   0xffe0003f, 0x00000003 ],
-['sllv',  0xfc0007ff, 0x00000004 ],
-['srlv',  0xfc0007ff, 0x00000006 ],
-['srav',  0xfc0007ff, 0x00000007 ],
-['lui',   0xffe00000, 0x3c000000 ],
-['mul',   0xfc0007ff, 0x70000002 ],
-['div',   0xfc0007ff, 0x9c000005 ],
-['divu',  0xfc0007ff, 0x9c000007 ],
-['rem',   0xfc0007ff, 0x9c000006 ],
-['remu',  0xfc0007ff, 0x9c000008 ],
-['lw',    0xfc000000, 0x8c000000 ],
-['lh',    0xfc000000, 0x84000000 ],
-['lhu',   0xfc000000, 0x94000000 ],
-['lb',    0xfc000000, 0x80000000 ],
-['lbu',   0xfc000000, 0x90000000 ],
-['sw',    0xfc000000, 0xac000000 ],
-['sh',    0xfc000000, 0xa4000000 ],
-['sb',    0xfc000000, 0xa0000000 ],
-['j',     0xfc000000, 0x08000000 ],
-['jal',   0xfc000000, 0x0c000000 ],
-['jr',    0xfc1fffff, 0x00000008 ],
-['jalr',  0xfc1f07ff, 0x00000009 ],
-['beq',   0xfc000000, 0x10000000 ],
-['bne',   0xfc000000, 0x14000000 ],
-['blez',  0xfc1f0000, 0x18000000 ],
-['bgtz',  0xfc1f0000, 0x1c000000 ],
-['bltz',  0xfc1f0000, 0x04000000 ],
-['bgez',  0xfc1f0000, 0x04010000 ],
-['mtc2',  0xffe007ff, 0x48800000 ],
-]
-
-for inst, m, x in masks:
-  mstr = '{:032b}'.format(m)
-  xstr = '{:032b}'.format(x)
-  out  = ''
-  for mbit, xbit in zip( mstr, xstr ):
-    if   mbit == '0': out += 'x'
-    else:             out += xbit
-  print '{:8} {}'.format( inst, out )
+#masks = [
+#['mfc0',  0xffe007ff, 0x40000000 ],
+#['mtc0',  0xffe007ff, 0x40800000 ],
+#['addu',  0xfc0007ff, 0x00000021 ],
+#['subu',  0xfc0007ff, 0x00000023 ],
+#['and',   0xfc0007ff, 0x00000024 ],
+#['or',    0xfc0007ff, 0x00000025 ],
+#['xor',   0xfc0007ff, 0x00000026 ],
+#['nor',   0xfc0007ff, 0x00000027 ],
+#['slt',   0xfc0007ff, 0x0000002a ],
+#['sltu',  0xfc0007ff, 0x0000002b ],
+#['addiu', 0xfc000000, 0x24000000 ],
+#['andi',  0xfc000000, 0x30000000 ],
+#['ori',   0xfc000000, 0x34000000 ],
+#['xori',  0xfc000000, 0x38000000 ],
+#['slti',  0xfc000000, 0x28000000 ],
+#['sltiu', 0xfc000000, 0x2c000000 ],
+#['sll',   0xffe0003f, 0x00000000 ],
+#['srl',   0xffe0003f, 0x00000002 ],
+#['sra',   0xffe0003f, 0x00000003 ],
+#['sllv',  0xfc0007ff, 0x00000004 ],
+#['srlv',  0xfc0007ff, 0x00000006 ],
+#['srav',  0xfc0007ff, 0x00000007 ],
+#['lui',   0xffe00000, 0x3c000000 ],
+#['mul',   0xfc0007ff, 0x70000002 ],
+#['div',   0xfc0007ff, 0x9c000005 ],
+#['divu',  0xfc0007ff, 0x9c000007 ],
+#['rem',   0xfc0007ff, 0x9c000006 ],
+#['remu',  0xfc0007ff, 0x9c000008 ],
+#['lw',    0xfc000000, 0x8c000000 ],
+#['lh',    0xfc000000, 0x84000000 ],
+#['lhu',   0xfc000000, 0x94000000 ],
+#['lb',    0xfc000000, 0x80000000 ],
+#['lbu',   0xfc000000, 0x90000000 ],
+#['sw',    0xfc000000, 0xac000000 ],
+#['sh',    0xfc000000, 0xa4000000 ],
+#['sb',    0xfc000000, 0xa0000000 ],
+#['j',     0xfc000000, 0x08000000 ],
+#['jal',   0xfc000000, 0x0c000000 ],
+#['jr',    0xfc1fffff, 0x00000008 ],
+#['jalr',  0xfc1f07ff, 0x00000009 ],
+#['beq',   0xfc000000, 0x10000000 ],
+#['bne',   0xfc000000, 0x14000000 ],
+#['blez',  0xfc1f0000, 0x18000000 ],
+#['bgtz',  0xfc1f0000, 0x1c000000 ],
+#['bltz',  0xfc1f0000, 0x04000000 ],
+#['bgez',  0xfc1f0000, 0x04010000 ],
+#['mtc2',  0xffe007ff, 0x48800000 ],
+#]
+#
+#for inst, m, x in masks:
+#  mstr = '{:032b}'.format(m)
+#  xstr = '{:032b}'.format(x)
+#  out  = ''
+#  for mbit, xbit in zip( mstr, xstr ):
+#    if   mbit == '0': out += 'x'
+#    else:             out += xbit
+#  print '{:8} {}'.format( inst, out )
 
 #-----------------------------------------------------------------------
 # Create Decode Table
@@ -747,7 +622,7 @@ def normalize_fields( bit_fields ):
 
 decoder = ''
 for i, inst in enumerate( bit_fields ):
-  print i, encodings[i][0], inst
+  #print i, encodings[i][0], inst
   bit = 0
   conditions = []
   for field in reversed( inst ):
@@ -765,10 +640,7 @@ source = py.code.Source('''
 def decode( inst ):
   {decoder_tree}
 '''.format( decoder_tree = decoder ))
-print source
+#print source
 exec source.compile() in globals()
-
-print decode( 0b01000000100000000000000000000000 )
-
 
 

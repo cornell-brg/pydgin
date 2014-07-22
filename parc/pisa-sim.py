@@ -10,32 +10,42 @@ import os
 import elf
 
 from   isa              import decode
-from   utils            import State
+from   utils            import State, Memory
 from   rpython.rlib.jit import JitDriver
 
 #-----------------------------------------------------------------------
 # bootstrap code
 #-----------------------------------------------------------------------
+# TODO: HACKY! We are rewriting the binary here, should really fix the
+#       compiler instead!
 
 bootstrap_addr = 0x400
 bootstrap_code = [
-  0x3c, 0x1d, 0x00, 0x07,   # lui r29, 0x0007
-  0x34, 0x1d, 0xff, 0xfc,   # ori r29, r0, 0xfff
-  0x08, 0x00, 0x04, 0x00,   # j   0x1000
+  0x07, 0x00, 0x1d, 0x3c,   # lui r29, 0x0007
+  0xfc, 0xff, 0x1d, 0x34,   # ori r29, r0, 0xfff
+  0x00, 0x04, 0x00, 0x08,   # j   0x1000
+]
+
+rewrite_addr      = 0x1008
+rewrite_code      = [
+  0x08, 0x04, 0x00, 0x08,   # j   0x1020
 ]
 
 #-----------------------------------------------------------------------
-# execute
+# run
 #-----------------------------------------------------------------------
-def execute( mem ):
-  s  = State( mem, None, reset_addr=0x400 )
+def run( mem ):
+  s  = State( Memory(mem), None, reset_addr=0x400 )
 
   import struct
   for i in range( 10 ):
-    string = ''.join(mem[s.pc:s.pc+4])
-    bin_   = struct.unpack('>I', string)
-    print s.pc, '{:08x}'.format((bin_[0]))
-    print decode( bin_[0] )
+    #string = ''.join(mem[s.pc:s.pc+4])
+    #inst   = struct.unpack('<I', string)[0]
+
+    print'{:06x}'.format( s.pc ),
+    inst = s.mem.read( s.pc, 4 )
+    print '{:08x}'.format( inst ), decode(inst)
+    decode( inst )( s, inst )
 
 #-----------------------------------------------------------------------
 # load_program
@@ -48,7 +58,6 @@ def load_program( fp ):
 
   for section in sections:
     start_addr = section.addr
-    print section.name, start_addr
     for i, data in enumerate( section.data ):
       mem[start_addr+i] = data
 
@@ -64,10 +73,19 @@ def entry_point( argv ):
     print "You must supply a filename"
     return 1
 
+  # Load the program
   mem = load_program( open( filename, 'rb' ) )
+
+  # Inject bootstrap code
   for i, data in enumerate( bootstrap_code ):
     mem[ bootstrap_addr + i ] = chr( data )
-  execute( mem )
+
+  # Rewrite jump address
+  for i, data in enumerate( rewrite_code ):
+    mem[ rewrite_addr + i ] = chr( data )
+
+  # Execute program
+  run( mem )
 
   return 0
 
