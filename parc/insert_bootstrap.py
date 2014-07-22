@@ -37,6 +37,11 @@ bootstrap_mem_image = pisa_encoding.assemble( bootstrap_asm )
 bootstrap_bytes = bootstrap_mem_image.get_section(".text").data
 mem_image.add_section( ".bootstrap", 0x400, bootstrap_bytes )
 
+import struct
+print len( bootstrap_bytes  )
+for i in [0, 4, 8]:
+  print '{:08x}'.format( struct.unpack('<I', bootstrap_bytes[i:i+4])[0] )
+
 # Apparently we also need to binary rewrite the jump at 0x1008. This is
 # super hacky for now -- this relies on the fact that the binrewrite
 # section will be loaded _after_ the primary .text section so that we
@@ -49,6 +54,9 @@ binrewrite_asm = """
 binrewrite_mem_image = pisa_encoding.assemble( binrewrite_asm )
 binrewrite_bytes = binrewrite_mem_image.get_section(".text").data
 mem_image.add_section( ".binrewrite", 0x1008, binrewrite_bytes )
+
+print '... {:08x}'.format( struct.unpack('<I', binrewrite_bytes[0:4])[0] )
+raise Exception()
 
 # Write the elf file back
 
