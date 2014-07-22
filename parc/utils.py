@@ -58,7 +58,12 @@ class RegisterFile( object ):
   def __getitem__( self, idx ):
     return self.regs[idx]
   def __setitem__( self, idx, value ):
-    self.regs[idx] = value
+    if idx == 3:
+      print 'WRITING TO r3', hex(value)
+    if idx == 14:
+      print 'WRITING TO r14', hex(value)
+    if idx != 0:
+      self.regs[idx] = value
 
 #-----------------------------------------------------------------------
 # Memory
@@ -93,18 +98,20 @@ class State( object ):
     self.rf       = RegisterFile()
     self.mem      = memory
     self.symtable = symtable
+    self.status   = 0
+    self.stat_en  = 0
 
 #-----------------------------------------------------------------------
 # Instruction Fields
 #-----------------------------------------------------------------------
 def rd( inst ):
-  return (inst >> 10) & 0x1F
-
-def rs( inst ):
-  return (inst >> 15) & 0x1F
+  return (inst >> 11) & 0x1F
 
 def rt( inst ):
-  return (inst >> 20) & 0x1F
+  return (inst >> 16) & 0x1F
+
+def rs( inst ):
+  return (inst >> 21) & 0x1F
 
 def imm( inst ):
   return inst & 0xFFFF
