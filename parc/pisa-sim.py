@@ -14,6 +14,18 @@ from   utils            import State, Memory
 from   rpython.rlib.jit import JitDriver
 
 #-----------------------------------------------------------------------
+# jit
+#-----------------------------------------------------------------------
+
+jitdriver = JitDriver( greens =['pc'],
+                       reds   =['num_inst','state'],
+                     )
+
+def jitpolicy(driver):
+  from rpython.jit.codewriter.policy import JitPolicy
+  return JitPolicy()
+
+#-----------------------------------------------------------------------
 # bootstrap code
 #-----------------------------------------------------------------------
 # TODO: HACKY! We are rewriting the binary here, should really fix the
@@ -39,6 +51,12 @@ def run( mem ):
   num_inst = 0
 
   while s.status == 0:
+
+    jitdriver.jit_merge_point(
+        pc       = s.pc,
+        num_inst = num_inst,
+        state    = s,
+    )
 
     #print'{:06x}'.format( s.pc ),
     inst = s.mem.read( s.pc, 4 )
