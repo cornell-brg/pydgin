@@ -9,17 +9,33 @@ sys.path.append('/Users/dmlockhart/vc/hg-opensource/pypy')
 import os
 import elf
 
+from   isa              import decode
+from   utils            import State
 from   rpython.rlib.jit import JitDriver
 
 #-----------------------------------------------------------------------
-# run
+# bootstrap code
 #-----------------------------------------------------------------------
-#def run( fp ):
-#  #program, memory, symtable, src, sink  = parse( fp )
-#  #mainloop( program, memory, symtable, src, sink )
-#
-#  with open(source_elf,'rb') as file_obj:
-#    mem_image = elf.elf_reader( file_obj )
+
+bootstrap_addr = 0x400
+bootstrap_code = [
+  0x3c, 0x1d, 0x00, 0x07,   # lui r29, 0x0007
+  0x34, 0x1d, 0xff, 0xfc,   # ori r29, r0, 0xfff
+  0x08, 0x00, 0x04, 0x00,   # j   0x1000
+]
+
+#-----------------------------------------------------------------------
+# execute
+#-----------------------------------------------------------------------
+def execute( mem ):
+  s  = State( mem, None, reset_addr=0x400 )
+
+  import struct
+  for i in range( 10 ):
+    string = ''.join(mem[s.pc:s.pc+4])
+    bin_   = struct.unpack('>I', string)
+    print s.pc, '{:08x}'.format((bin_[0]))
+    print decode( bin_[0] )
 
 #-----------------------------------------------------------------------
 # load_program
@@ -32,6 +48,7 @@ def load_program( fp ):
 
   for section in sections:
     start_addr = section.addr
+    print section.name, start_addr
     for i, data in enumerate( section.data ):
       mem[start_addr+i] = data
 
@@ -48,6 +65,9 @@ def entry_point( argv ):
     return 1
 
   mem = load_program( open( filename, 'rb' ) )
+  for i, data in enumerate( bootstrap_code ):
+    mem[ bootstrap_addr + i ] = chr( data )
+  execute( mem )
 
   return 0
 
