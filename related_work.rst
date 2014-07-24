@@ -6,16 +6,18 @@ Related Work
 ISS JIT Auto-Generation from ADL
 --------------------------------------------------------------------------------
 
-@article{wagstaff-archc-jit-dac2013,
-  author    = {Harry Wagstaff and Miles Gould and
-               Bj\"{o}rn Franke and Nigel Topham},
-  title     = {Early partial evaluation in a JIT-compiled, retargetable
-               instruction set simulator generated from a high-level
-               architecture description},
-  journal   = DAC,
-  month     = JUN,
-  year      = {2013},
-}
+Citation::
+
+  @article{wagstaff-archc-jit-dac2013,
+    author    = {Harry Wagstaff and Miles Gould and
+                 Bj\"{o}rn Franke and Nigel Topham},
+    title     = {Early partial evaluation in a JIT-compiled, retargetable
+                 instruction set simulator generated from a high-level
+                 architecture description},
+    journal   = DAC,
+    month     = JUN,
+    year      = {2013},
+  }
 
 ABSTRACT:
 
@@ -31,17 +33,19 @@ Simit-Arm, one of the fastest Iss generated from an architecture description.
 
 --------------------------------------------------------------------------------
 
-@string{DDECS    = {Design and Diagnostics of Electronic Circuits & Systems
-                    (DDECS)}}
+Citation::
 
-@article{prikryl-isac-jit-ddecs2011,
-  author    = {Zden\v{e}k P\v{r}ikryl and Jakub K\v{r}oustek and
-               Tom\'{a}\v{s} Hru\v{s}ka and Du\v{s}an Kol\'{a}\v{r}},
-  title     = {Fast Just-In-Time Translated Simulator for ASIP Design},
-  journal   = DDECS,
-  month     = APR,
-  year      = {2011},
-}
+  @string{DDECS    = {Design and Diagnostics of Electronic Circuits & Systems
+                      (DDECS)}}
+
+  @article{prikryl-isac-jit-ddecs2011,
+    author    = {Zden\v{e}k P\v{r}ikryl and Jakub K\v{r}oustek and
+                 Tom\'{a}\v{s} Hru\v{s}ka and Du\v{s}an Kol\'{a}\v{r}},
+    title     = {Fast Just-In-Time Translated Simulator for ASIP Design},
+    journal   = DDECS,
+    month     = APR,
+    year      = {2011},
+  }
 
 ABSTRACT:
 
@@ -62,15 +66,17 @@ paper.
 
 --------------------------------------------------------------------------------
 
-@article{nohl-lisa-jit-dac2002,
-  author    = {Achim Nohl and Gunnar Braun and Oliver Schliebusch and Rainer
-               Leupers and Heinrich Meyr and Andreas Hoffmann},
-  title     = {A Universal Technique for Fast and Flexible Instruction-Set
-               Architecture Simulation},
-  journal   = DAC,
-  month     = JUN,
-  year      = {2002},
-}
+Citation::
+
+  @article{nohl-lisa-jit-dac2002,
+    author    = {Achim Nohl and Gunnar Braun and Oliver Schliebusch and Rainer
+                 Leupers and Heinrich Meyr and Andreas Hoffmann},
+    title     = {A Universal Technique for Fast and Flexible Instruction-Set
+                 Architecture Simulation},
+    journal   = DAC,
+    month     = JUN,
+    year      = {2002},
+  }
 
 ABSTRACT:
 
@@ -115,18 +121,20 @@ NOTES:
 
 --------------------------------------------------------------------------------
 
-@string{TCAD     = {IEEE Trans. on Computer-Aided Design of Integrated Circuits
-                    and Systems (TCAD)}}
+Citation::
 
-@article{braun-lisa-jit-tcad2004,
-  author    = {Gunnar Braun and Achim Nohl and Andreas Hoffmann and
-               Oliver Schliebusch and Rainer Leupers and Heinrich Meyr},
-  title     = {A Universal Technique for Fast and Flexible Instruction-Set
-               Architecture Simulation},
-  journal   = TCAD,
-  month     = JUN,
-  year      = {2004},
-}
+  @string{TCAD     = {IEEE Trans. on Computer-Aided Design of Integrated Circuits
+                      and Systems (TCAD)}}
+
+  @article{braun-lisa-jit-tcad2004,
+    author    = {Gunnar Braun and Achim Nohl and Andreas Hoffmann and
+                 Oliver Schliebusch and Rainer Leupers and Heinrich Meyr},
+    title     = {A Universal Technique for Fast and Flexible Instruction-Set
+                 Architecture Simulation},
+    journal   = TCAD,
+    month     = JUN,
+    year      = {2004},
+  }
 
 ABSTRACT:
 
@@ -157,18 +165,20 @@ state-of-the-art real-world architectures.
 ISS JIT
 --------------------------------------------------------------------------------
 
-@string{WISH     = {Workshop on Infrastructures for Software/Hardware
-                    Co-Design (WISH)}}
+Citation::
 
-@article{lifshitz-isa-jit-wish2011,
-  author    = {Yair Lifshitz and Robert Cohn and Inbal Livni and
-               Omer Tabach and Mark Charney and Kim Hazelwood},
-  title     = {Zsim: A Fast Architectural Simulator for ISA Design-Space
-               Exploration},
-  journal   = WISH,
-  month     = APR,
-  year      = {2011},
-}
+  @string{WISH     = {Workshop on Infrastructures for Software/Hardware
+                      Co-Design (WISH)}}
+
+  @article{lifshitz-isa-jit-wish2011,
+    author    = {Yair Lifshitz and Robert Cohn and Inbal Livni and
+                 Omer Tabach and Mark Charney and Kim Hazelwood},
+    title     = {Zsim: A Fast Architectural Simulator for ISA Design-Space
+                 Exploration},
+    journal   = WISH,
+    month     = APR,
+    year      = {2011},
+  }
 
 ABSTRACT:
 
@@ -194,15 +204,17 @@ simulation speeds on the order of 100x faster than a naive implementation.
 
 --------------------------------------------------------------------------------
 
-@article{bohm-cycle-accurate-jit-isa-samos2007,
-  title     = {Cycle-accurate performance modelling in an ultra-fast
-               just-in-time dynamic binary translation instruction set
-               simulator},
-  author    = {Igor B\:{o}hm and Bj\:{o}rn Franke and Nigel Topham},
-  journal   = SAMOS,
-  month     = JUL,
-  year      = {2010},
-}
+Citation::
+
+  @article{bohm-cycle-accurate-jit-isa-samos2007,
+    title     = {Cycle-accurate performance modelling in an ultra-fast
+                 just-in-time dynamic binary translation instruction set
+                 simulator},
+    author    = {Igor B\:{o}hm and Bj\:{o}rn Franke and Nigel Topham},
+    journal   = SAMOS,
+    month     = JUL,
+    year      = {2010},
+  }
 
 ABSTRACT:
 
@@ -230,13 +242,15 @@ JIT + Cycle-Accurate
 
 --------------------------------------------------------------------------------
 
-@article{topham-jit-isa-mobs2007,
-  title     = {High Speed CPU Simulation using JIT Binary Translation},
-  author    = {Nigel Topham and Daniel Jones},
-  journal   = MOBS,
-  month     = JUN,
-  year      = {2007},
-}
+Citation::
+
+  @article{topham-jit-isa-mobs2007,
+    title     = {High Speed CPU Simulation using JIT Binary Translation},
+    author    = {Nigel Topham and Daniel Jones},
+    journal   = MOBS,
+    month     = JUN,
+    year      = {2007},
+  }
 
 ABSTRACT:
 
@@ -262,14 +276,16 @@ full-system Linux simulation can sustain more than 148 MIPS.
 ISS JIT-ish
 --------------------------------------------------------------------------------
 
-@article{reshadi-hybrid-iss-tecs2009,
-  author    = {Mehrdad Reshadi and Prabhat Mishra and Nikil Dutt},
-  title     = {Hybrid-compiled simulation: An efficient technique for
-               instruction-set architecture simulation},
-  journal   = TECS,
-  month     = APRIL,
-  year      = {2009},
-}
+Citation::
+
+  @article{reshadi-hybrid-iss-tecs2009,
+    author    = {Mehrdad Reshadi and Prabhat Mishra and Nikil Dutt},
+    title     = {Hybrid-compiled simulation: An efficient technique for
+                 instruction-set architecture simulation},
+    journal   = TECS,
+    month     = APRIL,
+    year      = {2009},
+  }
 
 ABSTRACT:
 
@@ -308,15 +324,17 @@ NOTES:
 ISS Decoder Generation
 --------------------------------------------------------------------------------
 
-@string{WBT      = {Workshop on Binary Translation (WBT)}}
+Citation::
 
-@article{krishna-software-decoder-wbt2001,
-  author    = {Rajeev Krishna and Todd Austin},
-  title     = {Efficient Software Decoder Design},
-  journal   = WBT,
-  month     = SEP,
-  year      = {2001},
-}
+  @string{WBT      = {Workshop on Binary Translation (WBT)}}
+
+  @article{krishna-software-decoder-wbt2001,
+    author    = {Rajeev Krishna and Todd Austin},
+    title     = {Efficient Software Decoder Design},
+    journal   = WBT,
+    month     = SEP,
+    year      = {2001},
+  }
 
 ABSTRACT:
 
@@ -337,14 +355,16 @@ and effort.
 
 --------------------------------------------------------------------------------
 
-@article{qin-binary-decoders-dac-2003,
-  author    = {Wei Qin and Sharad Malik},
-  title     = {Automated Synthesis of Efficient Binary Decoders
-               for Retargetable Software Toolkits},
-  journal   = DAC,
-  month     = JUN,
-  year      = {2003},
-}
+Citation::
+
+  @article{qin-binary-decoders-dac-2003,
+    author    = {Wei Qin and Sharad Malik},
+    title     = {Automated Synthesis of Efficient Binary Decoders
+                 for Retargetable Software Toolkits},
+    journal   = DAC,
+    month     = JUN,
+    year      = {2003},
+  }
 
 ABSTRACT:
 
@@ -366,15 +386,17 @@ scheme containing instruction encoding information.
 
 --------------------------------------------------------------------------------
 
-@article{
-  author    = {Nicolas Fournel and Luc Michel and
-               Fr\'{e}d\'{e}ric P\'{e}trot},
-  title     = {Automated Generation of Efficient Instruction
-               Decoders for Instruction Set Simulators},
-  journal   = ICCAD,
-  month     = NOV,
-  year      = {2013},
-}
+Citation::
+
+  @article{
+    author    = {Nicolas Fournel and Luc Michel and
+                 Fr\'{e}d\'{e}ric P\'{e}trot},
+    title     = {Automated Generation of Efficient Instruction
+                 Decoders for Instruction Set Simulators},
+    journal   = ICCAD,
+    month     = NOV,
+    year      = {2013},
+  }
 
 ABSTRACT:
 
@@ -398,14 +420,16 @@ it is beneficial to consider instruction frequencies.
 ISS and Compiler Auto-Generation from ADL
 --------------------------------------------------------------------------------
 
-@article{derrico-adl-iss-compiler-date2006,
-  author    = {Joseph D'Errico and Wei Qin},
-  title     = {Constructing Portable Compiled Instruction-set Simulators —-
-               An ADL-driven Approach},
-  journal   = DATE,
-  month     = MAR,
-  year      = {2006},
-}
+Citation::
+
+  @article{derrico-adl-iss-compiler-date2006,
+    author    = {Joseph D'Errico and Wei Qin},
+    title     = {Constructing Portable Compiled Instruction-set Simulators —-
+                 An ADL-driven Approach},
+    journal   = DATE,
+    month     = MAR,
+    year      = {2006},
+  }
 
 ABSTRACT:
 
@@ -446,14 +470,16 @@ Lists three classes of Instruction Set Simulators (ISS):
 
 --------------------------------------------------------------------------------
 
-@article{ceng-lisa-compiler-date2005,
-  author    = {Jianjiang Ceng and Manuel Hohenauer and Rainer Leupers and
-               Gerd Ascheid and Heinrich Meyr and Gunnar Braun},
-  title     = {C Compiler Retargeting Based on Instruction Semantics Models},
-  journal   = DATE,
-  month     = MAR,
-  year      = {2005},
-}
+Citation::
+
+  @article{ceng-lisa-compiler-date2005,
+    author    = {Jianjiang Ceng and Manuel Hohenauer and Rainer Leupers and
+                 Gerd Ascheid and Heinrich Meyr and Gunnar Braun},
+    title     = {C Compiler Retargeting Based on Instruction Semantics Models},
+    journal   = DATE,
+    month     = MAR,
+    year      = {2005},
+  }
 
 ABSTRACT:
 
@@ -474,15 +500,17 @@ techniques, and present experimental results for several embedded processors.
 
 --------------------------------------------------------------------------------
 
-@article{ceng-adl-compiler-date2005,
-  author    = {Jianjiang Ceng and Manuel Hohenauer and Rainer Leupers and
-               Gerd Ascheid and Heinrich Meyr and Gunnar Braun},
-  title     = {Modeling Instruction Semantics in ADL Processor Descriptions for
-               C Compiler Retargeting},
-  journal   = SAMOS,
-  month     = JUL,
-  year      = {2004},
-}
+Citation::
+
+  @article{ceng-adl-compiler-date2005,
+    author    = {Jianjiang Ceng and Manuel Hohenauer and Rainer Leupers and
+                 Gerd Ascheid and Heinrich Meyr and Gunnar Braun},
+    title     = {Modeling Instruction Semantics in ADL Processor Descriptions for
+                 C Compiler Retargeting},
+    journal   = SAMOS,
+    month     = JUL,
+    year      = {2004},
+  }
 
 ABSTRACT:
 
@@ -503,17 +531,19 @@ processor architectures.
 
 --------------------------------------------------------------------------------
 
-@article{hohenauer-lisa-compiler-date2004,
-  author    = {Manuel Hohenauer and Hanno Scharwaechter and Kingshuk Karuri and
-               Oliver Wahlen and Tim Kogel and Rainer Leupers and
-               Gerd Ascheid and Heinrich Meyr and Gunnar Braun and
-               Hans van Someren},
-  title     = {A Methodology and Tool Suite for C Compiler Generation from ADL
-               Processor Models},
-  journal   = DATE,
-  month     = MAR,
-  year      = {2004},
-}
+Citation::
+
+  @article{hohenauer-lisa-compiler-date2004,
+    author    = {Manuel Hohenauer and Hanno Scharwaechter and Kingshuk Karuri and
+                 Oliver Wahlen and Tim Kogel and Rainer Leupers and
+                 Gerd Ascheid and Heinrich Meyr and Gunnar Braun and
+                 Hans van Someren},
+    title     = {A Methodology and Tool Suite for C Compiler Generation from ADL
+                 Processor Models},
+    journal   = DATE,
+    month     = MAR,
+    year      = {2004},
+  }
 
 ABSTRACT:
 
@@ -532,19 +562,21 @@ processors that prove the feasibility of the approach.
 
 --------------------------------------------------------------------------------
 
-@string{ECBS-EERC = {Eastern European Conference on the Engineering
-                     of Computer Based Systems (ECBS-EERC)}}
+Citation::
 
-@article{djukic-isa-sim-ecbseerc2013,
-  author    = {Miodrag Djukic and Nenad Cetic and Radovan Obradovic
-               and Miroslav Popovic},
-  title     = {An Approach to Instruction Set Compiled Simulator
-               Development Based on a Target Processor C Compiler
-               Back-End Design},
-  journal   = ECBS-EERC,
-  month     = JUN,
-  year      = {2009},
-}
+  @string{ECBS-EERC = {Eastern European Conference on the Engineering
+                       of Computer Based Systems (ECBS-EERC)}}
+
+  @article{djukic-isa-sim-ecbseerc2013,
+    author    = {Miodrag Djukic and Nenad Cetic and Radovan Obradovic
+                 and Miroslav Popovic},
+    title     = {An Approach to Instruction Set Compiled Simulator
+                 Development Based on a Target Processor C Compiler
+                 Back-End Design},
+    journal   = ECBS-EERC,
+    month     = JUN,
+    year      = {2009},
+  }
 
 ABSTRACT:
 
@@ -565,14 +597,16 @@ potential.
 Dynamic Binary Translation JIT
 --------------------------------------------------------------------------------
 
-@article{bohm-dbt-jit-pldi2011,
-  title     = {Generalized just-in-time trace compilation using a parallel task
-               farm in a dynamic binary translator},
-  author    = {Igor B\:{o}hm and Bj\:{o}rn Franke and Nigel Topham},
-  journal   = PLDI,
-  month     = JUN,
-  year      = {2011},
-}
+Citation::
+
+  @article{bohm-dbt-jit-pldi2011,
+    title     = {Generalized just-in-time trace compilation using a parallel task
+                 farm in a dynamic binary translator},
+    author    = {Igor B\:{o}hm and Bj\:{o}rn Franke and Nigel Topham},
+    journal   = PLDI,
+    month     = JUN,
+    year      = {2011},
+  }
 
 ABSTRACT:
 
@@ -604,16 +638,18 @@ can be reduced by on average 11.5% over state-of-the-art decoupled, parallel
 
 --------------------------------------------------------------------------------
 
-@string{HIPEAC   = {Int'l Conf. on High Performance Embedded Architectures
-                    and Compilers (HiPEAC)}}
+Citation::
 
-@article{jones-ltu-dbt-hipeac2009,
-  title     = {High Speed CPU Simulation Using LTU Dynamic Binary Translation},
-  author    = {Daniel Jones and Nigel Topham},
-  journal   = HIPEAC,
-  month     = JAN,
-  year      = {2009},
-}
+  @string{HIPEAC   = {Int'l Conf. on High Performance Embedded Architectures
+                      and Compilers (HiPEAC)}}
+
+  @article{jones-ltu-dbt-hipeac2009,
+    title     = {High Speed CPU Simulation Using LTU Dynamic Binary Translation},
+    author    = {Daniel Jones and Nigel Topham},
+    journal   = HIPEAC,
+    month     = JAN,
+    year      = {2009},
+  }
 
 ABSTRACT:
 
