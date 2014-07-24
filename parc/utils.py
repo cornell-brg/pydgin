@@ -58,10 +58,6 @@ class RegisterFile( object ):
   def __getitem__( self, idx ):
     return self.regs[idx]
   def __setitem__( self, idx, value ):
-    if idx == 3:
-      print 'WRITING TO r3', hex(value)
-    if idx == 14:
-      print 'WRITING TO r14', hex(value)
     if idx != 0:
       self.regs[idx] = value
 

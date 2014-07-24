@@ -53,16 +53,25 @@ def run( mem ):
   while s.status == 0:
 
     jitdriver.jit_merge_point(
-        pc       = s.pc,
-        num_inst = num_inst,
-        state    = s,
+      pc       = s.pc,
+      num_inst = num_inst,
+      state    = s,
     )
+
+    old = s.pc
 
     #print'{:06x}'.format( s.pc ),
     inst = s.mem.read( s.pc, 4 )
     #print '{:08x}'.format( inst ), decode(inst), num_inst
     decode( inst )( s, inst )
     num_inst += 1
+
+    if s.pc < old:
+      jitdriver.can_enter_jit(
+        pc       = s.pc,
+        num_inst = num_inst,
+        state    = s,
+      )
 
   print 'DONE! Status =', s.status
   print 'Instructions Executed =', num_inst
