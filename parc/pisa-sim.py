@@ -19,6 +19,7 @@ from   rpython.rlib.jit import JitDriver
 
 jitdriver = JitDriver( greens =['pc'],
                        reds   =['num_inst','state'],
+                       virtualizables = ['state']
                      )
 
 def jitpolicy(driver):
@@ -61,7 +62,8 @@ def run( mem ):
     old = s.pc
 
     #print'{:06x}'.format( s.pc ),
-    inst = s.mem.read( s.pc, 4 )
+    # we use trace elidable iread instead of just read
+    inst = s.mem.iread( s.pc, 4 )
     #print '{:08x}'.format( inst ), decode(inst), num_inst
     decode( inst )( s, inst )
     num_inst += 1

@@ -4,6 +4,9 @@ import re
 from utils import rd, rs, rt, imm, jtarg, shamt
 from utils import trim, trim_5, signed, sext, sext_byte
 
+# we mark pure (trace elidable) functions that don't have any side effects
+from rpython.rlib.jit import elidable
+
 #=======================================================================
 # Register Definitions
 #=======================================================================
@@ -641,6 +644,7 @@ for i, inst in enumerate( bit_fields ):
   decoder += '    return execute_{}\n'.format( encodings[i][0] )
 
 source = py.code.Source('''
+@elidable
 def decode( inst ):
   {decoder_tree}
 '''.format( decoder_tree = decoder ))

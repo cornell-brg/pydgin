@@ -1,3 +1,6 @@
+# trace elidable for instruction reads
+from rpython.rlib.jit import elidable, unroll_safe
+
 #-----------------------------------------------------------------------
 # sext
 #-----------------------------------------------------------------------
@@ -71,6 +74,7 @@ class Memory( object ):
     else:
       self.data = data
 
+  @unroll_safe
   def read( self, start_addr, num_bytes ):
     value = 0
     for i in range( num_bytes-1, -1, -1 ):
@@ -78,6 +82,20 @@ class Memory( object ):
       value = value | ord( self.data[ start_addr + i ] )
     return value
 
+  # this is instruction read, which is otherwise identical to read. The
+  # only difference is the elidable annotation, which we assume the
+  # instructions are not modified (no side effects, assumes the addresses
+  # correspond to the same instructions)
+  @elidable
+  @unroll_safe
+  def iread( self, start_addr, num_bytes ):
+    value = 0
+    for i in range( num_bytes-1, -1, -1 ):
+      value = value << 8
+      value = value | ord( self.data[ start_addr + i ] )
+    return value
+
+  @unroll_safe
   def write( self, start_addr, num_bytes, value ):
     for i in range( num_bytes ):
       self.data[ start_addr + i ] = chr(value & 0xFF)
@@ -87,6 +105,7 @@ class Memory( object ):
 # State
 #-----------------------------------------------------------------------
 class State( object ):
+  _virtualizable_ = [ 'rf.regs[*]' ]
   def __init__( self, memory, symtable, reset_addr=0x400 ):
     self.src_ptr  = 0
     self.sink_ptr = 0
