@@ -198,3 +198,8 @@ Fails::
 Works::
   if my_str != '': do_something()
 
+Fails::
+  raise Exception( 'Error %08x!' % my_value )
+Works::
+  raise Exception( 'Error %x!' % my_value )
+
