@@ -647,6 +647,8 @@ source = py.code.Source('''
 @elidable
 def decode( inst ):
   {decoder_tree}
+  else:
+    raise Exception('Invalid instruction 0x%08x!' % inst )
 '''.format( decoder_tree = decoder ))
 #print source
 exec source.compile() in globals()
