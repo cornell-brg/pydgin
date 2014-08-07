@@ -77,11 +77,11 @@ encodings = [
   ['srlv',     '000000xxxxxxxxxxxxxxx00000000110'],
   ['srav',     '000000xxxxxxxxxxxxxxx00000000111'],
   ['lui',      '00111100000xxxxxxxxxxxxxxxxxxxxx'],
-  #['mul',      '011100xxxxxxxxxxxxxxx00000000010'],
-  #['div',      '100111xxxxxxxxxxxxxxx00000000101'],
-  #['divu',     '100111xxxxxxxxxxxxxxx00000000111'],
-  #['rem',      '100111xxxxxxxxxxxxxxx00000000110'],
-  #['remu',     '100111xxxxxxxxxxxxxxx00000001000'],
+  ['mul',      '011100xxxxxxxxxxxxxxx00000000010'],
+  ['div',      '100111xxxxxxxxxxxxxxx00000000101'],
+  ['divu',     '100111xxxxxxxxxxxxxxx00000000111'],
+  ['rem',      '100111xxxxxxxxxxxxxxx00000000110'],
+  ['remu',     '100111xxxxxxxxxxxxxxx00000001000'],
   ['lw',       '100011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lh',       '100001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lhu',      '100101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
@@ -219,6 +219,52 @@ def execute_slt( s, inst ):
 @register_inst
 def execute_sltu( s, inst ):
   s.rf[rd(inst)] = s.rf[rs(inst)] < s.rf[rt(inst)]
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# mul
+#-----------------------------------------------------------------------
+@register_inst
+def execute_mul( s, inst ):
+  s.rf[ rd(inst) ] = trim( s.rf[ rs(inst) ] * s.rf[ rt(inst) ] )
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# div
+#-----------------------------------------------------------------------
+# http://stackoverflow.com/a/6084608
+@register_inst
+def execute_div( s, inst ):
+  x = signed( s.rf[ rs(inst) ] )
+  y = signed( s.rf[ rt(inst) ] )
+  s.rf[ rd(inst) ] = abs(x) / abs(y) * cmp(x,0) * cmp(y,0)
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# divu
+#-----------------------------------------------------------------------
+@register_inst
+def execute_divu( s, inst ):
+  s.rf[ rd(inst) ] = s.rf[ rs(inst) ] / s.rf[ rt(inst) ]
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# rem
+#-----------------------------------------------------------------------
+# http://stackoverflow.com/a/6084608
+@register_inst
+def execute_rem( s, inst ):
+  x = signed( s.rf[ rs(inst) ] )
+  y = signed( s.rf[ rt(inst) ] )
+  s.rf[ rd(inst) ] = abs(x) % abs(y) * (1 if x > 0 else -1)
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# remu
+#-----------------------------------------------------------------------
+@register_inst
+def execute_remu( s, inst ):
+  s.rf[ rd(inst) ] = s.rf[ rs(inst) ] % s.rf[ rt(inst) ]
   s.pc += 4
 
 #-----------------------------------------------------------------------
