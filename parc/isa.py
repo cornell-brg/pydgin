@@ -235,9 +235,11 @@ def execute_mul( s, inst ):
 # http://stackoverflow.com/a/6084608
 @register_inst
 def execute_div( s, inst ):
-  x = signed( s.rf[ rs(inst) ] )
-  y = signed( s.rf[ rt(inst) ] )
-  s.rf[ rd(inst) ] = abs(x) / abs(y) * cmp(x,0) * cmp(y,0)
+  x    = signed( s.rf[ rs(inst) ] )
+  y    = signed( s.rf[ rt(inst) ] )
+  sign = -1 if (x < 0)^(y < 0) else 1
+
+  s.rf[ rd(inst) ] = abs(x) / abs(y) * sign
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -256,6 +258,7 @@ def execute_divu( s, inst ):
 def execute_rem( s, inst ):
   x = signed( s.rf[ rs(inst) ] )
   y = signed( s.rf[ rt(inst) ] )
+
   s.rf[ rd(inst) ] = abs(x) % abs(y) * (1 if x > 0 else -1)
   s.pc += 4
 
