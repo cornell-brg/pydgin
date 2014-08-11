@@ -113,6 +113,35 @@ encodings = [
   # Conditional
   ['movn',    '000000xxxxxxxxxxxxxxx00000001011'],
   ['movz',    '000000xxxxxxxxxxxxxxx00000001010'],
+  # Syscall
+  #['syscall', '000000xxxxxxxxxxxxxxxxxxxx001100'],
+  #['eret',    '000000xxxxxxxxxxxxxxxxxxxx001100'],
+  # AMO
+  #['amoadd',  '100111xxxxxxxxxxxxxxx00000000010'],
+  #['amoand',  '100111xxxxxxxxxxxxxxx00000000011'],
+  #['amoor',   '100111xxxxxxxxxxxxxxx00000000100'],
+  #['amoxchg', '100111xxxxxxxxxxxxxxx00000001101'],
+  #['amomin',  '100111xxxxxxxxxxxxxxx00000001110'],
+  # Data-Parallel
+  #['xloop',   '110100xxxxx00000xxxxxxxxxxxxxxxx'],
+  #['stop',    '10011100000000000000000000000000'],
+  #['utidx',   '1001110000000000xxxxx00000001001'],
+  #['mtvps',   '01001000000xxxxxxxxxx00000001000'],
+  #['mfvps',   '010010xxxxxxxxxxxxxxx00000001001'],
+  # ???
+  #['syncl',   '10011100000000000000000000000001'],
+  #['stat',    '10011100000xxxxx0000000000001111'],
+  # Floating Point
+  #['add_s',   '010001xxxxxxxxxxxxxxxxxxxx000000'],
+  #['sub_s',   '010001xxxxxxxxxxxxxxxxxxxx000001'],
+  #['mul_s',   '010001xxxxxxxxxxxxxxxxxxxx000010'],
+  #['div_s',   '010001xxxxxxxxxxxxxxxxxxxx000011'],
+  #['c_eq_s',  '01000110000xxxxxxxxxxxxxxx110010'],
+  #['c_lt_s',  '01000110000xxxxxxxxxxxxxxx111100'],
+  #['c_le_s',  '01000110000xxxxxxxxxxxxxxx111110'],
+  #['cvt_w_s', '0100011000000000xxxxxxxxxx100100'],
+  #['cvt_s_w', '0100011010000000xxxxxxxxxx100000'],
+  #['trunc',   '0100011000000000xxxxxxxxxx001101'],
 ]
 
 #=======================================================================
