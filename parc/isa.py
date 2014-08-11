@@ -54,8 +54,11 @@ reg_map = {
 
 encodings = [
   ['nop',      '00000000000000000000000000000000'],
+  # Coprocessor
   ['mfc0',     '01000000000xxxxxxxxxx00000000000'],
   ['mtc0',     '01000000100xxxxxxxxxx00000000000'],
+  #['mtc2',    '01001000100xxxxxxxxxx00000000000'],
+  # Arithmetic
   ['addu',     '000000xxxxxxxxxxxxxxx00000100001'],
   ['subu',     '000000xxxxxxxxxxxxxxx00000100011'],
   ['and',      '000000xxxxxxxxxxxxxxx00000100100'],
@@ -64,43 +67,52 @@ encodings = [
   ['nor',      '000000xxxxxxxxxxxxxxx00000100111'],
   ['slt',      '000000xxxxxxxxxxxxxxx00000101010'],
   ['sltu',     '000000xxxxxxxxxxxxxxx00000101011'],
+  # Arithmetic Immediate
   ['addiu',    '001001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['andi',     '001100xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['ori',      '001101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['xori',     '001110xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['slti',     '001010xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['sltiu',    '001011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['lui',      '00111100000xxxxxxxxxxxxxxxxxxxxx'],
+  # Shift
   ['sll',      '00000000000xxxxxxxxxxxxxxx000000'],
   ['srl',      '00000000000xxxxxxxxxxxxxxx000010'],
   ['sra',      '00000000000xxxxxxxxxxxxxxx000011'],
   ['sllv',     '000000xxxxxxxxxxxxxxx00000000100'],
   ['srlv',     '000000xxxxxxxxxxxxxxx00000000110'],
   ['srav',     '000000xxxxxxxxxxxxxxx00000000111'],
-  ['lui',      '00111100000xxxxxxxxxxxxxxxxxxxxx'],
+  # Mul/Div/Rem
   ['mul',      '011100xxxxxxxxxxxxxxx00000000010'],
   ['div',      '100111xxxxxxxxxxxxxxx00000000101'],
   ['divu',     '100111xxxxxxxxxxxxxxx00000000111'],
   ['rem',      '100111xxxxxxxxxxxxxxx00000000110'],
   ['remu',     '100111xxxxxxxxxxxxxxx00000001000'],
+  # Loads
   ['lw',       '100011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lh',       '100001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lhu',      '100101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lb',       '100000xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lbu',      '100100xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  # Stores
   ['sw',       '101011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['sh',       '101001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['sb',       '101000xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  # Jumps
   ['j',        '000010xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['jal',      '000011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['jr',       '000000xxxxx000000000000000001000'],
   ['jalr',     '000000xxxxx00000xxxxx00000001001'],
+  # Branches
   ['beq',      '000100xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['bne',      '000101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['blez',     '000110xxxxx00000xxxxxxxxxxxxxxxx'],
   ['bgtz',     '000111xxxxx00000xxxxxxxxxxxxxxxx'],
   ['bltz',     '000001xxxxx00000xxxxxxxxxxxxxxxx'],
   ['bgez',     '000001xxxxx00001xxxxxxxxxxxxxxxx'],
-  #['mtc2',     '01001000100xxxxxxxxxx00000000000'],
+  # Conditional
+  ['movn',    '000000xxxxxxxxxxxxxxx00000001011'],
+  ['movz',    '000000xxxxxxxxxxxxxxx00000001010'],
 ]
 
 #=======================================================================
@@ -563,6 +575,24 @@ def execute_sb( s, inst ):
   s.pc += 4
 
 #-----------------------------------------------------------------------
+# movn
+#-----------------------------------------------------------------------
+@register_inst
+def execute_movn( s, inst ):
+  if s.rf[rt(inst)] != 0:
+    s.rf[rd(inst)] = s.rf[rs(inst)]
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# movz
+#-----------------------------------------------------------------------
+@register_inst
+def execute_movz( s, inst ):
+  if s.rf[rt(inst)] == 0:
+    s.rf[rd(inst)] = s.rf[rs(inst)]
+  s.pc += 4
+
+#-----------------------------------------------------------------------
 # TEMPORARY
 #-----------------------------------------------------------------------
 #masks = [
@@ -670,11 +700,6 @@ def normalize_fields( bit_fields ):
   return bit_fields
 
 #bit_fields = normalize_fields( bit_fields )
-
-#py.code.source
-#s = """
-#def decode_inst( inst ):
-#"""
 
 decoder = ''
 for i, inst in enumerate( bit_fields ):
