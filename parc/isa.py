@@ -491,7 +491,7 @@ def execute_bgez( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_lw( s, inst ):
-  addr = s.rf[rs(inst)] + sext(imm(inst))
+  addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.rf[rt(inst)] = s.mem.read( addr, 4 )
   s.pc += 4
 
@@ -500,7 +500,7 @@ def execute_lw( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_lh( s, inst ):
-  addr = s.rf[rs(inst)] + sext(imm(inst))
+  addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.rf[rt(inst)] = sext( s.mem.read( addr, 2 ) )
   s.pc += 4
 
@@ -509,7 +509,7 @@ def execute_lh( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_lhu( s, inst ):
-  addr = s.rf[rs(inst)] + sext(imm(inst))
+  addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.rf[rt(inst)] = s.mem.read( addr, 2 )
   s.pc += 4
 
@@ -518,7 +518,7 @@ def execute_lhu( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_lb( s, inst ):
-  addr = s.rf[rs(inst)] + sext(imm(inst))
+  addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.rf[rt(inst)] = sext_byte( s.mem.read( addr, 1 ) )
   s.pc += 4
 
@@ -527,7 +527,7 @@ def execute_lb( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_lbu( s, inst ):
-  addr = s.rf[rs(inst)] + sext(imm(inst))
+  addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.rf[rt(inst)] = s.mem.read( addr, 1 )
   s.pc += 4
 
@@ -540,7 +540,7 @@ def execute_lbu( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_sw( s, inst ):
-  addr = s.rf[rs(inst)] + sext(imm(inst))
+  addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.mem.write( addr, 4, s.rf[rt(inst)] )
   s.pc += 4
 
@@ -549,7 +549,7 @@ def execute_sw( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_sh( s, inst ):
-  addr = s.rf[rs(inst)] + sext(imm(inst))
+  addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.mem.write( addr, 2, s.rf[rt(inst)] )
   s.pc += 4
 
@@ -558,7 +558,7 @@ def execute_sh( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_sb( s, inst ):
-  addr = s.rf[rs(inst)] + sext(imm(inst))
+  addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.mem.write( addr, 1, s.rf[rt(inst)] )
   s.pc += 4
 
