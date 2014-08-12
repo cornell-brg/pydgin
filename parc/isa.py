@@ -167,11 +167,13 @@ def execute_nop( s, inst ):
 #-----------------------------------------------------------------------
 @register_inst
 def execute_mfc0( s, inst ):
-  if   rd(inst) ==  1: pass
-    #s.rf[ rt(inst) ] = src[ s.src_ptr ]
-    #s.src_ptr += 1
-  elif rd(inst) == 17: pass
-  else: raise Exception('Invalid mfc0 destination!')
+  #if   rd(inst) ==  1: pass
+  #  s.rf[ rt(inst) ] = src[ s.src_ptr ]
+  #  s.src_ptr += 1
+  if rd(inst) == 17:
+    s.rf[rt(inst)] = 0
+  else:
+    raise Exception('Invalid mfc0 destination: %d!' % rd(inst) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -182,12 +184,12 @@ def execute_mtc0( s, inst ):
   if   rd(inst) ==  1:
     print 'SETTING STATUS'
     s.status = s.rf[rt(inst)]
-  elif rd(inst) ==  2: pass
-    #if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
-    #  print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ rt(inst) ]
-    #  raise Exception('Instruction: mtc0 failed!')
-    #print 'SUCCESS: s.rf[' + str( rt(inst) ) + '] == ' + str( sink[ s.sink_ptr ] )
-    #s.sink_ptr += 1
+  #elif rd(inst) ==  2: pass
+  #  if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
+  #    print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ rt(inst) ]
+  #    raise Exception('Instruction: mtc0 failed!')
+  #  print 'SUCCESS: s.rf[' + str( rt(inst) ) + '] == ' + str( sink[ s.sink_ptr ] )
+  #  s.sink_ptr += 1
   elif rd(inst) == 10:
     s.stats_en = s.rf[rt(inst)]
   else:
