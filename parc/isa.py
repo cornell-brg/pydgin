@@ -41,11 +41,41 @@ reg_map = {
   't8'   : 24,   't9'   : 25,   'k0'   : 26,   'k1'   : 27,
   'gp'   : 28,   'sp'   : 29,   's8'   : 30,   'ra'   : 31,
 
-  'status'    :  1,
-  'mngr2proc' :  1,
-  'proc2mngr' :  2,
-  'statsen'   : 10,
-  'coreid'    : 17,
+  # currently implemented coprocessor 0 registers
+
+  'status'    :  1,   # mtc0
+ #'mngr2proc' :  1,   #      mfc0
+ #'proc2mngr' :  2,   # mtc0
+  'statsen'   : 10,   # mtc0
+  'coreid'    : 17,   #      mfc0
+
+  # coprocesser 0 registers currently used by parcv3-scalar
+  # https://github.com/cornell-brg/pyparc/tree/master/parcv3-scalar
+
+  # TODO: better names as specificed in isa doc?
+  # https://github.com/cornell-brg/maven-docs/blob/master/parc-isa.txt
+
+  'c0_toserv'    :  1,  # mtc0
+  'c0_fromserv'  :  2,  #      mfc0
+  'c0_tosysc0'   :  3,  # mtc0
+  'c0_tosysc1'   :  4,  # mtc0
+  'c0_tosysc2'   :  5,  # mtc0
+  'c0_tosysc3'   :  6,  # mtc0
+  'c0_tosysc4'   :  7,  # mtc0
+  'c0_tosysc5'   :  8,  # mtc0
+  'c0_count'     :  9,  # mtc0 mfc0
+  'c0_fromsysc0' : 10,  #      mfc0
+  'c0_fromsysc1' : 11,  #      mfc0
+  'c0_fromsysc2' : 12,  #      mfc0
+  'c0_fromsysc3' : 13,  #      mfc0
+  'c0_fromsysc4' : 14,  #      mfc0
+  'c0_fromsysc5' : 15,  #      mfc0
+  'c0_numcores'  : 16,  #      mfc0
+  'c0_coreid'    : 17,  #      mfc0
+  'c0_tidmask'   : 18,  # mtc0 mfc0
+  'c0_tidstop'   : 19,  # mtc0 mfc0
+  'c0_staten'    : 21,  # mtc0 mfc0
+  'c0_counthi'   : 25,  # mtc0 mfc0
 }
 
 #=======================================================================
