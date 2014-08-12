@@ -34,14 +34,18 @@ def jitpolicy(driver):
 
 bootstrap_addr = 0x400
 bootstrap_code = [
-  0x07, 0x00, 0x1d, 0x3c,   # lui r29, 0x0007
-  0xfc, 0xff, 0x1d, 0x34,   # ori r29, r0, 0xfff
-  0x00, 0x04, 0x00, 0x08,   # j   0x1000
+  #0x07, 0x00, 0x1d, 0x3c,   # lui r29, 0x0007
+  #0xfc, 0xff, 0x1d, 0x34,   # ori r29, r0, 0xfffc
+  #0x00, 0x04, 0x00, 0x08,   # j   0x1000
+  0x3c1d0007,
+  0x341dfffc,
+  0x08000400,
 ]
 
 rewrite_addr      = 0x1008
 rewrite_code      = [
-  0x08, 0x04, 0x00, 0x08,   # j   0x1020
+  #0x08, 0x04, 0x00, 0x08,   # j   0x1020
+  0x08000408,
 ]
 
 #-----------------------------------------------------------------------
@@ -85,12 +89,20 @@ def load_program( fp ):
   mem_image = elf.elf_reader( fp )
 
   sections = mem_image.get_sections()
-  mem      = [' ']*(2**20)
+  mem      = [0]*(2**20)
 
   for section in sections:
-    start_addr = section.addr
-    for i, data in enumerate( section.data ):
-      mem[start_addr+i] = data
+    start_addr = section.addr >> 2
+    #for i, data in enumerate( section.data ):
+    #  mem[start_addr+i] = data
+    data       = section.data
+    for idx in range( len(section.data) >> 2 ):
+      i = idx << 2
+      value = (( ord(data[i]  )
+            |  ( ord(data[i+1]) <<  8)
+            |  ( ord(data[i+2]) << 16)
+            |  ( ord(data[i+3]) << 24)))
+      mem[start_addr+idx] = value
 
   return mem
 
@@ -109,11 +121,11 @@ def entry_point( argv ):
 
   # Inject bootstrap code
   for i, data in enumerate( bootstrap_code ):
-    mem[ bootstrap_addr + i ] = chr( data )
+    mem[ (bootstrap_addr >> 2) + i ] = data
 
   # Rewrite jump address
   for i, data in enumerate( rewrite_code ):
-    mem[ rewrite_addr + i ] = chr( data )
+    mem[ (rewrite_addr >> 2) + i ] = data
 
   # Execute program
   run( mem )

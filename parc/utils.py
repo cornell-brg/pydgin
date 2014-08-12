@@ -70,17 +70,26 @@ class RegisterFile( object ):
 class Memory( object ):
   def __init__( self, data=None ):
     if not data:
-      self.data = [' ']*2**10
+      self.data = [0]*2**10
     else:
       self.data = data
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
-    value = 0
-    for i in range( num_bytes-1, -1, -1 ):
-      value = value << 8
-      value = value | ord( self.data[ start_addr + i ] )
-    return value
+    assert 0 < num_bytes <= 4
+    word = start_addr >> 2
+    byte = start_addr &  0b11
+
+    if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
+      return self.data[ word ]
+    elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
+      mask = 0xFFFF << (byte * 8)
+      return (self.data[ word ] & mask) >> (byte * 8)
+    elif num_bytes == 1:
+      mask = 0xFF   << (byte * 8)
+      return (self.data[ word ] & mask) >> (byte * 4)
+
+    raise Exception('Not handled value for num_bytes')
 
   # this is instruction read, which is otherwise identical to read. The
   # only difference is the elidable annotation, which we assume the
@@ -89,17 +98,25 @@ class Memory( object ):
   @elidable
   @unroll_safe
   def iread( self, start_addr, num_bytes ):
-    value = 0
-    for i in range( num_bytes-1, -1, -1 ):
-      value = value << 8
-      value = value | ord( self.data[ start_addr + i ] )
-    return value
+    assert start_addr & 0b11 == 0  # only aligned accesses allowed
+    return self.data[ start_addr >> 2 ]
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
-    for i in range( num_bytes ):
-      self.data[ start_addr + i ] = chr(value & 0xFF)
-      value = value >> 8
+    assert 0 < num_bytes <= 4
+    word = start_addr >> 2
+    byte = start_addr &  0b11
+
+    if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
+      self.data[ word ] = value
+    elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
+      mask = ~((0xFFFF << (byte * 8)) & 0xFFFFFFFF) & 0xFFFFFFFF
+      self.data[ word ] |= (value << (byte * 8 ))
+    elif num_bytes == 1:
+      mask = ~((0xFF   << (byte * 8)) & 0xFFFFFFFF) & 0xFFFFFFFF
+      self.data[ word ] |= (value << (byte * 8 ))
+    else:
+      raise Exception('Not handled value for num_bytes')
 
 #-----------------------------------------------------------------------
 # State
