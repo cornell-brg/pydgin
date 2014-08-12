@@ -73,9 +73,13 @@ int main( int argc, char* argv[] )
 
     int temp = 0;
 
-    test_stats_on( temp );
-    masked_filter_scalar( dest, mask, src, size, size, g_coeff );
-    test_stats_off( temp );
+    for ( i = 0; i < 500000; i++ ) {
+
+      test_stats_on( temp );
+      masked_filter_scalar( dest, mask, src, size, size, g_coeff );
+      test_stats_off( temp );
+
+    }
 
     verify_results( dest, ref, size );
 

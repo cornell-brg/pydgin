@@ -75,9 +75,13 @@ int main( int argc, char* argv[] )
 
   int temp = 0;
 
-  test_stats_on( temp );
-  bin_search_scalar( values, keys, size, kv, kv_sz );
-  test_stats_off( temp );
+  for ( i = 0; i < 500000; i++ ) {
+
+    test_stats_on( temp );
+    bin_search_scalar( values, keys, size, kv, kv_sz );
+    test_stats_off( temp );
+
+  }
 
   verify_results( values, ref, size );
 
