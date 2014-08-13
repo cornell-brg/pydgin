@@ -17,9 +17,15 @@ from   rpython.rlib.jit import JitDriver
 # jit
 #-----------------------------------------------------------------------
 
+# for debug printing in PYPYLOG
+def get_location( pc ):
+  # TODO: add the disassembly of the instruction here as well
+  return "pc: %x" % pc
+
 jitdriver = JitDriver( greens =['pc'],
                        reds   =['num_inst','state'],
-                       virtualizables = ['state']
+                       virtualizables = ['state'],
+                       get_printable_location=get_location,
                      )
 
 def jitpolicy(driver):
