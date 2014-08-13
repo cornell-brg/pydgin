@@ -11,7 +11,7 @@ import elf
 
 from   isa              import decode
 from   utils            import State, Memory
-from   rpython.rlib.jit import JitDriver
+from   rpython.rlib.jit import JitDriver, hint
 
 #-----------------------------------------------------------------------
 # jit
@@ -69,11 +69,13 @@ def run( mem ):
       state    = s,
     )
 
-    old = s.pc
+    # constant fold the pc
+    pc = hint( s.pc, promote=True )
+    old = pc
 
     #print'{:06x}'.format( s.pc ),
     # we use trace elidable iread instead of just read
-    inst = s.mem.iread( s.pc, 4 )
+    inst = s.mem.iread( pc, 4 )
     #print '{:08x}'.format( inst ), decode(inst), num_inst
     decode( inst )( s, inst )
     num_inst += 1
