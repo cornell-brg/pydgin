@@ -55,14 +55,14 @@ def register_inst( func ):
 #-----------------------------------------------------------------------
 # RegisterFile
 #-----------------------------------------------------------------------
-class RegisterFile( object ):
-  def __init__( self ):
-    self.regs = [0] * 32
-  def __getitem__( self, idx ):
-    return self.regs[idx]
-  def __setitem__( self, idx, value ):
-    if idx != 0:
-      self.regs[idx] = value
+#class RegisterFile( object ):
+#  def __init__( self ):
+#    self.regs = [0] * 32
+#  def __getitem__( self, idx ):
+#    return self.regs[idx]
+#  def __setitem__( self, idx, value ):
+#    if idx != 0:
+#      self.regs[idx] = value
 
 #-----------------------------------------------------------------------
 # Memory
@@ -122,12 +122,18 @@ class Memory( object ):
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  _virtualizable_ = [ 'rf.regs[*]' ]
+  _virtualizable_ = [ 'rf[*]' ]
   def __init__( self, memory, symtable, reset_addr=0x400 ):
     self.src_ptr  = 0
     self.sink_ptr = 0
     self.pc       = reset_addr
-    self.rf       = RegisterFile()
+
+    # TODO: to allow the register file to be virtualizable (to avoid array
+    # lookups in the JIT), it needs to be an array as a member of the
+    # State class. Couldn't figure out how to have rf a RegisterFile
+    # object and still be virtualizable.
+    #self.rf       = RegisterFile()
+    self.rf       = [0] * 32
     self.mem      = memory
     self.symtable = symtable
     self.status   = 0
