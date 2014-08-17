@@ -73,10 +73,14 @@ def run( mem ):
     pc = hint( s.pc, promote=True )
     old = pc
 
-    #print'{:06x}'.format( s.pc ),
+    # We constant fold the s.mem object. This is important because
+    # otherwise the trace elidable iread doesn't work (assumes s.mem might
+    # have changed)
+    mem = hint( s.mem, promote=True )
+
     # we use trace elidable iread instead of just read
-    inst = s.mem.iread( pc, 4 )
-    #print '{:08x}'.format( inst ), decode(inst), num_inst
+    inst = mem.iread( pc, 4 )
+
     decode( inst )( s, inst )
     num_inst += 1
 

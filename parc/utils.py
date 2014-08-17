@@ -96,7 +96,6 @@ class Memory( object ):
   # instructions are not modified (no side effects, assumes the addresses
   # correspond to the same instructions)
   @elidable
-  @unroll_safe
   def iread( self, start_addr, num_bytes ):
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
     return self.data[ start_addr >> 2 ]
@@ -122,7 +121,7 @@ class Memory( object ):
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  _virtualizable_ = [ 'rf[*]' ]
+  _virtualizable_ = [ 'rf[*]', 'pc' ]
   def __init__( self, memory, symtable, reset_addr=0x400 ):
     self.src_ptr  = 0
     self.sink_ptr = 0
