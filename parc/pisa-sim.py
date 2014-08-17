@@ -9,7 +9,7 @@ sys.path.append('/Users/dmlockhart/vc/hg-opensource/pypy')
 import os
 import elf
 
-from   isa              import decode
+from   isa              import decode, reg_map
 from   utils            import State, Memory
 from   rpython.rlib.jit import JitDriver
 
@@ -47,8 +47,8 @@ rewrite_code      = [
 #-----------------------------------------------------------------------
 # run
 #-----------------------------------------------------------------------
-def run( mem ):
-  s  = State( Memory(mem), None, reset_addr=0x400 )
+def run( state ):
+  s = state
   num_inst = 0
 
   while s.status == 0:
@@ -61,10 +61,10 @@ def run( mem ):
 
     old = s.pc
 
-    #print'{:06x}'.format( s.pc ),
+    print'{:06x}'.format( s.pc ),
     # we use trace elidable iread instead of just read
     inst = s.mem.iread( s.pc, 4 )
-    #print '{:08x}'.format( inst ), decode(inst), num_inst
+    print '{:08x}'.format( inst ), decode(inst), num_inst
     decode( inst )( s, inst )
     num_inst += 1
 
@@ -85,7 +85,7 @@ def load_program( fp ):
   mem_image = elf.elf_reader( fp )
 
   sections = mem_image.get_sections()
-  mem      = [' ']*(2**20)
+  mem      = [' ']*(2**24)
 
   for section in sections:
     start_addr = section.addr
@@ -95,28 +95,215 @@ def load_program( fp ):
   return mem
 
 #-----------------------------------------------------------------------
+# test_init
+#-----------------------------------------------------------------------
+# initialize simulator state for simple programs, no syscalls
+def test_init( mem ):
+
+  # inject bootstrap code into the memory
+
+  for i, data in enumerate( bootstrap_code ):
+    mem[ bootstrap_addr + i ] = chr( data )
+  for i, data in enumerate( rewrite_code ):
+    mem[ rewrite_addr + i ] = chr( data )
+
+  # instantiate architectural state with memory and reset address
+
+  state = State( Memory(mem), None, reset_addr=0x0400 )
+
+  return state
+
+# MIPS stack starts at top of kuseg (0x7FFF.FFFF) and grows down
+#stack_base = 0x7FFFFFFF
+stack_base = (2**24)-1 # TODO: set this correctly!
+
+#-----------------------------------------------------------------------
+# syscall_init
+#-----------------------------------------------------------------------
+#
+# MIPS Memory Map (32-bit):
+#
+#   0xC000.0000 - Mapped            (kseg2) -   1GB
+#   0xA000.0000 - Unmapped uncached (kseg1) - 512MB
+#   0x8000.0000 - Unmapped cached   (kseg0) - 512MB
+#   0x0000.0000 - 32-bit user space (kuseg) -   2GB
+#
+def syscall_init( mem, argv ):
+
+  #---------------------------------------------------------------------
+  # memory map initialization
+  #---------------------------------------------------------------------
+
+  # TODO: for multicore allocate 8MB for each process
+  #proc_stack_base[pid] = stack_base - pid * 8 * 1024 * 1024
+
+  # top of heap (breakpoint)
+  #bss = mem_image.get_sections()[ -1 ]
+  #assert bss.name == '.bss'
+  #break_point = bss.addr + len(bss.data)
+
+  # memory maps: 1GB above top of heap
+  # mmap_start = mmap_end = break_point + 0x40000000
+
+  #---------------------------------------------------------------------
+  # stack argument initialization
+  #---------------------------------------------------------------------
+  # http://articles.manugarg.com/aboutelfauxiliaryvectors.html
+  #
+  #                contents         size
+  #
+  #   0x7FFF.FFFF  [ end marker ]               4    (NULL)
+  #                [ environment str data ]   >=0
+  #                [ arguments   str data ]   >=0
+  #                [ padding ]               0-16
+  #                [ auxv[n]  data ]            8    (AT_NULL Vector)
+  #                                             8*x
+  #                [ auxv[0]  data ]            8
+  #                [ envp[n]  pointer ]         4    (NULL)
+  #                                             4*x
+  #                [ envp[0]  pointer ]         4
+  #                [ argv[n]  pointer ]         4    (NULL)
+  #                                             4*x
+  #                [ argv[0]  pointer ]         4    (program name)
+  #   stack ptr->  [ argc ]                     4    (size of argv)
+  #
+  #                (stack grows down!!!)
+  #
+  #   0x7F7F.FFFF  < stack limit for pid 0 >
+  #
+
+  # auxv variables initialized by gem5, are these needed?
+  #
+  # - PAGESZ:    system page size
+  # - PHDR:      virtual addr of program header tables
+  #              (for statically linked binaries)
+  # - PHENT:     size of program header entries in elf file
+  # - PHNUM:     number of program headers in elf file
+  # - AT_ENRTY:  program entry point
+  # - UID:       user ID
+  # - EUID:      effective user ID
+  # - GID:       group ID
+  # - EGID:      effective group ID
+
+  # TODO: handle auxv, envp variables
+  auxv = []
+  envp = []
+  argc = len( argv )
+
+  # calculate sizes of sections
+  # TODO: parameterize auxv/envp/argv calc for variable int size?
+  stack_nbytes  = [ 4,                              # end mark nbytes
+                    sum([len(x)+1 for x in envp]),  # envp_str nbytes
+                    sum([len(x)+1 for x in argv]),  # argv_str nbytes
+                    0,                              # padding  nbytes
+                    8*(len(auxv) + 1),              # auxv     nbytes
+                    4*(len(envp) + 1),              # envp     nbytes
+                    4*(len(argv) + 1),              # argv     nbytes
+                    4 ]                             # argc     nbytes
+
+  # calculate padding to align boundary
+  stack_nbytes[3] = 16 - (sum(stack_nbytes[:3]) % 16)
+
+  # calculate stack pointer based on size of storage needed for args
+  # TODO: round to nearest page size?
+  stack_ptr = stack_base - sum( stack_nbytes )
+  offset    = stack_base
+  stack_off = []
+  for nbytes in stack_nbytes:
+    offset -= nbytes
+    stack_off.append( offset )
+  assert offset == stack_ptr
+
+  # utility functions
+
+  def str_to_mem( val, addr ):
+    for i, char in enumerate(val+'\0'):
+      mem[ addr + i ] = char
+    return addr + i + 1
+
+  def int_to_mem( val, addr ):
+    # TODO properly handle endianess
+    for i in range( 4 ):
+      mem[addr+i] = (val >> i) & 0xFF
+    return addr + i + 1
+
+  # write end marker to memory
+  int_to_mem( 0, stack_off[0] )
+
+  # write environment strings to memory
+  envp_ptrs = []
+  offset   = stack_off[1]
+  for x in envp:
+    envp_ptrs.append( offset )
+    offset = str_to_mem( x, offset )
+  assert offset == stack_off[0]
+
+  # write argument strings to memory
+  argv_ptrs = []
+  offset   = stack_off[2]
+  for x in argv:
+    argv_ptrs.append( offset )
+    offset = str_to_mem( x, offset )
+  assert offset == stack_off[1]
+
+  # write auxv vectors to memory
+  offset   = stack_off[4]
+  for type_, value in auxv + [(0,0)]:
+    offset = int_to_mem( type_, offset )
+    offset = int_to_mem( value, offset )
+  assert offset == stack_off[3]
+
+  # write envp pointers to memory
+  offset   = stack_off[5]
+  for env in envp_ptrs + [0]:
+    offset = int_to_mem( env, offset )
+  assert offset == stack_off[4]
+
+  # write argv pointers to memory
+  offset   = stack_off[6]
+  for arg in argv_ptrs + [0]:
+    offset = int_to_mem( arg, offset )
+  assert offset == stack_off[5]
+
+  # write argc to memory
+  offset = stack_off[7]
+  offset = int_to_mem( argc, offset )
+  assert offset == stack_off[6]
+
+  # initialize processor state
+  state = State( Memory(mem), None, reset_addr=0x1000 )
+
+  # initialize processor registers
+  state.rf[ reg_map['a0'] ] = argc       # argument 0 reg = argc
+  state.rf[ reg_map['a1'] ] = argv       # argument 1 reg = argv data ptr
+  state.rf[ reg_map['sp'] ] = stack_ptr  # stack pointer reg
+
+  return state
+
+#-----------------------------------------------------------------------
 # entry_point
 #-----------------------------------------------------------------------
 def entry_point( argv ):
   try:
     filename = argv[1]
+    testbin  = len(argv) == 3 and argv[2] == '--test'
   except IndexError:
     print "You must supply a filename"
     return 1
 
-  # Load the program
+  # Load the program into a memory object
+
   mem = load_program( open( filename, 'rb' ) )
 
-  # Inject bootstrap code
-  for i, data in enumerate( bootstrap_code ):
-    mem[ bootstrap_addr + i ] = chr( data )
 
-  # Rewrite jump address
-  for i, data in enumerate( rewrite_code ):
-    mem[ rewrite_addr + i ] = chr( data )
+  # Insert bootstrapping code into memory and initialize processor state
 
-  # Execute program
-  run( mem )
+  if testbin: state = test_init   ( mem )
+  else:       state = syscall_init( mem, argv )
+
+  # Execute the program
+
+  run( state )
 
   return 0
 
