@@ -1,3 +1,7 @@
+#=======================================================================
+# isa.py
+#=======================================================================
+
 import py
 import re
 
@@ -178,9 +182,6 @@ encodings = [
 # Instruction Definitions
 #=======================================================================
 
-decode_table = {}
-def register_inst( func ): return func
-
 #-----------------------------------------------------------------------
 # Coprocessor 0 Instructions
 #-----------------------------------------------------------------------
@@ -188,14 +189,12 @@ def register_inst( func ): return func
 #-----------------------------------------------------------------------
 # nop
 #-----------------------------------------------------------------------
-@register_inst
 def execute_nop( s, inst ):
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # mfc0
 #-----------------------------------------------------------------------
-@register_inst
 def execute_mfc0( s, inst ):
   #if   rd(inst) ==  1: pass
   #  s.rf[ rt(inst) ] = src[ s.src_ptr ]
@@ -209,7 +208,6 @@ def execute_mfc0( s, inst ):
 #-----------------------------------------------------------------------
 # mtc0
 #-----------------------------------------------------------------------
-@register_inst
 def execute_mtc0( s, inst ):
   if   rd(inst) ==  1:
     print 'SETTING STATUS'
@@ -233,7 +231,6 @@ def execute_mtc0( s, inst ):
 #-----------------------------------------------------------------------
 # addu
 #-----------------------------------------------------------------------
-@register_inst
 def execute_addu( s, inst ):
   s.rf[ rd(inst) ] = trim( s.rf[ rs(inst) ] + s.rf[ rt(inst) ] )
   s.pc += 4
@@ -241,7 +238,6 @@ def execute_addu( s, inst ):
 #-----------------------------------------------------------------------
 # subu
 #-----------------------------------------------------------------------
-@register_inst
 def execute_subu( s, inst ):
   s.rf[rd(inst)] = trim( s.rf[rs(inst)] - s.rf[rt(inst)] )
   s.pc += 4
@@ -249,7 +245,6 @@ def execute_subu( s, inst ):
 #-----------------------------------------------------------------------
 # and
 #-----------------------------------------------------------------------
-@register_inst
 def execute_and( s, inst ):
   s.rf[rd(inst)] = s.rf[rs(inst)] & s.rf[rt(inst)]
   s.pc += 4
@@ -257,7 +252,6 @@ def execute_and( s, inst ):
 #-----------------------------------------------------------------------
 # or
 #-----------------------------------------------------------------------
-@register_inst
 def execute_or( s, inst ):
   s.rf[rd(inst)] = s.rf[rs(inst)] | s.rf[rt(inst)]
   s.pc += 4
@@ -265,7 +259,6 @@ def execute_or( s, inst ):
 #-----------------------------------------------------------------------
 # xor
 #-----------------------------------------------------------------------
-@register_inst
 def execute_xor( s, inst ):
   s.rf[rd(inst)] = s.rf[rs(inst)] ^ s.rf[rt(inst)]
   s.pc += 4
@@ -273,7 +266,6 @@ def execute_xor( s, inst ):
 #-----------------------------------------------------------------------
 # nor
 #-----------------------------------------------------------------------
-@register_inst
 def execute_nor( s, inst ):
   s.rf[rd(inst)] = trim( ~(s.rf[rs(inst)] | s.rf[rt(inst)]) )
   s.pc += 4
@@ -281,7 +273,6 @@ def execute_nor( s, inst ):
 #-----------------------------------------------------------------------
 # slt
 #-----------------------------------------------------------------------
-@register_inst
 def execute_slt( s, inst ):
   s.rf[rd(inst)] = signed( s.rf[rs(inst)] ) < signed( s.rf[rt(inst)] )
   s.pc += 4
@@ -289,7 +280,6 @@ def execute_slt( s, inst ):
 #-----------------------------------------------------------------------
 # sltu
 #-----------------------------------------------------------------------
-@register_inst
 def execute_sltu( s, inst ):
   s.rf[rd(inst)] = s.rf[rs(inst)] < s.rf[rt(inst)]
   s.pc += 4
@@ -297,7 +287,6 @@ def execute_sltu( s, inst ):
 #-----------------------------------------------------------------------
 # mul
 #-----------------------------------------------------------------------
-@register_inst
 def execute_mul( s, inst ):
   s.rf[ rd(inst) ] = trim( s.rf[ rs(inst) ] * s.rf[ rt(inst) ] )
   s.pc += 4
@@ -306,7 +295,6 @@ def execute_mul( s, inst ):
 # div
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/a/6084608
-@register_inst
 def execute_div( s, inst ):
   x    = signed( s.rf[ rs(inst) ] )
   y    = signed( s.rf[ rt(inst) ] )
@@ -318,7 +306,6 @@ def execute_div( s, inst ):
 #-----------------------------------------------------------------------
 # divu
 #-----------------------------------------------------------------------
-@register_inst
 def execute_divu( s, inst ):
   s.rf[ rd(inst) ] = s.rf[ rs(inst) ] / s.rf[ rt(inst) ]
   s.pc += 4
@@ -327,7 +314,6 @@ def execute_divu( s, inst ):
 # rem
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/a/6084608
-@register_inst
 def execute_rem( s, inst ):
   x = signed( s.rf[ rs(inst) ] )
   y = signed( s.rf[ rt(inst) ] )
@@ -338,7 +324,6 @@ def execute_rem( s, inst ):
 #-----------------------------------------------------------------------
 # remu
 #-----------------------------------------------------------------------
-@register_inst
 def execute_remu( s, inst ):
   s.rf[ rd(inst) ] = s.rf[ rs(inst) ] % s.rf[ rt(inst) ]
   s.pc += 4
@@ -350,7 +335,6 @@ def execute_remu( s, inst ):
 #-----------------------------------------------------------------------
 # addiu
 #-----------------------------------------------------------------------
-@register_inst
 def execute_addiu( s, inst ):
   s.rf[ rt(inst) ] = trim( s.rf[ rs(inst) ] + sext( imm(inst) ) )
   s.pc += 4
@@ -358,7 +342,6 @@ def execute_addiu( s, inst ):
 #-----------------------------------------------------------------------
 # andi
 #-----------------------------------------------------------------------
-@register_inst
 def execute_andi( s, inst ):
   s.rf[rt(inst)] = s.rf[rs(inst)] & imm(inst)
   s.pc += 4
@@ -366,7 +349,6 @@ def execute_andi( s, inst ):
 #-----------------------------------------------------------------------
 # ori
 #-----------------------------------------------------------------------
-@register_inst
 def execute_ori( s, inst ):
   s.rf[rt(inst)] = s.rf[rs(inst)] | imm(inst)
   s.pc += 4
@@ -374,7 +356,6 @@ def execute_ori( s, inst ):
 #-----------------------------------------------------------------------
 # xori
 #-----------------------------------------------------------------------
-@register_inst
 def execute_xori( s, inst ):
   s.rf[rt(inst)] = s.rf[rs(inst)] ^ imm(inst)
   s.pc += 4
@@ -382,7 +363,6 @@ def execute_xori( s, inst ):
 #-----------------------------------------------------------------------
 # slti
 #-----------------------------------------------------------------------
-@register_inst
 def execute_slti( s, inst ):
   s.rf[rt(inst)] = signed( s.rf[rs(inst)] ) < signed( sext(imm(inst)) )
   s.pc += 4
@@ -390,7 +370,6 @@ def execute_slti( s, inst ):
 #-----------------------------------------------------------------------
 # sltiu
 #-----------------------------------------------------------------------
-@register_inst
 def execute_sltiu( s, inst ):
   s.rf[rt(inst)] = s.rf[rs(inst)] < sext(imm(inst))
   s.pc += 4
@@ -402,7 +381,6 @@ def execute_sltiu( s, inst ):
 #-----------------------------------------------------------------------
 # sll
 #-----------------------------------------------------------------------
-@register_inst
 def execute_sll( s, inst ):
   s.rf[rd(inst)] = trim( s.rf[rt(inst)] << shamt(inst) )
   s.pc += 4
@@ -410,7 +388,6 @@ def execute_sll( s, inst ):
 #-----------------------------------------------------------------------
 # srl
 #-----------------------------------------------------------------------
-@register_inst
 def execute_srl( s, inst ):
   s.rf[rd(inst)] = s.rf[rt(inst)] >> shamt(inst)
   s.pc += 4
@@ -418,7 +395,6 @@ def execute_srl( s, inst ):
 #-----------------------------------------------------------------------
 # sra
 #-----------------------------------------------------------------------
-@register_inst
 def execute_sra( s, inst ):
   s.rf[rd(inst)] = trim( signed( s.rf[rt(inst)] ) >> shamt(inst) )
   s.pc += 4
@@ -426,7 +402,6 @@ def execute_sra( s, inst ):
 #-----------------------------------------------------------------------
 # sllv
 #-----------------------------------------------------------------------
-@register_inst
 def execute_sllv( s, inst ):
   s.rf[rd(inst)] = trim( s.rf[rt(inst)] << trim_5( s.rf[rs(inst)] ) )
   s.pc += 4
@@ -434,7 +409,6 @@ def execute_sllv( s, inst ):
 #-----------------------------------------------------------------------
 # srlv
 #-----------------------------------------------------------------------
-@register_inst
 def execute_srlv( s, inst ):
   s.rf[rd(inst)] = s.rf[rt(inst)] >> trim_5( s.rf[rs(inst)] )
   s.pc += 4
@@ -442,7 +416,6 @@ def execute_srlv( s, inst ):
 #-----------------------------------------------------------------------
 # srav
 #-----------------------------------------------------------------------
-@register_inst
 def execute_srav( s, inst ):
   # TODO: should it really be masked like this?
   s.rf[rd(inst)] = trim( signed( s.rf[rt(inst)] ) >> trim_5( s.rf[rs(inst)] ) )
@@ -455,14 +428,12 @@ def execute_srav( s, inst ):
 #-----------------------------------------------------------------------
 # j
 #-----------------------------------------------------------------------
-@register_inst
 def execute_j( s, inst ):
   s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg(inst) << 2)
 
 #-----------------------------------------------------------------------
 # jal
 #-----------------------------------------------------------------------
-@register_inst
 def execute_jal( s, inst ):
   s.rf[31] = s.pc + 4
   s.pc = ((s.pc + 4) & 0xF0000000) | (jtarg(inst) << 2)
@@ -470,14 +441,12 @@ def execute_jal( s, inst ):
 #-----------------------------------------------------------------------
 # jr
 #-----------------------------------------------------------------------
-@register_inst
 def execute_jr( s, inst ):
   s.pc = s.rf[rs(inst)]
 
 #-----------------------------------------------------------------------
 # jalr
 #-----------------------------------------------------------------------
-@register_inst
 def execute_jalr( s, inst ):
   s.rf[rd(inst)] = s.pc + 4
   s.pc   = s.rf[rs(inst)]
@@ -485,7 +454,6 @@ def execute_jalr( s, inst ):
 #-----------------------------------------------------------------------
 # lui
 #-----------------------------------------------------------------------
-@register_inst
 def execute_lui( s, inst ):
   s.rf[ rt(inst) ] = imm(inst) << 16
   s.pc += 4
@@ -498,7 +466,6 @@ def execute_lui( s, inst ):
 #-----------------------------------------------------------------------
 # beq
 #-----------------------------------------------------------------------
-@register_inst
 def execute_beq( s, inst ):
   if s.rf[rs(inst)] == s.rf[rt(inst)]:
     s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
@@ -508,7 +475,6 @@ def execute_beq( s, inst ):
 #-----------------------------------------------------------------------
 # bne
 #-----------------------------------------------------------------------
-@register_inst
 def execute_bne( s, inst ):
   if s.rf[rs(inst)] != s.rf[rt(inst)]:
     s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
@@ -518,7 +484,6 @@ def execute_bne( s, inst ):
 #-----------------------------------------------------------------------
 # blez
 #-----------------------------------------------------------------------
-@register_inst
 def execute_blez( s, inst ):
   if signed( s.rf[rs(inst)] ) <= 0:
     s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
@@ -528,7 +493,6 @@ def execute_blez( s, inst ):
 #-----------------------------------------------------------------------
 # bgtz
 #-----------------------------------------------------------------------
-@register_inst
 def execute_bgtz( s, inst ):
   if signed( s.rf[rs(inst)] ) > 0:
     s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
@@ -538,7 +502,6 @@ def execute_bgtz( s, inst ):
 #-----------------------------------------------------------------------
 # bltz
 #-----------------------------------------------------------------------
-@register_inst
 def execute_bltz( s, inst ):
   if signed( s.rf[rs(inst)] ) < 0:
     s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
@@ -548,7 +511,6 @@ def execute_bltz( s, inst ):
 #-----------------------------------------------------------------------
 # bgez
 #-----------------------------------------------------------------------
-@register_inst
 def execute_bgez( s, inst ):
   if signed( s.rf[rs(inst)] ) >= 0:
     s.pc  = s.pc + 4 + (signed(sext(imm(inst))) << 2)
@@ -562,7 +524,6 @@ def execute_bgez( s, inst ):
 #-----------------------------------------------------------------------
 # lw
 #-----------------------------------------------------------------------
-@register_inst
 def execute_lw( s, inst ):
   addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.rf[rt(inst)] = s.mem.read( addr, 4 )
@@ -571,7 +532,6 @@ def execute_lw( s, inst ):
 #-----------------------------------------------------------------------
 # lh
 #-----------------------------------------------------------------------
-@register_inst
 def execute_lh( s, inst ):
   addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.rf[rt(inst)] = sext( s.mem.read( addr, 2 ) )
@@ -580,7 +540,6 @@ def execute_lh( s, inst ):
 #-----------------------------------------------------------------------
 # lhu
 #-----------------------------------------------------------------------
-@register_inst
 def execute_lhu( s, inst ):
   addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.rf[rt(inst)] = s.mem.read( addr, 2 )
@@ -589,7 +548,6 @@ def execute_lhu( s, inst ):
 #-----------------------------------------------------------------------
 # lb
 #-----------------------------------------------------------------------
-@register_inst
 def execute_lb( s, inst ):
   addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.rf[rt(inst)] = sext_byte( s.mem.read( addr, 1 ) )
@@ -598,7 +556,6 @@ def execute_lb( s, inst ):
 #-----------------------------------------------------------------------
 # lbu
 #-----------------------------------------------------------------------
-@register_inst
 def execute_lbu( s, inst ):
   addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.rf[rt(inst)] = s.mem.read( addr, 1 )
@@ -611,7 +568,6 @@ def execute_lbu( s, inst ):
 #-----------------------------------------------------------------------
 # sw
 #-----------------------------------------------------------------------
-@register_inst
 def execute_sw( s, inst ):
   addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.mem.write( addr, 4, s.rf[rt(inst)] )
@@ -620,7 +576,6 @@ def execute_sw( s, inst ):
 #-----------------------------------------------------------------------
 # sh
 #-----------------------------------------------------------------------
-@register_inst
 def execute_sh( s, inst ):
   addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.mem.write( addr, 2, s.rf[rt(inst)] )
@@ -629,7 +584,6 @@ def execute_sh( s, inst ):
 #-----------------------------------------------------------------------
 # sb
 #-----------------------------------------------------------------------
-@register_inst
 def execute_sb( s, inst ):
   addr = trim( s.rf[rs(inst)] + sext(imm(inst)) )
   s.mem.write( addr, 1, s.rf[rt(inst)] )
@@ -638,7 +592,6 @@ def execute_sb( s, inst ):
 #-----------------------------------------------------------------------
 # movn
 #-----------------------------------------------------------------------
-@register_inst
 def execute_movn( s, inst ):
   if s.rf[rt(inst)] != 0:
     s.rf[rd(inst)] = s.rf[rs(inst)]
@@ -647,7 +600,6 @@ def execute_movn( s, inst ):
 #-----------------------------------------------------------------------
 # movz
 #-----------------------------------------------------------------------
-@register_inst
 def execute_movz( s, inst ):
   if s.rf[rt(inst)] == 0:
     s.rf[rd(inst)] = s.rf[rs(inst)]
