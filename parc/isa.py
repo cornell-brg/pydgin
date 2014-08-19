@@ -5,8 +5,9 @@
 import py
 import re
 
-from utils import rd, rs, rt, imm, jtarg, shamt
-from utils import trim, trim_5, signed, sext, sext_byte
+from utils    import rd, rs, rt, imm, jtarg, shamt
+from utils    import trim, trim_5, signed, sext, sext_byte
+from syscalls import syscall_funcs
 
 # we mark pure (trace elidable) functions that don't have any side effects
 from rpython.rlib.jit import elidable
@@ -148,14 +149,14 @@ encodings = [
   ['movn',    '000000xxxxxxxxxxxxxxx00000001011'],
   ['movz',    '000000xxxxxxxxxxxxxxx00000001010'],
   # Syscall
-  #['syscall', '000000xxxxxxxxxxxxxxxxxxxx001100'],
+  ['syscall', '000000xxxxxxxxxxxxxxxxxxxx001100'],
   #['eret',    '000000xxxxxxxxxxxxxxxxxxxx001100'],
   # AMO
-  #['amoadd',  '100111xxxxxxxxxxxxxxx00000000010'],
-  #['amoand',  '100111xxxxxxxxxxxxxxx00000000011'],
-  #['amoor',   '100111xxxxxxxxxxxxxxx00000000100'],
-  #['amoxchg', '100111xxxxxxxxxxxxxxx00000001101'],
-  #['amomin',  '100111xxxxxxxxxxxxxxx00000001110'],
+  #['amo_add',  '100111xxxxxxxxxxxxxxx00000000010'],
+  #['amo_and',  '100111xxxxxxxxxxxxxxx00000000011'],
+  ['amo_or',   '100111xxxxxxxxxxxxxxx00000000100'],
+  #['amo_xchg', '100111xxxxxxxxxxxxxxx00000001101'],
+  #['amo_min',  '100111xxxxxxxxxxxxxxx00000001110'],
   # Data-Parallel
   #['xloop',   '110100xxxxx00000xxxxxxxxxxxxxxxx'],
   #['stop',    '10011100000000000000000000000000'],
@@ -603,6 +604,33 @@ def execute_movn( s, inst ):
 def execute_movz( s, inst ):
   if s.rf[rt(inst)] == 0:
     s.rf[rd(inst)] = s.rf[rs(inst)]
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# Syscall instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# syscall
+#-----------------------------------------------------------------------
+def execute_syscall( s, inst ):
+  v0  = reg_map['v0']
+  idx = s.rf[ v0 ]
+  s.rf[ v0 ] = syscall_funcs[ idx ]()
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# Atomic Memory Operation instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# amo.or
+#-----------------------------------------------------------------------
+def execute_amo_or( s, inst ):
+  temp = s.mem.read( s.rf[ rs(inst) ], 4 )
+  val  = temp | s.rf[ rt(inst) ]
+  s.mem.write( s.rf[ rs(inst) ], 4, val )
+  s.rf[ rd(inst) ] = temp
   s.pc += 4
 
 #-----------------------------------------------------------------------
