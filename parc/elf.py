@@ -503,10 +503,20 @@ def elf_reader( file_obj ):
     if section_name not in valid_section_names:
       continue
 
-    # Read the section data
+    # Read the section data if it exists
 
-    file_obj.seek( shdr.offset )
-    data = file_obj.read( shdr.size )
+    if section_name not in ['.sbss', '.bss']:
+      file_obj.seek( shdr.offset )
+      data = file_obj.read( shdr.size )
+
+    # NOTE: the .bss and .sbss sections don't actually contain any
+    # data in the ELF.  These sections should be initialized to zero.
+    # For more information see:
+    #
+    # - http://stackoverflow.com/questions/610682/bss-section-in-elf-file
+
+    else:
+      data = ['\0']*shdr.size
 
     # Save the data holding the symbol string table
 
