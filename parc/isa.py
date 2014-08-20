@@ -7,7 +7,6 @@ import re
 
 from utils    import rd, rs, rt, imm, jtarg, shamt
 from utils    import trim, trim_5, signed, sext, sext_byte
-from syscalls import syscall_funcs
 
 # we mark pure (trace elidable) functions that don't have any side effects
 from rpython.rlib.jit import elidable
@@ -633,10 +632,11 @@ def execute_movz( s, inst ):
 #-----------------------------------------------------------------------
 # syscall
 #-----------------------------------------------------------------------
+from syscalls import syscall_funcs
 def execute_syscall( s, inst ):
-  v0  = reg_map['v0']
-  idx = s.rf[ v0 ]
-  s.rf[ v0 ] = syscall_funcs[ idx ]()
+  v0 = reg_map['v0']
+  syscall_number = s.rf[ v0 ]
+  syscall_funcs[ syscall_number ]( s )
   s.pc += 4
 
 #-----------------------------------------------------------------------
