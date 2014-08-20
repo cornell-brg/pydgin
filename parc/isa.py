@@ -83,6 +83,24 @@ reg_map = {
   'c0_counthi'   : 25,  # mtc0 mfc0
 }
 
+# Other useful register identifiers might be found in gem5, however,
+# it would be nice to find a more authoritative source for these:
+#
+# - https://github.com/cornell-brg/gem5-mcpat/blob/master/src/arch/mips/registers.hh
+#
+# zero                  :  0
+# assember              :  1
+# syscall_success       :  7
+# first_argument        :  4
+# return_value          :  2
+# kernel reg0           : 26
+# kernel reg1           : 27
+# global_pointer        : 28
+# stack_pointer         : 29
+# frame_pointer         : 30
+# return_address        : 31
+# syscall_pseudo_return :  3
+
 #=======================================================================
 # Instruction Encodings
 #=======================================================================
@@ -200,8 +218,10 @@ def execute_mfc0( s, inst ):
   #if   rd(inst) ==  1: pass
   #  s.rf[ rt(inst) ] = src[ s.src_ptr ]
   #  s.src_ptr += 1
-  if rd(inst) == 17:
+  if   rd(inst) == reg_map['c0_coreid']:
     s.rf[rt(inst)] = 0
+  elif rd(inst) == reg_map['c0_numcores']:
+    s.rf[rt(inst)] = 1
   else:
     raise Exception('Invalid mfc0 destination: %d!' % rd(inst) )
   s.pc += 4
@@ -210,17 +230,17 @@ def execute_mfc0( s, inst ):
 # mtc0
 #-----------------------------------------------------------------------
 def execute_mtc0( s, inst ):
-  if   rd(inst) ==  1:
+  if   rd(inst) == reg_map['status']:
     print 'SETTING STATUS'
     s.status = s.rf[rt(inst)]
+  elif rd(inst) == reg_map['statsen']:
+    s.stats_en = s.rf[rt(inst)]
   #elif rd(inst) ==  2: pass
   #  if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
   #    print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ rt(inst) ]
   #    raise Exception('Instruction: mtc0 failed!')
   #  print 'SUCCESS: s.rf[' + str( rt(inst) ) + '] == ' + str( sink[ s.sink_ptr ] )
   #  s.sink_ptr += 1
-  elif rd(inst) == 10:
-    s.stats_en = s.rf[rt(inst)]
   else:
     raise Exception('Invalid mtc0 destination!')
   s.pc += 4
