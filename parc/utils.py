@@ -107,14 +107,20 @@ class Memory( object ):
 class State( object ):
   _virtualizable_ = [ 'rf.regs[*]' ]
   def __init__( self, memory, symtable, reset_addr=0x400 ):
-    self.src_ptr  = 0
-    self.sink_ptr = 0
     self.pc       = reset_addr
     self.rf       = RegisterFile()
     self.mem      = memory
-    self.symtable = symtable
+
+    # coprocessor registers
     self.status   = 0
     self.stat_en  = 0
+
+    # parc special
+    self.src_ptr  = 0
+    self.sink_ptr = 0
+
+    # syscall stuff... TODO: should this be here?
+    self.break_point = 0
 
 #-----------------------------------------------------------------------
 # Instruction Fields
