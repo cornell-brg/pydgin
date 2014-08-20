@@ -41,7 +41,7 @@
 
 from isa import reg_map
 
-v0 = reg_map['a0']
+v0 = reg_map['v0']
 a0 = reg_map['a0']
 a1 = reg_map['a1']
 a2 = reg_map['a2']
