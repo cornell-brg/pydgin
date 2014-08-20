@@ -169,8 +169,8 @@ encodings = [
   ['syscall', '000000xxxxxxxxxxxxxxxxxxxx001100'],
   #['eret',    '000000xxxxxxxxxxxxxxxxxxxx001100'],
   # AMO
-  #['amo_add',  '100111xxxxxxxxxxxxxxx00000000010'],
-  #['amo_and',  '100111xxxxxxxxxxxxxxx00000000011'],
+  ['amo_add',  '100111xxxxxxxxxxxxxxx00000000010'],
+  ['amo_and',  '100111xxxxxxxxxxxxxxx00000000011'],
   ['amo_or',   '100111xxxxxxxxxxxxxxx00000000100'],
   #['amo_xchg', '100111xxxxxxxxxxxxxxx00000001101'],
   #['amo_min',  '100111xxxxxxxxxxxxxxx00000001110'],
@@ -644,12 +644,29 @@ def execute_syscall( s, inst ):
 #-----------------------------------------------------------------------
 
 #-----------------------------------------------------------------------
+# amo.add
+#-----------------------------------------------------------------------
+def execute_amo_add( s, inst ):
+  temp = s.mem.read( s.rf[ rs(inst) ], 4 )
+  s.mem.write( s.rf[rs(inst)], 4, trim(temp + s.rf[rt(inst)]) )
+  s.rf[ rd(inst) ] = temp
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# amo.and
+#-----------------------------------------------------------------------
+def execute_amo_and( s, inst ):
+  temp = s.mem.read( s.rf[ rs(inst) ], 4 )
+  s.mem.write( s.rf[rs(inst)], 4, temp & s.rf[rt(inst)] )
+  s.rf[ rd(inst) ] = temp
+  s.pc += 4
+
+#-----------------------------------------------------------------------
 # amo.or
 #-----------------------------------------------------------------------
 def execute_amo_or( s, inst ):
   temp = s.mem.read( s.rf[ rs(inst) ], 4 )
-  val  = temp | s.rf[ rt(inst) ]
-  s.mem.write( s.rf[ rs(inst) ], 4, val )
+  s.mem.write( s.rf[rs(inst)], 4, temp | s.rf[rt(inst)] )
   s.rf[ rd(inst) ] = temp
   s.pc += 4
 
