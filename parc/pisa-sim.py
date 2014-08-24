@@ -44,6 +44,8 @@ rewrite_code      = [
   0x08, 0x04, 0x00, 0x08,   # j   0x1020
 ]
 
+memory_size = 2**24
+
 #-----------------------------------------------------------------------
 # run
 #-----------------------------------------------------------------------
@@ -85,7 +87,7 @@ def load_program( fp ):
   mem_image = elf.elf_reader( fp )
 
   sections = mem_image.get_sections()
-  mem      = [' ']*(2**24)
+  mem      = [' ']*memory_size
 
   for section in sections:
     start_addr = section.addr
@@ -115,7 +117,7 @@ def test_init( mem ):
 
 # MIPS stack starts at top of kuseg (0x7FFF.FFFF) and grows down
 #stack_base = 0x7FFFFFFF
-stack_base = (2**24)-1 # TODO: set this correctly!
+stack_base = memory_size-1   # TODO: set this correctly!
 
 #-----------------------------------------------------------------------
 # syscall_init
@@ -230,7 +232,7 @@ def syscall_init( mem, argv ):
   def int_to_mem( mem, val, addr ):
     # TODO properly handle endianess
     for i in range( 4 ):
-      mem[addr+i] = chr((val >> i) & 0xFF)
+      mem[addr+i] = chr((val >> 8*i) & 0xFF)
     return addr + 4
 
   # write end marker to memory
