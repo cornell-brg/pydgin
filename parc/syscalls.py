@@ -1,6 +1,4 @@
 #=======================================================================
-# syscalls.py
-#=======================================================================
 # Implementations of emulated syscalls. Call numbers were borrowed from
 # the following files:
 #
@@ -40,23 +38,54 @@
 # - 8 lseek
 
 from isa import reg_map
+import sys
+import os
 
-v0 = reg_map['v0']
-a0 = reg_map['a0']
-a1 = reg_map['a1']
-a2 = reg_map['a2']
+v0 = reg_map['v0']  # return value
+a0 = reg_map['a0']  # arg0
+a1 = reg_map['a1']  # arg1
+a2 = reg_map['a2']  # arg2
+a3 = reg_map['a3']  # error
+
+file_descriptors = [
+  sys.stdin,
+  sys.stderr,
+  sys.stdout,
+]
 
 #-----------------------------------------------------------------------
-# TODO
+# read
 #-----------------------------------------------------------------------
 def syscall_read( s ):
   raise Exception('read unimplemented!')
+
+#-----------------------------------------------------------------------
+# write
+#-----------------------------------------------------------------------
 def syscall_write( s ):
-  raise Exception('write unimplemented!')
+  file_ptr = s.rf[ a0 ]
+  data_ptr = s.rf[ a1 ]
+  nbytes   = s.rf[ a2 ]
+
+  fd   = file_descriptors[ file_ptr ]
+  data = ''.join( s.mem.data[data_ptr:data_ptr+nbytes] )
+  x = os.write( file_ptr, data )
+
+#-----------------------------------------------------------------------
+# open
+#-----------------------------------------------------------------------
 def syscall_open( s ):
   raise Exception('open unimplemented!')
+
+#-----------------------------------------------------------------------
+# close
+#-----------------------------------------------------------------------
 def syscall_close( s ):
   raise Exception('close unimplemented!')
+
+#-----------------------------------------------------------------------
+# lseek
+#-----------------------------------------------------------------------
 def syscall_lseek( s ):
   raise Exception('close unimplemented!')
 
@@ -75,7 +104,7 @@ def syscall_brk( s ):
     s.break_point = new_brk
 
   s.rf[ v0 ] = s.break_point
-  print '>>> breakpoint', hex(s.break_point), hex(s.rf.regs[29]), '<<<',
+  #print '>>> breakpoint', hex(s.break_point), hex(s.rf.regs[29]), '<<<',
 
   # Maven Proxy Kernel Implementation
   #
