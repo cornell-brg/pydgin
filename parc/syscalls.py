@@ -65,20 +65,34 @@ def syscall_lseek( s ):
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/questions/6988487/what-does-brk-system-call-do
 def syscall_brk( s ):
-  kernel_addr = s.rf[ a0 ]
-  user_addr   = s.rf[ a1 ]
 
-  # first call to brk initializes the breakk_point address (end of heap)
-  # TODO: initialize in pisa-sim::syscall_init()!
-  if s.break_point == 0:
-    s.break_point = user_addr
+  # gem5 Implementation
 
-  # if kernel_addr is not null, set a new break_point
-  if kernel_addr != 0:
-    s.break_point = kernel_addr
+  new_brk = s.rf[ a0 ]
 
-  # return the break_point value
+  if new_brk != 0:
+    # if new_brk > s.break_point: allocate_memory()
+    s.break_point = new_brk
+
   s.rf[ v0 ] = s.break_point
+  print '>>> breakpoint', hex(s.break_point), hex(s.rf.regs[29]), '<<<',
+
+  # Maven Proxy Kernel Implementation
+  #
+  #kernel_addr = s.rf[ a0 ]
+  #user_addr   = s.rf[ a1 ]
+
+  ## first call to brk initializes the breakk_point address (end of heap)
+  ## TODO: initialize in pisa-sim::syscall_init()!
+  #if s.break_point == 0:
+  #  s.break_point = user_addr
+
+  ## if kernel_addr is not null, set a new break_point
+  #if kernel_addr != 0:
+  #  s.break_point = kernel_addr
+
+  ## return the break_point value
+  #s.rf[ v0 ] = s.break_point
 
 #-----------------------------------------------------------------------
 # numcores
