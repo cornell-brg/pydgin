@@ -54,6 +54,13 @@ file_descriptors = [
 ]
 
 #-----------------------------------------------------------------------
+# exit
+#-----------------------------------------------------------------------
+def syscall_exit( s ):
+  exit_code = s.rf[ a0 ]
+  sys.exit( exit_code )
+
+#-----------------------------------------------------------------------
 # read
 #-----------------------------------------------------------------------
 def syscall_read( s ):
@@ -81,7 +88,10 @@ def syscall_open( s ):
 # close
 #-----------------------------------------------------------------------
 def syscall_close( s ):
-  raise Exception('close unimplemented!')
+  file_ptr = s.rf[ a0 ]
+  if file_ptr > 2:
+    fd = file_descriptors[ file_ptr ]
+    fd.close()
 
 #-----------------------------------------------------------------------
 # lseek
@@ -135,7 +145,7 @@ def syscall_numcores( s ):
 #-----------------------------------------------------------------------
 syscall_funcs = {
 #   0: syscall,       # unimplemented_func
-#   1: exit,
+    1: syscall_exit,
     2: syscall_read,
     3: syscall_write,
     4: syscall_open,
