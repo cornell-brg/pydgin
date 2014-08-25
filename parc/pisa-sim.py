@@ -49,7 +49,7 @@ memory_size = 2**24
 #-----------------------------------------------------------------------
 # run
 #-----------------------------------------------------------------------
-def run( state ):
+def run( state, debug ):
   s = state
 
   while s.status == 0:
@@ -61,12 +61,13 @@ def run( state ):
 
     old = s.pc
 
-    #print'{:06x}'.format( s.pc ),
+    if debug: print'{:6x}'.format( s.pc ),
     # we use trace elidable iread instead of just read
     inst = s.mem.iread( s.pc, 4 )
-    #print '{:08x}'.format( inst ), decode(inst), num_inst
+    if debug: print '{:08x} {:8s} {:8d}'.format(inst, decode(inst).func_name[8:], s.ncycles),
     decode( inst )( s, inst )
     s.ncycles += 1  # TODO: should this be done inside instruction definition?
+    if debug: print
 
     if s.pc < old:
       jitdriver.can_enter_jit(
@@ -127,7 +128,7 @@ stack_base = memory_size-1   # TODO: set this correctly!
 #   0x8000.0000 - Unmapped cached   (kseg0) - 512MB
 #   0x0000.0000 - 32-bit user space (kuseg) -   2GB
 #
-def syscall_init( mem, argv ):
+def syscall_init( mem, argv, debug ):
 
   #---------------------------------------------------------------------
   # memory map initialization
@@ -220,6 +221,16 @@ def syscall_init( mem, argv ):
     stack_off.append( offset )
   assert offset == stack_ptr
 
+  if debug:
+    print 'stack min', hex( stack_ptr )
+    print 'stack size', stack_base - stack_ptr
+
+    print 'argv', stack_nbytes[-2]
+    print 'envp', stack_nbytes[-3]
+    print 'auxv', stack_nbytes[-4]
+    print 'argd', stack_nbytes[-6]
+    print 'envd', stack_nbytes[-7]
+
   # utility functions
 
   def str_to_mem( mem, val, addr ):
@@ -279,6 +290,20 @@ def syscall_init( mem, argv ):
   # initialize processor state
   state = State( Memory(mem), None, reset_addr=0x1000 )
 
+  if debug:
+    print '---'
+    print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
+    for i, ptr in enumerate(argv_ptrs):
+      print 'argv[%2d] = %x (%x)' % ( i, argv_ptrs[i], stack_off[-2]+4*i ),
+      print len( argv[i] ), argv[i]
+    print 'argd = %s (%x)' % ( argv[0],      stack_off[-6] )
+    print '---'
+    print 'argv-base', hex(stack_off[-2])
+    print 'envp-base', hex(stack_off[-3])
+    print 'auxv-base', hex(stack_off[-4])
+    print 'argd-base', hex(stack_off[-6])
+    print 'envd-base', hex(stack_off[-7])
+
   # initialize processor registers
   state.rf[ reg_map['a0'] ] = argc         # argument 0 reg = argc
   state.rf[ reg_map['a1'] ] = stack_off[6] # argument 1 reg = argv ptr addr
@@ -301,15 +326,16 @@ def entry_point( argv ):
 
   mem = load_program( open( filename, 'rb' ) )
 
+  debug = True
 
   # Insert bootstrapping code into memory and initialize processor state
 
   if testbin: state = test_init   ( mem )
-  else:       state = syscall_init( mem, argv )
+  else:       state = syscall_init( mem, argv, debug )
 
   # Execute the program
 
-  run( state )
+  run( state, debug )
 
   return 0
 
