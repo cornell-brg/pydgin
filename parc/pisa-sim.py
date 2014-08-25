@@ -18,7 +18,7 @@ from   rpython.rlib.jit import JitDriver
 #-----------------------------------------------------------------------
 
 jitdriver = JitDriver( greens =['pc'],
-                       reds   =['num_inst','state'],
+                       reds   =['state'],
                        virtualizables = ['state']
                      )
 
@@ -51,13 +51,11 @@ memory_size = 2**24
 #-----------------------------------------------------------------------
 def run( state ):
   s = state
-  num_inst = 0
 
   while s.status == 0:
 
     jitdriver.jit_merge_point(
       pc       = s.pc,
-      num_inst = num_inst,
       state    = s,
     )
 
@@ -68,17 +66,16 @@ def run( state ):
     inst = s.mem.iread( s.pc, 4 )
     #print '{:08x}'.format( inst ), decode(inst), num_inst
     decode( inst )( s, inst )
-    num_inst += 1
+    s.ncycles += 1  # TODO: should this be done inside instruction definition?
 
     if s.pc < old:
       jitdriver.can_enter_jit(
         pc       = s.pc,
-        num_inst = num_inst,
         state    = s,
       )
 
   print 'DONE! Status =', s.status
-  print 'Instructions Executed =', num_inst
+  print 'Instructions Executed =', s.ncycles
 
 #-----------------------------------------------------------------------
 # load_program

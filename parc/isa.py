@@ -219,8 +219,13 @@ def execute_mfc0( s, inst ):
   #  s.src_ptr += 1
   if   rd(inst) == reg_map['c0_coreid']:
     s.rf[rt(inst)] = 0
+  elif rd(inst) == reg_map['c0_count']:
+    s.rf[rt(inst)] = s.ncycles
   elif rd(inst) == reg_map['c0_numcores']:
     s.rf[rt(inst)] = 1
+  elif rd(inst) == reg_map['c0_counthi']:
+    print "WARNING: counthi always returns 0..."
+    s.rf[rt(inst)] = 0
   else:
     raise Exception('Invalid mfc0 destination: %d!' % rd(inst) )
   s.pc += 4
@@ -232,7 +237,7 @@ def execute_mtc0( s, inst ):
   if   rd(inst) == reg_map['status']:
     print 'SETTING STATUS'
     s.status = s.rf[rt(inst)]
-  elif rd(inst) == reg_map['statsen']:
+  elif rd(inst) == reg_map['statsen'] or rd(inst) == reg_map['c0_staten']:
     s.stats_en = s.rf[rt(inst)]
   #elif rd(inst) ==  2: pass
   #  if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
@@ -241,7 +246,7 @@ def execute_mtc0( s, inst ):
   #  print 'SUCCESS: s.rf[' + str( rt(inst) ) + '] == ' + str( sink[ s.sink_ptr ] )
   #  s.sink_ptr += 1
   else:
-    raise Exception('Invalid mtc0 destination!')
+    raise Exception('Invalid mtc0 destination: %d!' % rd(inst) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
