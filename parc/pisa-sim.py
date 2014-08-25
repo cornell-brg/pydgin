@@ -190,6 +190,7 @@ def syscall_init( mem, argv ):
   # TODO: handle auxv, envp variables
   auxv = []
   envp = []
+  argv = argv[1:]
   argc = len( argv )
 
   def sum_( x ):
