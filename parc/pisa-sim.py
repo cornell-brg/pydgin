@@ -92,7 +92,9 @@ def load_program( fp ):
     for i, data in enumerate( section.data ):
       mem[start_addr+i] = data
 
-  return mem
+  bss        = sections[-1]
+  breakpoint = bss.addr + len( bss.data )
+  return mem, breakpoint
 
 #-----------------------------------------------------------------------
 # test_init
@@ -128,7 +130,7 @@ stack_base = memory_size-1   # TODO: set this correctly!
 #   0x8000.0000 - Unmapped cached   (kseg0) - 512MB
 #   0x0000.0000 - 32-bit user space (kuseg) -   2GB
 #
-def syscall_init( mem, argv, debug ):
+def syscall_init( mem, breakpoint, argv, debug ):
 
   #---------------------------------------------------------------------
   # memory map initialization
@@ -137,10 +139,7 @@ def syscall_init( mem, argv, debug ):
   # TODO: for multicore allocate 8MB for each process
   #proc_stack_base[pid] = stack_base - pid * 8 * 1024 * 1024
 
-  # top of heap (breakpoint)
-  #bss = mem_image.get_sections()[ -1 ]
-  #assert bss.name == '.bss'
-  #break_point = bss.addr + len(bss.data)
+  # top of heap (breakpoint)  # TODO: handled in load program
 
   # memory maps: 1GB above top of heap
   # mmap_start = mmap_end = break_point + 0x40000000
@@ -290,6 +289,9 @@ def syscall_init( mem, argv, debug ):
   # initialize processor state
   state = State( Memory(mem), None, reset_addr=0x1000 )
 
+  # TODO: where should this go?
+  state.breakpoint = breakpoint
+
   if debug:
     print '---'
     print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
@@ -324,14 +326,16 @@ def entry_point( argv ):
 
   # Load the program into a memory object
 
-  mem = load_program( open( filename, 'rb' ) )
+  mem, breakpoint = load_program( open( filename, 'rb' ) )
 
   debug = True
 
   # Insert bootstrapping code into memory and initialize processor state
 
   if testbin: state = test_init   ( mem )
-  else:       state = syscall_init( mem, argv, debug )
+  else:       state = syscall_init( mem, breakpoint, argv, debug )
+  state.rf .debug = False
+  state.mem.debug = False
 
   # Execute the program
 

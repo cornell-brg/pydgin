@@ -58,6 +58,8 @@ file_descriptors = [
 #-----------------------------------------------------------------------
 def syscall_exit( s ):
   exit_code = s.rf[ a0 ]
+  print "NUM  INSTS:", s.ncycles
+  print "EXIT CODE: ", exit_code
   sys.exit( exit_code )
 
 #-----------------------------------------------------------------------
@@ -110,11 +112,11 @@ def syscall_brk( s ):
   new_brk = s.rf[ a0 ]
 
   if new_brk != 0:
-    # if new_brk > s.break_point: allocate_memory()
-    s.break_point = new_brk
+    # if new_brk > s.breakpoint: allocate_memory()
+    s.breakpoint = new_brk
 
-  s.rf[ v0 ] = s.break_point
-  #print '>>> breakpoint', hex(s.break_point), hex(s.rf.regs[29]), '<<<',
+  s.rf[ v0 ] = s.breakpoint
+  #print '>>> breakpoint', hex(s.breakpoint), hex(s.rf.regs[29]), '<<<',
 
   # Maven Proxy Kernel Implementation
   #
@@ -123,15 +125,15 @@ def syscall_brk( s ):
 
   ## first call to brk initializes the breakk_point address (end of heap)
   ## TODO: initialize in pisa-sim::syscall_init()!
-  #if s.break_point == 0:
-  #  s.break_point = user_addr
+  #if s.breakpoint == 0:
+  #  s.breakpoint = user_addr
 
-  ## if kernel_addr is not null, set a new break_point
+  ## if kernel_addr is not null, set a new breakpoint
   #if kernel_addr != 0:
-  #  s.break_point = kernel_addr
+  #  s.breakpoint = kernel_addr
 
   ## return the break_point value
-  #s.rf[ v0 ] = s.break_point
+  #s.rf[ v0 ] = s.breakpoint
 
 #-----------------------------------------------------------------------
 # numcores

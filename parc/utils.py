@@ -131,7 +131,7 @@ class State( object ):
     self.sink_ptr = 0
 
     # syscall stuff... TODO: should this be here?
-    self.break_point = 0
+    self.breakpoint = 0
 
 #-----------------------------------------------------------------------
 # Instruction Fields
