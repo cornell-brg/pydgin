@@ -40,6 +40,7 @@
 from isa import reg_map
 import sys
 import os
+import copy
 
 v0 = reg_map['v0']  # return value
 a0 = reg_map['a0']  # arg0
@@ -47,11 +48,12 @@ a1 = reg_map['a1']  # arg1
 a2 = reg_map['a2']  # arg2
 a3 = reg_map['a3']  # error
 
-file_descriptors = [
-  sys.stdin,
-  sys.stderr,
-  sys.stdout,
-]
+file_descriptors = {
+  0: sys.stdin  ,
+  1: sys.stdout ,
+  2: sys.stderr ,
+}
+
 
 #-----------------------------------------------------------------------
 # exit
@@ -68,7 +70,20 @@ def syscall_exit( s ):
 # read
 #-----------------------------------------------------------------------
 def syscall_read( s ):
-  raise Exception('read unimplemented!')
+  file_ptr = s.rf[ a0 ]
+  data_ptr = s.rf[ a1 ]
+  nbytes   = s.rf[ a2 ]
+
+  # TODO return exception value in reg ??
+
+  if file_ptr not in file_descriptors:
+    s.rf[ v0 ] = -1
+    return
+
+  fd   = file_descriptors[ file_ptr ]
+  data = fd.read( nbytes )
+
+  s.rf[ v0 ] = len( data )  # return the number of bytes read
 
 #-----------------------------------------------------------------------
 # write
@@ -78,24 +93,59 @@ def syscall_write( s ):
   data_ptr = s.rf[ a1 ]
   nbytes   = s.rf[ a2 ]
 
+  # TODO return exception value in reg ??
+
+  if file_ptr not in file_descriptors:
+    s.rf[ v0 ] = -1
+    return
+
   fd   = file_descriptors[ file_ptr ]
   data = ''.join( s.mem.data[data_ptr:data_ptr+nbytes] )
-  x = os.write( file_ptr, data )
+
+  # https://docs.python.org/2/library/os.html#os.fsync
+  # nbytes_written = os.write( fd.fileno(), data )
+  # os.fsync( fd.fileno() )
+
+  fd.write( data )
+  fd.flush()
+
+  s.rf[ v0 ] = nbytes   # return the number of nbytes_written
 
 #-----------------------------------------------------------------------
 # open
 #-----------------------------------------------------------------------
+# http://stackoverflow.com/a/15039662
 def syscall_open( s ):
-  raise Exception('open unimplemented!')
+  filename_ptr = s.rf[ a0 ]
+  flag         = s.rf[ a1 ]
+  mode         = s.rf[ a2 ]
+
+  filename     = get_filename( filename_ptr )
+
+  # TODO return exception value in reg ??
+
+  try:
+    fd = open( filename, mode )
+    file_descriptors[ fd.fileno() ] = fd
+    s.rf[ v0 ] = fd.fileno()
+  except IOError:
+    s.rf[ v0 ] = -1
 
 #-----------------------------------------------------------------------
 # close
 #-----------------------------------------------------------------------
 def syscall_close( s ):
   file_ptr = s.rf[ a0 ]
-  if file_ptr > 2:
-    fd = file_descriptors[ file_ptr ]
-    fd.close()
+
+  # TODO return exception value in reg ??
+
+  if file_ptr not in file_descriptors:
+    s.rf[ v0 ] = -1
+    return
+
+  file_descriptors[ file_ptr ].close()
+  del file_descriptors[ file_ptr ]
+  s.rf[ v0 ] = 0
 
 #-----------------------------------------------------------------------
 # lseek
