@@ -211,7 +211,9 @@ def syscall_init( mem, breakpoint, argv, debug ):
                     4 ]                             # argc     nbytes
 
   # calculate padding to align boundary
-  stack_nbytes[3] = 16 - (sum_(stack_nbytes[:3]) % 16)
+  # TODO: gem5 doesn't do this step, temporarily remove it. There should
+  #       really be padding to align argv to a 16 byte boundary!!!
+  #stack_nbytes[3] = 16 - (sum_(stack_nbytes[:3]) % 16)
 
   def round_down( val ):
     return val & ~(page_size - 1)
