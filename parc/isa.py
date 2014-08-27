@@ -4,6 +4,7 @@
 
 import py
 import re
+import sys
 
 from utils    import rd, rs, rt, imm, jtarg, shamt
 from utils    import trim, trim_5, signed, sext, sext_byte
@@ -237,8 +238,16 @@ def execute_mtc0( s, inst ):
   if   rd(inst) == reg_map['status']:
     print 'SETTING STATUS'
     s.status = s.rf[rt(inst)]
-  elif rd(inst) == reg_map['statsen'] or rd(inst) == reg_map['c0_staten']:
+  elif rd(inst) == reg_map['statsen']:
     s.stats_en = s.rf[rt(inst)]
+  elif rd(inst) == reg_map['c0_staten']:
+    s.stats_en = s.rf[rt(inst)]
+    if s.stats_en == 0:
+      print
+      print 'STATS OFF! Terminating!'
+      print 'timing cycles: %8d' % (s.stat_ncycles)
+      print 'total  cycles: %8d' % (s.ncycles)
+      sys.exit(1)
   #elif rd(inst) ==  2: pass
   #  if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
   #    print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ rt(inst) ]

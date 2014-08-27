@@ -67,6 +67,7 @@ def run( state, debug ):
     if debug: print '{:08x} {:8s} {:8d}'.format(inst, decode(inst).func_name[8:], s.ncycles),
     decode( inst )( s, inst )
     s.ncycles += 1  # TODO: should this be done inside instruction definition?
+    if s.stats_en: s.stat_ncycles += 1
     if debug: print
 
     if s.pc < old:
@@ -328,7 +329,7 @@ def entry_point( argv ):
 
   mem, breakpoint = load_program( open( filename, 'rb' ) )
 
-  debug = True
+  debug = False
 
   # Insert bootstrapping code into memory and initialize processor state
 

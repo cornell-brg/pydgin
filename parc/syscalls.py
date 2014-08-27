@@ -58,7 +58,9 @@ file_descriptors = [
 #-----------------------------------------------------------------------
 def syscall_exit( s ):
   exit_code = s.rf[ a0 ]
+  print
   print "NUM  INSTS:", s.ncycles
+  print "STAT INSTS:", s.stat_ncycles
   print "EXIT CODE: ", exit_code
   sys.exit( exit_code )
 

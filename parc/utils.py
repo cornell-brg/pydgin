@@ -122,9 +122,10 @@ class State( object ):
     self.mem.debug = debug
 
     # coprocessor registers
-    self.status   = 0
-    self.stats_en = 0
-    self.ncycles  = 0
+    self.status        = 0
+    self.stats_en      = 0
+    self.ncycles       = 0
+    self.stat_ncycles  = 0
 
     # parc special
     self.src_ptr  = 0
