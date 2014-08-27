@@ -1,4 +1,7 @@
 #=======================================================================
+# syscalls.py
+#=======================================================================
+#
 # Implementations of emulated syscalls. Call numbers were borrowed from
 # the following files:
 #
@@ -31,16 +34,25 @@
 #
 # According to Berkin, only the following syscalls are needed by pbbs:
 #
-# - 2 read
-# - 3 write
-# - 4 open
-# - 5 close
-# - 8 lseek
+# - read (2), write (3), open (4), close (5), lseek (8)
+#
+# Other syscall emulation resources:
+#
+# - http://brg.csl.cornell.edu/wiki/Proxy%20Kernel%20vs%20Syscall%20Emulation
+# - http://wiki.osdev.org/Porting_Newlib
+# - http://wiki.osdev.org/OS_Specific_Toolchain
+# - http://www.embecosm.com/appnotes/ean9/ean9-howto-newlib-1.0.html
+#
 
 from isa import reg_map
 import sys
 import os
-import copy
+
+#-----------------------------------------------------------------------
+# os state and helpers
+#-----------------------------------------------------------------------
+
+# short names for registers
 
 v0 = reg_map['v0']  # return value
 a0 = reg_map['a0']  # arg0
@@ -48,12 +60,36 @@ a1 = reg_map['a1']  # arg1
 a2 = reg_map['a2']  # arg2
 a3 = reg_map['a3']  # error
 
-file_descriptors = {
-  0: sys.stdin  ,
-  1: sys.stdout ,
-  2: sys.stderr ,
-}
+# solaris to linux open flag conversion
+# https://docs.python.org/2/library/os.html#open-constants
 
+flag_table = [
+  [ 0x0000, os.O_RDONLY   ], # NEWLIB_O_RDONLY
+  [ 0x0001, os.O_WRONLY   ], # NEWLIB_O_WRONLY
+  [ 0x0002, os.O_RDWR     ], # NEWLIB_O_RDWR
+  [ 0x0008, os.O_APPEND   ], # NEWLIB_O_APPEND
+  [ 0x0200, os.O_CREAT    ], # NEWLIB_O_CREAT
+  [ 0x0400, os.O_TRUNC    ], # NEWLIB_O_TRUNC
+  [ 0x0800, os.O_EXCL     ], # NEWLIB_O_EXCL
+  [ 0x2000, os.O_SYNC     ], # NEWLIB_O_SYNC
+  [ 0x4000, os.O_NDELAY   ], # NEWLIB_O_NDELAY
+  [ 0x4000, os.O_NONBLOCK ], # NEWLIB_O_NONBLOCK
+  [ 0x8000, os.O_NOCTTY   ], # NEWLIB_O_NOCTTY
+ #[ 0x????, os.O_DIRECTORY],
+ #[ 0x????, os.O_ASYNC    ],
+ #[ 0x????, os.O_DSYNC    ],
+ #[ 0x????, os.O_NOATIME  ],
+ #[ 0x????, os.O_DIRECT   ],
+ #[ 0x????, os.O_LARGEFILE],
+ #[ 0x????, os.O_NOFOLLOW ],
+ #[ 0x????, os.O_RSYNC    ],
+]
+
+file_descriptors = {
+  0: os.dup( sys.stdin .fileno() ),
+  1: os.dup( sys.stdout.fileno() ),
+  2: os.dup( sys.stderr.fileno() ),
+}
 
 #-----------------------------------------------------------------------
 # exit
@@ -74,16 +110,15 @@ def syscall_read( s ):
   data_ptr = s.rf[ a1 ]
   nbytes   = s.rf[ a2 ]
 
-  # TODO return exception value in reg ??
-
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1
+    s.rf[ v0 ] = -1           # TODO return exception value in reg a3
     return
 
   fd   = file_descriptors[ file_ptr ]
-  data = fd.read( nbytes )
+  data = os.read( fd, nbytes )
 
-  s.rf[ v0 ] = len( data )  # return the number of bytes read
+  # return the number of bytes read
+  s.rf[ v0 ] = len( data )    # TODO return exception value in reg a3
 
 #-----------------------------------------------------------------------
 # write
@@ -93,43 +128,45 @@ def syscall_write( s ):
   data_ptr = s.rf[ a1 ]
   nbytes   = s.rf[ a2 ]
 
-  # TODO return exception value in reg ??
-
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1
+    s.rf[ v0 ] = -1           # TODO return exception value in reg a3
     return
 
   fd   = file_descriptors[ file_ptr ]
   data = ''.join( s.mem.data[data_ptr:data_ptr+nbytes] )
 
+  nbytes_written = os.write( fd, data )
   # https://docs.python.org/2/library/os.html#os.fsync
-  # nbytes_written = os.write( fd.fileno(), data )
-  # os.fsync( fd.fileno() )
+  #os.fsync( fd )  # this causes Invalid argument error for some reason...
 
-  fd.write( data )
-  fd.flush()
-
-  s.rf[ v0 ] = nbytes   # return the number of nbytes_written
+  s.rf[ v0 ] = nbytes_written # TODO return exception value in reg a3
 
 #-----------------------------------------------------------------------
 # open
 #-----------------------------------------------------------------------
-# http://stackoverflow.com/a/15039662
 def syscall_open( s ):
   filename_ptr = s.rf[ a0 ]
-  flag         = s.rf[ a1 ]
+  flags        = s.rf[ a1 ]
   mode         = s.rf[ a2 ]
 
-  filename     = get_filename( filename_ptr )
+  # convert flags from solaris to linux (necessary?)
+  for newlib, linux in flag_table:
+    if flags & newlib:
+      flags |= linux
 
-  # TODO return exception value in reg ??
+  # get the filename
+  filename = s.mem[ filename_ptr ]
+  while filename[ -1 ] != '\0':
+    filename_ptr += 1
+    filename.append( s.mem[ filename_ptr ] )
 
-  try:
-    fd = open( filename, mode )
-    file_descriptors[ fd.fileno() ] = fd
-    s.rf[ v0 ] = fd.fileno()
-  except IOError:
-    s.rf[ v0 ] = -1
+  # open vs. os.open():  http://stackoverflow.com/a/15039662
+  fd = os.open( filename, flags, mode )
+
+  if fd > 0:
+    file_descriptors[ fd ] = fd
+
+  s.rf[ v0 ] = fd             # TODO return exception value in reg a3
 
 #-----------------------------------------------------------------------
 # close
@@ -137,55 +174,32 @@ def syscall_open( s ):
 def syscall_close( s ):
   file_ptr = s.rf[ a0 ]
 
-  # TODO return exception value in reg ??
-
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1
+    s.rf[ v0 ] = -1           # TODO return exception value in reg a3
     return
 
-  file_descriptors[ file_ptr ].close()
+  os.close( file_descriptors[ file_ptr ] )
   del file_descriptors[ file_ptr ]
-  s.rf[ v0 ] = 0
+
+  s.rf[ v0 ] = 0              # TODO return exception value in reg a3
 
 #-----------------------------------------------------------------------
 # lseek
 #-----------------------------------------------------------------------
 def syscall_lseek( s ):
-  raise Exception('close unimplemented!')
+  raise Exception('lseek unimplemented!')
 
 #-----------------------------------------------------------------------
 # brk
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/questions/6988487/what-does-brk-system-call-do
 def syscall_brk( s ):
-
-  # gem5 Implementation
-
   new_brk = s.rf[ a0 ]
 
   if new_brk != 0:
-    # if new_brk > s.breakpoint: allocate_memory()
     s.breakpoint = new_brk
 
-  s.rf[ v0 ] = s.breakpoint
-  #print '>>> breakpoint', hex(s.breakpoint), hex(s.rf.regs[29]), '<<<',
-
-  # Maven Proxy Kernel Implementation
-  #
-  #kernel_addr = s.rf[ a0 ]
-  #user_addr   = s.rf[ a1 ]
-
-  ## first call to brk initializes the breakk_point address (end of heap)
-  ## TODO: initialize in pisa-sim::syscall_init()!
-  #if s.breakpoint == 0:
-  #  s.breakpoint = user_addr
-
-  ## if kernel_addr is not null, set a new breakpoint
-  #if kernel_addr != 0:
-  #  s.breakpoint = kernel_addr
-
-  ## return the break_point value
-  #s.rf[ v0 ] = s.breakpoint
+  s.rf[ v0 ] = s.breakpoint   # TODO return exception value in reg a3
 
 #-----------------------------------------------------------------------
 # numcores
