@@ -44,7 +44,9 @@ rewrite_code      = [
   0x08, 0x04, 0x00, 0x08,   # j   0x1020
 ]
 
-memory_size = 2**24
+# Currently these constants are set to match gem5
+memory_size = 2**27
+page_size   = 8192
 
 #-----------------------------------------------------------------------
 # run
@@ -211,10 +213,13 @@ def syscall_init( mem, breakpoint, argv, debug ):
   # calculate padding to align boundary
   stack_nbytes[3] = 16 - (sum_(stack_nbytes[:3]) % 16)
 
+  def round_down( val ):
+    return val & ~(page_size - 1)
+
   # calculate stack pointer based on size of storage needed for args
   # TODO: round to nearest page size?
-  stack_ptr = stack_base - sum_( stack_nbytes )
-  offset    = stack_base
+  stack_ptr = round_down( stack_base - sum_( stack_nbytes ) )
+  offset    = stack_ptr + sum_( stack_nbytes )
   stack_off = []
   for nbytes in stack_nbytes:
     offset -= nbytes
