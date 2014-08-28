@@ -111,14 +111,14 @@ def syscall_read( s ):
   nbytes   = s.rf[ a2 ]
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1           # TODO return exception value in reg a3
+    s.rf[ v0 ] = s.rf[ a3 ] = -1
     return
 
   fd   = file_descriptors[ file_ptr ]
   data = os.read( fd, nbytes )
 
-  # return the number of bytes read
-  s.rf[ v0 ] = len( data )    # TODO return exception value in reg a3
+  s.rf[ v0 ] = len( data )   # return the number of bytes read
+  s.rf[ a3 ] = 0
 
 #-----------------------------------------------------------------------
 # write
@@ -129,7 +129,7 @@ def syscall_write( s ):
   nbytes   = s.rf[ a2 ]
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1           # TODO return exception value in reg a3
+    s.rf[ v0 ] = s.rf[ a3 ] = -1
     return
 
   fd   = file_descriptors[ file_ptr ]
@@ -139,7 +139,8 @@ def syscall_write( s ):
   # https://docs.python.org/2/library/os.html#os.fsync
   #os.fsync( fd )  # this causes Invalid argument error for some reason...
 
-  s.rf[ v0 ] = nbytes_written # TODO return exception value in reg a3
+  s.rf[ v0 ] = nbytes_written
+  s.rf[ a3 ] = 0
 
 #-----------------------------------------------------------------------
 # open
@@ -166,7 +167,8 @@ def syscall_open( s ):
   if fd > 0:
     file_descriptors[ fd ] = fd
 
-  s.rf[ v0 ] = fd             # TODO return exception value in reg a3
+  s.rf[ v0 ] = fd
+  s.rf[ a3 ] = 0 if fd > 0 else -1
 
 #-----------------------------------------------------------------------
 # close
@@ -175,13 +177,13 @@ def syscall_close( s ):
   file_ptr = s.rf[ a0 ]
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1           # TODO return exception value in reg a3
+    s.rf[ v0 ] = s.rf[ a3 ] = -1
     return
 
   os.close( file_descriptors[ file_ptr ] )
   del file_descriptors[ file_ptr ]
 
-  s.rf[ v0 ] = 0              # TODO return exception value in reg a3
+  s.rf[ v0 ] = s.rf[ a3 ] = 0
 
 #-----------------------------------------------------------------------
 # lseek
@@ -199,7 +201,8 @@ def syscall_brk( s ):
   if new_brk != 0:
     s.breakpoint = new_brk
 
-  s.rf[ v0 ] = s.breakpoint   # TODO return exception value in reg a3
+  s.rf[ v0 ] = s.breakpoint
+  s.rf[ a3 ] = 0
 
 #-----------------------------------------------------------------------
 # numcores
@@ -207,6 +210,7 @@ def syscall_brk( s ):
 def syscall_numcores( s ):
   # always return 1 until multicore is implemented!
   s.rf[ v0 ] = 1
+  s.rf[ a3 ] = 0
 
 #-----------------------------------------------------------------------
 # syscall number mapping
