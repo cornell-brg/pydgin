@@ -516,7 +516,7 @@ def elf_reader( file_obj ):
     # - http://stackoverflow.com/questions/610682/bss-section-in-elf-file
 
     else:
-      data = ['\0']*shdr.size
+      data = '\0' * shdr.size
 
     # Save the data holding the symbol string table
 

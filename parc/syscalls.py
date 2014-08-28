@@ -100,7 +100,9 @@ def syscall_exit( s ):
   print "NUM  INSTS:", s.ncycles
   print "STAT INSTS:", s.stat_ncycles
   print "EXIT CODE: ", exit_code
-  sys.exit( exit_code )
+  # TODO: this is an okay way to terminate the simulator?
+  #       sys.exit(1) is not valid python
+  s.status = exit_code
 
 #-----------------------------------------------------------------------
 # read
@@ -133,6 +135,9 @@ def syscall_write( s ):
     return
 
   fd   = file_descriptors[ file_ptr ]
+
+  # TODO: use mem.read()
+  assert data_ptr >= 0 and nbytes >= 0
   data = ''.join( s.mem.data[data_ptr:data_ptr+nbytes] )
 
   nbytes_written = os.write( fd, data )
@@ -156,10 +161,10 @@ def syscall_open( s ):
       flags |= linux
 
   # get the filename
-  filename = s.mem[ filename_ptr ]
+  filename = s.mem.data[ filename_ptr ]     # TODO: use mem.read()
   while filename[ -1 ] != '\0':
     filename_ptr += 1
-    filename.append( s.mem[ filename_ptr ] )
+    filename += s.mem.data[ filename_ptr ]  # TODO: use mem.read()
 
   # open vs. os.open():  http://stackoverflow.com/a/15039662
   fd = os.open( filename, flags, mode )
