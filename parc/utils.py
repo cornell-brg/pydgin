@@ -1,5 +1,6 @@
 # trace elidable for instruction reads
 from rpython.rlib.jit import elidable, unroll_safe
+import struct
 
 #-----------------------------------------------------------------------
 # sext
@@ -27,6 +28,22 @@ def signed( value ):
     twos_complement = ~value + 1
     return -trim( twos_complement )
   return value
+
+#-----------------------------------------------------------------------
+# bits2float
+#-----------------------------------------------------------------------
+def bits2float( bits ):
+  data_str = struct.pack  ( 'I', bits     )
+  flt      = struct.unpack( 'f', data_str )[0]
+  return flt
+
+#-----------------------------------------------------------------------
+# float2bits
+#-----------------------------------------------------------------------
+def float2bits( flt ):
+  data_str = struct.pack  ( 'f', flt      )
+  bits     = struct.unpack( 'I', data_str )[0]
+  return bits
 
 #-----------------------------------------------------------------------
 # trim
@@ -145,6 +162,15 @@ def rt( inst ):
 
 def rs( inst ):
   return (inst >> 21) & 0x1F
+
+def fd( inst ):
+  return (inst >>  6) & 0x1F
+
+def ft( inst ):
+  return (inst >> 16) & 0x1F
+
+def fs( inst ):
+  return (inst >> 11) & 0x1F
 
 def imm( inst ):
   return inst & 0xFFFF

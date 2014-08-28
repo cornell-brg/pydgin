@@ -6,8 +6,9 @@ import py
 import re
 import sys
 
-from utils    import rd, rs, rt, imm, jtarg, shamt
-from utils    import trim, trim_5, signed, sext, sext_byte
+from utils import rd, rs, rt, fd, fs, ft, imm, jtarg, shamt
+from utils import trim, trim_5, signed, sext, sext_byte
+from utils import bits2float, float2bits
 
 # we mark pure (trace elidable) functions that don't have any side effects
 from rpython.rlib.jit import elidable
@@ -168,13 +169,13 @@ encodings = [
   ['movz',    '000000xxxxxxxxxxxxxxx00000001010'],
   # Syscall
   ['syscall', '000000xxxxxxxxxxxxxxxxxxxx001100'],
-  #['eret',    '000000xxxxxxxxxxxxxxxxxxxx001100'],
+# ['eret',    '000000xxxxxxxxxxxxxxxxxxxx001100'],
   # AMO
   ['amo_add',  '100111xxxxxxxxxxxxxxx00000000010'],
   ['amo_and',  '100111xxxxxxxxxxxxxxx00000000011'],
   ['amo_or',   '100111xxxxxxxxxxxxxxx00000000100'],
-  #['amo_xchg', '100111xxxxxxxxxxxxxxx00000001101'],
-  #['amo_min',  '100111xxxxxxxxxxxxxxx00000001110'],
+# ['amo_xchg', '100111xxxxxxxxxxxxxxx00000001101'],
+# ['amo_min',  '100111xxxxxxxxxxxxxxx00000001110'],
   # Data-Parallel
   ['xloop',   '110100xxxxx00000xxxxxxxxxxxxxxxx'],
   ['stop',    '10011100000000000000000000000000'],
@@ -182,19 +183,24 @@ encodings = [
   ['mtuts',   '01001000000xxxxxxxxxx00000001000'],
   ['mfuts',   '010010xxxxxxxxxxxxxxx00000001001'],
   # ???
-  #['syncl',   '10011100000000000000000000000001'],
-  #['stat',    '10011100000xxxxx0000000000001111'],
+# ['syncl',   '10011100000000000000000000000001'],
+# ['stat',    '10011100000xxxxx0000000000001111'],
   # Floating Point
-  #['add_s',   '010001xxxxxxxxxxxxxxxxxxxx000000'],
-  #['sub_s',   '010001xxxxxxxxxxxxxxxxxxxx000001'],
-  #['mul_s',   '010001xxxxxxxxxxxxxxxxxxxx000010'],
-  #['div_s',   '010001xxxxxxxxxxxxxxxxxxxx000011'],
-  #['c_eq_s',  '01000110000xxxxxxxxxxxxxxx110010'],
-  #['c_lt_s',  '01000110000xxxxxxxxxxxxxxx111100'],
-  #['c_le_s',  '01000110000xxxxxxxxxxxxxxx111110'],
-  #['cvt_w_s', '0100011000000000xxxxxxxxxx100100'],
-  #['cvt_s_w', '0100011010000000xxxxxxxxxx100000'],
-  #['trunc',   '0100011000000000xxxxxxxxxx001101'],
+  ['add_s',   '010001xxxxxxxxxxxxxxxxxxxx000000'],
+  ['sub_s',   '010001xxxxxxxxxxxxxxxxxxxx000001'],
+  ['mul_s',   '010001xxxxxxxxxxxxxxxxxxxx000010'],
+  ['div_s',   '010001xxxxxxxxxxxxxxxxxxxx000011'],
+  ['c_eq_s',  '01000110000xxxxxxxxxxxxxxx110010'],
+  ['c_lt_s',  '01000110000xxxxxxxxxxxxxxx111100'],
+  ['c_le_s',  '01000110000xxxxxxxxxxxxxxx111110'],
+# ['c_f_s',   '01000110000xxxxxxxxxxxxxxx110000'],
+# ['c_un_s',  '01000110000xxxxxxxxxxxxxxx110001'],
+# ['c_ngl_s', '01000110000xxxxxxxxxxxxxxx111011'],
+# ['c_nge_s'  '01000110000xxxxxxxxxxxxxxx111101'],
+# ['c_ngt_s', '01000110000xxxxxxxxxxxxxxx111111'],
+  ['cvt_w_s', '0100011000000000xxxxxxxxxx100100'],
+  ['cvt_s_w', '0100011010000000xxxxxxxxxx100000'],
+ ['trunc_w_s','0100011000000000xxxxxxxxxx001101'],
 ]
 
 #=======================================================================
@@ -705,7 +711,7 @@ def execute_stop( s, inst ):
   s.pc += 4
 
 #-----------------------------------------------------------------------
-# stop
+# utidx
 #-----------------------------------------------------------------------
 def execute_utidx( s, inst ):
   print 'WARNING: utidx implemented as noop!'
@@ -723,6 +729,98 @@ def execute_mtuts( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mfuts( s, inst ):
   raise Exception('mfuts is unsupported!')
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# Floating-Point Instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# add_s
+#-----------------------------------------------------------------------
+def execute_add_s( s, inst ):
+  a = bits2float( s.rf[ fs( inst ) ] )
+  b = bits2float( s.rf[ ft( inst ) ] )
+  s.rf[ fd( inst ) ] = float2bits( a + b )
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# sub_s
+#-----------------------------------------------------------------------
+def execute_sub_s( s, inst ):
+  a = bits2float( s.rf[ fs( inst ) ] )
+  b = bits2float( s.rf[ ft( inst ) ] )
+  s.rf[ fd( inst ) ] = float2bits( a - b )
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# mul_s
+#-----------------------------------------------------------------------
+def execute_mul_s( s, inst ):
+  a = bits2float( s.rf[ fs( inst ) ] )
+  b = bits2float( s.rf[ ft( inst ) ] )
+  s.rf[ fd( inst ) ] = float2bits( a * b )
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# div_s
+#-----------------------------------------------------------------------
+def execute_div_s( s, inst ):
+  a = bits2float( s.rf[ fs( inst ) ] )
+  b = bits2float( s.rf[ ft( inst ) ] )
+  s.rf[ fd( inst ) ] = float2bits( a / b )
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# c_eq_s
+#-----------------------------------------------------------------------
+def execute_c_eq_s( s, inst ):
+  a = bits2float( s.rf[ fs( inst ) ] )
+  b = bits2float( s.rf[ ft( inst ) ] )
+  s.rf[ fd(inst) ] = 1 if a == b else 0
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# c_lt_s
+#-----------------------------------------------------------------------
+def execute_c_lt_s( s, inst ):
+  a = bits2float( s.rf[ fs( inst ) ] )
+  b = bits2float( s.rf[ ft( inst ) ] )
+  s.rf[ fd(inst) ] = 1 if a < b else 0
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# c_le_s
+#-----------------------------------------------------------------------
+def execute_c_le_s( s, inst ):
+  a = bits2float( s.rf[ fs( inst ) ] )
+  b = bits2float( s.rf[ ft( inst ) ] )
+  s.rf[ fd(inst) ] = 1 if a <= b else 0
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# cvt_w_s
+#-----------------------------------------------------------------------
+def execute_cvt_w_s( s, inst ):
+  x = bits2float( s.rf[ fs( inst ) ] )
+  s.rf[ fd(inst) ] = trim( int( x ) )
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# cvt_s_w
+#-----------------------------------------------------------------------
+def execute_cvt_s_w( s, inst ):
+  x = signed( s.rf[ fs( inst ) ] )
+  s.rf[ fd(inst) ] = float2bits( float( x ) )
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# trunc_w_s
+#-----------------------------------------------------------------------
+def execute_trunc_w_s( s, inst ):
+  # TODO: check for overflow
+  x = bits2float( s.rf[ fs(inst) ] )
+  s.rf[ fd(inst) ] = trim(int(x))  # round down
   s.pc += 4
 
 #-----------------------------------------------------------------------
