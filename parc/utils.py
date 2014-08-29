@@ -1,6 +1,8 @@
 # trace elidable for instruction reads
-from rpython.rlib.jit import elidable, unroll_safe
-import struct
+from rpython.rlib.jit         import elidable, unroll_safe
+from rpython.rlib.rstruct     import ieee
+from rpython.rlib.rarithmetic import intmask
+#import struct
 
 #-----------------------------------------------------------------------
 # sext
@@ -33,16 +35,20 @@ def signed( value ):
 # bits2float
 #-----------------------------------------------------------------------
 def bits2float( bits ):
-  data_str = struct.pack  ( 'I', bits     )
-  flt      = struct.unpack( 'f', data_str )[0]
+  #data_str = struct.pack  ( 'I', bits     )
+  #flt      = struct.unpack( 'f', data_str )[0]
+  flt = ieee.float_unpack( bits, 4 )
   return flt
 
 #-----------------------------------------------------------------------
 # float2bits
 #-----------------------------------------------------------------------
 def float2bits( flt ):
-  data_str = struct.pack  ( 'f', flt      )
-  bits     = struct.unpack( 'I', data_str )[0]
+  #data_str = struct.pack  ( 'f', flt      )
+  #bits     = struct.unpack( 'I', data_str )[0]
+  # float_pack returns an r_int rather than an int, must cast it or
+  # arithmetic operations behave differently!
+  bits = trim( intmask( ieee.float_pack( flt, 4 ) ) )
   return bits
 
 #-----------------------------------------------------------------------
