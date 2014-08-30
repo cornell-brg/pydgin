@@ -3,8 +3,10 @@
 #=======================================================================
 
 import sys
-sys.path.append('/Users/dmlockhart/vc/git-brg/parc/pymtl')
-sys.path.append('/Users/dmlockhart/vc/hg-opensource/pypy')
+#sys.path.append('/Users/dmlockhart/vc/git-brg/parc/pymtl')
+#sys.path.append('/Users/dmlockhart/vc/hg-opensource/pypy')
+sys.path.append('/work/bits0/dml257/pymtl')
+sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 import os
 import elf
@@ -71,6 +73,13 @@ def run( state, debug ):
     s.ncycles += 1  # TODO: should this be done inside instruction definition?
     if s.stats_en: s.stat_ncycles += 1
     if debug: print
+
+    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[ 0: 6] )
+    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[ 6:12] )
+    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[12:18] )
+    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[18:24] )
+    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[24:30] )
+    #print '0x{:08x} 0x{:08x} '.format( *s.rf[30:32] )
 
     if s.pc < old:
       jitdriver.can_enter_jit(
@@ -343,7 +352,7 @@ def entry_point( argv ):
   if testbin: state = test_init   ( mem )
   else:       state = syscall_init( mem, breakpoint, argv, debug )
   state.rf .debug = False
-  state.mem.debug = False
+  state.mem.debug = debug
 
   # Execute the program
 
