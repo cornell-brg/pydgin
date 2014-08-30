@@ -88,6 +88,13 @@ def run( state, debug ):
     if s.stats_en: s.stat_ncycles += 1
     if debug: print
 
+    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[ 0: 6] )
+    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[ 6:12] )
+    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[12:18] )
+    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[18:24] )
+    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[24:30] )
+    #print '0x{:08x} 0x{:08x} '.format( *s.rf[30:32] )
+
     if s.pc < old:
       jitdriver.can_enter_jit(
         pc       = s.pc,
@@ -358,8 +365,9 @@ def entry_point( argv ):
 
   if testbin: state = test_init   ( mem )
   else:       state = syscall_init( mem, breakpoint, argv, debug )
+
   #state.rf .debug = False
-  state.mem.debug = False
+  state.mem.debug = debug
 
   # Execute the program
 
