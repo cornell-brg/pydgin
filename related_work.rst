@@ -31,6 +31,38 @@ quality. This results in a simulation rate of 510Mips for an Arm target across
 45 Eembc and Spec benchmarks. On average, our Iss is 1.7 times faster than
 Simit-Arm, one of the fastest Iss generated from an architecture description.
 
+Notes:
+
+- modern processor design suites integrate ADL->ISS generators,
+  but slower than hand-coded
+
+- fastest ISS: utilize DBT with parallel JIT compiler + possibly interleave
+  detailed performance model for cycle-accurate pipeline modeling
+  (hand-coded for performance reasons, not easily retargetable)
+
+- Naive ADL->JIT+DBT+ISS performance issues:
+  1. poor quality of JIT generated code
+  2. long compilation times
+
+  CAUSE: complex behavior of instructions, exec path depends on uarch state
+
+- evaluation: ARMv5 against 45 EEMBC1.1 and SPECINT2006 Benchmarks
+
+  - 191 MIPS: naive JIT generator
+  - 510 MIPS: early partial evaluation optimization
+  -  24 MIPS: original ArchC Simulator
+  -   6 MIPS: FaC-SIM
+  - 300 MIPS: SIMIT-ARM (manual instruction specialization)
+  - 635 MIPS: QEMU-ARM (sacrifices instruction observability for perf)
+
+- related work:
+
+  **Designing a CPU model: from a pseudo-formal document to fast code.**
+
+  An interesting approach is presented in [3]. It aims at generating an Iss
+  from a pseudo-formal document such as a datasheet. However, this approach
+  still requires lots of manual adaptation.
+
 --------------------------------------------------------------------------------
 
 Citation::
@@ -63,6 +95,56 @@ a short time. It can be even used for simulation of special applications, such
 as applications with self-modifying code or applications for systems with
 external memories. The experimental results can be found at the end of the
 paper.
+
+--------------------------------------------------------------------------------
+
+Citation::
+
+  @string{RAPIDO   = {Workshop on Rapid Simulation and Performance Evalution:
+                      Methods and Tools (RAPIDO)}
+
+  @article{brandner-jit-isa-rapido2009,
+    title     = {Fast and Accurate Simulation using the
+                 LLVM Compiler Framework},
+    author    = {Florian Brandner and Andreas Fellnhofer and
+                 Andreas Krall and David Riegler},
+    journal   = RAPIDO,
+    month     = ???,
+    year      = {2009},
+  }
+
+ABSTRACT:
+
+Development of future generation computer architectures requires fast and
+accurate simulation tools that allow to test, verify, and analyze the behavior
+of the given architecture along with the intended workload. We present a
+simulation framework based on a structural architecture description language
+that uses the open source compiler infrastructure LLVM to dynamically translate
+instruction sequences of the simulated architecture into machine instructions
+of the host machine. We show that the optimizations in the simulator and the
+LLVM compiler lead to an outstanding runtime performance: A 5-stage MIPS core
+is simulated at a peak performance of up to 800 MHz.
+
+NOTE:
+
+- We present a retargetable dynamic-compiling simulation framework based on the
+  open source compiler infrastructure LLVM [LA04]. The LLVM just-in-time
+  compiler generates high-quality code, such that the achieved simulation speed
+  reaches up to several hundred MHz. Retargeting the simulator requires only
+  minimal programming effort, because all architectural features are derived
+  from an architecture model specified using a structural architecture
+  description language (ADL). Our ADL also allows to derive other software
+  tools, such as a C compiler [BEK07], from the same architecture model.
+
+- All architecture dependent simulation functions are derived from structural
+  architecture specifications that can also be used to generate a VHDL
+  processor model and a C compiler. The LLVM just-in-time compiler is used to
+  compile basic blocks and non-linear regions of the simulated program to
+  native code of the host machine. Optimizations of the simulator generator and
+  the compiler framework enable a peak performance of the simulation speed of
+  up to 800 MHz for the MIPS architecture. Future work on reducing the compile
+  time is necessary to reduce the gap between the average simulation speed of
+  47 MHz for the MIPS (79 MHz for the VLIW CHILI) and the peak performance.
 
 --------------------------------------------------------------------------------
 
@@ -160,6 +242,109 @@ tectures or applications and can be utilized from architecture exploration up
 to end-user software development. We demonstrate workflow and applicability of
 the so-called just-in-time cache-compiled simulation technique by means of
 state-of-the-art real-world architectures.
+
+--------------------------------------------------------------------------------
+ISS JIT Multicore
+--------------------------------------------------------------------------------
+
+Citation::
+
+  @string{LCTES    = {International Conference on Languages, Compilers, Tools,
+                      and Theory for Embedded Systems (LCTES)}
+
+  @article{kyle-iss-jit-multicore-lctes2012,
+    author    = {Stephen Kyle and Igor B\:{o}hm and Bj\:{o}rn Franke and
+                 Hugh Leather and Nigel Topham},
+    title     = {Efficiently Parallelizing Instruction Set Simulation of
+                 Embedded Multi-Core Processors Using Region-based Just-in-Time
+                 Dynamic Binary Translation},
+    journal   = LCTES,
+    month     = JUN,
+    year      = {2012},
+  }
+
+ABSTRACT:
+
+Embedded systems, as typified by modern mobile phones, are already seeing a
+drive toward using multi-core processors. The number of cores will likely
+increase rapidly in the future. Engineers and researchers need to be able to
+simulate systems, as they are expected to be in a few generations time, running
+simulations of many-core devices on today’s multi-core machines. These
+requirements place heavy demands on the scalability of simulation engines, the
+fastest of which have typically evolved from just-in-time (JIT) dynamic binary
+translators (DBT).
+
+Existing work aimed at parallelizing DBT simulators has focused exclusively on
+trace-based DBT, wherein linear execution traces or perhaps trees thereof are
+the units of translation. Regionbased DBT simulators have not received the same
+attention and require different techniques than their trace-based cousins.
+
+In this paper we develop an innovative approach to scaling multi-core, embedded
+simulation through region-based DBT. We initially modify the JIT code generator
+of such a simulator to emit code that does not depend on a particular thread
+with its threadspecific context and is, therefore, thread-agnostic. We then
+demonstrate that this thread-agnostic code generation is comparable to
+thread-specific code with respect to performance, but also enables the sharing
+of JIT-compiled regions between different threads. This sharing optimisation,
+in turn, leads to significant performance improvements for multi-threaded
+applications. In fact, our results confirm that an average of 76% of all
+JIT-compiled regions can be shared between 128 threads in representative,
+parallel workloads. We demonstrate that this translates into an overall
+performance improvement by 1.44x on average and up to 2.40x across 12 multi-
+threaded benchmarks taken from the SPLASH-2 benchmark suite, targeting our
+high-performance multi-core DBT simulator for embedded ARC processors running
+on a 4-core Intel host machine.
+
+--------------------------------------------------------------------------------
+
+Citation::
+
+  @article{almer-iss-jit-multicore-samos2011,
+    author    = {Oscar Almer and Igor B\:{o}hm and Tobias Edler von Koch and
+                 Bj\:{o}rn Franke and Stephen Kyle and Volker Seeker and
+                 Christopher Thompson and Nigel Topham},
+    title     = {Scalable Multi-Core Simulation Using Parallel Dynamic Binary
+                 Translation},
+    journal   = SAMOS,
+    month     = JUL,
+    year      = {2011},
+  }
+
+ABSTRACT:
+
+In recent years multi-core processors have seen broad adoption in application
+domains ranging from embedded systems through general-purpose computing to
+large-scale data centres. Simulation technology for multi-core systems,
+however, lags behind and does not provide the simulation speed required to
+effectively support design space exploration and parallel software development.
+While state-of-the-art instruction set simulators (ISS) for single-core
+machines reach or exceed the performance levels of speed-optimised silicon
+implementations of embedded processors, the same does not hold for multi-core
+simulators where large performance penalties are to be paid. In this paper we
+develop a fast and scalable simulation methodology for multi-core platforms
+based on parallel and just-in-time (JIT) dynamic binary translation (DBT). Our
+approach can model large-scale multi-core configurations, does not rely on
+prior profiling, instrumentation, or compilation, and works for all bi- naries
+targeting a state-of-the-art embedded multi-core platform implementing the
+ARCompact instruction set architecture (ISA). We have evaluated our parallel
+simulation methodology against the industry standard SPLASH-2 and EEMBC
+MULTIBENCH benchmarks and demonstrate simulation speeds up to 25,307 MIPS on a
+32-core x86 host machine for as many as 2048 target processors whilst
+exhibiting minimal and near constant overhead.
+
+NOTES:
+
+- Our main contribution is to demonstrate how to effectively apply JIT DBT in
+  the context of multi-core target platforms. The key idea is to model each
+  simulated processor core in a separate thread, each of which feeds work items
+  for native code translation to a parallel JIT compilation task farm shared
+  among all CPU threads. Combined with private first- level caches and a shared
+  second-level cache for recently translated and executed native code,
+  detection and elimination of duplicate work items in the translation work
+  queue, and an efficient low-level implementation for atomic exchange
+  operations we construct a highly scalable multi-core simulator that provides
+  faster-than-FPGA simulation speeds and scales favourably up to 2048 simulated
+  cores.
 
 --------------------------------------------------------------------------------
 ISS JIT
@@ -418,6 +603,75 @@ it is beneficial to consider instruction frequencies.
 
 --------------------------------------------------------------------------------
 ISS and Compiler Auto-Generation from ADL
+--------------------------------------------------------------------------------
+
+Citation::
+
+  @string{RAPIDO   = {Workshop on Rapid Simulation and Performance Evalution:
+                      Methods and Tools (RAPIDO)}
+
+  @article{casse-adl-iss-rapido2011,
+    title     = {Fast Instruction-Accurate Simulation with SimNML},
+    author    = {Hugues Cass\'{e} and Jonathan Barre and
+                 Rodolphe Vaillant-David and Pascal Sainrat},
+    journal   = RAPIDO,
+    month     = ???,
+    year      = {2011},
+  }
+
+ABSTRACT:
+
+Instruction Level Simulation has received big attention as it allows
+out-of-silicium test and hardware exploration. In this paper, we present
+GLISS2, the second release of a simulator generator based on the NML ADL.
+Thanks to the implementation of a set of optimization techniques (acceleration
+in memory emulation, caches for the decode step and blocking of instruction
+descriptors), we multiply by an average factor of 10 the simulation
+performances. Additionally, although the experimentation has only been made for
+the PowerPC, the performed optimization extends naturally to any instruction
+set described in NML.
+
+--------------------------------------------------------------------------------
+
+Citation::
+
+  @string{CASES    = {International conference on Compilers, Architecture, and
+                      Synthesis for Embedded Systems (CASES)}
+
+  @article{brandner-jit-isa-rapido2009,
+    title     = {Compiler Generation from Structural Architecture Descriptions},
+    author    = {Florian Brandner and Dietmar Ebner and Andreas Krall},
+    journal   = CASES,
+    month     = ???,
+    year      = {2007},
+  }
+
+ABSTRACT:
+
+With increasing complexity of modern embedded systems, the availability of
+highly optimizing compilers becomes more and more important. At the same time,
+application specific instruction-set processors (ASIPs) are used to fine-tune
+hardware platforms to the intended application, demanding the availability of
+retargetable components throughout the whole tool chain.
+A very promising approach is to model the target architecture using a
+dedicated description language that is rich enough to generate hardware
+components and the required tool chain, e.g., assembler, linker, simulator, and
+compiler.
+In this work we present a new structural architecture description language
+(ADL) that is used to derive the architecture dependent components of a
+compiler backend — most notably an instruction selector based on tree pattern
+matching. We combine our backend with gcc, thereby opening up the way for a
+large number of readily available high level optimizations. Experimental
+results show that the automatically derived code generator is competitive in
+comparison to a handcrafted compiler backend.
+
+NOTES:
+
+- We propose a new structural ADL based on XML that is suitable for both
+  automatic tool chain retargeting and hardware synthesis. Our approach follows
+  a component based paradigm that enables the reuse of existing modules and is
+  both extendable and comprehensible.
+
 --------------------------------------------------------------------------------
 
 Citation::
@@ -682,5 +936,22 @@ NOTES:
   instruction or the basic block. By increasing the size of the
   translation-unit it is possible to achieve significant speedups in simulation
   performance.
+
+
+--------------------------------------------------------------------------------
+Multicore ISS
+--------------------------------------------------------------------------------
+
+An Accurate Multi-processing Simulator Based on ADL
+- http://ieeexplore.ieee.org/xpl/abstractCitations.jsp?arnumber=4690760&tag=1
+
+Scalable Instruction Set Simulator for Thousand-core Architectures
+Running on GPGPUs
+- http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=5547092
+
+Ocelot: A Dynamic Compiler for Bulk-Synchronous Applications in Heterogeneous
+Systems
+- http://gpuocelot.gatech.edu/publications/ocelot-a-dynamic-compiler-for-bulk-synchronous-applications-in-heterogeneous-systems/
+
 
 

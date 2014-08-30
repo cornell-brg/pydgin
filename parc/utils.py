@@ -1,5 +1,7 @@
 # trace elidable for instruction reads
-from rpython.rlib.jit import elidable, unroll_safe
+from rpython.rlib.jit         import elidable, unroll_safe
+from rpython.rlib.rstruct     import ieee
+from rpython.rlib.rarithmetic import intmask
 
 #-----------------------------------------------------------------------
 # sext
@@ -29,6 +31,35 @@ def signed( value ):
   return value
 
 #-----------------------------------------------------------------------
+# bits2float
+#-----------------------------------------------------------------------
+def bits2float( bits ):
+  #data_str = struct.pack  ( 'I', bits     )
+  #flt      = struct.unpack( 'f', data_str )[0]
+
+  flt = ieee.float_unpack( bits, 4 )
+  return flt
+
+#-----------------------------------------------------------------------
+# float2bits
+#-----------------------------------------------------------------------
+def float2bits( flt ):
+  #data_str = struct.pack  ( 'f', flt      )
+  #bits     = struct.unpack( 'I', data_str )[0]
+
+  # float_pack returns an r_int rather than an int, must cast it or
+  # arithmetic operations behave differently!
+  try:
+    bits = trim( intmask( ieee.float_pack( flt, 4 ) ) )
+  # float_pack also will throw an OverflowError if the computed value
+  # won't fit in the expected number of bytes, catch this and return
+  # the encoding for inf/-inf
+  except OverflowError:
+    bits = 0x7f800000 if flt > 0 else 0xff800000
+
+  return bits
+
+#-----------------------------------------------------------------------
 # trim
 #-----------------------------------------------------------------------
 # Trim arithmetic to 16-bit values.
@@ -56,40 +87,37 @@ def register_inst( func ):
 # RegisterFile
 #-----------------------------------------------------------------------
 #class RegisterFile( object ):
-#  def __init__( self ):
-#    self.regs = [0] * 32
+#  def __init__( self, debug=False ):
+#    self.regs  = [0] * 32
+#    self.debug = debug
 #  def __getitem__( self, idx ):
+#    if self.debug: print ':: RD.RF[%2d] = %8x' % (idx, self.regs[idx]),
 #    return self.regs[idx]
 #  def __setitem__( self, idx, value ):
 #    if idx != 0:
 #      self.regs[idx] = value
+#      if self.debug: print ':: WR.RF[%2d] = %8x' % (idx, value),
 
 #-----------------------------------------------------------------------
 # Memory
 #-----------------------------------------------------------------------
 class Memory( object ):
-  def __init__( self, data=None ):
+  def __init__( self, data=None, debug=False ):
     if not data:
-      self.data = [0]*2**10
+      self.data = [' ']*2**10
     else:
       self.data = data
+    self.debug = debug
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
-    assert 0 < num_bytes <= 4
-    word = start_addr >> 2
-    byte = start_addr &  0b11
-
-    if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
-      return self.data[ word ]
-    elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
-      mask = 0xFFFF << (byte * 8)
-      return (self.data[ word ] & mask) >> (byte * 8)
-    elif num_bytes == 1:
-      mask = 0xFF   << (byte * 8)
-      return (self.data[ word ] & mask) >> (byte * 4)
-
-    raise Exception('Not handled value for num_bytes')
+    value = 0
+    if self.debug: print ':: RD.MEM[%x] = ' % (start_addr),
+    for i in range( num_bytes-1, -1, -1 ):
+      value = value << 8
+      value = value | ord( self.data[ start_addr + i ] )
+    if self.debug: print '%x' % (value),
+    return value
 
   # this is instruction read, which is otherwise identical to read. The
   # only difference is the elidable annotation, which we assume the
@@ -97,34 +125,25 @@ class Memory( object ):
   # correspond to the same instructions)
   @elidable
   def iread( self, start_addr, num_bytes ):
-    assert start_addr & 0b11 == 0  # only aligned accesses allowed
-    return self.data[ start_addr >> 2 ]
+    value = 0
+    for i in range( num_bytes-1, -1, -1 ):
+      value = value << 8
+      value = value | ord( self.data[ start_addr + i ] )
+    return value
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
-    assert 0 < num_bytes <= 4
-    word = start_addr >> 2
-    byte = start_addr &  0b11
-
-    if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
-      self.data[ word ] = value
-    elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
-      mask = ~((0xFFFF << (byte * 8)) & 0xFFFFFFFF) & 0xFFFFFFFF
-      self.data[ word ] |= (value << (byte * 8 ))
-    elif num_bytes == 1:
-      mask = ~((0xFF   << (byte * 8)) & 0xFFFFFFFF) & 0xFFFFFFFF
-      self.data[ word ] |= (value << (byte * 8 ))
-    else:
-      raise Exception('Not handled value for num_bytes')
+    if self.debug: print ':: WR.MEM[%x] = %x' % (start_addr, value),
+    for i in range( num_bytes ):
+      self.data[ start_addr + i ] = chr(value & 0xFF)
+      value = value >> 8
 
 #-----------------------------------------------------------------------
 # State
 #-----------------------------------------------------------------------
 class State( object ):
   _virtualizable_ = [ 'rf[*]', 'pc' ]
-  def __init__( self, memory, symtable, reset_addr=0x400 ):
-    self.src_ptr  = 0
-    self.sink_ptr = 0
+  def __init__( self, memory, symtable, reset_addr=0x400, debug=False ):
     self.pc       = reset_addr
 
     # TODO: to allow the register file to be virtualizable (to avoid array
@@ -134,9 +153,22 @@ class State( object ):
     #self.rf       = RegisterFile()
     self.rf       = [0] * 32
     self.mem      = memory
-    self.symtable = symtable
-    self.status   = 0
-    self.stat_en  = 0
+
+    #self.rf .debug = debug
+    self.mem.debug = debug
+
+    # coprocessor registers
+    self.status        = 0
+    self.stats_en      = 0
+    self.ncycles       = 0
+    self.stat_ncycles  = 0
+
+    # parc special
+    self.src_ptr  = 0
+    self.sink_ptr = 0
+
+    # syscall stuff... TODO: should this be here?
+    self.breakpoint = 0
 
 #-----------------------------------------------------------------------
 # Instruction Fields
@@ -150,6 +182,15 @@ def rt( inst ):
 def rs( inst ):
   return (inst >> 21) & 0x1F
 
+def fd( inst ):
+  return (inst >>  6) & 0x1F
+
+def ft( inst ):
+  return (inst >> 16) & 0x1F
+
+def fs( inst ):
+  return (inst >> 11) & 0x1F
+
 def imm( inst ):
   return inst & 0xFFFF
 
@@ -158,3 +199,4 @@ def jtarg( inst ):
 
 def shamt( inst ):
   return (inst >> 6) & 0x1F
+
