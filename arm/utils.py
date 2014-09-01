@@ -202,11 +202,19 @@ def condition_passed( s, cond ):
 # CarryFrom (ref: ARM DDI 0100I - Glossary-12)
 #
 #   if   result > (2**32 - 1)
-#    and is_unsigned( operand_a )
-#    and is_unsigned( operand_b )
 #
-def carry_from( cond ):
-  print 'WARNING: implement carry_from!'
+def carry_from( result ):
+  return result > 0xFFFFFFFF
+
+#-----------------------------------------------------------------------
+# borrow_from
+#-----------------------------------------------------------------------
+# BorrowFrom (ref: ARM DDI 0100I - Glossary-3)
+#
+#  if result < 0
+#
+def borrow_from( result ):
+  return result < 0
 
 #-----------------------------------------------------------------------
 # overflow_from_add
@@ -216,9 +224,8 @@ def carry_from( cond ):
 #   if   operand_a[31] == operand_b[31] and
 #    and operand_a[31] != result[31]
 #
-def overflow_from_add( cond ):
-  print 'WARNING: implement overflow_from_add!'
-  return True
+def overflow_from_add( a, b, result ):
+  return (a >> 31 == b >> 31) and (a >> 31 != (result>>31)&1)
 
 #-----------------------------------------------------------------------
 # overflow_from_sub
@@ -228,9 +235,8 @@ def overflow_from_add( cond ):
 #   if   operand_a[31] != operand_b[31]
 #    and operand_a[31] != result[31]
 #
-def overflow_from_sub( cond ):
-  print 'WARNING: implement overflow_from_sub!'
-  return True
+def overflow_from_sub( a, b, result ):
+  return (a >> 31 != b >> 31) and (a >> 31 != (result>>31)&1)
 
 #-----------------------------------------------------------------------
 # rotate_right
