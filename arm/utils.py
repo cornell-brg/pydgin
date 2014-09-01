@@ -34,18 +34,119 @@
 # present in the <shift_imm> field is zero.
 # TODO: this is currently not handled!
 #
-def shifter_operand( inst ):
-  # http://stackoverflow.com/a/2835503
+# ARM has 16 data-processing instructions, these include:
+#
+#   and, eor, sub, rsb, add, adc, sbc, rsc
+#   tst, teq, cmp, cmn, orr, mov, bic, mvn
+#
+def shifter_operand( s, inst ):
+
   # 32-bit immediate
+  # http://stackoverflow.com/a/2835503
   if   I(inst) == 1:
-    val, rot = imm_8( inst ), rotate( inst )
-    if rot == 0: return val
-    else:        return rotate_right( val, 2*rot )
+    if rn( inst ) == 15: raise Exception('Modifying stack pointer not implemented!')
+    rotate_imm = rotate( inst )
+    operand    = rotate_right( imm_8(inst), rotate_imm*2 )
+    if rotate_imm == 0: cout = s.C
+    else:               cout = operand >> 3
+    return operand, cout
+
+  # 32-bit register shifted by 5-bit immediate
   elif (inst >>  4 & 0b1) == 0:
-    return shift_op( s.rf[rm( inst )], shift_amt( inst ), kind=shift( inst ) )
+    if rn( inst ) == 15: raise Exception('Modifying stack pointer not implemented!')
+    if rm( inst ) == 15: raise Exception('Modifying stack pointer not implemented!')
+    return shift_operand_imm( s, inst )
+
+  # 32-bit register shifted by 32-bit register
   elif (inst >>  7 & 0b1) == 0:
-    return shift_op( s.rf[rm( inst )], s.rf[rs( inst )],  kind=shift( inst ) )
-  else: raise Exception('Decoding error!')
+    return shift_operand_reg( s, inst )
+
+  # Arithmetic or Load/Store instruction extension space
+  else:
+    raise Exception('Not a data-processing instruction!')
+
+# Shifter constants
+
+LOGIC_SHIFT_LEFT  = 0b00
+LOGIC_SHIFT_RIGHT = 0b01
+ARITH_SHIFT_RIGHT = 0b10
+ROTATE_RIGHT      = 0b11
+
+#-----------------------------------------------------------------------
+# shifter_operand_imm
+#-----------------------------------------------------------------------
+def shifter_operand_imm( s, inst ):
+  shift_op  = shift( inst )
+  Rm        = s.rf[ rm(inst) ]
+  shift_imm = shift_amt( inst )
+  assert 0 <= off <= 31
+
+  if   shift_op == LOGIC_SHIFT_LEFT:
+    out  = Rm   if (shift_imm == 0) else Rm << shift_imm
+    cout = s.C  if (shift_imm == 0) else (Rm >> 32 - shift_imm)&1
+
+  elif shift_op == LOGIC_SHIFT_RIGHT:
+    # NOTE: shift_imm == 0 signifies a shift by 32
+    out  = 0          if (shift_imm == 0) else data >> shift_imm
+    cout = data >> 31 if (shift_imm == 0) else (data >> shift_imm - 1)&1
+
+  elif shift_op == ARITH_SHIFT_RIGHT:
+    # NOTE: shift_imm == 0 signifies a shift by 32
+    if shift_imm == 0:
+      if (Rm >> 31) == 0: out, cout = 0,          Rm >> 31
+      else:               out, cout = 0xFFFFFFFF, Rm >> 31
+    else:
+      out  = arith_shift( Rm, shift_imm )
+      cout = (Rm >> shift_imm - 1)&1
+
+  elif shift_op == ROTATE_RIGHT:
+    # NOTE: shift_imm == 0 signifies a rotate right with extend (RRX)
+    if shift_imm == 0:
+      out  = (s.C << 31) | (Rm >> 1)
+      cout = Rm & 1
+    else:
+      out  = rotate_right( Rm, shift_imm )
+      cout = (Rm >> shift_imm - 1)&1
+
+  return out, cout
+
+#-----------------------------------------------------------------------
+# shifter_operand_reg
+#-----------------------------------------------------------------------
+def shifter_operand_reg( s, inst ):
+  shift_op = shift( inst )
+  Rm       = s.rf[ rm(inst) ]
+  Rs       = s.rf[ rs(inst) ] & 0xFF
+  assert 0 <= off <= 31
+
+  if   shift_op == LOGIC_SHIFT_LEFT:
+    if   Rs ==  0: out, cout = Rm,       s.C
+    elif Rs <  32: out, cout = Rm << Rs, (Rm >> 32 - Rs)&1
+    elif Rs == 32: out, cout = 0,        (Rm)&1
+    elif Rs >  32: out, cout = 0,        0
+
+  elif shift_op == LOGIC_SHIFT_RIGHT:
+    if   Rs ==  0: out, cout = Rm,       s.C
+    elif Rs <  32: out, cout = Rm >> Rs, (Rm >> Rs - 1)&1
+    elif Rs == 32: out, cout = 0,        (Rm >> 31)&1
+    elif Rs >  32: out, cout = 0,        0
+
+  elif shift_op == ARITH_SHIFT_RIGHT:
+    if   Rs ==  0: out, cout = Rm,       s.C
+    elif Rs <  32:
+      out  = arith_shift( Rm, shift_imm )
+      cout = (Rm >> Rs - 1)&1
+    elif Rs >= 32:
+      out  = 0 if ((Rm >> 31) == 0) else 0xFFFFFFFF
+      cout = (Rm >> 31)&1
+
+  elif shift_op == ROTATE_RIGHT:
+    Rs4 = Rs & 0b1111
+    if   Rs  == 0: out, cout = Rm,                    s.C
+    elif Rs4 == 0: out, cout = Rm,                    (Rm >> 31)&1
+    elif Rs4 >  0: out, cout = rotate_right(Rm, Rs4), (Rm >> Rs4 - 1)&1
+
+  return out, cout
 
 #-----------------------------------------------------------------------
 # condition_passed
@@ -134,22 +235,15 @@ def overflow_from_sub( cond ):
 #-----------------------------------------------------------------------
 # rotate_right
 #-----------------------------------------------------------------------
-def rotate_right( val, rot )
-  return trim_32( (val >> rot) | (val << (32 - rot)) )
+def rotate_right( data, shift )
+  return trim_32( (data >> shift ) | (data << (32 - shift)) )
 
 #-----------------------------------------------------------------------
-# shift_op
+# arith_shift
 #-----------------------------------------------------------------------
-def shift_op( val, shift_amt, op )
-  if   kind == 0b00:  # logical shift left
-    return val << shift_amt
-  elif kind == 0b01:  # logical shift right
-    return val >> shift_amt
-  elif kind == 0b10:  # arithmetic shift right
-    return (0xFFFFFFFF << (32-shift_amt)) | (val >> shift_amt)
-  else:               # rotate right
-    if shift_amt == 0: raise Exception('TODO: implement rotate right extend!')
-    return rotate_right( val, shift_amt )
+def arith_shift( data, shift ):
+  fill = 0xFFFFFFFF if (data >> 31) else 0
+  return (fill << (32-shift)) | (data >> shift)
 
 #-----------------------------------------------------------------------
 # trim_32
