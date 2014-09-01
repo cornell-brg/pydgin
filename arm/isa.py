@@ -242,16 +242,16 @@ def execute_nop( s, inst ):
 #-----------------------------------------------------------------------
 def execute_adc( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b   = s.rf[ rn( inst ) ], shifter_operand( inst )
-    result = a + b + s.C
+    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result  = a + b + s.C
     s.rf[ rd( inst ) ] = trim_32( result )
 
     if s.S:
-      s.N = result &  0x80000000
-      s.Z = result == 0
-      s.C = carry_from( a, b, result )
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = carry_from( result )
       s.V = overflow_from_add( a, b, result )
-      # TODO: handle rd(inst) == 15
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -259,16 +259,16 @@ def execute_adc( s, inst ):
 #-----------------------------------------------------------------------
 def execute_add( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b   = s.rf[ rn( inst ) ], shifter_operand( inst )
-    result = a + b
+    a, b, _  = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result   = a + b
     s.rf[ rd( inst ) ] = trim_32( result )
 
     if s.S:
-      s.N = result &  0x80000000
-      s.Z = result == 0
-      s.C = carry_from( a, b, result )
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = carry_from( result )
       s.V = overflow_from_add( a, b, result )
-      # TODO: handle rd(inst) == 15
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -276,16 +276,16 @@ def execute_add( s, inst ):
 #-----------------------------------------------------------------------
 def execute_and( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b   = s.rf[ rn( inst ) ], shifter_operand( inst )
-    result = a + b
+    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result     = a & b
     s.rf[ rd( inst ) ] = trim_32( result )
 
     if s.S:
-      s.N = result &  0x80000000
-      s.Z = result == 0
-      raise Exception('Implement shifter_carry_out!')
-      s.C = 0
-      # TODO: handle rd(inst) == 15
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = cout
+      s.V = s.V
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -306,7 +306,17 @@ def execute_bl( s, inst ):
 # bic
 #-----------------------------------------------------------------------
 def execute_bic( s, inst ):
-  raise Exception('"bic" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result     = a & trim_32(~b)
+    s.rf[ rd( inst ) ] = trim_32( result )
+
+    if s.S:
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = cout
+      s.V = s.V
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -369,7 +379,17 @@ def execute_cmp( s, inst ):
 # eor
 #-----------------------------------------------------------------------
 def execute_eor( s, inst ):
-  raise Exception('"eor" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result     = a ^ b
+    s.rf[ rd( inst ) ] = trim_32( result )
+
+    if s.S:
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = cout
+      s.V = s.V
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -384,34 +404,6 @@ def execute_ldc( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldc2( s, inst ):
   raise Exception('"ldc2" instruction unimplemented!')
-  s.pc += 4
-
-#-----------------------------------------------------------------------
-# cmp
-#-----------------------------------------------------------------------
-def execute_cmp( s, inst ):
-  raise Exception('"cmp" instruction unimplemented!')
-  s.pc += 4
-
-#-----------------------------------------------------------------------
-# eor
-#-----------------------------------------------------------------------
-def execute_eor( s, inst ):
-  raise Exception('"eor" instruction unimplemented!')
-  s.pc += 4
-
-#-----------------------------------------------------------------------
-# ldc
-#-----------------------------------------------------------------------
-def execute_ldc( s, inst ):
-  raise Exception('"ldc" instruction unimplemented!')
-  s.pc += 4
-
-#-----------------------------------------------------------------------
-# ldc2
-#-----------------------------------------------------------------------
-def execute_ldc2( s, inst ):
-  raise Exception('"ldc" instruction unimplemented!')
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -523,7 +515,16 @@ def execute_mla( s, inst ):
 # mov
 #-----------------------------------------------------------------------
 def execute_mov( s, inst ):
-  raise Exception('"mov" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    result, cout = shifter_operand( inst )
+    s.rf[ rd( inst ) ] = trim_32( result )
+
+    if s.S:
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = cout
+      s.V = s.V
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -565,35 +566,84 @@ def execute_mul( s, inst ):
 # mvn
 #-----------------------------------------------------------------------
 def execute_mvn( s, inst ):
-  raise Exception('"mvn" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    result, cout = trim_32( ~shifter_operand( inst )[0] )
+    s.rf[ rd( inst ) ] = result
+
+    if s.S:
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = cout
+      s.V = s.V
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # orr
 #-----------------------------------------------------------------------
 def execute_orr( s, inst ):
-  raise Exception('"orr" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result     = a | b
+    s.rf[ rd( inst ) ] = trim_32( result )
+
+    if s.S:
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = cout
+      s.V = s.V
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # rsb
 #-----------------------------------------------------------------------
 def execute_rsb( s, inst ):
-  raise Exception('"rsb" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result  = b - a
+    s.rf[ rd( inst ) ] = trim_32( result )
+
+    if s.S:
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = not borrow_from( result )
+      s.V = overflow_from_sub( b, a, result )
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # rsc
 #-----------------------------------------------------------------------
 def execute_rsc( s, inst ):
-  raise Exception('"rsc" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result  = b - a - (not s.C)
+    s.rf[ rd( inst ) ] = trim_32( result )
+
+    if s.S:
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = not borrow_from( result )
+      s.V = overflow_from_sub( b, a, result )
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # sbc
 #-----------------------------------------------------------------------
 def execute_sbc( s, inst ):
-  raise Exception('"sbc" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result  = a - b - (not s.C)
+    s.rf[ rd( inst ) ] = trim_32( result )
+
+    if s.S:
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = not borrow_from( result )
+      s.V = overflow_from_sub( a, b, result )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -663,7 +713,17 @@ def execute_strt( s, inst ):
 # sub
 #-----------------------------------------------------------------------
 def execute_sub( s, inst ):
-  raise Exception('"sub" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result  = a - b
+    s.rf[ rd( inst ) ] = trim_32( result )
+
+    if s.S:
+      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
+      s.N = (result >> 31)&1
+      s.Z = trim_32( result ) == 0
+      s.C = not borrow_from( result )
+      s.V = overflow_from_sub( a, b, result )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -698,7 +758,16 @@ def execute_teq( s, inst ):
 # tst
 #-----------------------------------------------------------------------
 def execute_tst( s, inst ):
-  raise Exception('"tst" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    a, b   = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result = a & b
+
+    if s.S:
+      raise Exception('Implement orr.s!')
+      s.N = result &  0x80000000
+      s.Z = trim_32( result ) == 0
+      s.C = carry_from( a, b, result )
+      # TODO: handle rd(inst) == 15
   s.pc += 4
 
 #-----------------------------------------------------------------------
