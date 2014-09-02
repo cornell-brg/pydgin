@@ -11,6 +11,8 @@ from utils       import shifter_operand, rotate_right, shift_op
 from utils       import trim_32, condition_passed, carry_from
 from utils       import overflow_from_add, overflow_from_sub
 
+from utils       import sign_extend_30
+
 #=======================================================================
 # Register Definitions
 #=======================================================================
@@ -35,7 +37,11 @@ reg_map = {
   'r28'  : 28,   'r29'  : 29,   'r30'  : 30,   'r31'  : 31,
 
   'sp'   : 13,  # stack pointer
-  'sp'   : 13,  # link register
+  'lr'   : 13,  # link register
+  # NOTE: in ARM the PC is address of the current instruction being
+  #       executed + 8!! That means for a given cycle in our simulator,
+  #       PC read by fetch and PC read by execute need different values.
+  #       Best way to do this?
   'pc'   : 15,  # pc
 
   # cpsr/spsr bits
@@ -293,6 +299,9 @@ def execute_and( s, inst ):
 #-----------------------------------------------------------------------
 def execute_b( s, inst ):
   raise Exception('"b" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    s.pc += sign_extend_30( offset_24( isnt ) << 2 )
+    return
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -300,6 +309,10 @@ def execute_b( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bl( s, inst ):
   raise Exception('"bl" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    s.rf[ reg_map['lr'] ] = s.pc + 4
+    s.pc += sign_extend_30( offset_24( isnt ) << 2 )
+    return
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -344,9 +357,11 @@ def execute_blx2( s, inst ):
 # bx
 #-----------------------------------------------------------------------
 def execute_bx( s, inst ):
-  raise Exception('"bx" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    s.T  = s.rf[ rm(inst) ] & 0x00000001
+    s.pc = s.rf[ rm(inst) ] & 0xFFFFFFFE
+    if s.T:
+      raise Exception( "Entering THUMB mode! Unsupported!")
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -373,7 +388,13 @@ def execute_clz( s, inst ):
 def execute_cmn( s, inst ):
   raise Exception('"cmn" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    a, b = s.rf[ rn(inst) ], shifter_operand( inst )
+    result = a + b
+
+    s.N = (result >> 31)&1
+    s.Z = trim_32( result ) == 0
+    s.C = carry_from( result )
+    s.V = overflow_from_add( a, b, result )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -382,7 +403,13 @@ def execute_cmn( s, inst ):
 def execute_cmp( s, inst ):
   raise Exception('"cmp" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    a, b = s.rf[ rn(inst) ], shifter_operand( inst )
+    result = a - b
+
+    s.N = (result >> 31)&1
+    s.Z = trim_32( result ) == 0
+    s.C = not borrow_from( result )
+    s.V = overflow_from_sub( b, a, result )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -422,9 +449,27 @@ def execute_ldc2( s, inst ):
 # ldm1
 #-----------------------------------------------------------------------
 def execute_ldm1( s, inst ):
-  raise Exception('"ldm1" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+
+    addr, end_addr = addressing_mode( s, inst )
+    register_list   = inst & 0xFF
+
+    # TODO: support multiple memory accessing modes?
+    # MemoryAccess( s.B, s.E )
+
+    for i in range(15):
+      if register_list & 0b1:
+        s.rf[ i ] = s.read( address, 4 )
+        addr += 4
+      register_list >>= 1
+
+    if register_list & 0b1:  # reg 15
+      s.pc = s.read( address, 4 ) & 0xFFFFFFFE
+      s.T  = s.pc & 0b1
+      if s.T: raise Exception( "Entering THUMB mode! Unsupported!")
+
+    assert end_addr == addr - 4
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
