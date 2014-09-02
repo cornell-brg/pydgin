@@ -497,7 +497,6 @@ def execute_ldr( s, inst ):
   if condition_passed( s, cond(inst) ):
 
     addr, end_addr = addressing_mode_2( s, inst )
-    register_list   = inst & 0xFF
 
     # TODO: support multiple memory accessing modes?
     # MemoryAccess( s.B, s.E )
@@ -509,7 +508,7 @@ def execute_ldr( s, inst ):
     # else
     #   data = Memory[address,4]
 
-    data = s.read( addr, 4 )
+    data = s.mem.read( addr, 4 )
 
     if rd(inst) == 15:
       s.pc = data & 0xFFFFFFFE
@@ -523,9 +522,16 @@ def execute_ldr( s, inst ):
 # ldrb
 #-----------------------------------------------------------------------
 def execute_ldrb( s, inst ):
-  raise Exception('"ldrb" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+
+    addr, end_addr = addressing_mode_2( s, inst )
+
+    # TODO: support multiple memory accessing modes?
+    # MemoryAccess( s.B, s.E )
+
+    s.rf[ rd(inst) ] = s.mem.read( addr, 1 )
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -541,9 +547,23 @@ def execute_ldrbt( s, inst ):
 # ldrh
 #-----------------------------------------------------------------------
 def execute_ldrh( s, inst ):
-  raise Exception('"ldrh" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+
+    addr, end_addr = addressing_mode_2( s, inst )
+
+    # TODO: support multiple memory accessing modes?
+    # MemoryAccess( s.B, s.E )
+
+    # TODO: handle memory alignment?
+    # CP15_reg1_Ubit checks if the MMU is enabled
+    # if (CP15_reg1_Ubit == 0):
+    #   data = Memory[address,4] Rotate_Right (8 * address[1:0])
+    # else
+    #   data = Memory[address,4]
+
+    s.rf[ rd(inst) ] = s.mem.read( addr, 2 )
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
