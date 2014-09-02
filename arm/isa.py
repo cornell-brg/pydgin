@@ -345,6 +345,8 @@ def execute_blx2( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bx( s, inst ):
   raise Exception('"bx" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -352,6 +354,8 @@ def execute_bx( s, inst ):
 #-----------------------------------------------------------------------
 def execute_cdp( s, inst ):
   raise Exception('"cdp" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -359,6 +363,8 @@ def execute_cdp( s, inst ):
 #-----------------------------------------------------------------------
 def execute_clz( s, inst ):
   raise Exception('"clz" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -366,6 +372,8 @@ def execute_clz( s, inst ):
 #-----------------------------------------------------------------------
 def execute_cmn( s, inst ):
   raise Exception('"cmn" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -373,6 +381,8 @@ def execute_cmn( s, inst ):
 #-----------------------------------------------------------------------
 def execute_cmp( s, inst ):
   raise Exception('"cmp" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -397,6 +407,8 @@ def execute_eor( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldc( s, inst ):
   raise Exception('"ldc" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -411,6 +423,8 @@ def execute_ldc2( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldm1( s, inst ):
   raise Exception('"ldm1" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -418,6 +432,8 @@ def execute_ldm1( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldm2( s, inst ):
   raise Exception('"ldm2" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -425,6 +441,8 @@ def execute_ldm2( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldm3( s, inst ):
   raise Exception('"ldm3" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -432,6 +450,8 @@ def execute_ldm3( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldr( s, inst ):
   raise Exception('"ldr" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -439,6 +459,8 @@ def execute_ldr( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldrb( s, inst ):
   raise Exception('"ldrb" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -446,6 +468,8 @@ def execute_ldrb( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldrbt( s, inst ):
   raise Exception('"ldrbt" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -453,6 +477,8 @@ def execute_ldrbt( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldrh( s, inst ):
   raise Exception('"ldrh" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -460,6 +486,8 @@ def execute_ldrh( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldrsb( s, inst ):
   raise Exception('"ldsb" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -467,6 +495,8 @@ def execute_ldrsb( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldsh( s, inst ):
   raise Exception('"ldrsh" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -474,6 +504,8 @@ def execute_ldsh( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldrt( s, inst ):
   raise Exception('"ldrt" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -481,6 +513,8 @@ def execute_ldrt( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mcr( s, inst ):
   raise Exception('"mcr" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -495,6 +529,8 @@ def execute_mcr2( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mcrr( s, inst ):
   raise Exception('"mcrr" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -509,6 +545,8 @@ def execute_mcrr2( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mla( s, inst ):
   raise Exception('"mla" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -532,6 +570,8 @@ def execute_mov( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mrc( s, inst ):
   raise Exception('"mrc" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -546,6 +586,8 @@ def execute_mrc2( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mrs( s, inst ):
   raise Exception('"mrs" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -553,6 +595,8 @@ def execute_mrs( s, inst ):
 #-----------------------------------------------------------------------
 def execute_msr( s, inst ):
   raise Exception('"msr" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -560,6 +604,8 @@ def execute_msr( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mul( s, inst ):
   raise Exception('"mul" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -651,6 +697,8 @@ def execute_sbc( s, inst ):
 #-----------------------------------------------------------------------
 def execute_smlal( s, inst ):
   raise Exception('"smlal" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -658,6 +706,8 @@ def execute_smlal( s, inst ):
 #-----------------------------------------------------------------------
 def execute_smull( s, inst ):
   raise Exception('"smull" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -665,6 +715,8 @@ def execute_smull( s, inst ):
 #-----------------------------------------------------------------------
 def execute_stc( s, inst ):
   raise Exception('"stc" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -672,6 +724,8 @@ def execute_stc( s, inst ):
 #-----------------------------------------------------------------------
 def execute_stm( s, inst ):
   raise Exception('"stm" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -679,6 +733,8 @@ def execute_stm( s, inst ):
 #-----------------------------------------------------------------------
 def execute_str( s, inst ):
   raise Exception('"str" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -686,6 +742,8 @@ def execute_str( s, inst ):
 #-----------------------------------------------------------------------
 def execute_strb( s, inst ):
   raise Exception('"strb" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -693,6 +751,8 @@ def execute_strb( s, inst ):
 #-----------------------------------------------------------------------
 def execute_strbt( s, inst ):
   raise Exception('"strbt" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -700,6 +760,8 @@ def execute_strbt( s, inst ):
 #-----------------------------------------------------------------------
 def execute_strh( s, inst ):
   raise Exception('"strh" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -731,6 +793,8 @@ def execute_sub( s, inst ):
 #-----------------------------------------------------------------------
 def execute_swi( s, inst ):
   raise Exception('"swi" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -738,6 +802,8 @@ def execute_swi( s, inst ):
 #-----------------------------------------------------------------------
 def execute_swp( s, inst ):
   raise Exception('"swp" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -745,6 +811,8 @@ def execute_swp( s, inst ):
 #-----------------------------------------------------------------------
 def execute_swpb( s, inst ):
   raise Exception('"swpb" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -752,6 +820,8 @@ def execute_swpb( s, inst ):
 #-----------------------------------------------------------------------
 def execute_teq( s, inst ):
   raise Exception('"teq" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -761,9 +831,9 @@ def execute_tst( s, inst ):
   if condition_passed( s, cond(inst) ):
     a, b   = s.rf[ rn( inst ) ], shifter_operand( inst )
     result = a & b
+    raise Exception('Implement tst')
 
     if s.S:
-      raise Exception('Implement orr.s!')
       s.N = result &  0x80000000
       s.Z = trim_32( result ) == 0
       s.C = carry_from( a, b, result )
@@ -775,6 +845,8 @@ def execute_tst( s, inst ):
 #-----------------------------------------------------------------------
 def execute_umlal( s, inst ):
   raise Exception('"umlal" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -782,6 +854,8 @@ def execute_umlal( s, inst ):
 #-----------------------------------------------------------------------
 def execute_umull( s, inst ):
   raise Exception('"umull" instruction unimplemented!')
+  if condition_passed( s, cond(inst) ):
+    pass
   s.pc += 4
 
 #-----------------------------------------------------------------------
