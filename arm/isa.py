@@ -459,12 +459,12 @@ def execute_ldm1( s, inst ):
 
     for i in range(15):
       if register_list & 0b1:
-        s.rf[ i ] = s.read( address, 4 )
+        s.rf[ i ] = s.read( addr, 4 )
         addr += 4
       register_list >>= 1
 
     if register_list & 0b1:  # reg 15
-      s.pc = s.read( address, 4 ) & 0xFFFFFFFE
+      s.pc = s.read( addr, 4 ) & 0xFFFFFFFE
       s.T  = s.pc & 0b1
       if s.T: raise Exception( "Entering THUMB mode! Unsupported!")
 
@@ -494,9 +494,29 @@ def execute_ldm3( s, inst ):
 # ldr
 #-----------------------------------------------------------------------
 def execute_ldr( s, inst ):
-  raise Exception('"ldr" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+
+    addr, end_addr = addressing_mode_2( s, inst )
+    register_list   = inst & 0xFF
+
+    # TODO: support multiple memory accessing modes?
+    # MemoryAccess( s.B, s.E )
+
+    # TODO: handle memory alignment?
+    # CP15_reg1_Ubit checks if the MMU is enabled
+    # if (CP15_reg1_Ubit == 0):
+    #   data = Memory[address,4] Rotate_Right (8 * address[1:0])
+    # else
+    #   data = Memory[address,4]
+
+    data = s.read( addr, 4 )
+
+    if rd(inst) == 15:
+      s.pc = data & 0xFFFFFFFE
+      s.T  = s.pc & 0b1
+    else:
+      s.rf[ rd(inst) ] = data
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
