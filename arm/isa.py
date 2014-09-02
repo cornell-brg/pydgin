@@ -629,9 +629,20 @@ def execute_mcrr2( s, inst ):
 # mla
 #-----------------------------------------------------------------------
 def execute_mla( s, inst ):
-  raise Exception('"mla" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rm(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rs(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rn(inst) == 15: raise Exception('UNPREDICTABLE')
+
+    Rm, Rf, Rn  = s.rf[ rm(inst) ], s.rf[ rs(inst) ], s.rf[ rn(inst) ]
+    result      = trim_32(Rm * Rs + Rn)
+    s.rf[ rd( inst ) ] = result
+
+    if s.S:
+      s.N = (result >> 31)&1
+      s.Z = result == 0
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -639,11 +650,14 @@ def execute_mla( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mov( s, inst ):
   if condition_passed( s, cond(inst) ):
+    if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rm(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rs(inst) == 15: raise Exception('UNPREDICTABLE')
+
     result, cout = shifter_operand( inst )
     s.rf[ rd( inst ) ] = trim_32( result )
 
     if s.S:
-      if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = cout
@@ -690,7 +704,16 @@ def execute_msr( s, inst ):
 def execute_mul( s, inst ):
   raise Exception('"mul" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    Rm, Rs = s.rf[ rm(inst) ], s.rf[ rs(inst) ]
+    result = trim_32(Rm * Rs)
+    s.rf[ rd( inst ) ] = result
+
+    if s.S:
+      if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+      if rm(inst) == 15: raise Exception('UNPREDICTABLE')
+      if rs(inst) == 15: raise Exception('UNPREDICTABLE')
+      s.N = (result >> 31)&1
+      s.Z = result == 0
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -698,7 +721,7 @@ def execute_mul( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mvn( s, inst ):
   if condition_passed( s, cond(inst) ):
-    result, cout = trim_32( ~shifter_operand( inst )[0] )
+    result = trim_32( ~shifter_operand( inst )[0] )
     s.rf[ rd( inst ) ] = result
 
     if s.S:
@@ -805,10 +828,35 @@ def execute_stc( s, inst ):
   s.pc += 4
 
 #-----------------------------------------------------------------------
-# stm
+# stm1
 #-----------------------------------------------------------------------
-def execute_stm( s, inst ):
-  raise Exception('"stm" instruction unimplemented!')
+def execute_stm1( s, inst ):
+  if condition_passed( s, cond(inst) ):
+    addr, end_addr = addressing_mode_4( s, inst )
+    register_list   = inst & 0xFF
+
+    # TODO: support multiple memory accessing modes?
+    # MemoryAccess( s.B, s.E )
+
+    for i in range(15):
+      if register_list & 0b1:
+        s.write( addr, 4, s.rf[i] )
+        addr += 4
+      register_list >>= 1
+
+    if register_list & 0b1:  # reg 15
+      s.pc = s.read( addr, 4 ) & 0xFFFFFFFE
+      s.T  = s.pc & 0b1
+      if s.T: raise Exception( "Entering THUMB mode! Unsupported!")
+
+    assert end_addr == addr - 4
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# stm2
+#-----------------------------------------------------------------------
+def execute_stm2( s, inst ):
+  raise Exception('"stm2" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
   s.pc += 4
