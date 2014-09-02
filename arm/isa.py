@@ -451,7 +451,7 @@ def execute_ldc2( s, inst ):
 def execute_ldm1( s, inst ):
   if condition_passed( s, cond(inst) ):
 
-    addr, end_addr = addressing_mode( s, inst )
+    addr, end_addr = addressing_mode_4( s, inst )
     register_list   = inst & 0xFF
 
     # TODO: support multiple memory accessing modes?

@@ -247,7 +247,7 @@ def addressing_mode_2( s, inst ):
 #=======================================================================
 
 #-----------------------------------------------------------------------
-# addressing_mode
+# addressing_mode_4
 #-----------------------------------------------------------------------
 # Load and Store Multiple addressing modes produce a sequential range of
 # addresses. The lowest-numbered register is stored at the lowest memory
@@ -261,7 +261,7 @@ def addressing_mode_2( s, inst ):
 #   0 0  DA Decrement After
 #   1 0  DB Decrement Before
 #
-def addressing_mode( s, inst ):
+def addressing_mode_4( s, inst ):
 
   IA = 0b01
   IB = 0b11
