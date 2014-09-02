@@ -3,6 +3,10 @@
 #=======================================================================
 # Collection of utility functions for ARM instruction implementations.
 
+#=======================================================================
+# Addressing Mode 1 - Data-processing operands (page A5-2)
+#=======================================================================
+
 #-----------------------------------------------------------------------
 # shifter_operand
 #-----------------------------------------------------------------------
@@ -149,6 +153,110 @@ def shifter_operand_reg( s, inst ):
   return out, cout
 
 #-----------------------------------------------------------------------
+# carry_from
+#-----------------------------------------------------------------------
+# CarryFrom (ref: ARM DDI 0100I - Glossary-12)
+#
+#   if   result > (2**32 - 1)
+#
+def carry_from( result ):
+  return result > 0xFFFFFFFF
+
+#-----------------------------------------------------------------------
+# borrow_from
+#-----------------------------------------------------------------------
+# BorrowFrom (ref: ARM DDI 0100I - Glossary-3)
+#
+#  if result < 0
+#
+def borrow_from( result ):
+  return result < 0
+
+#-----------------------------------------------------------------------
+# overflow_from_add
+#-----------------------------------------------------------------------
+# OverflowFrom - Add (ref: ARM DDI 0100I - Glossary-11)
+#
+#   if   operand_a[31] == operand_b[31] and
+#    and operand_a[31] != result[31]
+#
+def overflow_from_add( a, b, result ):
+  return (a >> 31 == b >> 31) and (a >> 31 != (result>>31)&1)
+
+#-----------------------------------------------------------------------
+# overflow_from_sub
+#-----------------------------------------------------------------------
+# OverflowFrom - Sub (ref: ARM DDI 0100I - Glossary-11)
+#
+#   if   operand_a[31] != operand_b[31]
+#    and operand_a[31] != result[31]
+#
+def overflow_from_sub( a, b, result ):
+  return (a >> 31 != b >> 31) and (a >> 31 != (result>>31)&1)
+
+#-----------------------------------------------------------------------
+# rotate_right
+#-----------------------------------------------------------------------
+def rotate_right( data, shift )
+  return trim_32( (data >> shift ) | (data << (32 - shift)) )
+
+#=======================================================================
+# Addressing Mode 2 - Load and Store Word or Unsigned Byte (page A5-18)
+#=======================================================================
+
+#-----------------------------------------------------------------------
+# addressing_mode
+#-----------------------------------------------------------------------
+# Load and Store Multiple addressing modes produce a sequential range of
+# addresses. The lowest-numbered register is stored at the lowest memory
+# address and the highest-numbered register at the highest memory
+# address.
+#
+#   P U  Addressing Mode
+#
+#   0 1  IA Increment After
+#   1 1  IB Increment Before
+#   0 0  DA Decrement After
+#   1 0  DB Decrement Before
+#
+def addressing_mode( s, inst ):
+
+  IA = 0b01
+  IB = 0b11
+  DA = 0b00
+  DB = 0b10
+
+  mode   = (s.P << 1) | s.U
+  Rn     = s.rf[ rn(inst) ]
+  nbytes = 4 * popcount(inst & 0xFF)
+
+  if   mode == IA: start_addr, end_addr = Rn,          Rn+nbytes-4
+  elif mode == IB: start_addr, end_addr = Rn+4,        Rn+nbytes
+  elif mode == DA: start_addr, end_addr = Rn-nbytes+4, Rn
+  else:            start_addr, end_addr = Rn-nbytes,   Rn-4
+
+  if s.W:
+    s.rf[ rn(inst) ] = (Rn + nbytes) if s.U else (Rn - nbytes)
+
+  return start_addr, end_addr
+
+#=======================================================================
+# Addressing Mode 3 - Miscellaneous Loads and Stores (page A5-33)
+#=======================================================================
+
+#=======================================================================
+# Addressing Mode 4 - Load and Store Multiple (page A5-41)
+#=======================================================================
+
+#=======================================================================
+# Addressing Mode 5 - Load and Store Coprocessor (page A5-49)
+#=======================================================================
+
+#=======================================================================
+# Miscellaneous
+#=======================================================================
+
+#-----------------------------------------------------------------------
 # condition_passed
 #-----------------------------------------------------------------------
 # ConditionPassed (ref: ARM DDI 0100I - Glossary-4, A3-4)
@@ -197,54 +305,6 @@ def condition_passed( s, cond ):
   return True
 
 #-----------------------------------------------------------------------
-# carry_from
-#-----------------------------------------------------------------------
-# CarryFrom (ref: ARM DDI 0100I - Glossary-12)
-#
-#   if   result > (2**32 - 1)
-#
-def carry_from( result ):
-  return result > 0xFFFFFFFF
-
-#-----------------------------------------------------------------------
-# borrow_from
-#-----------------------------------------------------------------------
-# BorrowFrom (ref: ARM DDI 0100I - Glossary-3)
-#
-#  if result < 0
-#
-def borrow_from( result ):
-  return result < 0
-
-#-----------------------------------------------------------------------
-# overflow_from_add
-#-----------------------------------------------------------------------
-# OverflowFrom - Add (ref: ARM DDI 0100I - Glossary-11)
-#
-#   if   operand_a[31] == operand_b[31] and
-#    and operand_a[31] != result[31]
-#
-def overflow_from_add( a, b, result ):
-  return (a >> 31 == b >> 31) and (a >> 31 != (result>>31)&1)
-
-#-----------------------------------------------------------------------
-# overflow_from_sub
-#-----------------------------------------------------------------------
-# OverflowFrom - Sub (ref: ARM DDI 0100I - Glossary-11)
-#
-#   if   operand_a[31] != operand_b[31]
-#    and operand_a[31] != result[31]
-#
-def overflow_from_sub( a, b, result ):
-  return (a >> 31 != b >> 31) and (a >> 31 != (result>>31)&1)
-
-#-----------------------------------------------------------------------
-# rotate_right
-#-----------------------------------------------------------------------
-def rotate_right( data, shift )
-  return trim_32( (data >> shift ) | (data << (32 - shift)) )
-
-#-----------------------------------------------------------------------
 # arith_shift
 #-----------------------------------------------------------------------
 def arith_shift( data, shift ):
@@ -256,4 +316,19 @@ def arith_shift( data, shift ):
 #-----------------------------------------------------------------------
 def trim_32( val )
   return val & 0xFFFFFFFF
+
+#-----------------------------------------------------------------------
+# sign_extend_30
+#-----------------------------------------------------------------------
+# sign extend 24-bit immediates to 30-bit values
+def sign_extend_30( value ):
+  if value & 0x800000:
+    return 0x3F000000 | value
+  return value
+
+#-----------------------------------------------------------------------
+# popcount
+#-----------------------------------------------------------------------
+def popcount( value ):
+  return bin(value).count('1')
 
