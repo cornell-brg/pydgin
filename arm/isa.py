@@ -8,9 +8,9 @@ import sys
 
 from instruction import *
 from utils       import shifter_operand, rotate_right, shift_op
-from utils       import trim_32, condition_passed, carry_from
+from utils       import trim_32, trim_16, trim_8
+from utils       import condition_passed, carry_from
 from utils       import overflow_from_add, overflow_from_sub
-
 from utils       import sign_extend_30
 
 #=======================================================================
@@ -388,7 +388,7 @@ def execute_clz( s, inst ):
 def execute_cmn( s, inst ):
   raise Exception('"cmn" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    a, b = s.rf[ rn(inst) ], shifter_operand( inst )
+    a, b, _ = s.rf[ rn(inst) ], shifter_operand( inst )
     result = a + b
 
     s.N = (result >> 31)&1
@@ -403,7 +403,7 @@ def execute_cmn( s, inst ):
 def execute_cmp( s, inst ):
   raise Exception('"cmp" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    a, b = s.rf[ rn(inst) ], shifter_operand( inst )
+    a, b, _ = s.rf[ rn(inst) ], shifter_operand( inst )
     result = a - b
 
     s.N = (result >> 31)&1
@@ -496,7 +496,7 @@ def execute_ldm3( s, inst ):
 def execute_ldr( s, inst ):
   if condition_passed( s, cond(inst) ):
 
-    addr, end_addr = addressing_mode_2( s, inst )
+    addr = addressing_mode_2( s, inst )
 
     # TODO: support multiple memory accessing modes?
     # MemoryAccess( s.B, s.E )
@@ -525,7 +525,7 @@ def execute_ldrb( s, inst ):
   if condition_passed( s, cond(inst) ):
     if rd(inst) == 15: raise Exception('UNPREDICTABLE')
 
-    addr, end_addr = addressing_mode_2( s, inst )
+    addr = addressing_mode_2( s, inst )
 
     # TODO: support multiple memory accessing modes?
     # MemoryAccess( s.B, s.E )
@@ -550,7 +550,7 @@ def execute_ldrh( s, inst ):
   if condition_passed( s, cond(inst) ):
     if rd(inst) == 15: raise Exception('UNPREDICTABLE')
 
-    addr, end_addr = addressing_mode_2( s, inst )
+    addr = addressing_mode_2( s, inst )
 
     # TODO: support multiple memory accessing modes?
     # MemoryAccess( s.B, s.E )
@@ -702,7 +702,6 @@ def execute_msr( s, inst ):
 # mul
 #-----------------------------------------------------------------------
 def execute_mul( s, inst ):
-  raise Exception('"mul" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     Rm, Rs = s.rf[ rm(inst) ], s.rf[ rs(inst) ]
     result = trim_32(Rm * Rs)
@@ -865,9 +864,15 @@ def execute_stm2( s, inst ):
 # str
 #-----------------------------------------------------------------------
 def execute_str( s, inst ):
-  raise Exception('"str" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+
+    addr = addressing_mode_2( s, inst )
+
+    # TODO: support multiple memory accessing modes?
+    # MemoryAccess( s.B, s.E )
+
+    s.mem.write( addr, 4, s.rf[ rd(inst) ] )
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -876,7 +881,11 @@ def execute_str( s, inst ):
 def execute_strb( s, inst ):
   raise Exception('"strb" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+
+    addr = addressing_mode_2( s, inst )
+
+    s.mem.write( addr, 1, trim_8( s.rf[ rd(inst) ] ) )
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -952,9 +961,14 @@ def execute_swpb( s, inst ):
 # teq
 #-----------------------------------------------------------------------
 def execute_teq( s, inst ):
-  raise Exception('"teq" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result = trim_32( a ^ b )
+
+    if s.S:
+      s.N = (result >> 31)&1
+      s.Z = result == 0
+      s.C = cout
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -962,15 +976,13 @@ def execute_teq( s, inst ):
 #-----------------------------------------------------------------------
 def execute_tst( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b   = s.rf[ rn( inst ) ], shifter_operand( inst )
-    result = a & b
-    raise Exception('Implement tst')
+    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
+    result = trim_32( a & b )
 
     if s.S:
-      s.N = result &  0x80000000
-      s.Z = trim_32( result ) == 0
-      s.C = carry_from( a, b, result )
-      # TODO: handle rd(inst) == 15
+      s.N = (result >> 31)&1
+      s.Z = result == 0
+      s.C = cout
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -986,9 +998,24 @@ def execute_umlal( s, inst ):
 # umull
 #-----------------------------------------------------------------------
 def execute_umull( s, inst ):
-  raise Exception('"umull" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rm(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rs(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rn(inst) == 15: raise Exception('UNPREDICTABLE')
+
+    RdHi, RdLo  = rn(inst), rd(inst)
+    Rm,   Rs    = s.rf[ rm(inst) ], s.rf[ rs(inst) ]
+    result      = trim_32(Rm * Rs)
+
+    if RdHi == RdLo: raise Exception('UNPREDICTABLE')
+
+    s.rf[ RdHi ] = trim_32( result >> 32 )
+    s.rf[ RdLo ] = trim_32( result )
+
+    if s.S:
+      s.N = (result >> 63)&1
+      s.Z = result == 0
   s.pc += 4
 
 #-----------------------------------------------------------------------
