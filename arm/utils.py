@@ -204,6 +204,40 @@ def rotate_right( data, shift )
 # Addressing Mode 2 - Load and Store Word or Unsigned Byte (page A5-18)
 #=======================================================================
 
+#-----------------------------------------------------------------------
+# addressing_mode_2( s, inst )
+#-----------------------------------------------------------------------
+#
+# I P W
+#
+# 0 1 0 Immediate Offset
+# 1 1 0 Register Offset
+# 1 1 0 Scaled Register Offset
+# 0 1 1 Immediate Pre-Indexed
+# 1 1 1 Register Pre-Indexed
+# 1 1 1 Scaled Register Pre-Indexed
+# 0 0 0 Immediate Post-Indexed
+# 1 0 0 Register Post-Indexed
+# 1 0 0 Scaled Register Post-Indexed
+#
+def addressing_mode_2( s, inst ):
+
+  # Immediate vs. Register Offset
+  if not s.I: index = imm_12(inst)
+  else:       index = shifter_operand_imm(s, reg)
+
+  offset_addr = Rn + index if s.U else Rn - index
+
+  # Offset Addressing/Pre-Indexed Addressing vs. Post-Indexed Addressing
+  if s.P: addr = offset_addr
+  else:   addr = Rn
+
+  # Offset Addressing vs. Pre-/Post-Indexed Addressing
+  if not (s.P ^ s.W):
+    s.rf[rn(inst)] = offset_addr
+
+  return addr
+
 #=======================================================================
 # Addressing Mode 3 - Miscellaneous Loads and Stores (page A5-33)
 #=======================================================================
