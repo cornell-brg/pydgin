@@ -86,17 +86,17 @@ def register_inst( func ):
 #-----------------------------------------------------------------------
 # RegisterFile
 #-----------------------------------------------------------------------
-#class RegisterFile( object ):
-#  def __init__( self, debug=False ):
-#    self.regs  = [0] * 32
-#    self.debug = debug
-#  def __getitem__( self, idx ):
-#    if self.debug: print ':: RD.RF[%2d] = %8x' % (idx, self.regs[idx]),
-#    return self.regs[idx]
-#  def __setitem__( self, idx, value ):
-#    if idx != 0:
-#      self.regs[idx] = value
-#      if self.debug: print ':: WR.RF[%2d] = %8x' % (idx, value),
+class RegisterFile( object ):
+  def __init__( self, debug=False ):
+    self.regs  = [0] * 32
+    self.debug = debug
+  def __getitem__( self, idx ):
+    if self.debug: print ':: RD.RF[%2d] = %8x' % (idx, self.regs[idx]),
+    return self.regs[idx]
+  def __setitem__( self, idx, value ):
+    if idx != 0:
+      self.regs[idx] = value
+      if self.debug: print ':: WR.RF[%2d] = %8x' % (idx, value),
 
 #-----------------------------------------------------------------------
 # Memory
@@ -142,7 +142,6 @@ class Memory( object ):
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  _virtualizable_ = [ 'rf[*]', 'pc' ]
   def __init__( self, memory, symtable, reset_addr=0x400, debug=False ):
     self.pc       = reset_addr
 
@@ -150,11 +149,10 @@ class State( object ):
     # lookups in the JIT), it needs to be an array as a member of the
     # State class. Couldn't figure out how to have rf a RegisterFile
     # object and still be virtualizable.
-    #self.rf       = RegisterFile()
-    self.rf       = [0] * 32
+    self.rf       = RegisterFile()
     self.mem      = memory
 
-    #self.rf .debug = debug
+    self.rf .debug = debug
     self.mem.debug = debug
 
     # coprocessor registers
