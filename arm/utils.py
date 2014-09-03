@@ -223,17 +223,17 @@ def rotate_right( data, shift ):
 def addressing_mode_2( s, inst ):
 
   # Immediate vs. Register Offset
-  if not s.I: index = imm_12(inst)
-  else:       index = shifter_operand_imm(s, reg)
+  if not I(inst): index = imm_12(inst)
+  else:           index = shifter_operand_imm(s, reg)
 
-  offset_addr = Rn + index if s.U else Rn - index
+  offset_addr = Rn + index if U(inst) else Rn - index
 
   # Offset Addressing/Pre-Indexed Addressing vs. Post-Indexed Addressing
-  if s.P: addr = offset_addr
-  else:   addr = Rn
+  if P(inst): addr = offset_addr
+  else:       addr = Rn
 
   # Offset Addressing vs. Pre-/Post-Indexed Addressing
-  if not (s.P ^ s.W):
+  if not (P(inst) ^ W(inst)):
     s.rf[rn(inst)] = offset_addr
 
   return addr

@@ -53,5 +53,21 @@ def opcode_2( inst ):
 def I( inst ):
   return (inst >> 25) & 0b1
 
+def P( inst ):
+  return (inst >> 24) & 0b1
+
+def U( inst ):
+  return (inst >> 23) & 0b1
+
+def B( inst ):
+  return (inst >> 22) & 0b1
+
+def W( inst ):
+  return (inst >> 21) & 0b1
+
+#def L( inst ):
+#  return (inst >> 20) & 0b1
+
 def S( inst ):
   return (inst >> 20) & 0b1
+
