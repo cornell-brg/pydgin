@@ -7,6 +7,7 @@ from utils import trim_32, trim_16, trim_8
 from utils import condition_passed, carry_from
 from utils import overflow_from_add, overflow_from_sub
 from utils import sign_extend_30
+from utils import addressing_mode_2, addressing_mode_4
 
 from instruction import *
 from pydgin.misc import create_risc_decoder
@@ -250,7 +251,7 @@ def execute_adc( s, inst ):
     result  = a + b + s.C
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -267,7 +268,7 @@ def execute_add( s, inst ):
     result   = a + b
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -284,7 +285,7 @@ def execute_and( s, inst ):
     result     = a & b
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -322,7 +323,7 @@ def execute_bic( s, inst ):
     result     = a & trim_32(~b)
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -419,7 +420,7 @@ def execute_eor( s, inst ):
     result     = a ^ b
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -637,7 +638,7 @@ def execute_mla( s, inst ):
     result      = trim_32(Rm * Rs + Rn)
     s.rf[ rd( inst ) ] = result
 
-    if s.S:
+    if S(inst):
       s.N = (result >> 31)&1
       s.Z = result == 0
 
@@ -655,7 +656,7 @@ def execute_mov( s, inst ):
     result, cout = shifter_operand( inst )
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = cout
@@ -705,7 +706,7 @@ def execute_mul( s, inst ):
     result = trim_32(Rm * Rs)
     s.rf[ rd( inst ) ] = result
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('UNPREDICTABLE')
       if rm(inst) == 15: raise Exception('UNPREDICTABLE')
       if rs(inst) == 15: raise Exception('UNPREDICTABLE')
@@ -721,7 +722,7 @@ def execute_mvn( s, inst ):
     result = trim_32( ~shifter_operand( inst )[0] )
     s.rf[ rd( inst ) ] = result
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -738,7 +739,7 @@ def execute_orr( s, inst ):
     result     = a | b
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -755,7 +756,7 @@ def execute_rsb( s, inst ):
     result  = b - a
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -772,7 +773,7 @@ def execute_rsc( s, inst ):
     result  = b - a - (not s.C)
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -789,7 +790,7 @@ def execute_sbc( s, inst ):
     result  = a - b - (not s.C)
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -920,7 +921,7 @@ def execute_sub( s, inst ):
     result  = a - b
     s.rf[ rd( inst ) ] = trim_32( result )
 
-    if s.S:
+    if S( inst ):
       if rd(inst) == 15: raise Exception('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
@@ -963,7 +964,7 @@ def execute_teq( s, inst ):
     a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
     result = trim_32( a ^ b )
 
-    if s.S:
+    if S(inst):
       s.N = (result >> 31)&1
       s.Z = result == 0
       s.C = cout
@@ -977,7 +978,7 @@ def execute_tst( s, inst ):
     a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
     result = trim_32( a & b )
 
-    if s.S:
+    if S(inst):
       s.N = (result >> 31)&1
       s.Z = result == 0
       s.C = cout
@@ -1011,7 +1012,7 @@ def execute_umull( s, inst ):
     s.rf[ RdHi ] = trim_32( result >> 32 )
     s.rf[ RdLo ] = trim_32( result )
 
-    if s.S:
+    if S(inst):
       s.N = (result >> 63)&1
       s.Z = result == 0
   s.pc += 4
