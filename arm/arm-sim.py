@@ -51,7 +51,6 @@ def run( state, debug ):
     if debug: print '{:08x} {:8s} {:8d}'.format(inst, decode(inst).func_name[8:], s.ncycles),
     decode( inst )( s, inst )
     s.ncycles += 1  # TODO: should this be done inside instruction definition?
-    if s.stats_en: s.stat_ncycles += 1
     if debug: print
 
     #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[ 0: 6] )

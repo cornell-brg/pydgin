@@ -73,10 +73,14 @@ class State( object ):
     self.mem.debug = debug
 
     # coprocessor registers
+    self.N = 0
+    self.Z = 0
+    self.C = 0
+    self.V = 0
+
+    # other registers
     self.status        = 0
-    self.stats_en      = 0
     self.ncycles       = 0
-    self.stat_ncycles  = 0
 
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
