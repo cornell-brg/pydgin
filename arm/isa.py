@@ -6,12 +6,14 @@ import py
 import re
 import sys
 
-from instruction import *
-from utils       import shifter_operand, rotate_right, shift_op
-from utils       import trim_32, trim_16, trim_8
-from utils       import condition_passed, carry_from
-from utils       import overflow_from_add, overflow_from_sub
-from utils       import sign_extend_30
+from utils import shifter_operand
+from utils import trim_32, trim_16, trim_8
+from utils import condition_passed, carry_from
+from utils import overflow_from_add, overflow_from_sub
+from utils import sign_extend_30
+
+from instruction      import *
+from rpython.rlib.jit import elidable
 
 #=======================================================================
 # Register Definitions
@@ -37,7 +39,7 @@ reg_map = {
   'r28'  : 28,   'r29'  : 29,   'r30'  : 30,   'r31'  : 31,
 
   'sp'   : 13,  # stack pointer
-  'lr'   : 13,  # link register
+  'lr'   : 14,  # link register
   # NOTE: in ARM the PC is address of the current instruction being
   #       executed + 8!! That means for a given cycle in our simulator,
   #       PC read by fetch and PC read by execute need different values.
@@ -77,163 +79,163 @@ reg_map = {
 #
 encodings = [
   ['nop',      '00000000000000000000000000000000'],
-  ['adc',      '____00x0101xxxxxxxxxxxxxxxxxxxxx'],
-  ['add',      '____00x0100xxxxxxxxxxxxxxxxxxxxx'],
-  ['and',      '____00x0000xxxxxxxxxxxxxxxxxxxxx'],
-  ['b',        '____1010xxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['bl',       '____1011xxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['bic',      '____00x1110xxxxxxxxxxxxxxxxxxxxx'],
+  ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
+  ['add',      'xxxx00x0100xxxxxxxxxxxxxxxxxxxxx'],
+  ['and',      'xxxx00x0000xxxxxxxxxxxxxxxxxxxxx'],
+  ['b',        'xxxx1010xxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['bl',       'xxxx1011xxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['bic',      'xxxx00x1110xxxxxxxxxxxxxxxxxxxxx'],
   ['bkpt',     '111000010010xxxxxxxxxxxx0111xxxx'],
-  ['blx1'      '1111101xxxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['blx1',     '1111101xxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['blx2',     'xxxx00010010xxxxxxxxxxxx0011xxxx'],
-  ['bx',       '____00010010xxxxxxxxxxxx0001xxxx'],
-#?['bxj',      '____00010010xxxxxxxxxxxx0010xxxx'],
-  ['cdp',      '____1110xxxxxxxxxxxxxxxxxxx0xxxx'],
-  ['clz',      '____00010110xxxxxxxxxxxx0001xxxx'],
-  ['cmn',      '____00x10111xxxxxxxxxxxxxxxxxxxx'],
-  ['cmp',      '____00x10101xxxxxxxxxxxxxxxxxxxx'],
+  ['bx',       'xxxx00010010xxxxxxxxxxxx0001xxxx'],
+#?['bxj',      'xxxx00010010xxxxxxxxxxxx0010xxxx'],
+  ['cdp',      'xxxx1110xxxxxxxxxxxxxxxxxxx0xxxx'],
+  ['clz',      'xxxx00010110xxxxxxxxxxxx0001xxxx'],
+  ['cmn',      'xxxx00x10111xxxxxxxxxxxxxxxxxxxx'],
+  ['cmp',      'xxxx00x10101xxxxxxxxxxxxxxxxxxxx'],
 # ['cps',      '111100010000xxx0xxxxxxxxxxx0xxxx'], # v6
-# ['cpy',      '____00011010xxxxxxxx00000000xxxx'], # v6
-  ['eor',      '____00x0001xxxxxxxxxxxxxxxxxxxxx'],
-  ['ldc',      '____110xxxx1xxxxxxxxxxxxxxxxxxxx'],
+# ['cpy',      'xxxx00011010xxxxxxxx00000000xxxx'], # v6
+  ['eor',      'xxxx00x0001xxxxxxxxxxxxxxxxxxxxx'],
+  ['ldc',      'xxxx110xxxx1xxxxxxxxxxxxxxxxxxxx'],
   ['ldc2',     '1111110xxxx1xxxxxxxxxxxxxxxxxxxx'],
-  ['ldm1',     '____100xx0x1xxxxxxxxxxxxxxxxxxxx'],
-  ['ldm2',     '____100xx101xxxx0xxxxxxxxxxxxxxx'],
-  ['ldm3',     '____100xx1x1xxxx1xxxxxxxxxxxxxxx'],
-  ['ldr',      '____01xxx0x1xxxxxxxxxxxxxxxxxxxx'],
+  ['ldm1',     'xxxx100xx0x1xxxxxxxxxxxxxxxxxxxx'],
+  ['ldm2',     'xxxx100xx101xxxx0xxxxxxxxxxxxxxx'],
+  ['ldm3',     'xxxx100xx1x1xxxx1xxxxxxxxxxxxxxx'],
+  ['ldr',      'xxxx01xxx0x1xxxxxxxxxxxxxxxxxxxx'],
 
-  ['ldrb',     '____01xxx1x1xxxxxxxxxxxxxxxxxxxx'],
-  ['ldrbt',    '____01x0x111xxxxxxxxxxxxxxxxxxxx'],
-#?['ldrd',     '____000puiw0xxxxxxxxxxxx1101xxxx'],
-# ['ldrex',    '____000110001xxxxxxxxxxx1001xxxx'], # v6
-  ['ldrh',     '____000xxxx1xxxxxxxxxxxx1011xxxx'],
-  ['ldrsb',    '____000xxxx1xxxxxxxxxxxx1101xxxx'],
-  ['ldrsh',    '____000xxxx1xxxxxxxxxxxx1111xxxx'],
-  ['ldrt',     '____01x0x011xxxxxxxxxxxxxxxxxxxx'],
-  ['mcr',      '____1110xxx0xxxxxxxxxxxxxxx1xxxx'],
+  ['ldrb',     'xxxx01xxx1x1xxxxxxxxxxxxxxxxxxxx'],
+  ['ldrbt',    'xxxx01x0x111xxxxxxxxxxxxxxxxxxxx'],
+#?['ldrd',     'xxxx000puiw0xxxxxxxxxxxx1101xxxx'],
+# ['ldrex',    'xxxx000110001xxxxxxxxxxx1001xxxx'], # v6
+  ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'],
+  ['ldrsb',    'xxxx000xxxx1xxxxxxxxxxxx1101xxxx'],
+  ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'],
+  ['ldrt',     'xxxx01x0x011xxxxxxxxxxxxxxxxxxxx'],
+  ['mcr',      'xxxx1110xxx0xxxxxxxxxxxxxxx1xxxx'],
   ['mcr2',     '11111110xxx0xxxxxxxxxxxxxxx1xxxx'],
-  ['mcrr',     '____11000100xxxxxxxxxxxxxxxxxxxx'],
+  ['mcrr',     'xxxx11000100xxxxxxxxxxxxxxxxxxxx'],
   ['mcrr2',    '111111000100xxxxxxxxxxxxxxxxxxxx'],
-  ['mla',      '____0000001xxxxxxxxxxxxx1001xxxx'],
-  ['mov',      '____00x1101xxxxxxxxxxxxxxxxxxxxx'],
-  ['mrc',      '____1110xxx1xxxxxxxxxxxxxxx1xxxx'],
+  ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'],
+  ['mov',      'xxxx00x1101xxxxxxxxxxxxxxxxxxxxx'],
+  ['mrc',      'xxxx1110xxx1xxxxxxxxxxxxxxx1xxxx'],
   ['mrc2',     '11111110xxx1xxxxxxxxxxxxxxx1xxxx'],
-#?['mrrc',     '____11000101xxxxxxxxxxxxxxxxxxxx'],
+#?['mrrc',     'xxxx11000101xxxxxxxxxxxxxxxxxxxx'],
 # ['mrrc2',    '111111000101xxxxxxxxxxxxxxxxxxxx'], # v6
-  ['mrs',      '____00010x00xxxxxxxxxxxxxxxxxxxx'],
-  ['msr',      '____00x10x10xxxxxxxxxxxxxxxxxxxx'], # TODO
-  ['mul',      '____0000000xxxxxxxxxxxxx1001xxxx'],
-  ['mvn',      '____00x1111xxxxxxxxxxxxxxxxxxxxx'],
-  ['orr',      '____00x1100xxxxxxxxxxxxxxxxxxxxx'],
-# ['pkhbt',    '____01101000xxxxxxxxxxxxx001xxxx'], # v6
-# ['pkhtb',    '____01101000xxxxxxxxxxxxx101xxxx'], # v6
+  ['mrs',      'xxxx00010x00xxxxxxxxxxxxxxxxxxxx'],
+  ['msr',      'xxxx00x10x10xxxxxxxxxxxxxxxxxxxx'], # TODO
+  ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'],
+  ['mvn',      'xxxx00x1111xxxxxxxxxxxxxxxxxxxxx'],
+  ['orr',      'xxxx00x1100xxxxxxxxxxxxxxxxxxxxx'],
+# ['pkhbt',    'xxxx01101000xxxxxxxxxxxxx001xxxx'], # v6
+# ['pkhtb',    'xxxx01101000xxxxxxxxxxxxx101xxxx'], # v6
 
 #?['pld',      '111101x1x101xxxx1111xxxxxxxxxxxx'],
-#?['qadd',     '____00010000xxxxxxxxxxxx0101xxxx'],
-# ['qadd16',   '____01100010xxxxxxxxxxxx0001xxxx'], # v6
-# ['qadd8',    '____01100010xxxxxxxxxxxx1001xxxx'], # v6
-# ['qaddsubx', '____01100010xxxxxxxxxxxx0011xxxx'], # v6
-#?['qdadd',    '____00010100xxxxxxxxxxxx0101xxxx'],
-#?['qdsub',    '____00010110xxxxxxxxxxxx0101xxxx'],
-#?['qsub',     '____00010010xxxxxxxxxxxx0101xxxx'],
-# ['qsub16',   '____01100010xxxxxxxxxxxx0111xxxx'], # v6
-# ['qsub8',    '____01100010xxxxxxxxxxxx1111xxxx'], # v6
-# ['qsubaddx', '____01100010xxxxxxxxxxxx0101xxxx'], # v6
-# ['rev',      '____01101011xxxxxxxxxxxx0011xxxx'], # v6
-# ['rev16',    '____01101011xxxxxxxxxxxx1011xxxx'], # v6
-# ['revsh',    '____01101111xxxxxxxxxxxx1011xxxx'], # v6
+#?['qadd',     'xxxx00010000xxxxxxxxxxxx0101xxxx'],
+# ['qadd16',   'xxxx01100010xxxxxxxxxxxx0001xxxx'], # v6
+# ['qadd8',    'xxxx01100010xxxxxxxxxxxx1001xxxx'], # v6
+# ['qaddsubx', 'xxxx01100010xxxxxxxxxxxx0011xxxx'], # v6
+#?['qdadd',    'xxxx00010100xxxxxxxxxxxx0101xxxx'],
+#?['qdsub',    'xxxx00010110xxxxxxxxxxxx0101xxxx'],
+#?['qsub',     'xxxx00010010xxxxxxxxxxxx0101xxxx'],
+# ['qsub16',   'xxxx01100010xxxxxxxxxxxx0111xxxx'], # v6
+# ['qsub8',    'xxxx01100010xxxxxxxxxxxx1111xxxx'], # v6
+# ['qsubaddx', 'xxxx01100010xxxxxxxxxxxx0101xxxx'], # v6
+# ['rev',      'xxxx01101011xxxxxxxxxxxx0011xxxx'], # v6
+# ['rev16',    'xxxx01101011xxxxxxxxxxxx1011xxxx'], # v6
+# ['revsh',    'xxxx01101111xxxxxxxxxxxx1011xxxx'], # v6
 # ['rfe',      '1111100xx0x1xxxxxxxx1010xxxxxxxx'], # v6
-  ['rsb',      '____00x0011xxxxxxxxxxxxxxxxxxxxx'],
-  ['rsc',      '____00x0111xxxxxxxxxxxxxxxxxxxxx'],
-# ['sadd16',   '____01100001xxxxxxxxxxxx0001xxxx'], # v6
-# ['sadd8',    '____01100001xxxxxxxxxxxx1001xxxx'], # v6
-# ['saddsubx', '____01100001xxxxxxxxxxxx0011xxxx'], # v6
-  ['sbc',      '____00x0110xxxxxxxxxxxxxxxxxxxxx'],
-# ['sel',      '____01101000xxxxxxxxxxxx1011xxxx'], # v6
+  ['rsb',      'xxxx00x0011xxxxxxxxxxxxxxxxxxxxx'],
+  ['rsc',      'xxxx00x0111xxxxxxxxxxxxxxxxxxxxx'],
+# ['sadd16',   'xxxx01100001xxxxxxxxxxxx0001xxxx'], # v6
+# ['sadd8',    'xxxx01100001xxxxxxxxxxxx1001xxxx'], # v6
+# ['saddsubx', 'xxxx01100001xxxxxxxxxxxx0011xxxx'], # v6
+  ['sbc',      'xxxx00x0110xxxxxxxxxxxxxxxxxxxxx'],
+# ['sel',      'xxxx01101000xxxxxxxxxxxx1011xxxx'], # v6
 # ['setend',   '1111000100000001xxxxxxxx0000xxxx'], # v6
-# ['shadd16',  '____01100011xxxxxxxxxxxx0001xxxx'], # v6
-# ['shadd8',   '____01100011xxxxxxxxxxxx1001xxxx'], # v6
-# ['shaddsubx','____01100011xxxxxxxxxxxx0011xxxx'], # v6
-# ['shsub16',  '____01100011xxxxxxxxxxxx0111xxxx'], # v6
-# ['shsub8',   '____01100011xxxxxxxxxxxx1111xxxx'], # v6
-# ['shsubaddx','____01100011xxxxxxxxxxxx0101xxxx'], # v6
-# ['smlad',    '____01110000xxxxxxxxxxxx00x1xxxx'], # v6
-  ['smlal',    '____0000111xxxxxxxxxxxxx1001xxxx'],
-# ['smlald',   '____01110100xxxxxxxxxxxx00x1xxxx'], # v6
+# ['shadd16',  'xxxx01100011xxxxxxxxxxxx0001xxxx'], # v6
+# ['shadd8',   'xxxx01100011xxxxxxxxxxxx1001xxxx'], # v6
+# ['shaddsubx','xxxx01100011xxxxxxxxxxxx0011xxxx'], # v6
+# ['shsub16',  'xxxx01100011xxxxxxxxxxxx0111xxxx'], # v6
+# ['shsub8',   'xxxx01100011xxxxxxxxxxxx1111xxxx'], # v6
+# ['shsubaddx','xxxx01100011xxxxxxxxxxxx0101xxxx'], # v6
+# ['smlad',    'xxxx01110000xxxxxxxxxxxx00x1xxxx'], # v6
+  ['smlal',    'xxxx0000111xxxxxxxxxxxxx1001xxxx'],
+# ['smlald',   'xxxx01110100xxxxxxxxxxxx00x1xxxx'], # v6
 
-#?['smla_xy',  '____00010000xxxxxxxxxxxx1xx0xxxx'],
-#?['smlal_xy', '____00010100xxxxxxxxxxxx1xx0xxxx'],
-#?['smlaw_y',  '____00010010xxxxxxxxxxxx1x00xxxx'],
-# ['smlsd',    '____01110000xxxxxxxxxxxx01x1xxxx'], # v6
-# ['smlsld',   '____01110100xxxxxxxxxxxx01x1xxxx'], # v6
-# ['smmla',    '____01110101xxxxxxxxxxxx00x1xxxx'], # v6
-# ['smmls',    '____01110101xxxxxxxxxxxx11x1xxxx'], # v6
-# ['smmul',    '____01110101xxxx1111xxxx00x1xxxx'], # v6
-# ['smuad',    '____01110000xxxx1111xxxx00x1xxxx'], # v6
-  ['smull',    '____0000110xxxxxxxxxxxxx1001xxxx'],
-#?['smul_xy',  '____00010110xxxxxxxxxxxx1xx0xxxx'],
-#?['smulw',    '____00010010xxxxxxxxxxxx1x10xxxx'],
-# ['smusd',    '____01110000xxxx1111xxxx01x1xxxx'], # v6
+#?['smla_xy',  'xxxx00010000xxxxxxxxxxxx1xx0xxxx'],
+#?['smlal_xy', 'xxxx00010100xxxxxxxxxxxx1xx0xxxx'],
+#?['smlaw_y',  'xxxx00010010xxxxxxxxxxxx1x00xxxx'],
+# ['smlsd',    'xxxx01110000xxxxxxxxxxxx01x1xxxx'], # v6
+# ['smlsld',   'xxxx01110100xxxxxxxxxxxx01x1xxxx'], # v6
+# ['smmla',    'xxxx01110101xxxxxxxxxxxx00x1xxxx'], # v6
+# ['smmls',    'xxxx01110101xxxxxxxxxxxx11x1xxxx'], # v6
+# ['smmul',    'xxxx01110101xxxx1111xxxx00x1xxxx'], # v6
+# ['smuad',    'xxxx01110000xxxx1111xxxx00x1xxxx'], # v6
+  ['smull',    'xxxx0000110xxxxxxxxxxxxx1001xxxx'],
+#?['smul_xy',  'xxxx00010110xxxxxxxxxxxx1xx0xxxx'],
+#?['smulw',    'xxxx00010010xxxxxxxxxxxx1x10xxxx'],
+# ['smusd',    'xxxx01110000xxxx1111xxxx01x1xxxx'], # v6
 # ['srs',      '1111100xx1x01101xxxx0101xxxxxxxx'], # v6
-# ['ssat',     '____0110101xxxxxxxxxxxxxxx01xxxx'], # v6
-# ['ssat16',   '____01101010xxxxxxxxxxxx0011xxxx'], # v6
-# ['ssub16',   '____01100001xxxxxxxxxxxx0111xxxx'], # v6
-# ['ssub8',    '____01100001xxxxxxxxxxxx1111xxxx'], # v6
-# ['ssubaddx', '____01100001xxxxxxxxxxxx0101xxxx'], # v6
-  ['stc',      '____110xxxx0xxxxxxxxxxxxxxxxxxxx'],
+# ['ssat',     'xxxx0110101xxxxxxxxxxxxxxx01xxxx'], # v6
+# ['ssat16',   'xxxx01101010xxxxxxxxxxxx0011xxxx'], # v6
+# ['ssub16',   'xxxx01100001xxxxxxxxxxxx0111xxxx'], # v6
+# ['ssub8',    'xxxx01100001xxxxxxxxxxxx1111xxxx'], # v6
+# ['ssubaddx', 'xxxx01100001xxxxxxxxxxxx0101xxxx'], # v6
+  ['stc',      'xxxx110xxxx0xxxxxxxxxxxxxxxxxxxx'],
 # ['stc2',     '1111110xxxx0xxxxxxxxxxxxxxxxxxxx'], # v6
-  ['stm1',     '____110xx0x0xxxxxxxxxxxxxxxxxxxx'],
-  ['stm2',     '____100xx100xxxxxxxxxxxxxxxxxxxx'],
-  ['str',      '____01xxx0x0xxxxxxxxxxxxxxxxxxxx'],
-  ['strb',     '____01xxx1x0xxxxxxxxxxxxxxxxxxxx'],
-  ['strbt',    '____01x0x110xxxxxxxxxxxxxxxxxxxx'],
-#?['strd',     '____000xxxx0xxxxxxxxxxxx1111xxxx'],
-# ['strex',    '____00011000xxxxxxxxxxxx1001xxxx'], # v6
+  ['stm1',     'xxxx110xx0x0xxxxxxxxxxxxxxxxxxxx'],
+  ['stm2',     'xxxx100xx100xxxxxxxxxxxxxxxxxxxx'],
+  ['str',      'xxxx01xxx0x0xxxxxxxxxxxxxxxxxxxx'],
+  ['strb',     'xxxx01xxx1x0xxxxxxxxxxxxxxxxxxxx'],
+  ['strbt',    'xxxx01x0x110xxxxxxxxxxxxxxxxxxxx'],
+#?['strd',     'xxxx000xxxx0xxxxxxxxxxxx1111xxxx'],
+# ['strex',    'xxxx00011000xxxxxxxxxxxx1001xxxx'], # v6
 
-  ['strh',     '____000xxxx0xxxxxxxxxxxx1011xxxx'],
-  ['strt',     '____01x0x010xxxxxxxxxxxxxxxxxxxx'],
-  ['sub',      '____00x0010xxxxxxxxxxxxxxxxxxxxx'],
-  ['swi',      '____1111xxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['swp',      '____00010000xxxxxxxxxxxx1001xxxx'],
-  ['swpb',     '____00010100xxxxxxxxxxxx1001xxxx'],
-# ['sxtb',     '____011010101111xxxxxxxx0111xxxx'], # v6
-# ['sxtb16',   '____011010001111xxxxxxxx0111xxxx'], # v6
-# ['sxth',     '____011010111111xxxxxxxx0111xxxx'], # v6
-# ['sxtab',    '____01101010xxxxxxxxxxxx0111xxxx'], # v6
-# ['sxtab16',  '____01101000xxxxxxxxxxxx0111xxxx'], # v6
-# ['sxtah',    '____01101011xxxxxxxxxxxx0111xxxx'], # v6
-  ['teq',      '____00x10011xxxxxxxxxxxxxxxxxxxx'],
-  ['tst',      '____00x10001xxxxxxxxxxxxxxxxxxxx'],
-# ['uadd16',   '____01100101xxxxxxxxxxxx0001xxxx'], # v6
-# ['uadd8',    '____01100101xxxxxxxxxxxx1001xxxx'], # v6
-# ['uadd8subx','____01100101xxxxxxxxxxxx0011xxxx'], # v6
-# ['uhadd16',  '____01100111xxxxxxxxxxxx0001xxxx'], # v6
-# ['uhadd8',   '____01100111xxxxxxxxxxxx1001xxxx'], # v6
-# ['uhaddsubx','____01100111xxxxxxxxxxxx0011xxxx'], # v6
-# ['uhsub16',  '____01100111xxxxxxxxxxxx0111xxxx'], # v6
-# ['uhsub8',   '____01100111xxxxxxxxxxxx1111xxxx'], # v6
-# ['uhsubaddx','____01100111xxxxxxxxxxxx0101xxxx'], # v6
-# ['umaal',    '____00000100xxxxxxxxxxxx1001xxxx'], # v6
-  ['umlal',    '____0000101xxxxxxxxxxxxx1001xxxx'],
-  ['umull',    '____0000100xxxxxxxxxxxxx1001xxxx'],
-# ['uqadd16',  '____01100110xxxxxxxxxxxx0001xxxx'], # v6
-# ['uqadd8',   '____01100110xxxxxxxxxxxx1001xxxx'], # v6
-# ['uqaddsubx','____01100110xxxxxxxxxxxx0011xxxx'], # v6
-# ['uqsub16',  '____01100110xxxxxxxxxxxx0111xxxx'], # v6
-# ['uqsub8',   '____01100110xxxxxxxxxxxx1111xxxx'], # v6
-# ['uqsubaddx','____01100110xxxxxxxxxxxx0101xxxx'], # v6
-# ['usad8',    '____01111000xxxx1111xxxx0001xxxx'], # v6
-# ['usada8',   '____01111000xxxxxxxxxxxx0001xxxx'], # v6
-# ['usat',     '____0110111xxxxxxxxxxxxxxx01xxxx'], # v6
-# ['usat16',   '____01101110xxxxxxxxxxxx0011xxxx'], # v6
-# ['usub16',   '____01100101xxxxxxxxxxxx0111xxxx'], # v6
-# ['usub8',    '____01100101xxxxxxxxxxxx1111xxxx'], # v6
-# ['usubaddx', '____01100101xxxxxxxxxxxx0101xxxx'], # v6
-# ['uxtb',     '____011011101111xxxxxxxx0111xxxx'], # v6
-# ['uxtb16',   '____011011001111xxxxxxxx0111xxxx'], # v6
-# ['uxtab',    '____01101110xxxxxxxxxxxx0111xxxx'], # v6
-# ['uxtab16',  '____01101100xxxxxxxxxxxx0111xxxx'], # v6
-# ['uxtah',    '____01101111xxxxxxxxxxxx0111xxxx'], # v6
+  ['strh',     'xxxx000xxxx0xxxxxxxxxxxx1011xxxx'],
+  ['strt',     'xxxx01x0x010xxxxxxxxxxxxxxxxxxxx'],
+  ['sub',      'xxxx00x0010xxxxxxxxxxxxxxxxxxxxx'],
+  ['swi',      'xxxx1111xxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['swp',      'xxxx00010000xxxxxxxxxxxx1001xxxx'],
+  ['swpb',     'xxxx00010100xxxxxxxxxxxx1001xxxx'],
+# ['sxtb',     'xxxx011010101111xxxxxxxx0111xxxx'], # v6
+# ['sxtb16',   'xxxx011010001111xxxxxxxx0111xxxx'], # v6
+# ['sxth',     'xxxx011010111111xxxxxxxx0111xxxx'], # v6
+# ['sxtab',    'xxxx01101010xxxxxxxxxxxx0111xxxx'], # v6
+# ['sxtab16',  'xxxx01101000xxxxxxxxxxxx0111xxxx'], # v6
+# ['sxtah',    'xxxx01101011xxxxxxxxxxxx0111xxxx'], # v6
+  ['teq',      'xxxx00x10011xxxxxxxxxxxxxxxxxxxx'],
+  ['tst',      'xxxx00x10001xxxxxxxxxxxxxxxxxxxx'],
+# ['uadd16',   'xxxx01100101xxxxxxxxxxxx0001xxxx'], # v6
+# ['uadd8',    'xxxx01100101xxxxxxxxxxxx1001xxxx'], # v6
+# ['uadd8subx','xxxx01100101xxxxxxxxxxxx0011xxxx'], # v6
+# ['uhadd16',  'xxxx01100111xxxxxxxxxxxx0001xxxx'], # v6
+# ['uhadd8',   'xxxx01100111xxxxxxxxxxxx1001xxxx'], # v6
+# ['uhaddsubx','xxxx01100111xxxxxxxxxxxx0011xxxx'], # v6
+# ['uhsub16',  'xxxx01100111xxxxxxxxxxxx0111xxxx'], # v6
+# ['uhsub8',   'xxxx01100111xxxxxxxxxxxx1111xxxx'], # v6
+# ['uhsubaddx','xxxx01100111xxxxxxxxxxxx0101xxxx'], # v6
+# ['umaal',    'xxxx00000100xxxxxxxxxxxx1001xxxx'], # v6
+  ['umlal',    'xxxx0000101xxxxxxxxxxxxx1001xxxx'],
+  ['umull',    'xxxx0000100xxxxxxxxxxxxx1001xxxx'],
+# ['uqadd16',  'xxxx01100110xxxxxxxxxxxx0001xxxx'], # v6
+# ['uqadd8',   'xxxx01100110xxxxxxxxxxxx1001xxxx'], # v6
+# ['uqaddsubx','xxxx01100110xxxxxxxxxxxx0011xxxx'], # v6
+# ['uqsub16',  'xxxx01100110xxxxxxxxxxxx0111xxxx'], # v6
+# ['uqsub8',   'xxxx01100110xxxxxxxxxxxx1111xxxx'], # v6
+# ['uqsubaddx','xxxx01100110xxxxxxxxxxxx0101xxxx'], # v6
+# ['usad8',    'xxxx01111000xxxx1111xxxx0001xxxx'], # v6
+# ['usada8',   'xxxx01111000xxxxxxxxxxxx0001xxxx'], # v6
+# ['usat',     'xxxx0110111xxxxxxxxxxxxxxx01xxxx'], # v6
+# ['usat16',   'xxxx01101110xxxxxxxxxxxx0011xxxx'], # v6
+# ['usub16',   'xxxx01100101xxxxxxxxxxxx0111xxxx'], # v6
+# ['usub8',    'xxxx01100101xxxxxxxxxxxx1111xxxx'], # v6
+# ['usubaddx', 'xxxx01100101xxxxxxxxxxxx0101xxxx'], # v6
+# ['uxtb',     'xxxx011011101111xxxxxxxx0111xxxx'], # v6
+# ['uxtb16',   'xxxx011011001111xxxxxxxx0111xxxx'], # v6
+# ['uxtab',    'xxxx01101110xxxxxxxxxxxx0111xxxx'], # v6
+# ['uxtab16',  'xxxx01101100xxxxxxxxxxxx0111xxxx'], # v6
+# ['uxtah',    'xxxx01101111xxxxxxxxxxxx0111xxxx'], # v6
 ]
 
 #=======================================================================
@@ -1027,7 +1029,7 @@ inst_nbits = len( encodings[0][1] )
 def split_encodings( enc ):
   return [x for x in re.split( '(x*)', enc ) if x]
 
-bit_fields = [ split_encodings( enc ) for inst, enc in encodings ]
+bit_fields = [ split_encodings( x[1] ) for x in encodings ]
 
 decoder = ''
 for i, inst in enumerate( bit_fields ):
