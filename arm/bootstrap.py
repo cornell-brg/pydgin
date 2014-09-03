@@ -23,7 +23,7 @@ stack_base = memory_size-1   # TODO: set this correctly!
 #   0x8000.0000 - Unmapped cached   (kseg0) - 512MB
 #   0x0000.0000 - 32-bit user space (kuseg) -   2GB
 #
-def syscall_init( mem, breakpoint, argv, debug ):
+def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
 
   #---------------------------------------------------------------------
   # memory map initialization
@@ -187,9 +187,6 @@ def syscall_init( mem, breakpoint, argv, debug ):
   # initialize processor state
   state = State( Memory(mem), None, reset_addr=0x1000 )
 
-  # TODO: where should this go?
-  state.breakpoint = breakpoint
-
   if debug:
     print '---'
     print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
@@ -203,6 +200,10 @@ def syscall_init( mem, breakpoint, argv, debug ):
     print 'auxv-base', hex(stack_off[-4])
     print 'argd-base', hex(stack_off[-6])
     print 'envd-base', hex(stack_off[-7])
+
+  # TODO: where should this go?
+  state.pc         = entrypoint
+  state.breakpoint = breakpoint
 
   # initialize processor registers
   state.rf[  0 ] = 0            # ptr to func to run when program exits, disable

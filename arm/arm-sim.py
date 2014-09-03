@@ -81,14 +81,14 @@ def entry_point( argv ):
 
   # Load the program into a memory object
 
-  mem             = [' '] * memory_size
-  mem, breakpoint = load_program( open( filename, 'rb' ), mem )
+  mem = [chr(0x88)] * memory_size
+  mem, entrypoint, breakpoint = load_program( open( filename, 'rb' ), mem )
 
   debug = True
 
   # Insert bootstrapping code into memory and initialize processor state
 
-  state = syscall_init( mem, breakpoint, argv, debug )
+  state = syscall_init( mem, entrypoint, breakpoint, argv, debug )
   state.rf .debug = False
   state.mem.debug = debug
 

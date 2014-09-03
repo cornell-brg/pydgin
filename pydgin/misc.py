@@ -12,18 +12,27 @@ import rpython
 #-----------------------------------------------------------------------
 def load_program( fp, mem ):
 
-  mem_image = elf.elf_reader( fp )
-  sections  = mem_image.get_sections()
+  mem_image  = elf.elf_reader( fp )
+  sections   = mem_image.get_sections()
+  entrypoint = None
 
   for section in sections:
     start_addr = section.addr
     for i, data in enumerate( section.data ):
       mem[start_addr+i] = data
 
+    # TODO: HACK should really have elf_reader return the entry point
+    #       address in the elf header!
+    if section.name == '.text':
+      entrypoint = section.addr
+
+  assert entrypoint
+  assert sections[-1].name == '.bss'
+
   bss        = sections[-1]
   breakpoint = bss.addr + len( bss.data )
 
-  return mem, breakpoint
+  return mem, entrypoint, breakpoint
 
 #-----------------------------------------------------------------------
 # create_risc_decoder
