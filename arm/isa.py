@@ -2,18 +2,14 @@
 # isa.py
 #=======================================================================
 
-import py
-import re
-import sys
-
 from utils import shifter_operand
 from utils import trim_32, trim_16, trim_8
 from utils import condition_passed, carry_from
 from utils import overflow_from_add, overflow_from_sub
 from utils import sign_extend_30
 
-from instruction      import *
-from rpython.rlib.jit import elidable
+from instruction import *
+from pydgin.misc import create_risc_decoder
 
 #=======================================================================
 # Register Definitions
@@ -1020,41 +1016,9 @@ def execute_umull( s, inst ):
       s.Z = result == 0
   s.pc += 4
 
-#-----------------------------------------------------------------------
-# Create Decode Table
-#-----------------------------------------------------------------------
+#=======================================================================
+# Create Decoder
+#=======================================================================
 
-inst_nbits = len( encodings[0][1] )
-
-def split_encodings( enc ):
-  return [x for x in re.split( '(x*)', enc ) if x]
-
-bit_fields = [ split_encodings( x[1] ) for x in encodings ]
-
-decoder = ''
-for i, inst in enumerate( bit_fields ):
-  #print i, encodings[i][0], inst
-  bit = 0
-  conditions = []
-  for field in reversed( inst ):
-    nbits = len( field )
-    if field[0] != 'x':
-      mask = (1 << nbits) - 1
-      cond = '(inst >> {}) & 0x{:X} == 0b{}'.format( bit, mask, field )
-      conditions.append( cond )
-    bit += nbits
-  decoder += 'if   ' if i == 0 else '  elif '
-  decoder += ' and '.join( reversed(conditions) ) + ':\n'
-  decoder += '    return execute_{}\n'.format( encodings[i][0] )
-
-source = py.code.Source('''
-@elidable
-def decode( inst ):
-  {decoder_tree}
-  else:
-    raise Exception('Invalid instruction 0x%x!' % inst )
-'''.format( decoder_tree = decoder ))
-#print source
-exec source.compile() in globals()
-
+decode = create_risc_decoder( encodings, globals() )
 
