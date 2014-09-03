@@ -247,7 +247,7 @@ def execute_nop( s, inst ):
 #-----------------------------------------------------------------------
 def execute_adc( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result  = a + b + s.C
     s.rf[ rd( inst ) ] = trim_32( result )
 
@@ -264,7 +264,7 @@ def execute_adc( s, inst ):
 #-----------------------------------------------------------------------
 def execute_add( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b, _  = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, b, _  = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result   = a + b
     s.rf[ rd( inst ) ] = trim_32( result )
 
@@ -281,7 +281,7 @@ def execute_add( s, inst ):
 #-----------------------------------------------------------------------
 def execute_and( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result     = a & b
     s.rf[ rd( inst ) ] = trim_32( result )
 
@@ -319,7 +319,7 @@ def execute_bl( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bic( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result     = a & trim_32(~b)
     s.rf[ rd( inst ) ] = trim_32( result )
 
@@ -387,7 +387,7 @@ def execute_clz( s, inst ):
 def execute_cmn( s, inst ):
   raise Exception('"cmn" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    a, b, _ = s.rf[ rn(inst) ], shifter_operand( inst )
+    a, b, _ = s.rf[ rn(inst) ], shifter_operand( s, inst )
     result = a + b
 
     s.N = (result >> 31)&1
@@ -402,7 +402,7 @@ def execute_cmn( s, inst ):
 def execute_cmp( s, inst ):
   raise Exception('"cmp" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    a, b, _ = s.rf[ rn(inst) ], shifter_operand( inst )
+    a, b, _ = s.rf[ rn(inst) ], shifter_operand( s, inst )
     result = a - b
 
     s.N = (result >> 31)&1
@@ -416,7 +416,7 @@ def execute_cmp( s, inst ):
 #-----------------------------------------------------------------------
 def execute_eor( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result     = a ^ b
     s.rf[ rd( inst ) ] = trim_32( result )
 
@@ -653,7 +653,7 @@ def execute_mov( s, inst ):
     if rm(inst) == 15: raise Exception('UNPREDICTABLE')
     if rs(inst) == 15: raise Exception('UNPREDICTABLE')
 
-    result, cout = shifter_operand( inst )
+    result, cout = shifter_operand( s, inst )
     s.rf[ rd( inst ) ] = trim_32( result )
 
     if S(inst):
@@ -719,7 +719,7 @@ def execute_mul( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mvn( s, inst ):
   if condition_passed( s, cond(inst) ):
-    result = trim_32( ~shifter_operand( inst )[0] )
+    result = trim_32( ~shifter_operand( s, inst )[0] )
     s.rf[ rd( inst ) ] = result
 
     if S(inst):
@@ -735,7 +735,7 @@ def execute_mvn( s, inst ):
 #-----------------------------------------------------------------------
 def execute_orr( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, b, cout = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result     = a | b
     s.rf[ rd( inst ) ] = trim_32( result )
 
@@ -752,7 +752,7 @@ def execute_orr( s, inst ):
 #-----------------------------------------------------------------------
 def execute_rsb( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result  = b - a
     s.rf[ rd( inst ) ] = trim_32( result )
 
@@ -769,7 +769,7 @@ def execute_rsb( s, inst ):
 #-----------------------------------------------------------------------
 def execute_rsc( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result  = b - a - (not s.C)
     s.rf[ rd( inst ) ] = trim_32( result )
 
@@ -786,7 +786,7 @@ def execute_rsc( s, inst ):
 #-----------------------------------------------------------------------
 def execute_sbc( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result  = a - b - (not s.C)
     s.rf[ rd( inst ) ] = trim_32( result )
 
@@ -917,7 +917,7 @@ def execute_strt( s, inst ):
 #-----------------------------------------------------------------------
 def execute_sub( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, b, _ = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result  = a - b
     s.rf[ rd( inst ) ] = trim_32( result )
 

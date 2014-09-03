@@ -3,6 +3,8 @@
 #=======================================================================
 # Collection of utility functions for ARM instruction implementations.
 
+from instruction import *
+
 #=======================================================================
 # Addressing Mode 1 - Data-processing operands (page A5-2)
 #=======================================================================
@@ -59,11 +61,11 @@ def shifter_operand( s, inst ):
   elif (inst >>  4 & 0b1) == 0:
     if rn( inst ) == 15: raise Exception('Modifying stack pointer not implemented!')
     if rm( inst ) == 15: raise Exception('Modifying stack pointer not implemented!')
-    return shift_operand_imm( s, inst )
+    return shifter_operand_imm( s, inst )
 
   # 32-bit register shifted by 32-bit register
   elif (inst >>  7 & 0b1) == 0:
-    return shift_operand_reg( s, inst )
+    return shifter_operand_reg( s, inst )
 
   # Arithmetic or Load/Store instruction extension space
   else:
@@ -83,7 +85,7 @@ def shifter_operand_imm( s, inst ):
   shift_op  = shift( inst )
   Rm        = s.rf[ rm(inst) ]
   shift_imm = shift_amt( inst )
-  assert 0 <= off <= 31
+  assert 0 <= shift_imm <= 31
 
   if   shift_op == LOGIC_SHIFT_LEFT:
     out  = Rm   if (shift_imm == 0) else Rm << shift_imm
@@ -121,7 +123,6 @@ def shifter_operand_reg( s, inst ):
   shift_op = shift( inst )
   Rm       = s.rf[ rm(inst) ]
   Rs       = s.rf[ rs(inst) ] & 0xFF
-  assert 0 <= off <= 31
 
   if   shift_op == LOGIC_SHIFT_LEFT:
     if   Rs ==  0: out, cout = Rm,       s.C
@@ -223,9 +224,10 @@ def rotate_right( data, shift ):
 def addressing_mode_2( s, inst ):
 
   # Immediate vs. Register Offset
-  if not I(inst): index = imm_12(inst)
-  else:           index = shifter_operand_imm(s, reg)
+  if not I(inst): index    = imm_12(inst)
+  else:           index, _ = shifter_operand_imm(s, reg)
 
+  Rn          = s.rf[rn(inst)]
   offset_addr = Rn + index if U(inst) else Rn - index
 
   # Offset Addressing/Pre-Indexed Addressing vs. Post-Indexed Addressing
