@@ -72,11 +72,16 @@ class State( object ):
     self.rf .debug = debug
     self.mem.debug = debug
 
-    # coprocessor registers
-    self.N = 0
-    self.Z = 0
-    self.C = 0
-    self.V = 0
+    # current program status register (CPSR)
+    self.N    = 0b0      # Negative condition
+    self.Z    = 0b0      # Zero condition
+    self.C    = 0b0      # Carry condition
+    self.V    = 0b0      # Overflow condition
+    #self.J    = 0b0      # Jazelle state flag
+    #self.I    = 0b0      # IRQ Interrupt Mask
+    #self.F    = 0b0      # FIQ Interrupt Mask
+    #self.T    = 0b0      # Thumb state flag
+    #self.M    = 0b00000  # Processor Mode
 
     # other registers
     self.status        = 0
