@@ -91,7 +91,7 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
 
   # calculate sizes of sections
   # TODO: parameterize auxv/envp/argv calc for variable int size?
-  stack_nbytes  = [ 4,                              # end mark nbytes
+  stack_nbytes  = [ 4,                              # end mark nbytes (sentry)
                     sum_([len(x)+1 for x in envp]), # envp_str nbytes
                     sum_([len(x)+1 for x in argv]), # argv_str nbytes
                     0,                              # padding  nbytes
@@ -100,33 +100,48 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
                     4*(len(argv) + 1),              # argv     nbytes
                     4 ]                             # argc     nbytes
 
+  def round_up( val ):
+    alignment = 16
+    return (val + alignment - 1) & ~(alignment - 1)
+
   # calculate padding to align boundary
-  # TODO: gem5 doesn't do this step, temporarily remove it. There should
-  #       really be padding to align argv to a 16 byte boundary!!!
+  # NOTE: MIPs approach (but ignored by gem5)
   #stack_nbytes[3] = 16 - (sum_(stack_nbytes[:3]) % 16)
+  # NOTE: gem5 ARM approach
+  stack_nbytes[3] = round_up( sum_(stack_nbytes) ) - sum_(stack_nbytes)
 
   def round_down( val ):
-    return val & ~(page_size - 1)
+    alignment = 16
+    return val & ~(alignment - 1)
 
   # calculate stack pointer based on size of storage needed for args
   # TODO: round to nearest page size?
   stack_ptr = round_down( stack_base - sum_( stack_nbytes ) )
-  offset    = stack_ptr + sum_( stack_nbytes )
+
+  # FIXME: this offset seems really wrong, but this is how gem5 does it!
+  #offset    = stack_ptr + sum_( stack_nbytes )
+  offset    = stack_base
+
   stack_off = []
   for nbytes in stack_nbytes:
     offset -= nbytes
     stack_off.append( offset )
-  assert offset == stack_ptr
+  # FIXME: this is fails for GEM5's hacky offset...
+  #assert offset == stack_ptr
 
   if debug:
-    print 'stack min', hex( stack_ptr )
+    print 'stack base', hex( stack_base )
+    print 'stack min ', hex( stack_ptr )
     print 'stack size', stack_base - stack_ptr
-
-    print 'argv', stack_nbytes[-2]
-    print 'envp', stack_nbytes[-3]
-    print 'auxv', stack_nbytes[-4]
-    print 'argd', stack_nbytes[-6]
-    print 'envd', stack_nbytes[-7]
+    print
+    print 'sentry ', stack_nbytes[0]
+    print 'env d  ', stack_nbytes[1]
+    print 'arg d  ', stack_nbytes[2]
+    print 'padding', stack_nbytes[3]
+    print 'auxv   ', stack_nbytes[4]
+    print 'envp   ', stack_nbytes[5]
+    print 'argv   ', stack_nbytes[6]
+    print 'argc   ', stack_nbytes[7]
 
   # utility functions
 
@@ -195,11 +210,13 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
       print len( argv[i] ), argv[i]
     print 'argd = %s (%x)' % ( argv[0],      stack_off[-6] )
     print '---'
-    print 'argv-base', hex(stack_off[-2])
-    print 'envp-base', hex(stack_off[-3])
-    print 'auxv-base', hex(stack_off[-4])
-    print 'argd-base', hex(stack_off[-6])
     print 'envd-base', hex(stack_off[-7])
+    print 'argd-base', hex(stack_off[-6])
+    print 'auxv-base', hex(stack_off[-4])
+    print 'envp-base', hex(stack_off[-3])
+    print 'argv-base', hex(stack_off[-2])
+    print 'argc-base', hex(stack_off[-1])
+    print 'STACK_PTR', hex( stack_ptr )
 
   # TODO: where should this go?
   state.pc         = entrypoint
@@ -210,5 +227,7 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   state.rf[  1 ] = stack_off[6] # argument 1 reg = argv ptr addr
   state.rf[  2 ] = stack_off[5] # argument 2 reg = envp ptr addr
   state.rf[ 13 ] = stack_ptr    # stack pointer reg
+  state.rf[ 15 ] = state.pc + 8 # pc: pointer to two instructions after the
+                                # currently executing instruction!
 
   return state
