@@ -658,7 +658,10 @@ from syscalls import syscall_funcs
 def execute_syscall( s, inst ):
   v0 = reg_map['v0']
   syscall_number = s.rf[ v0 ]
-  syscall_funcs[ syscall_number ]( s )
+  if syscall_number in syscall_funcs:
+    syscall_funcs[ syscall_number ]( s )
+  else:
+    print "WARNING: syscall not implemented!", syscall_number
   s.pc += 4
 
 #-----------------------------------------------------------------------
