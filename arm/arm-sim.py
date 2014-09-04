@@ -50,7 +50,8 @@ def run( state, debug ):
     inst = s.mem.iread( s.pc, 4 )
     if debug: print '{:08x} {:8s} {:8d}'.format(inst, decode(inst).func_name[8:], s.ncycles),
     decode( inst )( s, inst )
-    s.ncycles += 1  # TODO: should this be done inside instruction definition?
+    s.rf[15] = s.pc+8 # TODO: should this be done inside instruction definition?
+    s.ncycles += 1    # TODO: should this be done inside instruction definition?
     if debug: print
 
     #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[ 0: 6] )
