@@ -297,9 +297,12 @@ def execute_and( s, inst ):
 # b
 #-----------------------------------------------------------------------
 def execute_b( s, inst ):
-  raise Exception('"b" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    s.pc += sign_extend_30( offset_24( isnt ) << 2 )
+    # TODO: s.pc and the pc value in the register file are currently
+    #       not the same!
+    #   s.pc == s.rf[pc]-8, s.pc used by fetch, s.rf[pc] used by execute
+    #
+    s.pc = sign_extend_30( imm_24( inst ) << 2 ) + s.rf[reg_map['pc']]
     return
   s.pc += 4
 
@@ -307,10 +310,14 @@ def execute_b( s, inst ):
 # bl
 #-----------------------------------------------------------------------
 def execute_bl( s, inst ):
-  raise Exception('"bl" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     s.rf[ reg_map['lr'] ] = s.pc + 4
-    s.pc += sign_extend_30( offset_24( isnt ) << 2 )
+
+    # TODO: s.pc and the pc value in the register file are currently
+    #       not the same!
+    #   s.pc == s.rf[pc]-8, s.pc used by fetch, s.rf[pc] used by execute
+    #
+    s.pc = sign_extend_30( imm_24( inst ) << 2 ) + s.rf[reg_map['pc']]
     return
   s.pc += 4
 
