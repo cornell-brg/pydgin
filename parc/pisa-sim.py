@@ -3,9 +3,7 @@
 #=======================================================================
 
 import sys
-#sys.path.append('/Users/dmlockhart/vc/git-brg/parc/pymtl')
-#sys.path.append('/Users/dmlockhart/vc/hg-opensource/pypy')
-sys.path.append('/work/bits0/dml257/pymtl')
+sys.path.append('..')
 sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 import os
@@ -345,7 +343,7 @@ def entry_point( argv ):
 
   mem, breakpoint = load_program( open( filename, 'rb' ) )
 
-  debug = False
+  debug = True
 
   # Insert bootstrapping code into memory and initialize processor state
 
