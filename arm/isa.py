@@ -4,7 +4,7 @@
 
 from utils import shifter_operand
 from utils import trim_32, trim_16, trim_8
-from utils import condition_passed, carry_from
+from utils import condition_passed, carry_from, borrow_from
 from utils import overflow_from_add, overflow_from_sub
 from utils import sign_extend_30
 from utils import addressing_mode_2, addressing_mode_4
@@ -392,7 +392,6 @@ def execute_clz( s, inst ):
 # cmn
 #-----------------------------------------------------------------------
 def execute_cmn( s, inst ):
-  raise Exception('"cmn" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     a, (b, _) = s.rf[ rn(inst) ], shifter_operand( s, inst )
     result = a + b
@@ -407,7 +406,6 @@ def execute_cmn( s, inst ):
 # cmp
 #-----------------------------------------------------------------------
 def execute_cmp( s, inst ):
-  raise Exception('"cmp" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     a, (b, _) = s.rf[ rn(inst) ], shifter_operand( s, inst )
     result = a - b
@@ -885,7 +883,6 @@ def execute_str( s, inst ):
 # strb
 #-----------------------------------------------------------------------
 def execute_strb( s, inst ):
-  raise Exception('"strb" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
 
     addr = addressing_mode_2( s, inst )
