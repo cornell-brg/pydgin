@@ -181,7 +181,7 @@ encodings = [
 # ['ssubaddx', 'xxxx01100001xxxxxxxxxxxx0101xxxx'], # v6
   ['stc',      'xxxx110xxxx0xxxxxxxxxxxxxxxxxxxx'],
 # ['stc2',     '1111110xxxx0xxxxxxxxxxxxxxxxxxxx'], # v6
-  ['stm1',     'xxxx110xx0x0xxxxxxxxxxxxxxxxxxxx'],
+  ['stm1',     'xxxx100xx0x0xxxxxxxxxxxxxxxxxxxx'],
   ['stm2',     'xxxx100xx100xxxxxxxxxxxxxxxxxxxx'],
   ['str',      'xxxx01xxx0x0xxxxxxxxxxxxxxxxxxxx'],
   ['strb',     'xxxx01xxx1x0xxxxxxxxxxxxxxxxxxxx'],
@@ -845,12 +845,12 @@ def execute_stm1( s, inst ):
 
     for i in range(15):
       if register_list & 0b1:
-        s.write( addr, 4, s.rf[i] )
+        s.mem.write( addr, 4, s.rf[i] )
         addr += 4
       register_list >>= 1
 
     if register_list & 0b1:  # reg 15
-      s.pc = s.read( addr, 4 ) & 0xFFFFFFFE
+      s.pc = s.mem.read( addr, 4 ) & 0xFFFFFFFE
       s.T  = s.pc & 0b1
       if s.T: raise Exception( "Entering THUMB mode! Unsupported!")
 
