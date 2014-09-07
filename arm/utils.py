@@ -270,7 +270,7 @@ def addressing_mode_4( s, inst ):
   DA = 0b00
   DB = 0b10
 
-  mode   = (s.P << 1) | s.U
+  mode   = (P(inst) << 1) | U(inst)
   Rn     = s.rf[ rn(inst) ]
   nbytes = 4 * popcount(inst & 0xFF)
 
@@ -279,8 +279,8 @@ def addressing_mode_4( s, inst ):
   elif mode == DA: start_addr, end_addr = Rn-nbytes+4, Rn
   else:            start_addr, end_addr = Rn-nbytes,   Rn-4
 
-  if s.W:
-    s.rf[ rn(inst) ] = (Rn + nbytes) if s.U else (Rn - nbytes)
+  if W(inst):
+    s.rf[ rn(inst) ] = (Rn + nbytes) if U(inst) else (Rn - nbytes)
 
   return start_addr, end_addr
 
