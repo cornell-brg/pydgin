@@ -132,11 +132,23 @@ def syscall_read( s ):
 
   errno = 0
 
-  # TODO: this doesn't seem to be returning the bytes read currently...
-
   try:
-    data = os.read( fd, nbytes )
-    nbytes_read = len( data )
+    str = os.read( fd, nbytes )
+    nbytes_read = len( str )
+
+    # rpython requires us to use a list of characters instead of string
+    data = [ "\0" ] * nbytes_read
+
+    for i in xrange( nbytes_read ):
+      data[i] = str[i]
+
+    assert data_ptr >= 0
+    s.mem.data[data_ptr : data_ptr + nbytes_read ] = data
+
+    # NOTE: I think newlib relies on the buffer returned to be a
+    # null-terminated string, so we explicitly null terminate it. Without
+    # this, we were getting buffer overflows.
+    s.mem.data[data_ptr + nbytes_read ] = "\0"
 
   except OSError as e:
     if verbose:

@@ -98,6 +98,17 @@ class RegisterFile( object ):
       self.regs[idx] = value
       if self.debug: print ':: WR.RF[%2d] = %8x' % (idx, value),
 
+  def print_regs( self ):
+    num_regs = 32
+    per_row  = 6
+    tmpl = "{:>2}:{:>8x} "
+    for c in xrange( 0, num_regs, per_row ):
+      str = ""
+      for r in xrange( c, min( num_regs, c+per_row ) ):
+        str += tmpl.format( r, self.regs[r] )
+      print str
+      #print tmpl.format( *reduce( lambda x, y: x + [y, self.regs[y]],
+      #                            xrange( c, c+per_row ), [] ) )
 #-----------------------------------------------------------------------
 # Memory
 #-----------------------------------------------------------------------

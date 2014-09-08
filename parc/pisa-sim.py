@@ -86,6 +86,8 @@ def run( state, debug ):
     s.ncycles += 1  # TODO: should this be done inside instruction definition?
     if s.stats_en: s.stat_ncycles += 1
     if debug: print
+    if debug:
+      s.rf.print_regs()
 
     #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[ 0: 6] )
     #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[ 6:12] )
@@ -359,6 +361,7 @@ def entry_point( argv ):
   mem, breakpoint = load_program( open( filename, 'rb' ) )
 
   debug = False
+  #debug = True
 
   # Insert bootstrapping code into memory and initialize processor state
 
