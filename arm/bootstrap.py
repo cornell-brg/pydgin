@@ -199,6 +199,12 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   offset = int_to_mem( mem, argc, offset )
   assert offset == stack_off[6]
 
+  # write zeros to bottom of stack
+  # TODO: why does gem5 do this?
+  while offset >= stack_ptr:
+    mem[offset] = '\0'
+    offset -= 1
+
   # initialize processor state
   state = State( Memory(mem), None, reset_addr=0x1000 )
 
