@@ -85,16 +85,24 @@ flag_table = [
  #[ 0x????, os.O_RSYNC    ],
 ]
 
-file_descriptors = {
-  0: os.dup( sys.stdin .fileno() ),
-  1: os.dup( sys.stdout.fileno() ),
-  2: os.dup( sys.stderr.fileno() ),
-}
+# previously, file descriptors was a dict, and the standard io was dup'd
+# to new fds. However, this causes issues with translation. So instead,
+# we're directly using fds 0, 1, 2. I don't know if this has any adverse
+# effects
+file_descriptors = [ 0, 1, 2 ]
+
+# TODO: we want verbosity to be set from outside with a command line flag.
+# For the time being, we do it here
+#verbose = True
+verbose = False
 
 #-----------------------------------------------------------------------
 # exit
 #-----------------------------------------------------------------------
 def syscall_exit( s ):
+  if verbose:
+    print "syscall_exit"
+
   exit_code = s.rf[ a0 ]
   print
   print "NUM  INSTS:", s.ncycles
@@ -103,54 +111,88 @@ def syscall_exit( s ):
   # TODO: this is an okay way to terminate the simulator?
   #       sys.exit(1) is not valid python
   s.status = exit_code
+  s.running = False
 
 #-----------------------------------------------------------------------
 # read
 #-----------------------------------------------------------------------
 def syscall_read( s ):
-  file_ptr = s.rf[ a0 ]
+  if verbose:
+    print "syscall_read"
+
+  fd       = s.rf[ a0 ]
   data_ptr = s.rf[ a1 ]
   nbytes   = s.rf[ a2 ]
 
-  if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = s.rf[ a3 ] = -1
+  if fd not in file_descriptors:
+    s.rf[ v0 ] = -1
+    # we return a bad file descriptor error (9)
+    s.rf[ a3 ] = 9
     return
 
-  fd   = file_descriptors[ file_ptr ]
-  data = os.read( fd, nbytes )
+  errno = 0
 
-  s.rf[ v0 ] = len( data )   # return the number of bytes read
-  s.rf[ a3 ] = 0
+  # TODO: this doesn't seem to be returning the bytes read currently...
+
+  try:
+    data = os.read( fd, nbytes )
+    nbytes_read = len( data )
+
+  except OSError as e:
+    if verbose:
+      print "OSError in syscall_read. errno=%d" % e.errno
+    nbytes_read = -1
+    errno = e.errno
+
+  # return the number of bytes read
+
+  s.rf[ v0 ] = nbytes_read
+  s.rf[ a3 ] = errno
 
 #-----------------------------------------------------------------------
 # write
 #-----------------------------------------------------------------------
 def syscall_write( s ):
-  file_ptr = s.rf[ a0 ]
+  if verbose:
+    print "syscall_write"
+
+  fd       = s.rf[ a0 ]
   data_ptr = s.rf[ a1 ]
   nbytes   = s.rf[ a2 ]
 
-  if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = s.rf[ a3 ] = -1
+  if fd not in file_descriptors:
+    s.rf[ v0 ] = -1
+    # we return a bad file descriptor error (9)
+    s.rf[ a3 ] = 9
     return
-
-  fd   = file_descriptors[ file_ptr ]
 
   # TODO: use mem.read()
   assert data_ptr >= 0 and nbytes >= 0
   data = ''.join( s.mem.data[data_ptr:data_ptr+nbytes] )
 
-  nbytes_written = os.write( fd, data )
+  errno = 0
+
+  try:
+    nbytes_written = os.write( fd, data )
+
+  except OSError as e:
+    print "OSError in syscall_write. errno=%d" % e.errno
+    nbytes_written = -1
+    errno = e.errno
+
   # https://docs.python.org/2/library/os.html#os.fsync
   #os.fsync( fd )  # this causes Invalid argument error for some reason...
 
   s.rf[ v0 ] = nbytes_written
-  s.rf[ a3 ] = 0
+  s.rf[ a3 ] = errno
 
 #-----------------------------------------------------------------------
 # open
 #-----------------------------------------------------------------------
 def syscall_open( s ):
+  if verbose:
+    print "syscall_open"
+
   filename_ptr = s.rf[ a0 ]
   flags        = s.rf[ a1 ]
   mode         = s.rf[ a2 ]
@@ -166,34 +208,63 @@ def syscall_open( s ):
     filename_ptr += 1
     filename += s.mem.data[ filename_ptr ]  # TODO: use mem.read()
 
+  errno = 0
+
   # open vs. os.open():  http://stackoverflow.com/a/15039662
-  fd = os.open( filename, flags, mode )
+
+  try:
+    fd = os.open( filename, flags, mode )
+
+  except OSError as e:
+    if verbose:
+      print "OSError in syscall_open. errno=%d" % e.errno
+    fd = -1
+    errno = e.errno
 
   if fd > 0:
-    file_descriptors[ fd ] = fd
+    file_descriptors.append( fd )
 
   s.rf[ v0 ] = fd
-  s.rf[ a3 ] = 0 if fd > 0 else -1
+  s.rf[ a3 ] = errno
 
 #-----------------------------------------------------------------------
 # close
 #-----------------------------------------------------------------------
 def syscall_close( s ):
-  file_ptr = s.rf[ a0 ]
+  if verbose:
+    print "syscall_close"
+  fd = s.rf[ a0 ]
 
-  if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = s.rf[ a3 ] = -1
+  if fd not in file_descriptors:
+    s.rf[ v0 ] = -1
+    # we return a bad file descriptor error (9)
+    s.rf[ a3 ] = 9
     return
 
-  os.close( file_descriptors[ file_ptr ] )
-  del file_descriptors[ file_ptr ]
+  # hacky: we don't close the file for 0, 1, 2
+  if fd <= 2:
+    s.rf[ v0 ] = s.rf[ a3 ] = 0
+    return
 
-  s.rf[ v0 ] = s.rf[ a3 ] = 0
+  errno = 0
+
+  try:
+    os.close( fd )
+    del file_descriptors[ fd ]
+  except OSError as e:
+    if verbose:
+      print "OSError in syscall_close. errno=%d" % e.errno
+    errno = e.errno
+
+  s.rf[ v0 ] = 0 if errno == 0 else -1
+  s.rf[ a3 ] = errno
 
 #-----------------------------------------------------------------------
 # lseek
 #-----------------------------------------------------------------------
 def syscall_lseek( s ):
+  if verbose:
+    print "syscall_lseek"
   raise Exception('lseek unimplemented!')
 
 #-----------------------------------------------------------------------
@@ -201,6 +272,12 @@ def syscall_lseek( s ):
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/questions/6988487/what-does-brk-system-call-do
 def syscall_brk( s ):
+  if verbose:
+    print "syscall_brk"
+
+  # TODO: this syscall shouldn't be necessary? As far as I know, ctorng
+  # added this to add DVFS stuff to multicore
+
   new_brk = s.rf[ a0 ]
 
   if new_brk != 0:
@@ -213,6 +290,8 @@ def syscall_brk( s ):
 # numcores
 #-----------------------------------------------------------------------
 def syscall_numcores( s ):
+  if verbose:
+    print "syscall_numcores"
   # always return 1 until multicore is implemented!
   s.rf[ v0 ] = 1
   s.rf[ a3 ] = 0

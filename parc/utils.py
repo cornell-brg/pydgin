@@ -161,6 +161,10 @@ class State( object ):
     self.ncycles       = 0
     self.stat_ncycles  = 0
 
+    # we need a dedicated running flag bacase status could be 0 on a
+    # syscall_exit
+    self.running       = True
+
     # parc special
     self.src_ptr  = 0
     self.sink_ptr = 0

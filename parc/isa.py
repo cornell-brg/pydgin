@@ -256,6 +256,7 @@ def execute_mtc0( s, inst ):
       # TODO: this is an okay way to terminate the simulator?
       #       sys.exit(1) is not valid python
       s.status = 1
+      s.running = False
   #elif rd(inst) ==  2: pass
   #  if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
   #    print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ rt(inst) ]

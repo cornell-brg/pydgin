@@ -61,7 +61,7 @@ page_size   = 8192
 def run( state, debug ):
   s = state
 
-  while s.status == 0:
+  while s.running:
 
     jitdriver.jit_merge_point(
       pc       = s.pc,
