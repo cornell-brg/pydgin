@@ -6,7 +6,7 @@ from utils import shifter_operand
 from utils import trim_32, trim_16, trim_8
 from utils import condition_passed, carry_from, borrow_from
 from utils import overflow_from_add, overflow_from_sub
-from utils import sign_extend_30
+from utils import sign_extend_30, signed
 from utils import addressing_mode_2, addressing_mode_4
 
 from instruction import *
@@ -302,7 +302,8 @@ def execute_b( s, inst ):
     #       not the same!
     #   s.pc == s.rf[pc]-8, s.pc used by fetch, s.rf[pc] used by execute
     #
-    s.pc = sign_extend_30( imm_24( inst ) << 2 ) + s.rf[reg_map['pc']]
+    offset = signed( sign_extend_30( imm_24( inst ) ) << 2 )
+    s.pc   = trim_32( s.rf[reg_map['pc']] + offset )
     return
   s.pc += 4
 
@@ -317,7 +318,8 @@ def execute_bl( s, inst ):
     #       not the same!
     #   s.pc == s.rf[pc]-8, s.pc used by fetch, s.rf[pc] used by execute
     #
-    s.pc = sign_extend_30( imm_24( inst ) << 2 ) + s.rf[reg_map['pc']]
+    offset = signed( sign_extend_30( imm_24( inst ) ) << 2 )
+    s.pc   = trim_32( s.rf[reg_map['pc']] + offset )
     return
   s.pc += 4
 
