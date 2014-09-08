@@ -145,11 +145,6 @@ def syscall_read( s ):
     assert data_ptr >= 0
     s.mem.data[data_ptr : data_ptr + nbytes_read ] = data
 
-    # NOTE: I think newlib relies on the buffer returned to be a
-    # null-terminated string, so we explicitly null terminate it. Without
-    # this, we were getting buffer overflows.
-    s.mem.data[data_ptr + nbytes_read ] = "\0"
-
   except OSError as e:
     if verbose:
       print "OSError in syscall_read. errno=%d" % e.errno
