@@ -7,13 +7,22 @@ from rpython.rlib.rarithmetic import intmask
 # RegisterFile
 #-----------------------------------------------------------------------
 class RegisterFile( object ):
-  def __init__( self, debug=False ):
+  def __init__( self, constant_zero=True, debug=False ):
     self.regs  = [0] * 32
     self.debug = debug
+
+    if constant_zero: self._setitemimpl = self._set_item_const_zero
+    else:             self._setitemimpl = self._set_item
   def __getitem__( self, idx ):
     if self.debug: print ':: RD.RF[%2d] = %8x' % (idx, self.regs[idx]),
     return self.regs[idx]
   def __setitem__( self, idx, value ):
+    self._setitemimpl( idx, value )
+
+  def _set_item( self, idx, value ):
+    self.regs[idx] = value
+    if self.debug: print ':: WR.RF[%2d] = %8x' % (idx, value),
+  def _set_item_const_zero( self, idx, value ):
     if idx != 0:
       self.regs[idx] = value
       if self.debug: print ':: WR.RF[%2d] = %8x' % (idx, value),
@@ -66,7 +75,7 @@ class State( object ):
   _virtualizable_ = [ 'rf.regs[*]' ]
   def __init__( self, memory, symtable, reset_addr=0x400, debug=False ):
     self.pc       = reset_addr
-    self.rf       = RegisterFile()
+    self.rf       = RegisterFile(constant_zero=False)
     self.mem      = memory
 
     self.rf .debug = debug
