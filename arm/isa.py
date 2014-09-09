@@ -475,12 +475,12 @@ def execute_ldm1( s, inst ):
 
     for i in range(15):
       if register_mask & 0b1:
-        s.rf[ i ] = s.read( addr, 4 )
+        s.rf[ i ] = s.mem.read( addr, 4 )
         addr += 4
       register_mask >>= 1
 
     if register_mask & 0b1:  # reg 15
-      s.pc = s.read( addr, 4 ) & 0xFFFFFFFE
+      s.pc = s.mem.read( addr, 4 ) & 0xFFFFFFFE
       s.T  = s.pc & 0b1
       if s.T: raise Exception( "Entering THUMB mode! Unsupported!")
 
