@@ -35,6 +35,14 @@ reg_map = {
   'r24'  : 24,   'r25'  : 25,   'r26'  : 26,   'r27'  : 27,
   'r28'  : 28,   'r29'  : 29,   'r30'  : 30,   'r31'  : 31,
 
+  # http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0473c/CJAJBFHC.html
+
+  'a1'   :  0,   'a2'   :  1,   'a3'   :  2,   'a4'   :  3,
+  'v1'   :  4,   'v2'   :  5,   'v3'   :  6,   'v4'   :  7,
+  'v5'   :  8,   'v6'   :  9,   'v7'   : 10,   'v8'   : 11,
+
+  'sb'   :  9,  # static base
+  'ip'   : 12,  # intra procedure call scratch
   'sp'   : 13,  # stack pointer
   'lr'   : 14,  # link register
   # NOTE: in ARM the PC is address of the current instruction being
