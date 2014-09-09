@@ -257,11 +257,14 @@ def syscall_close( s ):
 
   try:
     os.close( fd )
-    del file_descriptors[ fd ]
   except OSError as e:
     if verbose:
       print "OSError in syscall_close. errno=%d" % e.errno
     errno = e.errno
+
+  # remove fd only if the previous op succeeded
+  if errno == 0:
+    file_descriptors.remove( fd )
 
   s.rf[ v0 ] = 0 if errno == 0 else -1
   s.rf[ a3 ] = errno
