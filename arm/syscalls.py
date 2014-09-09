@@ -210,6 +210,37 @@ def syscall_brk( s ):
   s.rf[ a3 ] = 0
 
 #-----------------------------------------------------------------------
+# uname
+#-----------------------------------------------------------------------
+# TODO: Implementation copied directly from gem5 for verification
+# purposes. Fix later.
+def syscall_uname( s ):
+  raise Exception()
+
+  # utsname struct is five fields, each 65 chars long (1 char for null):
+  # sysname, nodename, release, version, machine
+  struct = [
+    'Linux',
+    'm5.eecs.umich.edu',
+    '3.10.2',
+    '#1 Mon Aug 18 11:32:15 EDT 2003',
+    'armv7l',
+  ]
+
+  mem_addr = s.rf[ a0 ]
+
+  for field in struct:
+    assert len(field) <= 64
+
+    # TODO: provide char/string block write interface to memory?
+    for char in field + '\0'*(65 - len(field)):
+      s.mem.write( mem_addr, 1, char )
+      mem_addr += 1
+
+  s.rf[ v0 ] = 0
+  s.rf[ a3 ] = 0
+
+#-----------------------------------------------------------------------
 # numcores
 #-----------------------------------------------------------------------
 def syscall_numcores( s ):
@@ -221,6 +252,7 @@ def syscall_numcores( s ):
 # syscall number mapping
 #-----------------------------------------------------------------------
 syscall_funcs = {
+# Newlib
 #   0: syscall,       # unimplemented_func
     1: syscall_exit,
     2: syscall_read,
@@ -233,8 +265,10 @@ syscall_funcs = {
 #   9: fstat,
 #  10: stat,
    11: syscall_brk,
+# Glibc
+  122: syscall_uname,
+# PARC Specific
  4000: syscall_numcores,
-
 #4001: sendam,
 #4002: bthread_once,
 #4003: bthread_create,
