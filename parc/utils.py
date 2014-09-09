@@ -107,8 +107,7 @@ class RegisterFile( object ):
       for r in xrange( c, min( num_regs, c+per_row ) ):
         str += tmpl.format( r, self.regs[r] )
       print str
-      #print tmpl.format( *reduce( lambda x, y: x + [y, self.regs[y]],
-      #                            xrange( c, c+per_row ), [] ) )
+
 #-----------------------------------------------------------------------
 # Memory
 #-----------------------------------------------------------------------

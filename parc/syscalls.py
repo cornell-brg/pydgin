@@ -211,7 +211,7 @@ def syscall_open( s ):
 
   # get the filename
   filename = s.mem.data[ filename_ptr ]     # TODO: use mem.read()
-  while filename[ -1 ] != '\0':
+  while s.mem.data[ filename_ptr + 1 ] != '\0':
     filename_ptr += 1
     filename += s.mem.data[ filename_ptr ]  # TODO: use mem.read()
 
@@ -272,7 +272,29 @@ def syscall_close( s ):
 def syscall_lseek( s ):
   if verbose:
     print "syscall_lseek"
-  raise Exception('lseek unimplemented!')
+
+  fd  = s.rf[ a0 ]
+  pos = s.rf[ a1 ]
+  how = s.rf[ a2 ]
+
+  if fd not in file_descriptors:
+    s.rf[ v0 ] = -1
+    # we return a bad file descriptor error (9)
+    s.rf[ a3 ] = 9
+    return
+
+  errno = 0
+
+  try:
+    os.lseek( fd, pos, how )
+
+  except OSError as e:
+    if verbose:
+      print "OSError in syscall_lseek. errno=%d" % e.errno
+    errno = e.errno
+
+  s.rf[ v0 ] = 0 if errno == 0 else -1
+  s.rf[ a3 ] = errno
 
 #-----------------------------------------------------------------------
 # brk
