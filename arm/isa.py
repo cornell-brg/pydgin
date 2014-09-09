@@ -967,7 +967,6 @@ def execute_swi( s, inst ):
   if condition_passed( s, cond(inst) ):
     syscall_number = s.rf[ 7 ]
     syscall_funcs[ syscall_number ]( s )
-    s.pc += 4
   s.pc += 4
 
 #-----------------------------------------------------------------------

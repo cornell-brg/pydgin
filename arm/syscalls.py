@@ -253,6 +253,7 @@ syscall_funcs = {
    11: syscall_brk,
 
 #      GLIBC
+   45: syscall_brk,
   122: syscall_uname,
 }
 
