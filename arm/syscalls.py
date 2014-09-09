@@ -215,7 +215,6 @@ def syscall_brk( s ):
 # TODO: Implementation copied directly from gem5 for verification
 # purposes. Fix later.
 def syscall_uname( s ):
-  raise Exception()
 
   # utsname struct is five fields, each 65 chars long (1 char for null):
   # sysname, nodename, release, version, machine
@@ -234,7 +233,7 @@ def syscall_uname( s ):
 
     # TODO: provide char/string block write interface to memory?
     for char in field + '\0'*(65 - len(field)):
-      s.mem.write( mem_addr, 1, char )
+      s.mem.data[ mem_addr ] = char
       mem_addr += 1
 
   s.rf[ v0 ] = 0
