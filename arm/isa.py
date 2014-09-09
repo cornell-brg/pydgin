@@ -393,6 +393,8 @@ def execute_bx( s, inst ):
     s.pc = s.rf[ rm(inst) ] & 0xFFFFFFFE
     if s.T:
       raise Exception( "Entering THUMB mode! Unsupported!")
+
+    return   # No pc + 4 on success. Correct?
   s.pc += 4
 
 #-----------------------------------------------------------------------
