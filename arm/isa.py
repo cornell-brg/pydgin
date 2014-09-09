@@ -960,10 +960,12 @@ def execute_sub( s, inst ):
 #-----------------------------------------------------------------------
 # swi
 #-----------------------------------------------------------------------
+from syscalls    import syscall_funcs
 def execute_swi( s, inst ):
-  raise Exception('"swi" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    syscall_number = s.rf[ 7 ]
+    syscall_funcs[ syscall_number ]( s )
+    s.pc += 4
   s.pc += 4
 
 #-----------------------------------------------------------------------
