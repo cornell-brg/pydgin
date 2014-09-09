@@ -74,6 +74,17 @@ reg_map = {
 # - pg. A3-2
 # - pg. A4-2
 #
+# NOTE: PUSH and POP are synonyms for STMDB and LDM (or LDMIA), with the
+# base register sp (r13), and the adjusted address written back to the
+# base register. PUSH and POP are the preferred mnemonic in these cases.
+# Registers are stored on the stack in numerical order, with the lowest
+# numbered register at the lowest address.
+#
+# http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204j/Babefbce.html
+#
+# NOTE: LDM/STM have alternative names depending on addressing mode
+# (including LDMIA and STMDB).  See: ARM DDI 0100I, pg. A5-48
+#
 encodings = [
   ['nop',      '00000000000000000000000000000000'],
   ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
@@ -456,20 +467,19 @@ def execute_ldc2( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldm1( s, inst ):
   if condition_passed( s, cond(inst) ):
-
     addr, end_addr = addressing_mode_4( s, inst )
-    register_list  = inst & 0xFFFF
+    register_mask  = register_list( inst )
 
     # TODO: support multiple memory accessing modes?
     # MemoryAccess( s.B, s.E )
 
     for i in range(15):
-      if register_list & 0b1:
+      if register_mask & 0b1:
         s.rf[ i ] = s.read( addr, 4 )
         addr += 4
-      register_list >>= 1
+      register_mask >>= 1
 
-    if register_list & 0b1:  # reg 15
+    if register_mask & 0b1:  # reg 15
       s.pc = s.read( addr, 4 ) & 0xFFFFFFFE
       s.T  = s.pc & 0b1
       if s.T: raise Exception( "Entering THUMB mode! Unsupported!")
@@ -838,18 +848,18 @@ def execute_stc( s, inst ):
 def execute_stm1( s, inst ):
   if condition_passed( s, cond(inst) ):
     addr, end_addr = addressing_mode_4( s, inst )
-    register_list  = inst & 0xFFFF
+    register_mask  = register_list( inst )
 
     # TODO: support multiple memory accessing modes?
     # MemoryAccess( s.B, s.E )
 
     for i in range(15):
-      if register_list & 0b1:
+      if register_mask & 0b1:
         s.mem.write( addr, 4, s.rf[i] )
         addr += 4
-      register_list >>= 1
+      register_mask >>= 1
 
-    if register_list & 0b1:  # reg 15
+    if register_mask & 0b1:  # reg 15
       s.pc = s.mem.read( addr, 4 ) & 0xFFFFFFFE
       s.T  = s.pc & 0b1
       if s.T: raise Exception( "Entering THUMB mode! Unsupported!")

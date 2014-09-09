@@ -35,6 +35,9 @@ def imm_12( inst ):
 def imm_24( inst ):
   return inst & 0xFFFFFF
 
+def register_list( inst ):
+  return inst & 0xFFFF
+
 def cp_num( inst ):
   return (inst >> 8) & 0xF
 

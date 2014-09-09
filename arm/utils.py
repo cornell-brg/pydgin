@@ -272,7 +272,7 @@ def addressing_mode_4( s, inst ):
 
   mode   = (P(inst) << 1) | U(inst)
   Rn     = s.rf[ rn(inst) ]
-  nbytes = 4 * popcount(inst & 0xFFFF)
+  nbytes = 4 * popcount(register_list(inst))
 
   if   mode == IA: start_addr, end_addr = Rn,          Rn+nbytes-4
   elif mode == IB: start_addr, end_addr = Rn+4,        Rn+nbytes
@@ -323,22 +323,26 @@ def addressing_mode_4( s, inst ):
 # 1111  -       See Condition code 0b1111           -
 #
 def condition_passed( s, cond ):
-  if   cond == 0b0000: return     s.Z
-  elif cond == 0b0001: return not s.Z
-  elif cond == 0b0010: return     s.C
-  elif cond == 0b0011: return not s.C
-  elif cond == 0b0100: return     s.N
-  elif cond == 0b0101: return not s.N
-  elif cond == 0b0110: return     s.V
-  elif cond == 0b0111: return not s.V
-  elif cond == 0b1000: return s.C and (not s.Z)
-  elif cond == 0b1001: return (not s.C) and s.Z
-  elif cond == 0b1010: return s.N == s.V
-  elif cond == 0b1011: return s.N != s.V
-  elif cond == 0b1100: return (not s.Z) and (s.N == s.V)
-  elif cond == 0b1101: return (    s.Z) or  (s.N != s.V)
-  elif cond == 0b1110: return True
-  return True
+  if   cond == 0b0000: passed =     s.Z
+  elif cond == 0b0001: passed = not s.Z
+  elif cond == 0b0010: passed =     s.C
+  elif cond == 0b0011: passed = not s.C
+  elif cond == 0b0100: passed =     s.N
+  elif cond == 0b0101: passed = not s.N
+  elif cond == 0b0110: passed =     s.V
+  elif cond == 0b0111: passed = not s.V
+  elif cond == 0b1000: passed = s.C and (not s.Z)
+  elif cond == 0b1001: passed = (not s.C) and s.Z
+  elif cond == 0b1010: passed = s.N == s.V
+  elif cond == 0b1011: passed = s.N != s.V
+  elif cond == 0b1100: passed = (not s.Z) and (s.N == s.V)
+  elif cond == 0b1101: passed = (    s.Z) or  (s.N != s.V)
+  elif cond == 0b1110: passed = True
+  else:                passed = True
+
+  # TODO: make this debug only!
+  if not passed: print 'Predicated False!',
+  return passed
 
 #-----------------------------------------------------------------------
 # arith_shift
