@@ -89,6 +89,10 @@ encodings = [
   ['nop',      '00000000000000000000000000000000'],
   ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
   ['add',      'xxxx00x0100xxxxxxxxxxxxxxxxxxxxx'],
+  # TODO: mul manually moved before and for decoding,
+  #       should try to handle this automatically during
+  #       decoder generation!
+  ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'],
   ['and',      'xxxx00x0000xxxxxxxxxxxxxxxxxxxxx'],
   ['b',        'xxxx1010xxxxxxxxxxxxxxxxxxxxxxxx'],
   ['bl',       'xxxx1011xxxxxxxxxxxxxxxxxxxxxxxx'],
@@ -132,7 +136,7 @@ encodings = [
 # ['mrrc2',    '111111000101xxxxxxxxxxxxxxxxxxxx'], # v6
   ['mrs',      'xxxx00010x00xxxxxxxxxxxxxxxxxxxx'],
   ['msr',      'xxxx00x10x10xxxxxxxxxxxxxxxxxxxx'], # TODO
-  ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'],
+#  ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'], # See Above
   ['mvn',      'xxxx00x1111xxxxxxxxxxxxxxxxxxxxx'],
   ['orr',      'xxxx00x1100xxxxxxxxxxxxxxxxxxxxx'],
 # ['pkhbt',    'xxxx01101000xxxxxxxxxxxxx001xxxx'], # v6
