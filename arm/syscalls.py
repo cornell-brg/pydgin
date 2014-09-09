@@ -58,7 +58,7 @@ v0 = reg_map['a1']  # return value
 a0 = reg_map['a1']  # arg0
 a1 = reg_map['a2']  # arg1
 a2 = reg_map['a3']  # arg2
-a3 = reg_map['a4']  # error
+                    # error: not used in arm
 
 # solaris to linux open flag conversion
 # https://docs.python.org/2/library/os.html#open-constants
@@ -113,14 +113,13 @@ def syscall_read( s ):
   nbytes   = s.rf[ a2 ]
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = s.rf[ a3 ] = -1
+    s.rf[ v0 ] = -1
     return
 
   fd   = file_descriptors[ file_ptr ]
   data = os.read( fd, nbytes )
 
   s.rf[ v0 ] = len( data )   # return the number of bytes read
-  s.rf[ a3 ] = 0
 
 #-----------------------------------------------------------------------
 # write
@@ -131,7 +130,7 @@ def syscall_write( s ):
   nbytes   = s.rf[ a2 ]
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = s.rf[ a3 ] = -1
+    s.rf[ v0 ] = -1
     return
 
   fd   = file_descriptors[ file_ptr ]
@@ -145,7 +144,6 @@ def syscall_write( s ):
   #os.fsync( fd )  # this causes Invalid argument error for some reason...
 
   s.rf[ v0 ] = nbytes_written
-  s.rf[ a3 ] = 0
 
 #-----------------------------------------------------------------------
 # open
@@ -173,7 +171,6 @@ def syscall_open( s ):
     file_descriptors[ fd ] = fd
 
   s.rf[ v0 ] = fd
-  s.rf[ a3 ] = 0 if fd > 0 else -1
 
 #-----------------------------------------------------------------------
 # close
@@ -182,13 +179,13 @@ def syscall_close( s ):
   file_ptr = s.rf[ a0 ]
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = s.rf[ a3 ] = -1
+    s.rf[ v0 ] = -1
     return
 
   os.close( file_descriptors[ file_ptr ] )
   del file_descriptors[ file_ptr ]
 
-  s.rf[ v0 ] = s.rf[ a3 ] = 0
+  s.rf[ v0 ] = 0
 
 #-----------------------------------------------------------------------
 # lseek
@@ -207,7 +204,6 @@ def syscall_brk( s ):
     s.breakpoint = new_brk
 
   s.rf[ v0 ] = s.breakpoint
-  s.rf[ a3 ] = 0
 
 #-----------------------------------------------------------------------
 # uname
@@ -237,21 +233,12 @@ def syscall_uname( s ):
       mem_addr += 1
 
   s.rf[ v0 ] = 0
-  s.rf[ a3 ] = 0
-
-#-----------------------------------------------------------------------
-# numcores
-#-----------------------------------------------------------------------
-def syscall_numcores( s ):
-  # always return 1 until multicore is implemented!
-  s.rf[ v0 ] = 1
-  s.rf[ a3 ] = 0
 
 #-----------------------------------------------------------------------
 # syscall number mapping
 #-----------------------------------------------------------------------
 syscall_funcs = {
-# Newlib
+#      NEWLIB
 #   0: syscall,       # unimplemented_func
     1: syscall_exit,
     2: syscall_read,
@@ -264,16 +251,8 @@ syscall_funcs = {
 #   9: fstat,
 #  10: stat,
    11: syscall_brk,
-# Glibc
+
+#      GLIBC
   122: syscall_uname,
-# PARC Specific
- 4000: syscall_numcores,
-#4001: sendam,
-#4002: bthread_once,
-#4003: bthread_create,
-#4004: bthread_delete,
-#4005: bthread_setspecific,
-#4006: bthread_getspecific,
-#4007: yield,
 }
 
