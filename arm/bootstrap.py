@@ -201,6 +201,7 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
 
   # write zeros to bottom of stack
   # TODO: why does gem5 do this?
+  offset = stack_off[7] - 1
   while offset >= stack_ptr:
     mem[offset] = '\0'
     offset -= 1
