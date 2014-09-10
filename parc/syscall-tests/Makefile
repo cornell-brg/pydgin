@@ -4,6 +4,7 @@
 
 TESTS = read-test.c \
 				stat-test.c \
+				open-close-test.c \
 
 # TODO: create objects first?
 
