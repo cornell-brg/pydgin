@@ -85,11 +85,16 @@ flag_table = [
  #[ 0x????, os.O_RSYNC    ],
 ]
 
-# previously, file descriptors was a dict, and the standard io was dup'd
-# to new fds. However, this causes issues with translation. So instead,
-# we're directly using fds 0, 1, 2. I don't know if this has any adverse
-# effects
-file_descriptors = [ 0, 1, 2 ]
+# NOTE: previously, file descriptors was a dict, and the standard io was
+# dup'd to new fds. However, this causes issues with translation. So
+# instead, we're directly using fds 0, 1, 2. I don't know if this has any
+# adverse effects.
+# NOTE2: I had changed this to a list, but rpython translation on lists is
+# a little funky on lookups and deletions. Using a dict as a set (just for
+# doing "fd in file_descriptors", "del file_descriptors[fd]" and
+# "file_descriptors[fd] = fd" so we don't really use the values) is more
+# reliable. Note that python Set object is not rpython either.
+file_descriptors = { 0: 0, 1: 1, 2: 2 }
 
 # TODO: we want verbosity to be set from outside with a command line flag.
 # For the time being, we do it here
@@ -278,9 +283,11 @@ def syscall_open( s ):
   mode         = s.rf[ a2 ]
 
   # convert flags from solaris to linux (necessary?)
+  py_flags = 0
+
   for newlib, linux in flag_table:
     if flags & newlib:
-      flags |= linux
+      py_flags |= linux
 
   # get the filename
   filename = s.mem.data[ filename_ptr ]     # TODO: use mem.read()
@@ -293,7 +300,12 @@ def syscall_open( s ):
   # open vs. os.open():  http://stackoverflow.com/a/15039662
 
   try:
-    fd = os.open( filename, flags, mode )
+    # NOTE: pypy (not rpython) complains when mode is used directly that
+    # only 32-bit integers could be used as the mode. This seems to work
+    # fine translated, but interpretation with pypy fails. Seems like only
+    # the lower 9 bits of mode matter anyway, so unsetting the most
+    # significant bit to keep pypy happy.
+    fd = os.open( filename, py_flags, 0x7fffffff & mode )
 
   except OSError as e:
     if verbose:
@@ -302,7 +314,7 @@ def syscall_open( s ):
     errno = e.errno
 
   if fd > 0:
-    file_descriptors.append( fd )
+    file_descriptors[fd] = fd
 
   s.rf[ v0 ] = fd
   s.rf[ a3 ] = errno
@@ -321,7 +333,7 @@ def syscall_close( s ):
     s.rf[ a3 ] = 9
     return
 
-  # hacky: we don't close the file for 0, 1, 2
+  # hacky: we don't close the file for 0, 1, 2 (note gem5 does the same)
   if fd <= 2:
     s.rf[ v0 ] = s.rf[ a3 ] = 0
     return
@@ -337,7 +349,7 @@ def syscall_close( s ):
 
   # remove fd only if the previous op succeeded
   if errno == 0:
-    file_descriptors.remove( fd )
+    del file_descriptors[fd]
 
   s.rf[ v0 ] = 0 if errno == 0 else -1
   s.rf[ a3 ] = errno
