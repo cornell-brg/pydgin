@@ -10,7 +10,7 @@ import rpython
 #-----------------------------------------------------------------------
 # load_program
 #-----------------------------------------------------------------------
-def load_program( fp, mem ):
+def load_program( fp, mem, alignment=0 ):
 
   mem_image  = elf.elf_reader( fp )
   sections   = mem_image.get_sections()
@@ -31,6 +31,11 @@ def load_program( fp, mem ):
 
   bss        = sections[-1]
   breakpoint = bss.addr + len( bss.data )
+
+  if alignment > 0:
+    def round_up( val ):
+      return (val + alignment - 1) & ~(alignment - 1)
+    breakpoint = round_up( breakpoint )
 
   return mem, entrypoint, breakpoint
 

@@ -83,7 +83,11 @@ def entry_point( argv ):
   # Load the program into a memory object
 
   mem = [chr(0x88)] * memory_size
-  mem, entrypoint, breakpoint = load_program( open( filename, 'rb' ), mem )
+  mem, entrypoint, breakpoint = load_program(
+      open( filename, 'rb' ), mem,
+      # TODO: GEM5 uses this alignment, remove?
+      alignment = 1<<12
+  )
 
   debug = True
 
