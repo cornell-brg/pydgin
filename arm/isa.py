@@ -496,8 +496,9 @@ def execute_ldm1( s, inst ):
     if register_mask & 0b1:  # reg 15
       s.pc = s.mem.read( addr, 4 ) & 0xFFFFFFFE
       s.T  = s.pc & 0b1
-      addr += 4
       if s.T: raise Exception( "Entering THUMB mode! Unsupported!")
+      assert end_addr == addr
+      return
 
     assert end_addr == addr - 4
 
@@ -543,7 +544,8 @@ def execute_ldr( s, inst ):
 
     if rd(inst) == 15:
       s.pc = data & 0xFFFFFFFE
-      s.T  = s.pc & 0b1
+      s.T  = data & 0b1
+      return
     else:
       s.rf[ rd(inst) ] = data
 
