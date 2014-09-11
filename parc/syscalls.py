@@ -173,6 +173,17 @@ class Stat( object ):
     assert addr >= 0
     mem[ addr : addr + Stat.SIZE ] = self.buffer
 
+#-------------------------------------------------------------------------
+# get_str
+#-------------------------------------------------------------------------
+# gets the python string from a pointer to the simulated memory
+
+def get_str( s, ptr ):
+  str = s.mem.data[ ptr ]     # TODO: use mem.read()
+  while s.mem.data[ ptr + 1 ] != '\0':
+    ptr += 1
+    str += s.mem.data[ ptr ]  # TODO: use mem.read()
+  return str
 
 #-----------------------------------------------------------------------
 # exit
@@ -290,10 +301,8 @@ def syscall_open( s ):
       py_flags |= linux
 
   # get the filename
-  filename = s.mem.data[ filename_ptr ]     # TODO: use mem.read()
-  while s.mem.data[ filename_ptr + 1 ] != '\0':
-    filename_ptr += 1
-    filename += s.mem.data[ filename_ptr ]  # TODO: use mem.read()
+
+  filename = get_str( s, filename_ptr )
 
   errno = 0
 
@@ -350,6 +359,58 @@ def syscall_close( s ):
   # remove fd only if the previous op succeeded
   if errno == 0:
     del file_descriptors[fd]
+
+  s.rf[ v0 ] = 0 if errno == 0 else -1
+  s.rf[ a3 ] = errno
+
+#-------------------------------------------------------------------------
+# link
+#-------------------------------------------------------------------------
+
+def syscall_link( s ):
+  if verbose:
+    print "syscall_link"
+
+  src_ptr  = s.rf[ a0 ]
+  link_ptr = s.rf[ a1 ]
+
+  src       = get_str( s, src_ptr )
+  link_name = get_str( s, link_ptr )
+
+  errno = 0
+
+  try:
+    os.link( src, link_name )
+
+  except OSError as e:
+    if verbose:
+      print "OSError in syscall_link. errno=%d" % e.errno
+    errno = e.errno
+
+  s.rf[ v0 ] = 0 if errno == 0 else -1
+  s.rf[ a3 ] = errno
+
+#-------------------------------------------------------------------------
+# path
+#-------------------------------------------------------------------------
+
+def syscall_unlink( s ):
+  if verbose:
+    print "syscall_unlink"
+
+  path_ptr  = s.rf[ a0 ]
+
+  path = get_str( s, path_ptr )
+
+  errno = 0
+
+  try:
+    os.unlink( path )
+
+  except OSError as e:
+    if verbose:
+      print "OSError in syscall_unlink. errno=%d" % e.errno
+    errno = e.errno
 
   s.rf[ v0 ] = 0 if errno == 0 else -1
   s.rf[ a3 ] = errno
@@ -433,10 +494,7 @@ def syscall_stat( s ):
   path_ptr = s.rf[ a0 ]
   buf_ptr  = s.rf[ a1 ]
 
-  path = s.mem.data[ path_ptr ]     # TODO: use mem.read()
-  while s.mem.data[ path_ptr + 1 ] != '\0':
-    path_ptr += 1
-    path += s.mem.data[ path_ptr ]  # TODO: use mem.read()
+  path = get_str( s, path_ptr )
 
   errno = 0
 
@@ -497,8 +555,8 @@ syscall_funcs = {
     3: syscall_write,
     4: syscall_open,
     5: syscall_close,
-#   6: link,
-#   7: unlink,
+    6: syscall_link,
+    7: syscall_unlink,
     8: syscall_lseek,
     9: syscall_fstat,
    10: syscall_stat,
