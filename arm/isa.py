@@ -101,6 +101,7 @@ encodings = [
   # would be able to handle this automatically!
   ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'], # ambiguous with and
   ['strh',     'xxxx000xxxx0xxxxxxxxxxxx1011xxxx'], # ambiguous with orr
+  ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'], # ambiguous with bic
 
   ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
   ['add',      'xxxx00x0100xxxxxxxxxxxxxxxxxxxxx'],
@@ -131,7 +132,7 @@ encodings = [
   ['ldrbt',    'xxxx01x0x111xxxxxxxxxxxxxxxxxxxx'],
 #?['ldrd',     'xxxx000puiw0xxxxxxxxxxxx1101xxxx'],
 # ['ldrex',    'xxxx000110001xxxxxxxxxxx1001xxxx'], # v6
-  ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'],
+# ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'], # SEE ABOVE
   ['ldrsb',    'xxxx000xxxx1xxxxxxxxxxxx1101xxxx'],
   ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'],
   ['ldrt',     'xxxx01x0x011xxxxxxxxxxxxxxxxxxxx'],
