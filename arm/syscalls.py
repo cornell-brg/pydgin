@@ -44,9 +44,11 @@
 # - http://www.embecosm.com/appnotes/ean9/ean9-howto-newlib-1.0.html
 #
 
-from isa import reg_map
+from isa   import reg_map
+from utils import trim_32
 import sys
 import os
+import errno
 
 #-----------------------------------------------------------------------
 # os state and helpers
@@ -235,6 +237,16 @@ def syscall_uname( s ):
   s.rf[ v0 ] = 0
 
 #-----------------------------------------------------------------------
+# ioctl
+#-----------------------------------------------------------------------
+def syscall_ioctl( s ):
+  fd  = s.rf[ a0 ]
+  req = s.rf[ a1 ]
+
+  result     = -errno.ENOTTY if fd >= 0 else -errno.EBADF
+  s.rf[ v0 ] = trim_32( result )
+
+#-----------------------------------------------------------------------
 # syscall number mapping
 #-----------------------------------------------------------------------
 syscall_funcs = {
@@ -254,6 +266,7 @@ syscall_funcs = {
 
 #      GLIBC
    45: syscall_brk,
+   54: syscall_ioctl,
   122: syscall_uname,
 }
 
