@@ -7,7 +7,7 @@ from utils import trim_32, trim_16, trim_8
 from utils import condition_passed, carry_from, borrow_from
 from utils import overflow_from_add, overflow_from_sub
 from utils import sign_extend_30, signed
-from utils import addressing_mode_2, addressing_mode_4
+from utils import addressing_mode_2, addressing_mode_3, addressing_mode_4
 
 from instruction import *
 from pydgin.misc import create_risc_decoder
@@ -586,17 +586,13 @@ def execute_ldrh( s, inst ):
   if condition_passed( s, cond(inst) ):
     if rd(inst) == 15: raise Exception('UNPREDICTABLE')
 
-    addr = addressing_mode_2( s, inst )
+    addr = addressing_mode_3( s, inst )
 
     # TODO: support multiple memory accessing modes?
     # MemoryAccess( s.B, s.E )
-
-    # TODO: handle memory alignment?
-    # CP15_reg1_Ubit checks if the MMU is enabled
-    # if (CP15_reg1_Ubit == 0):
-    #   data = Memory[address,4] Rotate_Right (8 * address[1:0])
-    # else
-    #   data = Memory[address,4]
+    # TODO: alignment fault checking?
+    # if (CP15_reg1_Ubit == 0) and address[0] == 0b1:
+    #   UNPREDICTABLE
 
     s.rf[ rd(inst) ] = s.mem.read( addr, 2 )
 
@@ -939,7 +935,7 @@ def execute_strbt( s, inst ):
 def execute_strh( s, inst ):
   if condition_passed( s, cond(inst) ):
 
-    addr = addressing_mode_2( s, inst )
+    addr = addressing_mode_3( s, inst )
 
     # TODO: support multiple memory accessing modes?
     # MemoryAccess( s.B, s.E )
@@ -947,7 +943,7 @@ def execute_strh( s, inst ):
     # if (CP15_reg1_Ubit == 0) and address[0] == 0b1:
     #   UNPREDICTABLE
 
-    s.mem.write( addr, 2, s.rf[ rd(inst) ] )
+    s.mem.write( addr, 2, s.rf[ rd(inst) ] & 0xFFFF )
 
   s.pc += 4
 
