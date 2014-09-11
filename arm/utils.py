@@ -50,7 +50,6 @@ def shifter_operand( s, inst ):
   # 32-bit immediate
   # http://stackoverflow.com/a/2835503
   if   I(inst) == 1:
-    if rn( inst ) == 15: raise Exception('Modifying stack pointer not implemented!')
     rotate_imm = rotate( inst )
     operand    = rotate_right( imm_8(inst), rotate_imm*2 )
     if rotate_imm == 0: cout = s.C
@@ -59,8 +58,6 @@ def shifter_operand( s, inst ):
 
   # 32-bit register shifted by 5-bit immediate
   elif (inst >>  4 & 0b1) == 0:
-    if rn( inst ) == 15: raise Exception('Modifying stack pointer not implemented!')
-    if rm( inst ) == 15: raise Exception('Modifying stack pointer not implemented!')
     return shifter_operand_imm( s, inst )
 
   # 32-bit register shifted by 32-bit register
@@ -225,7 +222,7 @@ def addressing_mode_2( s, inst ):
 
   # Immediate vs. Register Offset
   if not I(inst): index    = imm_12(inst)
-  else:           index, _ = shifter_operand_imm(s, reg)
+  else:           index, _ = shifter_operand_imm(s, inst)
 
   Rn          = s.rf[rn(inst)]
   offset_addr = Rn + index if U(inst) else Rn - index
