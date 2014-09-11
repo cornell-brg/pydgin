@@ -95,12 +95,15 @@ reg_map = {
 #
 encodings = [
   ['nop',      '00000000000000000000000000000000'],
+
+  # TODO: These instructions have manually been moved to avoid incorrect
+  # decodings caused by encoding ambiguity. Ideally our decoder generator
+  # would be able to handle this automatically!
+  ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'], # ambiguous with and
+  ['strh',     'xxxx000xxxx0xxxxxxxxxxxx1011xxxx'], # ambiguous with orr
+
   ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
   ['add',      'xxxx00x0100xxxxxxxxxxxxxxxxxxxxx'],
-  # TODO: mul manually moved before and for decoding,
-  #       should try to handle this automatically during
-  #       decoder generation!
-  ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'],
   ['and',      'xxxx00x0000xxxxxxxxxxxxxxxxxxxxx'],
   ['b',        'xxxx1010xxxxxxxxxxxxxxxxxxxxxxxx'],
   ['bl',       'xxxx1011xxxxxxxxxxxxxxxxxxxxxxxx'],
@@ -144,7 +147,7 @@ encodings = [
 # ['mrrc2',    '111111000101xxxxxxxxxxxxxxxxxxxx'], # v6
   ['mrs',      'xxxx00010x00xxxxxxxxxxxxxxxxxxxx'],
   ['msr',      'xxxx00x10x10xxxxxxxxxxxxxxxxxxxx'], # TODO
-#  ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'], # See Above
+# ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
   ['mvn',      'xxxx00x1111xxxxxxxxxxxxxxxxxxxxx'],
   ['orr',      'xxxx00x1100xxxxxxxxxxxxxxxxxxxxx'],
 # ['pkhbt',    'xxxx01101000xxxxxxxxxxxxx001xxxx'], # v6
@@ -212,7 +215,7 @@ encodings = [
 #?['strd',     'xxxx000xxxx0xxxxxxxxxxxx1111xxxx'],
 # ['strex',    'xxxx00011000xxxxxxxxxxxx1001xxxx'], # v6
 
-  ['strh',     'xxxx000xxxx0xxxxxxxxxxxx1011xxxx'],
+# ['strh',     'xxxx000xxxx0xxxxxxxxxxxx1011xxxx'], # SEE ABOVE
   ['strt',     'xxxx01x0x010xxxxxxxxxxxxxxxxxxxx'],
   ['sub',      'xxxx00x0010xxxxxxxxxxxxxxxxxxxxx'],
   ['swi',      'xxxx1111xxxxxxxxxxxxxxxxxxxxxxxx'],
