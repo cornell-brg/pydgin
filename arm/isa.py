@@ -683,8 +683,10 @@ def execute_mla( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mov( s, inst ):
   if condition_passed( s, cond(inst) ):
-    # Unpreditable in User or System mode
-    if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rd(inst) == 15 and S(inst):
+    # if not CurrentModeHasSPSR(): CPSR = SPSR
+    # else:                        UNPREDICTABLE
+      raise Exception('UNPREDICTABLE in user and system mode!')
 
     result, cout = shifter_operand( s, inst )
     s.rf[ rd( inst ) ] = trim_32( result )
