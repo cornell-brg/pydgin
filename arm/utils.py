@@ -90,8 +90,8 @@ def shifter_operand_imm( s, inst ):
 
   elif shift_op == LOGIC_SHIFT_RIGHT:
     # NOTE: shift_imm == 0 signifies a shift by 32
-    out  = 0          if (shift_imm == 0) else data >> shift_imm
-    cout = data >> 31 if (shift_imm == 0) else (data >> shift_imm - 1)&1
+    out  = 0        if (shift_imm == 0) else Rm >> shift_imm
+    cout = Rm >> 31 if (shift_imm == 0) else (Rm >> shift_imm - 1)&1
 
   elif shift_op == ARITH_SHIFT_RIGHT:
     # NOTE: shift_imm == 0 signifies a shift by 32
