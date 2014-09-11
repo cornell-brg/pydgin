@@ -241,6 +241,40 @@ def addressing_mode_2( s, inst ):
 # Addressing Mode 3 - Miscellaneous Loads and Stores (page A5-33)
 #=======================================================================
 
+#-----------------------------------------------------------------------
+# addressing_mode_3( s, inst )
+#-----------------------------------------------------------------------
+#
+# I P B W
+#
+# 0 1 1 0 Immediate Offset
+# 0 1 0 0 Register Offset
+# 0 1 1 1 Immediate Pre-indexed
+# 0 1 0 1 Register Pre-indexed
+# 0 0 1 0 Immediate Post-indexed
+# 0 0 0 0 Register Post-indexed
+#
+def addressing_mode_3( s, inst ):
+  if SH(inst) == 0b00:
+    raise Exception('Not a load/store instruction!')
+
+  # Immediate vs. Register Offset
+  if B(inst): index = (imm_H(inst) << 4) | imm_L(inst)
+  else:       index = s.rf[rm(inst)]
+
+  Rn          = s.rf[rn(inst)]
+  offset_addr = Rn + index if U(inst) else Rn - index
+
+  # Offset Addressing/Pre-Indexed Addressing vs. Post-Indexed Addressing
+  if P(inst): addr = offset_addr
+  else:       addr = Rn
+
+  # Offset Addressing vs. Pre-/Post-Indexed Addressing
+  if not (P(inst) ^ W(inst)):
+    s.rf[rn(inst)] = offset_addr
+
+  return addr
+
 #=======================================================================
 # Addressing Mode 4 - Load and Store Multiple (page A5-41)
 #=======================================================================

@@ -35,6 +35,12 @@ def imm_12( inst ):
 def imm_24( inst ):
   return inst & 0xFFFFFF
 
+def imm_H( inst ):
+  return (inst >> 8) & 0xF
+
+def imm_L( inst ):
+  return inst & 0xF
+
 def register_list( inst ):
   return inst & 0xFFFF
 
@@ -70,4 +76,7 @@ def W( inst ):
 
 def S( inst ):
   return (inst >> 20) & 0b1
+
+def SH( inst ):
+  return (inst >> 5) & 0b11
 
