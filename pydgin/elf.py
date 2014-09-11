@@ -496,6 +496,7 @@ def elf_reader( file_obj ):
       ".rodata",
       ".strtab",
       ".symtab",
+      ".got",
     ]
 
     # Check to see if section is one of ones we want to load
