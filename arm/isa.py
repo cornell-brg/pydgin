@@ -994,7 +994,7 @@ def execute_swpb( s, inst ):
 #-----------------------------------------------------------------------
 def execute_teq( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, (b, cout) = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, (b, cout) = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result = trim_32( a ^ b )
 
     if S(inst):
@@ -1008,7 +1008,7 @@ def execute_teq( s, inst ):
 #-----------------------------------------------------------------------
 def execute_tst( s, inst ):
   if condition_passed( s, cond(inst) ):
-    a, (b, cout) = s.rf[ rn( inst ) ], shifter_operand( inst )
+    a, (b, cout) = s.rf[ rn( inst ) ], shifter_operand( s, inst )
     result = trim_32( a & b )
 
     if S(inst):
