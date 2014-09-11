@@ -937,9 +937,18 @@ def execute_strbt( s, inst ):
 # strh
 #-----------------------------------------------------------------------
 def execute_strh( s, inst ):
-  raise Exception('"strh" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+
+    addr = addressing_mode_2( s, inst )
+
+    # TODO: support multiple memory accessing modes?
+    # MemoryAccess( s.B, s.E )
+    # TODO: alignment fault checking?
+    # if (CP15_reg1_Ubit == 0) and address[0] == 0b1:
+    #   UNPREDICTABLE
+
+    s.mem.write( addr, 2, s.rf[ rd(inst) ] )
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
