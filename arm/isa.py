@@ -879,16 +879,11 @@ def execute_stm1( s, inst ):
     # TODO: support multiple memory accessing modes?
     # MemoryAccess( s.B, s.E )
 
-    for i in range(15):
+    for i in range(16):
       if register_mask & 0b1:
         s.mem.write( addr, 4, s.rf[i] )
         addr += 4
       register_mask >>= 1
-
-    if register_mask & 0b1:  # reg 15
-      s.pc = s.mem.read( addr, 4 ) & 0xFFFFFFFE
-      s.T  = s.pc & 0b1
-      if s.T: raise Exception( "Entering THUMB mode! Unsupported!")
 
     assert end_addr == addr - 4
   s.pc += 4
