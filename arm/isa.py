@@ -984,11 +984,10 @@ def execute_sub( s, inst ):
 #-----------------------------------------------------------------------
 # swi
 #-----------------------------------------------------------------------
-from syscalls    import syscall_funcs
+from syscalls import do_syscall
 def execute_swi( s, inst ):
   if condition_passed( s, cond(inst) ):
-    syscall_number = s.rf[ 7 ]
-    syscall_funcs[ syscall_number ]( s )
+    do_syscall( s, s.rf[7] )
   s.pc += 4
 
 #-----------------------------------------------------------------------

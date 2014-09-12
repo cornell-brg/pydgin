@@ -100,7 +100,6 @@ def syscall_exit( s ):
   exit_code = s.rf[ a0 ]
   print
   print "NUM  INSTS:", s.ncycles
-  print "STAT INSTS:", s.stat_ncycles
   print "EXIT CODE: ", exit_code
   # TODO: this is an okay way to terminate the simulator?
   #       sys.exit(1) is not valid python
@@ -264,3 +263,7 @@ syscall_funcs = {
   122: syscall_uname,
 }
 
+def do_syscall( s, num ):
+  result = syscall_funcs[ num ]( s )
+  print num, syscall_funcs[ num ].func_name, hex(s.rf[ a0 ])
+  return result
