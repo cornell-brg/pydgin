@@ -372,7 +372,7 @@ def condition_passed( s, cond ):
   else:                passed = True
 
   # TODO: make this debug only!
-  if not passed: print 'Predicated False!',
+  #if not passed: print 'Predicated False!',
   return passed
 
 #-----------------------------------------------------------------------
