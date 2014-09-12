@@ -102,6 +102,7 @@ encodings = [
   ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'], # ambiguous with and
   ['strh',     'xxxx000xxxx0xxxxxxxxxxxx1011xxxx'], # ambiguous with orr
   ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'], # ambiguous with bic
+  ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'], # ambiguous with eor
 
   ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
   ['add',      'xxxx00x0100xxxxxxxxxxxxxxxxxxxxx'],
@@ -140,7 +141,7 @@ encodings = [
   ['mcr2',     '11111110xxx0xxxxxxxxxxxxxxx1xxxx'],
   ['mcrr',     'xxxx11000100xxxxxxxxxxxxxxxxxxxx'],
   ['mcrr2',    '111111000100xxxxxxxxxxxxxxxxxxxx'],
-  ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'],
+# ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
   ['mov',      'xxxx00x1101xxxxxxxxxxxxxxxxxxxxx'],
   ['mrc',      'xxxx1110xxx1xxxxxxxxxxxxxxx1xxxx'],
   ['mrc2',     '11111110xxx1xxxxxxxxxxxxxxx1xxxx'],
@@ -676,7 +677,7 @@ def execute_mla( s, inst ):
     if rs(inst) == 15: raise Exception('UNPREDICTABLE')
     if rn(inst) == 15: raise Exception('UNPREDICTABLE')
 
-    Rm, Rf, Rn  = s.rf[ rm(inst) ], s.rf[ rs(inst) ], s.rf[ rn(inst) ]
+    Rm, Rs, Rn  = s.rf[ rm(inst) ], s.rf[ rs(inst) ], s.rf[ rn(inst) ]
     result      = trim_32(Rm * Rs + Rn)
     s.rf[ rd( inst ) ] = result
 
