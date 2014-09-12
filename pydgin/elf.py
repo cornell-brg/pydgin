@@ -496,7 +496,12 @@ def elf_reader( file_obj ):
       ".rodata",
       ".strtab",
       ".symtab",
+      # Sections needed by ARM uclibc
       ".got",
+      ".init_array",
+      ".fini_array",
+      ".ARM.extab",
+      ".ARM.exidx",
     ]
 
     # Check to see if section is one of ones we want to load
