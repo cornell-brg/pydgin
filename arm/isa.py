@@ -378,15 +378,23 @@ def execute_bkpt( s, inst ):
 # blx1
 #-----------------------------------------------------------------------
 def execute_blx1( s, inst ):
-  raise Exception('"blx" instruction unimplemented!')
+  raise Exception('Called blx1: Entering THUMB mode! Unsupported')
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # blx2
 #-----------------------------------------------------------------------
 def execute_blx2( s, inst ):
-  raise Exception('"blx2" instruction unimplemented!')
-  s.pc += 4
+  if condition_passed( s, cond(inst) ):
+    LR       = reg_map['lr']
+    s.rf[LR] = trim_32( s.pc + 4 )
+    s.T      = s.rf[ rm(inst) ] & 0x00000001
+    s.pc     = s.rf[ rm(inst) ] & 0xFFFFFFFE
+    if s.T:
+      raise Exception( "Entering THUMB mode! Unsupported!")
+
+  # no pc + 4 on success
+  else: s.pc += 4
 
 #-----------------------------------------------------------------------
 # bx
@@ -398,8 +406,8 @@ def execute_bx( s, inst ):
     if s.T:
       raise Exception( "Entering THUMB mode! Unsupported!")
 
-    return   # No pc + 4 on success. Correct?
-  s.pc += 4
+  # no pc + 4 on success
+  else: s.pc += 4
 
 #-----------------------------------------------------------------------
 # cdp
