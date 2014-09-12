@@ -753,10 +753,10 @@ def execute_mul( s, inst ):
   if condition_passed( s, cond(inst) ):
     Rm, Rs = s.rf[ rm(inst) ], s.rf[ rs(inst) ]
     result = trim_32(Rm * Rs)
-    s.rf[ rd( inst ) ] = result
+    s.rf[ rn( inst ) ] = result
 
     if S(inst):
-      if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+      if rn(inst) == 15: raise Exception('UNPREDICTABLE')
       if rm(inst) == 15: raise Exception('UNPREDICTABLE')
       if rs(inst) == 15: raise Exception('UNPREDICTABLE')
       s.N = (result >> 31)&1
