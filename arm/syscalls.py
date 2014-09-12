@@ -253,16 +253,10 @@ syscall_funcs = {
 #      NEWLIB
 #   0: syscall,       # unimplemented_func
     1: syscall_exit,
-    2: syscall_read,
-    3: syscall_write,
-    4: syscall_open,
-    5: syscall_close,
-#   6: link,
-#   7: unlink,
-    8: syscall_lseek,
-#   9: fstat,
-#  10: stat,
-   11: syscall_brk,
+    3: syscall_read,
+    4: syscall_write,
+    5: syscall_open,
+    6: syscall_close,
 
 #      GLIBC
    45: syscall_brk,
