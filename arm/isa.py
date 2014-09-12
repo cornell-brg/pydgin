@@ -704,6 +704,12 @@ def execute_mov( s, inst ):
       s.Z = trim_32( result ) == 0
       s.C = cout
       s.V = s.V
+
+    # FIXME: hacky handling of writing to PC
+    if rd(inst) == 15:
+      s.pc = trim_32( result)
+      return
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
