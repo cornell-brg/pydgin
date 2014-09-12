@@ -423,9 +423,21 @@ def execute_cdp( s, inst ):
 # clz
 #-----------------------------------------------------------------------
 def execute_clz( s, inst ):
-  raise Exception('"clz" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    Rm = s.rf[ rm(inst) ]
+
+    if Rm == 0:
+      s.rf[ rd(inst) ] = 32
+    else:
+      mask = 0x80000000
+      for x in range(31):
+        if mask & Rm:
+          leading_zeros = x
+          break
+        mask >>= 1
+
+      s.rf[ rd(inst) ] = leading_zeros
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
