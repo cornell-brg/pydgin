@@ -100,10 +100,13 @@ def syscall_exit( s ):
   exit_code = s.rf[ a0 ]
   print
   print "NUM  INSTS:", s.ncycles
-  print "EXIT CODE: ", exit_code
+  print "EXIT CODE: %d (1)" % exit_code
   # TODO: this is an okay way to terminate the simulator?
   #       sys.exit(1) is not valid python
-  s.status = exit_code
+
+  # TODO: it seems like ARM ignores the exit_code when setting the
+  #       return status value.  Is this okay?
+  s.status = 1
 
 #-----------------------------------------------------------------------
 # read
@@ -265,5 +268,6 @@ syscall_funcs = {
 
 def do_syscall( s, num ):
   result = syscall_funcs[ num ]( s )
+  # TODO: make debug mode only!
   print num, syscall_funcs[ num ].func_name, hex(s.rf[ a0 ])
   return result
