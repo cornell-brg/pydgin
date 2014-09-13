@@ -111,6 +111,9 @@ def shifter_operand_imm( s, inst ):
       out  = rotate_right( Rm, shift_imm )
       cout = (Rm >> shift_imm - 1)&1
 
+  else:
+    raise Exception('Impossible shift_op!')
+
   return out, cout
 
 #-----------------------------------------------------------------------
@@ -121,6 +124,8 @@ def shifter_operand_reg( s, inst ):
   Rm       = s.rf[ rm(inst) ]
   Rs       = s.rf[ rs(inst) ] & 0xFF
 
+  out = cout = 0
+
   if   shift_op == LOGIC_SHIFT_LEFT:
     if   Rs ==  0: out, cout = Rm,       s.C
     elif Rs <  32: out, cout = Rm << Rs, (Rm >> 32 - Rs)&1
@@ -129,15 +134,15 @@ def shifter_operand_reg( s, inst ):
 
   elif shift_op == LOGIC_SHIFT_RIGHT:
     if   Rs ==  0: out, cout = Rm,       s.C
-    elif Rs <  32: out, cout = Rm >> Rs, (Rm >> Rs - 1)&1
+    elif Rs <  32: out, cout = Rm >> Rs, (Rm >> (Rs-1))&1
     elif Rs == 32: out, cout = 0,        (Rm >> 31)&1
     elif Rs >  32: out, cout = 0,        0
 
   elif shift_op == ARITH_SHIFT_RIGHT:
     if   Rs ==  0: out, cout = Rm,       s.C
     elif Rs <  32:
-      out  = arith_shift( Rm, shift_imm )
-      cout = (Rm >> Rs - 1)&1
+      out  = arith_shift( Rm, Rs )
+      cout = (Rm >> (Rs-1))&1
     elif Rs >= 32:
       out  = 0 if ((Rm >> 31) == 0) else 0xFFFFFFFF
       cout = (Rm >> 31)&1
@@ -147,6 +152,9 @@ def shifter_operand_reg( s, inst ):
     if   Rs  == 0: out, cout = Rm,                    s.C
     elif Rs4 == 0: out, cout = Rm,                    (Rm >> 31)&1
     elif Rs4 >  0: out, cout = rotate_right(Rm, Rs4), (Rm >> Rs4 - 1)&1
+
+  else:
+    raise Exception('Impossible shift_op!')
 
   return out, cout
 
@@ -421,6 +429,12 @@ def sign_extend_30( value ):
 #-----------------------------------------------------------------------
 # popcount
 #-----------------------------------------------------------------------
-def popcount( value ):
-  return bin(value).count('1')
+# Implementation shamelessly borrowed from:
+# http://stackoverflow.com/a/407758
+# TODO: better RPython way to do this?
+def popcount( i ):
+ assert 0 <= i < 0x100000000
+ i = i - ((i >> 1) & 0x55555555)
+ i = (i & 0x33333333) + ((i >> 2) & 0x33333333)
+ return (((i + (i >> 4) & 0xF0F0F0F) * 0x1010101) & 0xFFFFFFFF) >> 24
 
