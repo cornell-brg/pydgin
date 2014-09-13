@@ -180,14 +180,46 @@ def get_str( s, ptr ):
     str += s.mem.data[ ptr ]  # TODO: use mem.read()
   return str
 
+#-------------------------------------------------------------------------
+# check_fd
+#-------------------------------------------------------------------------
+# checks if the fd is in the open file descriptors, returns True on
+# failure
+
+def check_fd( s, fd ):
+  if fd not in file_descriptors:
+    if s.debug.enabled( "syscalls" ):
+      print ( "Could not find fd=%d in open file_descriptors, " % fd ) + \
+            "returning errno=9"
+    # we return a bad file descriptor error (9)
+    return_from_syscall( s, -1, 9 )
+    return True
+
+  return False
+
+#-------------------------------------------------------------------------
+# return_from_syscall
+#-------------------------------------------------------------------------
+# copies the return value and the errno to proper registers
+
+def return_from_syscall( s, retval, errno ):
+
+  if s.debug.enabled( "syscalls" ):
+    print " retval=%x errno=%x" % ( retval, errno )
+
+  s.rf[ v0 ] = retval
+  s.rf[ a3 ] = errno
+
 #-----------------------------------------------------------------------
 # exit
 #-----------------------------------------------------------------------
 def syscall_exit( s ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_exit"
 
   exit_code = s.rf[ a0 ]
+
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_exit( status=%x )" % exit_code
+
   print
   print "NUM  INSTS:", s.ncycles
   print "STAT INSTS:", s.stat_ncycles
@@ -201,17 +233,16 @@ def syscall_exit( s ):
 # read
 #-----------------------------------------------------------------------
 def syscall_read( s ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_read"
 
   fd       = s.rf[ a0 ]
   data_ptr = s.rf[ a1 ]
   nbytes   = s.rf[ a2 ]
 
-  if fd not in file_descriptors:
-    s.rf[ v0 ] = -1
-    # we return a bad file descriptor error (9)
-    s.rf[ a3 ] = 9
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_read( fd=%x, buf=%x, count=%x )" % \
+          ( fd, data_ptr, nbytes ),
+
+  if check_fd( s, fd ):
     return
 
   errno = 0
@@ -236,32 +267,29 @@ def syscall_read( s ):
     errno = e.errno
 
   # return the number of bytes read
-
-  s.rf[ v0 ] = nbytes_read
-  s.rf[ a3 ] = errno
+  return_from_syscall( s, nbytes_read, errno )
 
 #-----------------------------------------------------------------------
 # write
 #-----------------------------------------------------------------------
 def syscall_write( s ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_write"
 
   fd       = s.rf[ a0 ]
   data_ptr = s.rf[ a1 ]
   nbytes   = s.rf[ a2 ]
 
-  if fd not in file_descriptors:
-    s.rf[ v0 ] = -1
-    # we return a bad file descriptor error (9)
-    s.rf[ a3 ] = 9
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_write( fd=%x, buf=%x, count=%x )" % \
+          ( fd, data_ptr, nbytes ),
+
+  if check_fd( s, fd ):
     return
+
+  errno = 0
 
   # TODO: use mem.read()
   assert data_ptr >= 0 and nbytes >= 0
   data = ''.join( s.mem.data[data_ptr:data_ptr+nbytes] )
-
-  errno = 0
 
   try:
     nbytes_written = os.write( fd, data )
@@ -274,8 +302,7 @@ def syscall_write( s ):
   # https://docs.python.org/2/library/os.html#os.fsync
   #os.fsync( fd )  # this causes Invalid argument error for some reason...
 
-  s.rf[ v0 ] = nbytes_written
-  s.rf[ a3 ] = errno
+  return_from_syscall( s, nbytes_written, errno )
 
 #-----------------------------------------------------------------------
 # open
@@ -287,6 +314,10 @@ def syscall_open( s ):
   filename_ptr = s.rf[ a0 ]
   flags        = s.rf[ a1 ]
   mode         = s.rf[ a2 ]
+
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_open( filename=%x, flags=%x, mode=%x )" % \
+          ( filename_ptr, flags, mode ),
 
   # convert flags from solaris to linux (necessary?)
   py_flags = 0
@@ -320,26 +351,24 @@ def syscall_open( s ):
   if fd > 0:
     file_descriptors[fd] = fd
 
-  s.rf[ v0 ] = fd
-  s.rf[ a3 ] = errno
+  return_from_syscall( s, fd, errno )
 
 #-----------------------------------------------------------------------
 # close
 #-----------------------------------------------------------------------
 def syscall_close( s ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_close"
   fd = s.rf[ a0 ]
 
-  if fd not in file_descriptors:
-    s.rf[ v0 ] = -1
-    # we return a bad file descriptor error (9)
-    s.rf[ a3 ] = 9
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_close( fd=%x )" % fd,
+
+  if check_fd( s, fd ):
     return
 
   # hacky: we don't close the file for 0, 1, 2 (note gem5 does the same)
+
   if fd <= 2:
-    s.rf[ v0 ] = s.rf[ a3 ] = 0
+    return_from_syscall( s, 0, 0 )
     return
 
   errno = 0
@@ -355,19 +384,20 @@ def syscall_close( s ):
   if errno == 0:
     del file_descriptors[fd]
 
-  s.rf[ v0 ] = 0 if errno == 0 else -1
-  s.rf[ a3 ] = errno
+  return_from_syscall( s, 0 if errno == 0 else -1, errno )
 
 #-------------------------------------------------------------------------
 # link
 #-------------------------------------------------------------------------
 
 def syscall_link( s ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_link"
 
   src_ptr  = s.rf[ a0 ]
   link_ptr = s.rf[ a1 ]
+
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_link( src=%x, link=%x )" % \
+          ( src_ptr, link_ptr ),
 
   src       = get_str( s, src_ptr )
   link_name = get_str( s, link_ptr )
@@ -382,18 +412,18 @@ def syscall_link( s ):
       print "OSError in syscall_link. errno=%d" % e.errno
     errno = e.errno
 
-  s.rf[ v0 ] = 0 if errno == 0 else -1
-  s.rf[ a3 ] = errno
+  return_from_syscall( s, 0 if errno == 0 else -1, errno )
 
 #-------------------------------------------------------------------------
 # path
 #-------------------------------------------------------------------------
 
 def syscall_unlink( s ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_unlink"
 
   path_ptr  = s.rf[ a0 ]
+
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_unlink( path=%x )" % path_ptr,
 
   path = get_str( s, path_ptr )
 
@@ -407,24 +437,22 @@ def syscall_unlink( s ):
       print "OSError in syscall_unlink. errno=%d" % e.errno
     errno = e.errno
 
-  s.rf[ v0 ] = 0 if errno == 0 else -1
-  s.rf[ a3 ] = errno
+  return_from_syscall( s, 0 if errno == 0 else -1, errno )
 
 #-----------------------------------------------------------------------
 # lseek
 #-----------------------------------------------------------------------
+
 def syscall_lseek( s ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_lseek"
 
   fd  = s.rf[ a0 ]
   pos = s.rf[ a1 ]
   how = s.rf[ a2 ]
 
-  if fd not in file_descriptors:
-    s.rf[ v0 ] = -1
-    # we return a bad file descriptor error (9)
-    s.rf[ a3 ] = 9
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_lseek( fd=%x, pos=%x, how=%x )" % ( fd, pos, how ),
+
+  if check_fd( s, fd ):
     return
 
   errno = 0
@@ -437,24 +465,21 @@ def syscall_lseek( s ):
       print "OSError in syscall_lseek. errno=%d" % e.errno
     errno = e.errno
 
-  s.rf[ v0 ] = 0 if errno == 0 else -1
-  s.rf[ a3 ] = errno
+  return_from_syscall( s, 0 if errno == 0 else -1, errno )
 
 #-------------------------------------------------------------------------
 # fstat
 #-------------------------------------------------------------------------
 
 def syscall_fstat( s ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_fstat"
 
   fd       = s.rf[ a0 ]
   buf_ptr  = s.rf[ a1 ]
 
-  if fd not in file_descriptors:
-    s.rf[ v0 ] = -1
-    # we return a bad file descriptor error (9)
-    s.rf[ a3 ] = 9
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_fstat( fd=%x, buf=%x )" % ( fd, buf_ptr ),
+
+  if check_fd( s, fd ):
     return
 
   errno = 0
@@ -474,20 +499,19 @@ def syscall_fstat( s ):
       print "OSError in syscall_fstat. errno=%d" % e.errno
     errno = e.errno
 
-  s.rf[ v0 ] = 0 if errno == 0 else -1
-  s.rf[ a3 ] = errno
-
+  return_from_syscall( s, 0 if errno == 0 else -1, errno )
 
 #-------------------------------------------------------------------------
 # stat
 #-------------------------------------------------------------------------
 
 def syscall_stat( s ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_stat"
 
   path_ptr = s.rf[ a0 ]
   buf_ptr  = s.rf[ a1 ]
+
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_stat( path=%x, buf=%x )" % ( path_ptr, buf_ptr ),
 
   path = get_str( s, path_ptr )
 
@@ -508,37 +532,35 @@ def syscall_stat( s ):
       print "OSError in syscall_stat. errno=%d" % e.errno
     errno = e.errno
 
-  s.rf[ v0 ] = 0 if errno == 0 else -1
-  s.rf[ a3 ] = errno
+  return_from_syscall( s, 0 if errno == 0 else -1, errno )
 
 #-----------------------------------------------------------------------
 # brk
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/questions/6988487/what-does-brk-system-call-do
 def syscall_brk( s ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_brk"
 
   # TODO: this syscall shouldn't be necessary? As far as I know, ctorng
   # added this to add DVFS stuff to multicore
 
   new_brk = s.rf[ a0 ]
 
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_brk( addr=%x )" % new_brk,
+
   if new_brk != 0:
     s.breakpoint = new_brk
 
-  s.rf[ v0 ] = s.breakpoint
-  s.rf[ a3 ] = 0
+  return_from_syscall( s, s.breakpoint, 0 )
 
 #-----------------------------------------------------------------------
 # numcores
 #-----------------------------------------------------------------------
 def syscall_numcores( s ):
   if s.debug.enabled( "syscalls" ):
-    print "syscall_numcores"
+    print "syscall_numcores()",
   # always return 1 until multicore is implemented!
-  s.rf[ v0 ] = 1
-  s.rf[ a3 ] = 0
+  return_from_syscall( s, 1, 0 )
 
 #-----------------------------------------------------------------------
 # syscall number mapping
