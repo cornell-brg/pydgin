@@ -23,8 +23,7 @@
 
 import struct
 from   rpython.rlib.rstruct.runpack import runpack
-
-from pisa.SparseMemoryImage import SparseMemoryImage
+from   SparseMemoryImage            import SparseMemoryImage
 
 #-------------------------------------------------------------------------
 # ELF File Format Types
