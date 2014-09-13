@@ -120,18 +120,18 @@ def syscall_read( s ):
     s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
     return
 
+  fd = file_descriptors[ file_ptr ]
+
   try:
-    # Read data from file
-    fd   = file_descriptors[ file_ptr ]
-    data = os.read( fd, nbytes )
-    # Copy data to simulated memory
-    for i, char in enumerate( data ):
-      s.mem.data[ data_ptr+i ] = char
-    # Set return values
+    data        = os.read( fd, nbytes )
     nbytes_read = len( data )
     errno       = 0
+    # Write data to simulated memory
+    for i, char in enumerate( data ):
+      s.mem.data[ data_ptr+i ] = char
 
   except OSError as e:
+    print "OSError in syscall_read: errno=%d" % e.errno
     nbytes_read = -1
     errno       = e.errno
 
@@ -146,18 +146,25 @@ def syscall_write( s ):
   nbytes   = s.rf[ a2 ]
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1
+    s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
     return
 
-  fd   = file_descriptors[ file_ptr ]
+  fd = file_descriptors[ file_ptr ]
 
   # TODO: use mem.read()
   assert data_ptr >= 0 and nbytes >= 0
   data = ''.join( s.mem.data[data_ptr:data_ptr+nbytes] )
 
-  nbytes_written = os.write( fd, data )
-  # https://docs.python.org/2/library/os.html#os.fsync
-  #os.fsync( fd )  # this causes Invalid argument error for some reason...
+  try:
+    nbytes_written = os.write( fd, data )
+    errno          = 0
+    # https://docs.python.org/2/library/os.html#os.fsync
+    #os.fsync( fd )  # causes 'Invalid argument' error for some reason...
+
+  except OSError as e:
+    print "OSError in syscall_write: errno=%d" % e.errno
+    nbytes_written = -1
+    errno          = e.errno
 
   s.rf[ v0 ] = nbytes_written
 
@@ -170,9 +177,10 @@ def syscall_open( s ):
   mode         = s.rf[ a2 ]
 
   # convert flags from solaris to linux (necessary?)
+  open_flags = 0
   for newlib, linux in flag_table:
     if flags & newlib:
-      flags |= linux
+      open_flags |= linux
 
   # get the filename
   filename = s.mem.data[ filename_ptr ]     # TODO: use mem.read()
@@ -180,8 +188,15 @@ def syscall_open( s ):
     filename_ptr += 1
     filename += s.mem.data[ filename_ptr ]  # TODO: use mem.read()
 
-  # open vs. os.open():  http://stackoverflow.com/a/15039662
-  fd = os.open( filename, flags, mode )
+  try:
+    # open vs. os.open():  http://stackoverflow.com/a/15039662
+    fd    = os.open( filename, open_flags, mode )
+    errno = 0
+
+  except OSError as e:
+    print "OSError in syscall_open: errno=%d" % e.errno
+    fd    = -1
+    errno = e.errno
 
   if fd > 0:
     file_descriptors[ fd ] = fd
@@ -195,13 +210,25 @@ def syscall_close( s ):
   file_ptr = s.rf[ a0 ]
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1
+    s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
     return
 
-  os.close( file_descriptors[ file_ptr ] )
-  del file_descriptors[ file_ptr ]
+  # TODO: hacky don't close the file for 0, 1, 2.
+  #       gem5 does this, but is there a better way?
+  if file_ptr <= 2:
+    s.rf[ v0 ] = 0
+    return
 
-  s.rf[ v0 ] = 0
+  try:
+    os.close( file_descriptors[ file_ptr ] )
+    del file_descriptors[ file_ptr ]
+    errno = 0
+
+  except OSError as e:
+    print "OSError in syscall_close: errno=%d" % e.errno
+    errno = e.errno
+
+  s.rf[ v0 ] = 0 if errno == 0 else -1
 
 #-----------------------------------------------------------------------
 # lseek
@@ -228,23 +255,24 @@ def syscall_brk( s ):
 # purposes. Fix later.
 def syscall_uname( s ):
 
-  # utsname struct is five fields, each 65 chars long (1 char for null):
-  # sysname, nodename, release, version, machine
+  # utsname struct is five fields, each 64 chars + 1 null char
+  field_nchars = 64 + 1
   struct = [
-    'Linux',
-    'm5.eecs.umich.edu',
-    '3.10.2',
-    '#1 Mon Aug 18 11:32:15 EDT 2003',
-    'armv7l',
+    'Linux',                             # sysname
+    'm5.eecs.umich.edu',                 # nodename
+    '3.10.2',                            # release
+    '#1 Mon Aug 18 11:32:15 EDT 2003',   # version
+    'armv7l',                            # machine
   ]
 
   mem_addr = s.rf[ a0 ]
 
   for field in struct:
-    assert len(field) <= 64
+    assert len(field) < field_nchars
 
     # TODO: provide char/string block write interface to memory?
-    for char in field + '\0'*(65 - len(field)):
+    padding = '\0' * (field_nchars - len(field))
+    for char in field + padding:
       s.mem.data[ mem_addr ] = char
       mem_addr += 1
 
