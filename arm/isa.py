@@ -632,7 +632,7 @@ def execute_ldrsb( s, inst ):
 #-----------------------------------------------------------------------
 # ldrsh
 #-----------------------------------------------------------------------
-def execute_ldsh( s, inst ):
+def execute_ldrsh( s, inst ):
   raise Exception('"ldrsh" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
