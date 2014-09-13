@@ -950,7 +950,7 @@ for i, inst in enumerate( bit_fields ):
     bit += nbits
   decoder += 'if   ' if i == 0 else '  elif '
   decoder += ' and '.join( reversed(conditions) ) + ':\n'
-  decoder += '    return execute_{}\n'.format( encodings[i][0] )
+  decoder += '    return "{0}", execute_{0}\n'.format( encodings[i][0] )
 
 source = py.code.Source('''
 @elidable

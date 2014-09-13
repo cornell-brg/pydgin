@@ -3,6 +3,60 @@ from rpython.rlib.jit         import elidable, unroll_safe
 from rpython.rlib.rstruct     import ieee
 from rpython.rlib.rarithmetic import intmask
 
+#-------------------------------------------------------------------------
+# Debug
+#-------------------------------------------------------------------------
+# a class that contains different debug flags
+
+class Debug( object ):
+
+  # NOTE: it doesn't seem possible to have conditional debug prints
+  # without incurring performance losses. So, instead we are specializing
+  # the binary in translation time. This class variable will be set true
+  # in translation time only if debugging is enabled. Otherwise, the
+  # translator can optimize away the enabled call below
+
+  global_enabled = False
+
+  def __init__( self ):
+    self.enabled_flags = [ ]
+
+  #-----------------------------------------------------------------------
+  # enabled
+  #-----------------------------------------------------------------------
+  # Returns true if debugging is turned on in translation and the
+  # particular flag is turned on in command line.
+
+  @elidable
+  def enabled( self, flag ):
+    return Debug.global_enabled and ( flag in self.enabled_flags )
+
+  #-----------------------------------------------------------------------
+  # set_flags
+  #-----------------------------------------------------------------------
+  # go through the flags and set them appropriately
+
+  def set_flags( self, flags ):
+    self.enabled_flags = flags
+
+#-------------------------------------------------------------------------
+# pad
+#-------------------------------------------------------------------------
+# add padding to string
+
+def pad( str, nchars, pad_char=" ", pad_end=True ):
+  pad_str = ( nchars - len( str ) ) * pad_char
+  out_str = str + pad_str if pad_end else pad_str + str
+  return out_str
+
+#-------------------------------------------------------------------------
+# pad_hex
+#-------------------------------------------------------------------------
+# easier-to-use padding function for hex values
+
+def pad_hex( hex_val, len=8 ):
+  return pad( "%x" % hex_val, len, "0", False )
+
 #-----------------------------------------------------------------------
 # sext
 #-----------------------------------------------------------------------
@@ -87,46 +141,59 @@ def register_inst( func ):
 # RegisterFile
 #-----------------------------------------------------------------------
 class RegisterFile( object ):
-  def __init__( self, debug=False ):
+  def __init__( self ):
     self.regs  = [0] * 32
-    self.debug = debug
+    self.debug = Debug()
   def __getitem__( self, idx ):
-    if self.debug: print ':: RD.RF[%2d] = %8x' % (idx, self.regs[idx]),
+    if self.debug.enabled( "rf" ):
+      print ':: RD.RF[%s] = %s' % (
+                          pad( "%d" % idx, 2 ),
+                          pad_hex( self.regs[idx]) ),
     return self.regs[idx]
   def __setitem__( self, idx, value ):
     if idx != 0:
       self.regs[idx] = value
-      if self.debug: print ':: WR.RF[%2d] = %8x' % (idx, value),
+      if self.debug.enabled( "rf" ):
+        print ':: WR.RF[%s] = %s' % (
+                          pad( "%d" % idx, 2 ),
+                          pad_hex( self.regs[idx] ) ),
+
+  #-----------------------------------------------------------------------
+  # print_regs
+  #-----------------------------------------------------------------------
+  # prints all registers (register dump)
 
   def print_regs( self ):
     num_regs = 32
     per_row  = 6
-    tmpl = "{:>2}:{:>8x} "
     for c in xrange( 0, num_regs, per_row ):
       str = ""
       for r in xrange( c, min( num_regs, c+per_row ) ):
-        str += tmpl.format( r, self.regs[r] )
+        str += "%s:%s " % ( pad( "%d" % r, 2 ),
+                            pad_hex( self.regs[r] ) )
       print str
 
 #-----------------------------------------------------------------------
 # Memory
 #-----------------------------------------------------------------------
 class Memory( object ):
-  def __init__( self, data=None, debug=False ):
+  def __init__( self, data=None ):
     if not data:
       self.data = [' ']*2**10
     else:
       self.data = data
-    self.debug = debug
+    self.debug = Debug()
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
     value = 0
-    if self.debug: print ':: RD.MEM[%x] = ' % (start_addr),
+    if self.debug.enabled( "mem" ):
+      print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
     for i in range( num_bytes-1, -1, -1 ):
       value = value << 8
       value = value | ord( self.data[ start_addr + i ] )
-    if self.debug: print '%x' % (value),
+    if self.debug.enabled( "mem" ):
+      print '%s' % pad_hex( value ),
     return value
 
   # this is instruction read, which is otherwise identical to read. The
@@ -143,7 +210,9 @@ class Memory( object ):
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
-    if self.debug: print ':: WR.MEM[%x] = %x' % (start_addr, value),
+    if self.debug.enabled( "mem" ):
+      print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
+                                     pad_hex( value ) ),
     for i in range( num_bytes ):
       self.data[ start_addr + i ] = chr(value & 0xFF)
       value = value >> 8
@@ -152,7 +221,7 @@ class Memory( object ):
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  def __init__( self, memory, symtable, reset_addr=0x400, debug=False ):
+  def __init__( self, memory, symtable, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
 
     # TODO: to allow the register file to be virtualizable (to avoid array
@@ -164,6 +233,8 @@ class State( object ):
 
     self.rf .debug = debug
     self.mem.debug = debug
+
+    self.debug = debug
 
     # coprocessor registers
     self.status        = 0

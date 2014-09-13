@@ -96,11 +96,6 @@ flag_table = [
 # reliable. Note that python Set object is not rpython either.
 file_descriptors = { 0: 0, 1: 1, 2: 2 }
 
-# TODO: we want verbosity to be set from outside with a command line flag.
-# For the time being, we do it here
-#verbose = True
-verbose = False
-
 #-------------------------------------------------------------------------
 # Stat
 #-------------------------------------------------------------------------
@@ -189,7 +184,7 @@ def get_str( s, ptr ):
 # exit
 #-----------------------------------------------------------------------
 def syscall_exit( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_exit"
 
   exit_code = s.rf[ a0 ]
@@ -206,7 +201,7 @@ def syscall_exit( s ):
 # read
 #-----------------------------------------------------------------------
 def syscall_read( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_read"
 
   fd       = s.rf[ a0 ]
@@ -235,7 +230,7 @@ def syscall_read( s ):
     s.mem.data[data_ptr : data_ptr + nbytes_read ] = data
 
   except OSError as e:
-    if verbose:
+    if s.debug.enabled( "syscalls" ):
       print "OSError in syscall_read. errno=%d" % e.errno
     nbytes_read = -1
     errno = e.errno
@@ -249,7 +244,7 @@ def syscall_read( s ):
 # write
 #-----------------------------------------------------------------------
 def syscall_write( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_write"
 
   fd       = s.rf[ a0 ]
@@ -286,7 +281,7 @@ def syscall_write( s ):
 # open
 #-----------------------------------------------------------------------
 def syscall_open( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_open"
 
   filename_ptr = s.rf[ a0 ]
@@ -317,7 +312,7 @@ def syscall_open( s ):
     fd = os.open( filename, py_flags, 0x7fffffff & mode )
 
   except OSError as e:
-    if verbose:
+    if s.debug.enabled( "syscalls" ):
       print "OSError in syscall_open. errno=%d" % e.errno
     fd = -1
     errno = e.errno
@@ -332,7 +327,7 @@ def syscall_open( s ):
 # close
 #-----------------------------------------------------------------------
 def syscall_close( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_close"
   fd = s.rf[ a0 ]
 
@@ -352,7 +347,7 @@ def syscall_close( s ):
   try:
     os.close( fd )
   except OSError as e:
-    if verbose:
+    if s.debug.enabled( "syscalls" ):
       print "OSError in syscall_close. errno=%d" % e.errno
     errno = e.errno
 
@@ -368,7 +363,7 @@ def syscall_close( s ):
 #-------------------------------------------------------------------------
 
 def syscall_link( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_link"
 
   src_ptr  = s.rf[ a0 ]
@@ -383,7 +378,7 @@ def syscall_link( s ):
     os.link( src, link_name )
 
   except OSError as e:
-    if verbose:
+    if s.debug.enabled( "syscalls" ):
       print "OSError in syscall_link. errno=%d" % e.errno
     errno = e.errno
 
@@ -395,7 +390,7 @@ def syscall_link( s ):
 #-------------------------------------------------------------------------
 
 def syscall_unlink( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_unlink"
 
   path_ptr  = s.rf[ a0 ]
@@ -408,7 +403,7 @@ def syscall_unlink( s ):
     os.unlink( path )
 
   except OSError as e:
-    if verbose:
+    if s.debug.enabled( "syscalls" ):
       print "OSError in syscall_unlink. errno=%d" % e.errno
     errno = e.errno
 
@@ -419,7 +414,7 @@ def syscall_unlink( s ):
 # lseek
 #-----------------------------------------------------------------------
 def syscall_lseek( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_lseek"
 
   fd  = s.rf[ a0 ]
@@ -438,7 +433,7 @@ def syscall_lseek( s ):
     os.lseek( fd, pos, how )
 
   except OSError as e:
-    if verbose:
+    if s.debug.enabled( "syscalls" ):
       print "OSError in syscall_lseek. errno=%d" % e.errno
     errno = e.errno
 
@@ -450,7 +445,7 @@ def syscall_lseek( s ):
 #-------------------------------------------------------------------------
 
 def syscall_fstat( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_fstat"
 
   fd       = s.rf[ a0 ]
@@ -475,7 +470,7 @@ def syscall_fstat( s ):
     stat.copy_stat_to_mem( py_stat, s.mem.data, buf_ptr )
 
   except OSError as e:
-    if verbose:
+    if s.debug.enabled( "syscalls" ):
       print "OSError in syscall_fstat. errno=%d" % e.errno
     errno = e.errno
 
@@ -488,7 +483,7 @@ def syscall_fstat( s ):
 #-------------------------------------------------------------------------
 
 def syscall_stat( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_stat"
 
   path_ptr = s.rf[ a0 ]
@@ -509,7 +504,7 @@ def syscall_stat( s ):
     stat.copy_stat_to_mem( py_stat, s.mem.data, buf_ptr )
 
   except OSError as e:
-    if verbose:
+    if s.debug.enabled( "syscalls" ):
       print "OSError in syscall_stat. errno=%d" % e.errno
     errno = e.errno
 
@@ -521,7 +516,7 @@ def syscall_stat( s ):
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/questions/6988487/what-does-brk-system-call-do
 def syscall_brk( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_brk"
 
   # TODO: this syscall shouldn't be necessary? As far as I know, ctorng
@@ -539,7 +534,7 @@ def syscall_brk( s ):
 # numcores
 #-----------------------------------------------------------------------
 def syscall_numcores( s ):
-  if verbose:
+  if s.debug.enabled( "syscalls" ):
     print "syscall_numcores"
   # always return 1 until multicore is implemented!
   s.rf[ v0 ] = 1
