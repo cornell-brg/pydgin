@@ -14,7 +14,7 @@ def load_program( fp, mem, alignment=0 ):
 
   mem_image  = elf.elf_reader( fp )
   sections   = mem_image.get_sections()
-  entrypoint = None
+  entrypoint = -1
 
   for section in sections:
     start_addr = section.addr
@@ -26,16 +26,16 @@ def load_program( fp, mem, alignment=0 ):
     if section.name == '.text':
       entrypoint = section.addr
 
-  assert entrypoint
+  assert entrypoint >= 0
   assert sections[-1].name == '.bss'
 
   bss        = sections[-1]
   breakpoint = bss.addr + len( bss.data )
 
   if alignment > 0:
-    def round_up( val ):
+    def round_up( val, alignment ):
       return (val + alignment - 1) & ~(alignment - 1)
-    breakpoint = round_up( breakpoint )
+    breakpoint = round_up( breakpoint, alignment )
 
   return mem, entrypoint, breakpoint
 
