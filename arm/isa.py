@@ -430,12 +430,14 @@ def execute_clz( s, inst ):
       s.rf[ rd(inst) ] = 32
     else:
       mask = 0x80000000
+      leading_zeros = 32
       for x in range(31):
         if mask & Rm:
           leading_zeros = x
           break
         mask >>= 1
 
+      assert leading_zeros != 32
       s.rf[ rd(inst) ] = leading_zeros
 
   s.pc += 4
@@ -781,7 +783,8 @@ def execute_mul( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mvn( s, inst ):
   if condition_passed( s, cond(inst) ):
-    result = trim_32( ~shifter_operand( s, inst )[0] )
+    a, cout = shifter_operand( s, inst )
+    result  = trim_32( ~a )
     s.rf[ rd( inst ) ] = result
 
     if S(inst):
