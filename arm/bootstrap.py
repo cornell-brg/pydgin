@@ -211,11 +211,11 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
 
   if debug:
     print '---'
-    print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
-    for i, ptr in enumerate(argv_ptrs):
-      print 'argv[%2d] = %x (%x)' % ( i, argv_ptrs[i], stack_off[-2]+4*i ),
-      print len( argv[i] ), argv[i]
-    print 'argd = %s (%x)' % ( argv[0],      stack_off[-6] )
+    #print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
+    #for i, ptr in enumerate(argv_ptrs):
+    #  print 'argv[%2d] = %x (%x)' % ( i, argv_ptrs[i], stack_off[-2]+4*i ),
+    #  print len( argv[i] ), argv[i]
+    #print 'argd = %s (%x)' % ( argv[0],      stack_off[-6] )
     print '---'
     print 'envd-base', hex(stack_off[-7])
     print 'argd-base', hex(stack_off[-6])
