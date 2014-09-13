@@ -88,9 +88,9 @@ flag_table = [
 ]
 
 file_descriptors = {
-  0: os.dup( sys.stdin .fileno() ),
-  1: os.dup( sys.stdout.fileno() ),
-  2: os.dup( sys.stderr.fileno() ),
+  0: sys.stdin .fileno(),
+  1: sys.stdout.fileno(),
+  2: sys.stderr.fileno(),
 }
 
 #-----------------------------------------------------------------------
@@ -117,13 +117,25 @@ def syscall_read( s ):
   nbytes   = s.rf[ a2 ]
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1
+    s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
     return
 
-  fd   = file_descriptors[ file_ptr ]
-  data = os.read( fd, nbytes )
+  try:
+    # Read data from file
+    fd   = file_descriptors[ file_ptr ]
+    data = os.read( fd, nbytes )
+    # Copy data to simulated memory
+    for i, char in enumerate( data ):
+      s.mem.data[ data_ptr+i ] = char
+    # Set return values
+    nbytes_read = len( data )
+    errno       = 0
 
-  s.rf[ v0 ] = len( data )   # return the number of bytes read
+  except OSError as e:
+    nbytes_read = -1
+    errno       = e.errno
+
+  s.rf[ v0 ] = nbytes_read
 
 #-----------------------------------------------------------------------
 # write
@@ -266,8 +278,14 @@ syscall_funcs = {
   122: syscall_uname,
 }
 
-def do_syscall( s, num ):
-  result = syscall_funcs[ num ]( s )
-  # TODO: make debug mode only!
-  #print num, syscall_funcs[ num ].func_name, hex(s.rf[ a0 ]),
-  return result
+syscall_names = {k: v.func_name for (k,v) in syscall_funcs.items()}
+
+def do_syscall( s, syscall_num ):
+  if syscall_num not in syscall_funcs:
+    print "WARNING: syscall not implemented!",
+    return
+
+  # TODO: make prints debug mode only!
+  print syscall_num, syscall_names[ syscall_num ],
+  syscall_funcs[ syscall_num ]( s )
+  print hex(s.rf[ a0 ]),
