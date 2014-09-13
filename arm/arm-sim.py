@@ -89,7 +89,7 @@ def entry_point( argv ):
       alignment = 1<<12
   )
 
-  debug = True
+  debug = False
 
   # Insert bootstrapping code into memory and initialize processor state
 
