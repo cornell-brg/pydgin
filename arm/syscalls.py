@@ -269,5 +269,5 @@ syscall_funcs = {
 def do_syscall( s, num ):
   result = syscall_funcs[ num ]( s )
   # TODO: make debug mode only!
-  print num, syscall_funcs[ num ].func_name, hex(s.rf[ a0 ])
+  print num, syscall_funcs[ num ].func_name, hex(s.rf[ a0 ]),
   return result

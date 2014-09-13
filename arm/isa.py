@@ -689,9 +689,9 @@ def execute_mla( s, inst ):
     if rs(inst) == 15: raise Exception('UNPREDICTABLE')
     if rn(inst) == 15: raise Exception('UNPREDICTABLE')
 
-    Rm, Rs, Rn  = s.rf[ rm(inst) ], s.rf[ rs(inst) ], s.rf[ rn(inst) ]
-    result      = trim_32(Rm * Rs + Rn)
-    s.rf[ rd( inst ) ] = result
+    Rm, Rs, Rd  = s.rf[ rm(inst) ], s.rf[ rs(inst) ], s.rf[ rd(inst) ]
+    result      = trim_32(Rm * Rs + Rd)
+    s.rf[ rn( inst ) ] = result
 
     if S(inst):
       s.N = (result >> 31)&1
