@@ -431,7 +431,7 @@ def entry_point( argv ):
 
   # args after program are args to the simulated program
 
-  run_argv = argv[ filename_idx + 1 : ]
+  run_argv = argv[ filename_idx : ]
 
   # Load the program into a memory object
 
