@@ -211,8 +211,6 @@ class Memory( object ):
   # correspond to the same instructions)
   @elidable
   def iread( self, start_addr, num_bytes ):
-    if self.debug.enabled( "memcheck" ):
-      self.bounds_check( start_addr )
     value = 0
     for i in range( num_bytes-1, -1, -1 ):
       value = value << 8

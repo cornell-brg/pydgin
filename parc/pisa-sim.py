@@ -75,7 +75,7 @@ rewrite_code      = [
 ]
 
 # Currently these constants are set to match gem5
-memory_size = 2**28
+memory_size = 2**29
 page_size   = 8192
 
 #-----------------------------------------------------------------------
@@ -104,8 +104,15 @@ def run( state ):
     if s.debug.enabled( "insts" ):
       print pad( "%x" % s.pc, 6, " ", False ),
 
-    # we use trace elidable iread instead of just read
-    inst = mem.iread( pc, 4 )
+    # the print statement in memcheck conflicts with @elidable in iread.
+    # So we use normal read if memcheck is enabled which includes the
+    # memory checks
+
+    if s.debug.enabled( "memcheck" ):
+      inst = mem.read( pc, 4 )
+    else:
+      # we use trace elidable iread instead of just read
+      inst = mem.iread( pc, 4 )
 
     inst_str, exec_fun = decode( inst )
 
