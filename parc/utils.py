@@ -179,13 +179,22 @@ class RegisterFile( object ):
 class Memory( object ):
   def __init__( self, data=None ):
     if not data:
-      self.data = [' ']*2**10
+      self.data = [' '] * self.size
     else:
       self.data = data
+    self.size = len( self.data )
     self.debug = Debug()
+
+  def bounds_check( self, addr ):
+    # check if the accessed data is larger than the memory size
+    if addr > self.size:
+      print "WARNING: accessing larger address than memory size. " + \
+            "addr=%s size=%s" % ( pad_hex( addr ), pad_hex( self.size ) )
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
+    if self.debug.enabled( "memcheck" ):
+      self.bounds_check( start_addr )
     value = 0
     if self.debug.enabled( "mem" ):
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
@@ -202,6 +211,8 @@ class Memory( object ):
   # correspond to the same instructions)
   @elidable
   def iread( self, start_addr, num_bytes ):
+    if self.debug.enabled( "memcheck" ):
+      self.bounds_check( start_addr )
     value = 0
     for i in range( num_bytes-1, -1, -1 ):
       value = value << 8
@@ -210,6 +221,8 @@ class Memory( object ):
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
+    if self.debug.enabled( "memcheck" ):
+      self.bounds_check( start_addr )
     if self.debug.enabled( "mem" ):
       print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
                                      pad_hex( value ) ),

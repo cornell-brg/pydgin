@@ -75,7 +75,7 @@ rewrite_code      = [
 ]
 
 # Currently these constants are set to match gem5
-memory_size = 2**27
+memory_size = 2**28
 page_size   = 8192
 
 #-----------------------------------------------------------------------
