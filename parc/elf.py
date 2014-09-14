@@ -496,6 +496,8 @@ def elf_reader( file_obj ):
       ".rodata",
       ".strtab",
       ".symtab",
+      # required for exceptions:
+      ".gcc_except_table",
     ]
 
     # Check to see if section is one of ones we want to load
