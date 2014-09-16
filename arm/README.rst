@@ -58,8 +58,8 @@ Using the RPython translation toolchain, we can convert the PARC ISS
 into a C executable with a JIT-optimizing compiler. To perform the
 translation (takes ~5 minutes), run::
 
-  $ PYTHONPATH='/Users/dmlockhart/vc/hg-opensource/pypy' python \
-    ~/vc/hg-opensource/pypy/rpython/translator/goal/translate.py \
+  $ PYTHONPATH='/work/bits0/dml257/hg-pypy/pypy' python \
+    /work/bits0/dml257/hg-pypy/pypy/rpython/translator/goal/translate.py \
     --opt=jit \
     arm-sim.py
 
