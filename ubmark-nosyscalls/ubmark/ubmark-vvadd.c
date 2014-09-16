@@ -4,6 +4,7 @@
 
 #include "ubmark.h"
 #include "ubmark-vvadd.dat"
+#include <stdlib.h>
 
 //------------------------------------------------------------------------
 // vvadd-scalar
@@ -38,26 +39,27 @@ void verify_results( int dest[], int ref[], int size )
 
 int main( int argc, char* argv[] )
 {
+  int iterations = 1;
+  if (argc > 1)
+    iterations = atoi( argv[1] );
 
-    int size = 100;
-    int dest[size];
+  int size = 100;
+  int dest[size];
 
-    int i;
-    for ( i = 0; i < size; i++ )
-      dest[i] = 0;
+  int i;
+  for ( i = 0; i < size; i++ )
+    dest[i] = 0;
 
-    int temp = 0;
+  int temp = 0;
 
-    for ( i = 0; i < 500000; i++ ) {
+  for ( i = 0; i < iterations; i++ ) {
+    test_stats_on( temp );
+    vvadd_scalar( dest, src0, src1, size );
+    test_stats_off( temp );
+  }
 
-      test_stats_on( temp );
-      vvadd_scalar( dest, src0, src1, size );
-      test_stats_off( temp );
+  verify_results( dest, ref, size );
 
-    }
-
-    verify_results( dest, ref, size );
-
-    return 0;
+  return 0;
 }
 

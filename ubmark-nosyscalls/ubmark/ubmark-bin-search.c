@@ -4,6 +4,7 @@
 
 #include "ubmark.h"
 #include "ubmark-bin-search.dat"
+#include <stdlib.h>
 
 //------------------------------------------------------------------------
 // bin_search_scalar
@@ -65,6 +66,9 @@ void verify_results( int values[], int ref[], int size )
 
 int main( int argc, char* argv[] )
 {
+  int iterations = 1;
+  if (argc > 1)
+    iterations = atoi( argv[1] );
 
   int size = 10;
   int values[size];
@@ -75,17 +79,14 @@ int main( int argc, char* argv[] )
 
   int temp = 0;
 
-  for ( i = 0; i < 500000; i++ ) {
-
+  for ( i = 0; i < iterations; i++ ) {
     test_stats_on( temp );
     bin_search_scalar( values, keys, size, kv, kv_sz );
     test_stats_off( temp );
-
   }
 
   verify_results( values, ref, size );
 
   return 0;
-
 }
 

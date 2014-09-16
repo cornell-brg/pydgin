@@ -4,6 +4,7 @@
 
 #include "ubmark.h"
 #include "ubmark-masked-filter.dat"
+#include <stdlib.h>
 
 //------------------------------------------------------------------------
 // global coeffient values
@@ -63,27 +64,27 @@ void verify_results( uint dest[], uint ref[], int size )
 
 int main( int argc, char* argv[] )
 {
+  int iterations = 1;
+  if (argc > 1)
+    iterations = atoi( argv[1] );
 
-    int size = 10;
-    uint dest[size*size];
+  int size = 10;
+  uint dest[size*size];
 
-    int i;
-    for ( i = 0; i < size*size; i++ )
-      dest[i] = 0;
+  int i;
+  for ( i = 0; i < size*size; i++ )
+    dest[i] = 0;
 
-    int temp = 0;
+  int temp = 0;
 
-    for ( i = 0; i < 500000; i++ ) {
+  for ( i = 0; i < iterations; i++ ) {
+    test_stats_on( temp );
+    masked_filter_scalar( dest, mask, src, size, size, g_coeff );
+    test_stats_off( temp );
+  }
 
-      test_stats_on( temp );
-      masked_filter_scalar( dest, mask, src, size, size, g_coeff );
-      test_stats_off( temp );
+  verify_results( dest, ref, size );
 
-    }
-
-    verify_results( dest, ref, size );
-
-    return 0;
-
+  return 0;
 }
 
