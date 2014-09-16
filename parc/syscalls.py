@@ -165,20 +165,38 @@ class Stat( object ):
 
     # now we can copy the buffer
 
+    # TODO: this could be more efficient
     assert addr >= 0
-    mem[ addr : addr + Stat.SIZE ] = self.buffer
+    for i in xrange( Stat.SIZE ):
+      mem.write( addr + i, 1, ord( self.buffer[i] ) )
 
 #-------------------------------------------------------------------------
 # get_str
 #-------------------------------------------------------------------------
-# gets the python string from a pointer to the simulated memory
+# gets the python string from a pointer to the simulated memory. If nchars
+# is not provided, reads until a null character.
 
-def get_str( s, ptr ):
-  str = s.mem.data[ ptr ]     # TODO: use mem.read()
-  while s.mem.data[ ptr + 1 ] != '\0':
-    ptr += 1
-    str += s.mem.data[ ptr ]  # TODO: use mem.read()
+def get_str( s, ptr, nchars=0 ):
+  str = ""
+  if nchars > 0:
+    for i in xrange( nchars ):
+      str += chr( s.mem.read( ptr + i, 1 ) )
+  else:
+    while s.mem.read( ptr, 1 ) != 0:
+      str += chr( s.mem.read( ptr, 1 ) )
+      ptr += 1
   return str
+
+#-------------------------------------------------------------------------
+# put_str
+#-------------------------------------------------------------------------
+# puts python string to simulated memory -- note that no null character is
+# added to the end
+
+def put_str( s, ptr, str ):
+  for c in str:
+    s.mem.write( ptr, 1, ord( c ) )
+    ptr += 1
 
 #-------------------------------------------------------------------------
 # check_fd
@@ -251,14 +269,7 @@ def syscall_read( s ):
     str = os.read( fd, nbytes )
     nbytes_read = len( str )
 
-    # rpython requires us to use a list of characters instead of string
-    data = [ "\0" ] * nbytes_read
-
-    for i in xrange( nbytes_read ):
-      data[i] = str[i]
-
-    assert data_ptr >= 0
-    s.mem.data[data_ptr : data_ptr + nbytes_read ] = data
+    put_str( s, data_ptr, str )
 
   except OSError as e:
     if s.debug.enabled( "syscalls" ):
@@ -287,9 +298,7 @@ def syscall_write( s ):
 
   errno = 0
 
-  # TODO: use mem.read()
-  assert data_ptr >= 0 and nbytes >= 0
-  data = ''.join( s.mem.data[data_ptr:data_ptr+nbytes] )
+  data = get_str( s, data_ptr, nbytes )
 
   try:
     nbytes_written = os.write( fd, data )
@@ -492,7 +501,7 @@ def syscall_fstat( s ):
     stat = Stat()
 
     # we convert this and copy it to the memory
-    stat.copy_stat_to_mem( py_stat, s.mem.data, buf_ptr )
+    stat.copy_stat_to_mem( py_stat, s.mem, buf_ptr )
 
   except OSError as e:
     if s.debug.enabled( "syscalls" ):
@@ -525,7 +534,7 @@ def syscall_stat( s ):
     stat = Stat()
 
     # we convert this and copy it to the memory
-    stat.copy_stat_to_mem( py_stat, s.mem.data, buf_ptr )
+    stat.copy_stat_to_mem( py_stat, s.mem, buf_ptr )
 
   except OSError as e:
     if s.debug.enabled( "syscalls" ):

@@ -12,7 +12,8 @@ import os
 import elf
 
 from   isa              import decode, reg_map
-from   utils            import State, Memory, Debug, pad, pad_hex
+from   utils            import State, Memory, WordMemory, Debug, \
+                               pad, pad_hex, \
 from   rpython.rlib.jit import JitDriver, hint
 
 # the help message to display on --help
@@ -144,16 +145,20 @@ def run( state ):
 #-----------------------------------------------------------------------
 # load_program
 #-----------------------------------------------------------------------
+#def load_program( fp, mem ):
 def load_program( fp ):
   mem_image = elf.elf_reader( fp )
 
   sections = mem_image.get_sections()
-  mem      = [' ']*memory_size
+  # currently word-addressed memory is enabled, uncomment the other to
+  # enable byte-addressed memory
+  mem      = WordMemory( size=memory_size )
+  #mem      = Memory( size=memory_size )
 
   for section in sections:
     start_addr = section.addr
     for i, data in enumerate( section.data ):
-      mem[start_addr+i] = data
+      mem.write( start_addr+i, 1, ord( data ) )
 
   bss        = sections[-1]
   breakpoint = bss.addr + len( bss.data )
@@ -168,13 +173,13 @@ def test_init( mem, debug ):
   # inject bootstrap code into the memory
 
   for i, data in enumerate( bootstrap_code ):
-    mem[ bootstrap_addr + i ] = chr( data )
+    mem.write( bootstrap_addr + i, 1, data )
   for i, data in enumerate( rewrite_code ):
-    mem[ rewrite_addr + i ] = chr( data )
+    mem.write( rewrite_addr + i, 1, data )
 
   # instantiate architectural state with memory and reset address
 
-  state = State( Memory(mem), None, debug, reset_addr=0x0400 )
+  state = State( mem, None, debug, reset_addr=0x0400 )
 
   return state
 
@@ -298,15 +303,18 @@ def syscall_init( mem, breakpoint, argv, debug ):
 
   # utility functions
 
+  # TODO: we can do more efficient versions of these using Memory object
+  # (writing 4 bytes at once etc.)
+
   def str_to_mem( mem, val, addr ):
     for i, char in enumerate(val+'\0'):
-      mem[ addr + i ] = char
+      mem.write( addr + i, 1, ord( char ) )
     return addr + len(val) + 1
 
   def int_to_mem( mem, val, addr ):
     # TODO properly handle endianess
     for i in range( 4 ):
-      mem[addr+i] = chr((val >> 8*i) & 0xFF)
+      mem.write( addr+i, 1, (val >> 8*i) & 0xFF )
     return addr + 4
 
   # write end marker to memory
@@ -353,7 +361,7 @@ def syscall_init( mem, breakpoint, argv, debug ):
   assert offset == stack_off[6]
 
   # initialize processor state
-  state = State( Memory(mem), None, debug, reset_addr=0x1000 )
+  state = State( mem, None, debug, reset_addr=0x1000 )
 
   # TODO: where should this go?
   state.breakpoint = breakpoint
