@@ -256,6 +256,7 @@ def execute_mtc0( s, inst ):
       # TODO: this is an okay way to terminate the simulator?
       #       sys.exit(1) is not valid python
       s.status = 1
+      s.running = False
   #elif rd(inst) ==  2: pass
   #  if sink[ s.sink_ptr ] != s.rf[ rt(inst) ]:
   #    print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ rt(inst) ]
@@ -658,7 +659,10 @@ from syscalls import syscall_funcs
 def execute_syscall( s, inst ):
   v0 = reg_map['v0']
   syscall_number = s.rf[ v0 ]
-  syscall_funcs[ syscall_number ]( s )
+  if syscall_number in syscall_funcs:
+    syscall_funcs[ syscall_number ]( s )
+  else:
+    print "WARNING: syscall not implemented!", syscall_number
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -946,7 +950,7 @@ for i, inst in enumerate( bit_fields ):
     bit += nbits
   decoder += 'if   ' if i == 0 else '  elif '
   decoder += ' and '.join( reversed(conditions) ) + ':\n'
-  decoder += '    return execute_{}\n'.format( encodings[i][0] )
+  decoder += '    return "{0}", execute_{0}\n'.format( encodings[i][0] )
 
 source = py.code.Source('''
 @elidable

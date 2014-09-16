@@ -10,16 +10,45 @@ import os
 import elf
 
 from   isa              import decode, reg_map
-from   utils            import State, Memory
-from   rpython.rlib.jit import JitDriver
+from   utils            import State, Memory, WordMemory, Debug, \
+                               pad, pad_hex
+from   rpython.rlib.jit import JitDriver, hint
+
+# the help message to display on --help
+
+help_message = """
+Pydgin ISA Simulator
+usage: %s <args> <sim_exe> <sim_args>
+
+<sim_exe>  the executable to be simulated
+<sim_args> arguments to be passed to the simulated executable
+<args>     the following optional arguments are supported:
+
+  --help          show this message and exit
+  --test          run in testing mode (for running asm tests)
+  --debug <flags> enable debug flags in a comma-separated form (e.g.
+                  "--debug syscalls,insts"). the following flags are
+                  supported:
+       insts              cycle-by-cycle instructions
+       rf                 register file accesses
+       mem                memory accesses
+       regdump            register dump
+       syscalls           syscall information
+
+"""
 
 #-----------------------------------------------------------------------
 # jit
 #-----------------------------------------------------------------------
 
+# for debug printing in PYPYLOG
+def get_location( pc ):
+  # TODO: add the disassembly of the instruction here as well
+  return "pc: %x" % pc
+
 jitdriver = JitDriver( greens =['pc'],
                        reds   =['state'],
-                       virtualizables = ['state']
+                       get_printable_location=get_location,
                      )
 
 def jitpolicy(driver):
@@ -45,39 +74,62 @@ rewrite_code      = [
 ]
 
 # Currently these constants are set to match gem5
-memory_size = 2**27
+memory_size = 2**29
 page_size   = 8192
 
 #-----------------------------------------------------------------------
 # run
 #-----------------------------------------------------------------------
-def run( state, debug ):
+
+def run( state ):
   s = state
 
-  while s.status == 0:
+  while s.running:
 
     jitdriver.jit_merge_point(
       pc       = s.pc,
       state    = s,
     )
 
-    old = s.pc
+    # constant fold the pc
+    pc = hint( s.pc, promote=True )
+    old = pc
 
-    if debug: print'{:6x}'.format( s.pc ),
-    # we use trace elidable iread instead of just read
-    inst = s.mem.iread( s.pc, 4 )
-    if debug: print '{:08x} {:8s} {:8d}'.format(inst, decode(inst).func_name[8:], s.ncycles),
-    decode( inst )( s, inst )
+    # We constant fold the s.mem object. This is important because
+    # otherwise the trace elidable iread doesn't work (assumes s.mem might
+    # have changed)
+    mem = hint( s.mem, promote=True )
+
+    if s.debug.enabled( "insts" ):
+      print pad( "%x" % s.pc, 6, " ", False ),
+
+    # the print statement in memcheck conflicts with @elidable in iread.
+    # So we use normal read if memcheck is enabled which includes the
+    # memory checks
+
+    if s.debug.enabled( "memcheck" ):
+      inst = mem.read( pc, 4 )
+    else:
+      # we use trace elidable iread instead of just read
+      inst = mem.iread( pc, 4 )
+
+    inst_str, exec_fun = decode( inst )
+
+    if s.debug.enabled( "insts" ):
+      print "%s %s %s" % (
+              pad_hex( inst ),
+              pad( inst_str, 8 ),
+              pad( "%d" % s.ncycles, 8 ), ),
+
+    exec_fun( s, inst )
+
     s.ncycles += 1  # TODO: should this be done inside instruction definition?
     if s.stats_en: s.stat_ncycles += 1
-    if debug: print
 
-    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[ 0: 6] )
-    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[ 6:12] )
-    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[12:18] )
-    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[18:24] )
-    #print '0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format( *s.rf[24:30] )
-    #print '0x{:08x} 0x{:08x} '.format( *s.rf[30:32] )
+    if s.debug.enabled( "insts" ):
+      print
+    if s.debug.enabled( "regdump" ):
+      s.rf.print_regs()
 
     if s.pc < old:
       jitdriver.can_enter_jit(
@@ -91,16 +143,20 @@ def run( state, debug ):
 #-----------------------------------------------------------------------
 # load_program
 #-----------------------------------------------------------------------
+#def load_program( fp, mem ):
 def load_program( fp ):
   mem_image = elf.elf_reader( fp )
 
   sections = mem_image.get_sections()
-  mem      = [' ']*memory_size
+  # currently word-addressed memory is enabled, uncomment the other to
+  # enable byte-addressed memory
+  mem      = WordMemory( size=memory_size )
+  #mem      = Memory( size=memory_size )
 
   for section in sections:
     start_addr = section.addr
     for i, data in enumerate( section.data ):
-      mem[start_addr+i] = data
+      mem.write( start_addr+i, 1, ord( data ) )
 
   bss        = sections[-1]
   breakpoint = bss.addr + len( bss.data )
@@ -110,18 +166,18 @@ def load_program( fp ):
 # test_init
 #-----------------------------------------------------------------------
 # initialize simulator state for simple programs, no syscalls
-def test_init( mem ):
+def test_init( mem, debug ):
 
   # inject bootstrap code into the memory
 
   for i, data in enumerate( bootstrap_code ):
-    mem[ bootstrap_addr + i ] = chr( data )
+    mem.write( bootstrap_addr + i, 1, data )
   for i, data in enumerate( rewrite_code ):
-    mem[ rewrite_addr + i ] = chr( data )
+    mem.write( rewrite_addr + i, 1, data )
 
   # instantiate architectural state with memory and reset address
 
-  state = State( Memory(mem), None, reset_addr=0x0400 )
+  state = State( mem, None, debug, reset_addr=0x0400 )
 
   return state
 
@@ -197,7 +253,6 @@ def syscall_init( mem, breakpoint, argv, debug ):
   # TODO: handle auxv, envp variables
   auxv = []
   envp = []
-  argv = argv[1:]
   argc = len( argv )
 
   def sum_( x ):
@@ -235,27 +290,29 @@ def syscall_init( mem, breakpoint, argv, debug ):
     stack_off.append( offset )
   assert offset == stack_ptr
 
-  if debug:
-    print 'stack min', hex( stack_ptr )
-    print 'stack size', stack_base - stack_ptr
+  #print 'stack min', hex( stack_ptr )
+  #print 'stack size', stack_base - stack_ptr
 
-    print 'argv', stack_nbytes[-2]
-    print 'envp', stack_nbytes[-3]
-    print 'auxv', stack_nbytes[-4]
-    print 'argd', stack_nbytes[-6]
-    print 'envd', stack_nbytes[-7]
+  #print 'argv', stack_nbytes[-2]
+  #print 'envp', stack_nbytes[-3]
+  #print 'auxv', stack_nbytes[-4]
+  #print 'argd', stack_nbytes[-6]
+  #print 'envd', stack_nbytes[-7]
 
   # utility functions
 
+  # TODO: we can do more efficient versions of these using Memory object
+  # (writing 4 bytes at once etc.)
+
   def str_to_mem( mem, val, addr ):
     for i, char in enumerate(val+'\0'):
-      mem[ addr + i ] = char
+      mem.write( addr + i, 1, ord( char ) )
     return addr + len(val) + 1
 
   def int_to_mem( mem, val, addr ):
     # TODO properly handle endianess
     for i in range( 4 ):
-      mem[addr+i] = chr((val >> 8*i) & 0xFF)
+      mem.write( addr+i, 1, (val >> 8*i) & 0xFF )
     return addr + 4
 
   # write end marker to memory
@@ -302,24 +359,23 @@ def syscall_init( mem, breakpoint, argv, debug ):
   assert offset == stack_off[6]
 
   # initialize processor state
-  state = State( Memory(mem), None, reset_addr=0x1000 )
+  state = State( mem, None, debug, reset_addr=0x1000 )
 
   # TODO: where should this go?
   state.breakpoint = breakpoint
 
-  if debug:
-    print '---'
-    print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
-    for i, ptr in enumerate(argv_ptrs):
-      print 'argv[%2d] = %x (%x)' % ( i, argv_ptrs[i], stack_off[-2]+4*i ),
-      print len( argv[i] ), argv[i]
-    print 'argd = %s (%x)' % ( argv[0],      stack_off[-6] )
-    print '---'
-    print 'argv-base', hex(stack_off[-2])
-    print 'envp-base', hex(stack_off[-3])
-    print 'auxv-base', hex(stack_off[-4])
-    print 'argd-base', hex(stack_off[-6])
-    print 'envd-base', hex(stack_off[-7])
+  #print '---'
+  #print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
+  #for i, ptr in enumerate(argv_ptrs):
+  #  print 'argv[%d] = %x (%x)' % ( i, argv_ptrs[i], stack_off[-2]+4*i ),
+  #  print len( argv[i] ), argv[i]
+  #print 'argd = %s (%x)' % ( argv[0],      stack_off[-6] )
+  #print '---'
+  #print 'argv-base', hex(stack_off[-2])
+  #print 'envp-base', hex(stack_off[-3])
+  #print 'auxv-base', hex(stack_off[-4])
+  #print 'argd-base', hex(stack_off[-6])
+  #print 'envd-base', hex(stack_off[-7])
 
   # initialize processor registers
   state.rf[ reg_map['a0'] ] = argc         # argument 0 reg = argc
@@ -331,30 +387,82 @@ def syscall_init( mem, breakpoint, argv, debug ):
 #-----------------------------------------------------------------------
 # entry_point
 #-----------------------------------------------------------------------
+
 def entry_point( argv ):
-  try:
-    filename = argv[1]
-    testbin  = len(argv) == 3 and argv[2] == '--test'
-  except IndexError:
+
+  filename_idx = 0
+  debug_flags = []
+  testbin = False
+
+  # we're using a mini state machine to parse the args, and these are two
+  # states we have
+
+  ARGS        = 0
+  DEBUG_FLAGS = 1
+  token_type = ARGS
+
+  # go through the args one by one and parse accordingly
+
+  for i in xrange( 1, len( argv ) ):
+    token = argv[i]
+
+    if token_type == ARGS:
+
+      if token == "--help":
+        print help_message % argv[0]
+        return 0
+
+      elif token == "--test":
+        testbin = True
+
+      elif token == "--debug":
+        token_type = DEBUG_FLAGS
+        # warn the user if debugs are not enabled for this translation
+        if not Debug.global_enabled:
+          print "WARNING: debugs are not enabled for this translation. " + \
+                "To allow debugs, translate with --debug option."
+
+      elif token[:2] == "--":
+        # unknown option
+        print "Unknown argument %s" % token
+        return 1
+
+      else:
+        # this marks the start of the program name
+        filename_idx = i
+        break
+
+    elif token_type == DEBUG_FLAGS:
+      debug_flags = token.split( "," )
+      token_type = ARGS
+
+  if filename_idx == 0:
     print "You must supply a filename"
     return 1
+
+  filename = argv[ filename_idx ]
+
+  # args after program are args to the simulated program
+
+  run_argv = argv[ filename_idx : ]
 
   # Load the program into a memory object
 
   mem, breakpoint = load_program( open( filename, 'rb' ) )
 
-  debug = True
+  # create a Debug object which contains the debug flags
+
+  debug = Debug()
+  debug.set_flags( debug_flags )
 
   # Insert bootstrapping code into memory and initialize processor state
 
-  if testbin: state = test_init   ( mem )
-  else:       state = syscall_init( mem, breakpoint, argv, debug )
-  state.rf .debug = False
-  state.mem.debug = debug
+  if testbin: state = test_init   ( mem, debug )
+  else:       state = syscall_init( mem, breakpoint, run_argv, debug )
 
   # Execute the program
 
-  run( state, debug )
+  run( state )
 
   return 0
 
@@ -362,7 +470,29 @@ def entry_point( argv ):
 # target
 #-----------------------------------------------------------------------
 # Enables RPython translation of our interpreter.
-def target( *args ):
+def target( driver, args ):
+
+  # if --debug flag is provided in translation, we enable debug printing
+
+  if "--debug" in args:
+    print "Enabling debugging"
+    Debug.global_enabled = True
+  else:
+    print "Disabling debugging"
+
+  # form a name
+  exe_name = "pydgin-parc"
+  if driver.config.translation.jit:
+    exe_name += "-jit"
+  else:
+    exe_name += "-nojit"
+
+  if Debug.global_enabled:
+    exe_name += "-debug"
+
+  print "Translated binary name:", exe_name
+  driver.exe_name = exe_name
+
   return entry_point, None
 
 #-----------------------------------------------------------------------
@@ -370,4 +500,6 @@ def target( *args ):
 #-----------------------------------------------------------------------
 # Enables CPython simulation of our interpreter.
 if __name__ == "__main__":
+  # enable debug flags in interpreted mode
+  Debug.global_enabled = True
   entry_point( sys.argv )
