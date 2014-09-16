@@ -310,7 +310,7 @@ syscall_names = {k: v.func_name for (k,v) in syscall_funcs.items()}
 
 def do_syscall( s, syscall_num ):
   if syscall_num not in syscall_funcs:
-    print "WARNING: syscall not implemented!",
+    print "WARNING: syscall %d not implemented!" % syscall_num,
     return
 
   # TODO: make prints debug mode only!
