@@ -13,7 +13,7 @@ import elf
 
 from   isa              import decode, reg_map
 from   utils            import State, Memory, WordMemory, Debug, \
-                               pad, pad_hex, \
+                               pad, pad_hex
 from   rpython.rlib.jit import JitDriver, hint
 
 # the help message to display on --help
