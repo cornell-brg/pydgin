@@ -11,7 +11,7 @@ import subprocess
 # test configuration
 #-----------------------------------------------------------------------
 
-python     = 'python ../parc/pisa-sim.py'
+python     = 'python ../parc/parc-sim.py'
 translated = '../parc/pydgin-parc-jit'
 
 ub_path  = '../ubmark-nosyscalls/build-parc'

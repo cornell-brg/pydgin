@@ -1,5 +1,5 @@
 #=======================================================================
-# pisa-sim.py
+# parc-sim.py
 #=======================================================================
 
 import sys
@@ -21,7 +21,7 @@ from rpython.rlib.jit import JitDriver, hint
 # the help message to display on --help
 
 help_message = """
-Pydgin ISA Simulator
+Pydgin PARC Instruction Set Simulator
 usage: %s <args> <sim_exe> <sim_args>
 
 <sim_exe>  the executable to be simulated
