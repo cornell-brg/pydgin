@@ -2,16 +2,11 @@
 # isa.py
 #=======================================================================
 
-import py
-import re
-import sys
+from utils import trim, trim_5, signed, sext, sext_byte, \
+                  bits2float, float2bits
 
-from utils import rd, rs, rt, fd, fs, ft, imm, jtarg, shamt
-from utils import trim, trim_5, signed, sext, sext_byte
-from utils import bits2float, float2bits
-
-# we mark pure (trace elidable) functions that don't have any side effects
-from rpython.rlib.jit import elidable
+from instruction import rd, rs, rt, fd, fs, ft, imm, jtarg, shamt
+from pydgin.misc import create_risc_decoder
 
 #=======================================================================
 # Register Definitions
@@ -827,139 +822,9 @@ def execute_trunc_w_s( s, inst ):
   s.rf[ fd(inst) ] = trim(int(x))  # round down
   s.pc += 4
 
-#-----------------------------------------------------------------------
-# TEMPORARY
-#-----------------------------------------------------------------------
-#masks = [
-#['mfc0',  0xffe007ff, 0x40000000 ],
-#['mtc0',  0xffe007ff, 0x40800000 ],
-#['addu',  0xfc0007ff, 0x00000021 ],
-#['subu',  0xfc0007ff, 0x00000023 ],
-#['and',   0xfc0007ff, 0x00000024 ],
-#['or',    0xfc0007ff, 0x00000025 ],
-#['xor',   0xfc0007ff, 0x00000026 ],
-#['nor',   0xfc0007ff, 0x00000027 ],
-#['slt',   0xfc0007ff, 0x0000002a ],
-#['sltu',  0xfc0007ff, 0x0000002b ],
-#['addiu', 0xfc000000, 0x24000000 ],
-#['andi',  0xfc000000, 0x30000000 ],
-#['ori',   0xfc000000, 0x34000000 ],
-#['xori',  0xfc000000, 0x38000000 ],
-#['slti',  0xfc000000, 0x28000000 ],
-#['sltiu', 0xfc000000, 0x2c000000 ],
-#['sll',   0xffe0003f, 0x00000000 ],
-#['srl',   0xffe0003f, 0x00000002 ],
-#['sra',   0xffe0003f, 0x00000003 ],
-#['sllv',  0xfc0007ff, 0x00000004 ],
-#['srlv',  0xfc0007ff, 0x00000006 ],
-#['srav',  0xfc0007ff, 0x00000007 ],
-#['lui',   0xffe00000, 0x3c000000 ],
-#['mul',   0xfc0007ff, 0x70000002 ],
-#['div',   0xfc0007ff, 0x9c000005 ],
-#['divu',  0xfc0007ff, 0x9c000007 ],
-#['rem',   0xfc0007ff, 0x9c000006 ],
-#['remu',  0xfc0007ff, 0x9c000008 ],
-#['lw',    0xfc000000, 0x8c000000 ],
-#['lh',    0xfc000000, 0x84000000 ],
-#['lhu',   0xfc000000, 0x94000000 ],
-#['lb',    0xfc000000, 0x80000000 ],
-#['lbu',   0xfc000000, 0x90000000 ],
-#['sw',    0xfc000000, 0xac000000 ],
-#['sh',    0xfc000000, 0xa4000000 ],
-#['sb',    0xfc000000, 0xa0000000 ],
-#['j',     0xfc000000, 0x08000000 ],
-#['jal',   0xfc000000, 0x0c000000 ],
-#['jr',    0xfc1fffff, 0x00000008 ],
-#['jalr',  0xfc1f07ff, 0x00000009 ],
-#['beq',   0xfc000000, 0x10000000 ],
-#['bne',   0xfc000000, 0x14000000 ],
-#['blez',  0xfc1f0000, 0x18000000 ],
-#['bgtz',  0xfc1f0000, 0x1c000000 ],
-#['bltz',  0xfc1f0000, 0x04000000 ],
-#['bgez',  0xfc1f0000, 0x04010000 ],
-#['mtc2',  0xffe007ff, 0x48800000 ],
-#]
-#
-#for inst, m, x in masks:
-#  mstr = '{:032b}'.format(m)
-#  xstr = '{:032b}'.format(x)
-#  out  = ''
-#  for mbit, xbit in zip( mstr, xstr ):
-#    if   mbit == '0': out += 'x'
-#    else:             out += xbit
-#  print '{:8} {}'.format( inst, out )
+#=======================================================================
+# Create Decoder
+#=======================================================================
 
-#-----------------------------------------------------------------------
-# Create Decode Table
-#-----------------------------------------------------------------------
-
-inst_nbits = len( encodings[0][1] )
-
-def split_encodings( enc ):
-  return [x for x in re.split( '(x*)', enc ) if x]
-
-bit_fields = [ split_encodings( enc ) for inst, enc in encodings ]
-
-# This approach allows us to automatically generate trees for
-# table-based decoders. However a previous paper indicates that
-# siwtch-based decoders are better for performance.
-#
-#   http://web.eecs.umich.edu/~taustin/papers/WBT01-decode.pdf
-#
-def normalize_fields( bit_fields ):
-
-  field_idx  = 0
-  bit_idx    = 0
-
-  while bit_idx < inst_nbits:
-
-    this_field_nbits = min( [len(x) for x in  zip( *bit_fields)[field_idx]] )
-
-    new_bit_fields = []
-
-    for inst in bit_fields:
-
-      if len( inst[field_idx] ) == this_field_nbits:
-        new_bit_fields.append( inst )
-        continue
-
-      split_a  = inst[field_idx][0:this_field_nbits]
-      split_b  = inst[field_idx][this_field_nbits:]
-      new_inst = inst[0:field_idx] + [split_a, split_b] + inst[field_idx+1:]
-      new_bit_fields.append( new_inst )
-
-    field_idx += 1
-    bit_idx   += this_field_nbits
-    bit_fields = new_bit_fields
-
-  return bit_fields
-
-#bit_fields = normalize_fields( bit_fields )
-
-decoder = ''
-for i, inst in enumerate( bit_fields ):
-  #print i, encodings[i][0], inst
-  bit = 0
-  conditions = []
-  for field in reversed( inst ):
-    nbits = len( field )
-    if field[0] != 'x':
-      mask = (1 << nbits) - 1
-      cond = '(inst >> {}) & 0x{:X} == 0b{}'.format( bit, mask, field )
-      conditions.append( cond )
-    bit += nbits
-  decoder += 'if   ' if i == 0 else '  elif '
-  decoder += ' and '.join( reversed(conditions) ) + ':\n'
-  decoder += '    return "{0}", execute_{0}\n'.format( encodings[i][0] )
-
-source = py.code.Source('''
-@elidable
-def decode( inst ):
-  {decoder_tree}
-  else:
-    raise Exception('Invalid instruction 0x%x!' % inst )
-'''.format( decoder_tree = decoder ))
-#print source
-exec source.compile() in globals()
-
+decode = create_risc_decoder( encodings, globals(), debug=True )
 

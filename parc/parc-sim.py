@@ -11,8 +11,8 @@ sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 import os
 import elf
 
-from isa   import decode, reg_map
-from utils import State
+from isa     import decode, reg_map
+from machine import State
 
 from pydgin.storage   import Memory
 from pydgin.debug     import Debug, pad, pad_hex
