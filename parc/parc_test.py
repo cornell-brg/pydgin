@@ -11,8 +11,12 @@ import subprocess
 # test configuration
 #-----------------------------------------------------------------------
 
+dbg_opts   = '--debug insts,mem,rf,regdump'
+
 python     = 'python ../parc/parc-sim.py'
-translated = '../parc/pydgin-parc-jit'
+python_dbg = 'python ../parc/parc-sim.py {}'.format( dbg_opts )
+transl     = '../parc/pydgin-parc-jit'
+transl_dbg = '../parc/pydgin-parc-jit-debug {}'.format( dbg_opts )
 
 ub_path  = '../ubmark-nosyscalls/build-parc'
 
@@ -48,7 +52,26 @@ def test_python( ubmark, iterations, sim=python ):
 # test_translated
 #-----------------------------------------------------------------------
 @pytest.mark.parametrize( 'ubmark,iterations', configs )
-def test_translated( ubmark, iterations, sim=translated ):
+def test_translated( ubmark, iterations, sim=transl ):
+  cmd = '{sim} {ubmark} {iterations}'.format( **locals() )
+
+  subprocess.check_call( cmd, shell=True )
+
+#-----------------------------------------------------------------------
+# test_python_debug
+#-----------------------------------------------------------------------
+@pytest.mark.parametrize( 'ubmark,iterations', configs[0:1] )
+def test_python_debug( ubmark, iterations, sim=python_dbg ):
+  cmd = '{sim} {ubmark} {iterations}'.format( **locals() )
+
+  subprocess.check_call( cmd, shell=True )
+
+
+#-----------------------------------------------------------------------
+# test_translated_debug
+#-----------------------------------------------------------------------
+@pytest.mark.parametrize( 'ubmark,iterations', configs[0:1] )
+def test_translated_debug( ubmark, iterations, sim=transl_dbg ):
   cmd = '{sim} {ubmark} {iterations}'.format( **locals() )
 
   subprocess.check_call( cmd, shell=True )
