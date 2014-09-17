@@ -20,7 +20,7 @@ execute the following::
   $ cd ~/vcd/git-brg/pydgin/ubmark-nosyscalls
   $ mkdir build-arm
   $ cd build-arm
-  $ ../configure --host=arm-unknown-linux-gnueabi
+  $ ../configure --host=arm-unknown-linux-uclibcgnueabi
   $ make ubmark-vvadd
 
 
