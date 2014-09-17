@@ -187,7 +187,7 @@ def syscall_init( mem, breakpoint, argv, debug ):
   assert offset == stack_off[6]
 
   # initialize processor state
-  state = State( mem, None, debug, reset_addr=0x1000 )
+  state = State( mem, debug, reset_addr=0x1000 )
 
   # TODO: where should this go?
   state.breakpoint = breakpoint
@@ -245,7 +245,7 @@ def test_init( mem, debug ):
 
   # instantiate architectural state with memory and reset address
 
-  state = State( mem, None, debug, reset_addr=0x0400 )
+  state = State( mem, debug, reset_addr=0x0400 )
 
   return state
 

@@ -8,7 +8,7 @@ from pydgin.storage import RegisterFile
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  def __init__( self, memory, symtable, debug, reset_addr=0x400 ):
+  def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
 
     # TODO: to allow the register file to be virtualizable (to avoid array
@@ -18,10 +18,9 @@ class State( object ):
     self.rf       = RegisterFile()
     self.mem      = memory
 
+    self    .debug = debug
     self.rf .debug = debug
     self.mem.debug = debug
-
-    self.debug = debug
 
     # coprocessor registers
     self.status        = 0
