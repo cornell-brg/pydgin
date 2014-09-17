@@ -9,7 +9,7 @@ sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 import elf
 
-from bootstrap import syscall_init, memory_size
+from bootstrap import syscall_init, test_init, memory_size
 from isa       import decode, reg_map
 
 from pydgin.storage   import Memory
