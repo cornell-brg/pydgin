@@ -80,7 +80,11 @@ install_exes_dir := $(DESTDIR)/bin
 CPPFLAGS    := @CPPFLAGS@
 CFLAGS      := @CFLAGS@
 CXXFLAGS    := @CXXFLAGS@
-LDFLAGS     := @LDFLAGS@
+ifeq ($(host),maven)
+  LDFLAGS     := @LDFLAGS@
+else
+  LDFLAGS     := @LDFLAGS@ -static
+endif
 
 # C compiler and linker
 
