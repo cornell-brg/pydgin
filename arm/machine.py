@@ -20,7 +20,9 @@ class RegisterFile( object ):
     else:             self._setitemimpl = self._set_item
   def __getitem__( self, idx ):
     if self.debug.enabled( "rf" ):
-      print ':: RD.RF[%2d] = %8x' % (idx, self.regs[idx]),
+      print ':: RD.RF[%s] = %s' % (
+                          pad( "%d" % idx, 2 ),
+                          pad_hex( self.regs[idx]) ),
     return self.regs[idx]
   def __setitem__( self, idx, value ):
     self._setitemimpl( idx, value )
@@ -28,12 +30,30 @@ class RegisterFile( object ):
   def _set_item( self, idx, value ):
     self.regs[idx] = value
     if self.debug.enabled( "rf" ):
-      print ':: WR.RF[%2d] = %8x' % (idx, value),
+      print ':: WR.RF[%s] = %s' % (
+                        pad( "%d" % idx, 2 ),
+                        pad_hex( self.regs[idx] ) ),
   def _set_item_const_zero( self, idx, value ):
     if idx != 0:
       self.regs[idx] = value
       if self.debug.enabled( "rf" ):
-        print ':: WR.RF[%2d] = %8x' % (idx, value),
+        print ':: WR.RF[%s] = %s' % (
+                          pad( "%d" % idx, 2 ),
+                          pad_hex( self.regs[idx] ) ),
+
+  #-----------------------------------------------------------------------
+  # print_regs
+  #-----------------------------------------------------------------------
+  # prints all registers (register dump)
+  def print_regs( self ):
+    num_regs = 16
+    per_row  = 4
+    for c in xrange( 0, num_regs, per_row ):
+      str = ""
+      for r in xrange( c, min( num_regs, c+per_row ) ):
+        str += "%s:%s " % ( pad( "%d" % r, 2 ),
+                            pad_hex( self.regs[r] ) )
+      print str
 
 #-----------------------------------------------------------------------
 # Memory
@@ -49,13 +69,13 @@ class Memory( object ):
   @unroll_safe
   def read( self, start_addr, num_bytes ):
     value = 0
-    if self.debug.enabled( "memcheck" ):
-      print ':: RD.MEM[%x] = ' % (start_addr),
+    if self.debug.enabled( "mem" ):
+      print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
     for i in range( num_bytes-1, -1, -1 ):
       value = value << 8
       value = value | ord( self.data[ start_addr + i ] )
-    if self.debug.enabled( "memcheck" ):
-      print '%x' % (value),
+    if self.debug.enabled( "mem" ):
+      print '%s' % pad_hex( value ),
     return value
 
   # this is instruction read, which is otherwise identical to read. The
@@ -73,8 +93,9 @@ class Memory( object ):
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
-    if self.debug.enabled( "memcheck" ):
-      print ':: WR.MEM[%x] = %x' % (start_addr, value),
+    if self.debug.enabled( "mem" ):
+      print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
+                                     pad_hex( value ) ),
     for i in range( num_bytes ):
       self.data[ start_addr + i ] = chr(value & 0xFF)
       value = value >> 8
