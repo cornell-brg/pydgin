@@ -12,9 +12,10 @@ import os
 import elf
 
 from isa   import decode, reg_map
-from utils import State, Memory, WordMemory, Debug, \
-                  pad, pad_hex
+from utils import State
 
+from pydgin.storage   import Memory
+from pydgin.debug     import Debug, pad, pad_hex
 from rpython.rlib.jit import JitDriver, hint
 
 # the help message to display on --help
@@ -151,10 +152,7 @@ def load_program( fp ):
   mem_image = elf.elf_reader( fp )
 
   sections = mem_image.get_sections()
-  # currently word-addressed memory is enabled, uncomment the other to
-  # enable byte-addressed memory
-  mem      = WordMemory( size=memory_size )
-  #mem      = Memory( size=memory_size )
+  mem      = Memory( size=memory_size, byte_storage=False )
 
   for section in sections:
     start_addr = section.addr
