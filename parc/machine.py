@@ -2,7 +2,7 @@
 # machine.py
 #=======================================================================
 
-from pydgin.machine import RegisterFile
+from pydgin.storage import RegisterFile
 
 #-----------------------------------------------------------------------
 # State
