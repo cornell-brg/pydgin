@@ -1,17 +1,15 @@
 #=======================================================================
-# arm_sim.py
+# arm-sim.py
 #=======================================================================
 
 import sys
 import os
 
-#sys.path.append('/Users/dmlockhart/vc/git-brg/parc/pymtl')
-#sys.path.append('/Users/dmlockhart/vc/hg-opensource/pypy')
-sys.path.append('/work/bits0/dml257/pymtl')
+# TODO: figure out a better way to set PYTHONENV
+sys.path.append('..')
 sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 from pydgin.misc import load_program
-
 from bootstrap   import syscall_init, memory_size
 from isa         import decode
 

@@ -1,18 +1,21 @@
 #=======================================================================
-# pisa_sim.py
+# pisa-sim.py
 #=======================================================================
 
 import sys
+
+# TODO: figure out a better way to set PYTHONENV
 sys.path.append('..')
 sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 import os
 import elf
 
-from   isa              import decode, reg_map
-from   utils            import State, Memory, WordMemory, Debug, \
-                               pad, pad_hex
-from   rpython.rlib.jit import JitDriver, hint
+from isa   import decode, reg_map
+from utils import State, Memory, WordMemory, Debug, \
+                  pad, pad_hex
+
+from rpython.rlib.jit import JitDriver, hint
 
 # the help message to display on --help
 
