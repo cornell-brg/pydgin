@@ -1089,5 +1089,5 @@ def execute_umull( s, inst ):
 # Create Decoder
 #=======================================================================
 
-decode = create_risc_decoder( encodings, globals() )
+decode = create_risc_decoder( encodings, globals(), debug=True )
 

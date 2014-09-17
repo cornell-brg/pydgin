@@ -207,7 +207,7 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
     offset -= 1
 
   # initialize processor state
-  state = State( Memory(mem), None, reset_addr=0x1000 )
+  state = State( Memory(mem), debug, reset_addr=0x1000 )
 
   if debug:
     print '---'

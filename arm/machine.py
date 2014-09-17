@@ -1,31 +1,39 @@
+#=======================================================================
+# machine.py
+#=======================================================================
+
 # trace elidable for instruction reads
 from rpython.rlib.jit         import elidable, unroll_safe
 from rpython.rlib.rstruct     import ieee
 from rpython.rlib.rarithmetic import intmask
+from pydgin.debug             import Debug, pad, pad_hex
 
 #-----------------------------------------------------------------------
 # RegisterFile
 #-----------------------------------------------------------------------
 class RegisterFile( object ):
-  def __init__( self, constant_zero=True, debug=False ):
+  def __init__( self, constant_zero=True ):
     self.regs  = [0] * 32
-    self.debug = debug
+    self.debug = Debug()
 
     if constant_zero: self._setitemimpl = self._set_item_const_zero
     else:             self._setitemimpl = self._set_item
   def __getitem__( self, idx ):
-    if self.debug: print ':: RD.RF[%2d] = %8x' % (idx, self.regs[idx]),
+    if self.debug.enabled( "rf" ):
+      print ':: RD.RF[%2d] = %8x' % (idx, self.regs[idx]),
     return self.regs[idx]
   def __setitem__( self, idx, value ):
     self._setitemimpl( idx, value )
 
   def _set_item( self, idx, value ):
     self.regs[idx] = value
-    if self.debug: print ':: WR.RF[%2d] = %8x' % (idx, value),
+    if self.debug.enabled( "rf" ):
+      print ':: WR.RF[%2d] = %8x' % (idx, value),
   def _set_item_const_zero( self, idx, value ):
     if idx != 0:
       self.regs[idx] = value
-      if self.debug: print ':: WR.RF[%2d] = %8x' % (idx, value),
+      if self.debug.enabled( "rf" ):
+        print ':: WR.RF[%2d] = %8x' % (idx, value),
 
 #-----------------------------------------------------------------------
 # Memory
@@ -36,16 +44,18 @@ class Memory( object ):
       self.data = [' ']*2**10
     else:
       self.data = data
-    self.debug = debug
+    self.debug = Debug()
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
     value = 0
-    if self.debug: print ':: RD.MEM[%x] = ' % (start_addr),
+    if self.debug.enabled( "memcheck" ):
+      print ':: RD.MEM[%x] = ' % (start_addr),
     for i in range( num_bytes-1, -1, -1 ):
       value = value << 8
       value = value | ord( self.data[ start_addr + i ] )
-    if self.debug: print '%x' % (value),
+    if self.debug.enabled( "memcheck" ):
+      print '%x' % (value),
     return value
 
   # this is instruction read, which is otherwise identical to read. The
@@ -63,7 +73,8 @@ class Memory( object ):
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
-    if self.debug: print ':: WR.MEM[%x] = %x' % (start_addr, value),
+    if self.debug.enabled( "memcheck" ):
+      print ':: WR.MEM[%x] = %x' % (start_addr, value),
     for i in range( num_bytes ):
       self.data[ start_addr + i ] = chr(value & 0xFF)
       value = value >> 8
@@ -73,11 +84,12 @@ class Memory( object ):
 #-----------------------------------------------------------------------
 class State( object ):
   _virtualizable_ = [ 'rf.regs[*]' ]
-  def __init__( self, memory, symtable, reset_addr=0x400, debug=False ):
+  def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
     self.rf       = RegisterFile(constant_zero=False)
     self.mem      = memory
 
+    self    .debug = debug
     self.rf .debug = debug
     self.mem.debug = debug
 
@@ -95,6 +107,9 @@ class State( object ):
     # other registers
     self.status        = 0
     self.ncycles       = 0
+    # unused
+    self.stats_en      = 0
+    self.stat_ncycles  = 0
 
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
