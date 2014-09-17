@@ -42,7 +42,7 @@ def load_program( fp, mem, alignment=0 ):
 #-----------------------------------------------------------------------
 # create_risc_decoder
 #-----------------------------------------------------------------------
-def create_risc_decoder( encodings, isa_globals ):
+def create_risc_decoder( encodings, isa_globals, debug=False ):
 
   inst_nbits = len( encodings[0][1] )
 
@@ -65,7 +65,10 @@ def create_risc_decoder( encodings, isa_globals ):
       bit += nbits
     decoder += 'if   ' if i == 0 else '  elif '
     decoder += ' and '.join( reversed(conditions) ) + ':\n'
-    decoder += '    return execute_{}\n'.format( encodings[i][0] )
+    if debug:
+      decoder += '    return "{0}", execute_{0}\n'.format( encodings[i][0] )
+    else:
+      decoder += '    return execute_{}\n'.format( encodings[i][0] )
 
   source = py.code.Source('''
 @rpython.rlib.jit.elidable
