@@ -105,7 +105,29 @@ def entry_point( argv ):
 # target
 #-----------------------------------------------------------------------
 # Enables RPython translation of our interpreter.
-def target( *args ):
+def target( driver, args ):
+
+  # if --debug flag is provided in translation, we enable debug printing
+
+  #if "--debug" in args:
+  #  print "Enabling debugging"
+  #  Debug.global_enabled = True
+  #else:
+  #  print "Disabling debugging"
+
+  # form a name
+  exe_name = "pydgin-arm"
+  if driver.config.translation.jit:
+    exe_name += "-jit"
+  else:
+    exe_name += "-nojit"
+
+  #if Debug.global_enabled:
+  #  exe_name += "-debug"
+
+  print "Translated binary name:", exe_name
+  driver.exe_name = exe_name
+
   return entry_point, None
 
 #-----------------------------------------------------------------------
