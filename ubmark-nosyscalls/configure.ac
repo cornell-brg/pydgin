@@ -78,7 +78,7 @@ MCPPBS_PROG_INSTALL
 # This simulator will be used for running unit test programs in
 # non-native builds.
 
-MCPPBS_PROG_RUN
+#MCPPBS_PROG_RUN
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject includes
