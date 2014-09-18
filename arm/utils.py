@@ -371,7 +371,7 @@ def condition_passed( s, cond ):
   elif cond == 0b0110: passed =     s.V
   elif cond == 0b0111: passed = not s.V
   elif cond == 0b1000: passed = s.C and (not s.Z)
-  elif cond == 0b1001: passed = (not s.C) and s.Z
+  elif cond == 0b1001: passed = (not s.C) or s.Z
   elif cond == 0b1010: passed = s.N == s.V
   elif cond == 0b1011: passed = s.N != s.V
   elif cond == 0b1100: passed = (not s.Z) and (s.N == s.V)
