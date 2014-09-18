@@ -101,6 +101,12 @@ def run( state ):
       print
     if s.debug.enabled( "regdump" ):
       s.rf.print_regs()
+      print '%s' % (
+        'N' if s.N else '-',
+        'Z' if s.Z else '-',
+        'C' if s.C else '-',
+        'V' if s.V else '-'
+      )
 
     if s.pc < old:
       jitdriver.can_enter_jit(
