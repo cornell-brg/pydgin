@@ -467,7 +467,7 @@ def execute_cmp( s, inst ):
     s.N = (result >> 31)&1
     s.Z = trim_32( result ) == 0
     s.C = not borrow_from( result )
-    s.V = overflow_from_sub( b, a, result )
+    s.V = overflow_from_sub( a, b, result )
   s.pc += 4
 
 #-----------------------------------------------------------------------
