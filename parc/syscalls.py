@@ -467,14 +467,18 @@ def syscall_lseek( s ):
   errno = 0
 
   try:
-    os.lseek( fd, pos, how )
+    # NOTE: rpython gives some weird errors in rtyping stage if we don't
+    # explicitly cast the return value of os.lseek to int
+
+    new_pos = int( os.lseek( fd, pos, how ) )
 
   except OSError as e:
     if s.debug.enabled( "syscalls" ):
       print "OSError in syscall_lseek. errno=%d" % e.errno
     errno = e.errno
+    new_pos = -1
 
-  return_from_syscall( s, 0 if errno == 0 else -1, errno )
+  return_from_syscall( s, new_pos, errno )
 
 #-------------------------------------------------------------------------
 # fstat
