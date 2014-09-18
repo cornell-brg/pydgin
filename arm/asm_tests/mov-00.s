@@ -1,6 +1,6 @@
 # The instruction we are testing, result is in r1
 
-mov r0, #1
+mov r4, #1
 
 # Terminate the program by calling the exit syscall (1)
 
