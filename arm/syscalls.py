@@ -98,15 +98,15 @@ file_descriptors = {
 #-----------------------------------------------------------------------
 def syscall_exit( s ):
   exit_code = s.rf[ a0 ]
-  print
-  print "NUM  INSTS:", s.ncycles
-  print "EXIT CODE: %d (1)" % exit_code
+  print "num_instructions:", s.ncycles,
+  print "exit_code: %d ::" % exit_code,
   # TODO: this is an okay way to terminate the simulator?
   #       sys.exit(1) is not valid python
 
   # TODO: it seems like ARM ignores the exit_code when setting the
   #       return status value.  Is this okay?
-  s.status = 1
+  s.status   = 1
+  s.rf[ v0 ] = 1
 
 #-----------------------------------------------------------------------
 # read
