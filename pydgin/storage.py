@@ -9,9 +9,13 @@ from debug            import Debug, pad, pad_hex
 # RegisterFile
 #-----------------------------------------------------------------------
 class RegisterFile( object ):
-  def __init__( self ):
-    self.regs  = [0] * 32
-    self.debug = Debug()
+  def __init__( self, constant_zero=True, num_regs=32 ):
+    self.num_regs = num_regs
+    self.regs     = [0] * self.num_regs
+    self.debug    = Debug()
+
+    if constant_zero: self._setitemimpl = self._set_item_const_zero
+    else:             self._setitemimpl = self._set_item
   def __getitem__( self, idx ):
     if self.debug.enabled( "rf" ):
       print ':: RD.RF[%s] = %s' % (
@@ -19,6 +23,15 @@ class RegisterFile( object ):
                           pad_hex( self.regs[idx]) ),
     return self.regs[idx]
   def __setitem__( self, idx, value ):
+    self._setitemimpl( idx, value )
+
+  def _set_item( self, idx, value ):
+    self.regs[idx] = value
+    if self.debug.enabled( "rf" ):
+      print ':: WR.RF[%s] = %s' % (
+                        pad( "%d" % idx, 2 ),
+                        pad_hex( self.regs[idx] ) ),
+  def _set_item_const_zero( self, idx, value ):
     if idx != 0:
       self.regs[idx] = value
       if self.debug.enabled( "rf" ):
@@ -30,12 +43,11 @@ class RegisterFile( object ):
   # print_regs
   #-----------------------------------------------------------------------
   # prints all registers (register dump)
-  def print_regs( self ):
-    num_regs = 32
-    per_row  = 6
-    for c in xrange( 0, num_regs, per_row ):
+  # per_row specifies the number of registers to display per row
+  def print_regs( self, per_row=6 ):
+    for c in xrange( 0, self.num_regs, per_row ):
       str = ""
-      for r in xrange( c, min( num_regs, c+per_row ) ):
+      for r in xrange( c, min( self.num_regs, c+per_row ) ):
         str += "%s:%s " % ( pad( "%d" % r, 2 ),
                             pad_hex( self.regs[r] ) )
       print str

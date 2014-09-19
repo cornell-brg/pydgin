@@ -19,7 +19,7 @@ def load_program( fp, mem, alignment=0 ):
   for section in sections:
     start_addr = section.addr
     for i, data in enumerate( section.data ):
-      mem[start_addr+i] = data
+      mem.write( start_addr+i, 1, ord( data ) )
 
     # TODO: HACK should really have elf_reader return the entry point
     #       address in the elf header!
@@ -37,7 +37,7 @@ def load_program( fp, mem, alignment=0 ):
       return (val + alignment - 1) & ~(alignment - 1)
     breakpoint = round_up( breakpoint, alignment )
 
-  return mem, entrypoint, breakpoint
+  return entrypoint, breakpoint
 
 #-----------------------------------------------------------------------
 # create_risc_decoder
