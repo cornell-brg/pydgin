@@ -104,7 +104,6 @@ class Memory( object ):
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  _virtualizable_ = [ 'rf.regs[*]' ]
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
     self.rf       = RegisterFile(constant_zero=False)

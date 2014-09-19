@@ -12,7 +12,7 @@ from bootstrap   import syscall_init, memory_size
 from isa         import decode
 
 from pydgin.debug     import Debug, pad, pad_hex
-from rpython.rlib.jit import JitDriver
+from rpython.rlib.jit import JitDriver, hint
 
 #-----------------------------------------------------------------------
 # help message
@@ -51,7 +51,6 @@ def get_location( pc ):
 
 jitdriver = JitDriver( greens =['pc'],
                        reds   =['state'],
-                       virtualizables = ['state'],
                        get_printable_location=get_location,
                      )
 
@@ -72,9 +71,10 @@ def run( state ):
       state    = s,
     )
 
-    pc  = s.pc
-    old = s.pc
-    mem = s.mem
+    # constant-fold pc and mem
+    pc  = hint( s.pc, promote=True )
+    old = pc
+    mem = hint( s.mem, promote=True )
 
     if s.debug.enabled( "insts" ):
       print pad( "%x" % s.pc, 6, " ", False ),
