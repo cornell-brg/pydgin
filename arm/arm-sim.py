@@ -7,9 +7,10 @@ import sys
 sys.path.append('..')
 sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
-from pydgin.misc import load_program
-from bootstrap   import syscall_init, memory_size
-from isa         import decode
+from pydgin.storage import Memory
+from pydgin.misc    import load_program
+from bootstrap      import syscall_init, memory_size
+from isa            import decode
 
 from pydgin.debug     import Debug, pad, pad_hex
 from rpython.rlib.jit import JitDriver, hint
@@ -106,7 +107,7 @@ def run( state ):
     if s.debug.enabled( "insts" ):
       print
     if s.debug.enabled( "regdump" ):
-      s.rf.print_regs()
+      s.rf.print_regs( per_row=4 )
       print '%s%s%s%s' % (
         'N' if s.N else '-',
         'Z' if s.Z else '-',
@@ -186,8 +187,8 @@ def entry_point( argv ):
 
   # Load the program into a memory object
 
-  mem = [chr(0x88)] * memory_size
-  mem, entrypoint, breakpoint = load_program(
+  mem = Memory( size=memory_size, byte_storage=False )
+  entrypoint, breakpoint = load_program(
       open( filename, 'rb' ), mem,
       # TODO: GEM5 uses this alignment, remove?
       alignment = 1<<12

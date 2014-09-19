@@ -2,7 +2,8 @@
 # bootstrap.py
 #=======================================================================
 
-from machine   import State, Memory
+from machine        import State
+#from pydgin.storage import Memory
 
 # Currently these constants are set to match gem5
 memory_size = 2**27
@@ -147,13 +148,13 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
 
   def str_to_mem( mem, val, addr ):
     for i, char in enumerate(val+'\0'):
-      mem[ addr + i ] = char
+      mem.write( addr + i, 1, ord( char ) )
     return addr + len(val) + 1
 
   def int_to_mem( mem, val, addr ):
     # TODO properly handle endianess
     for i in range( 4 ):
-      mem[addr+i] = chr((val >> 8*i) & 0xFF)
+      mem.write( addr+i, 1, (val >> 8*i) & 0xFF )
     return addr + 4
 
   # write end marker to memory
@@ -203,11 +204,11 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   # TODO: why does gem5 do this?
   offset = stack_off[7] - 1
   while offset >= stack_ptr:
-    mem[offset] = '\0'
+    mem.write( offset, 1, ord( '\0' ) )
     offset -= 1
 
   # initialize processor state
-  state = State( Memory(mem), debug, reset_addr=0x1000 )
+  state = State( mem, debug, reset_addr=0x1000 )
 
   if debug:
     print '---'

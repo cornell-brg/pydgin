@@ -93,6 +93,34 @@ file_descriptors = {
   2: sys.stderr.fileno(),
 }
 
+#-------------------------------------------------------------------------
+# get_str
+#-------------------------------------------------------------------------
+# gets the python string from a pointer to the simulated memory. If nchars
+# is not provided, reads until a null character.
+
+def get_str( s, ptr, nchars=0 ):
+  str = ""
+  if nchars > 0:
+    for i in xrange( nchars ):
+      str += chr( s.mem.read( ptr + i, 1 ) )
+  else:
+    while s.mem.read( ptr, 1 ) != 0:
+      str += chr( s.mem.read( ptr, 1 ) )
+      ptr += 1
+  return str
+
+#-------------------------------------------------------------------------
+# put_str
+#-------------------------------------------------------------------------
+# puts python string to simulated memory -- note that no null character is
+# added to the end
+
+def put_str( s, ptr, str ):
+  for c in str:
+    s.mem.write( ptr, 1, ord( c ) )
+    ptr += 1
+
 #-----------------------------------------------------------------------
 # exit
 #-----------------------------------------------------------------------
@@ -126,9 +154,8 @@ def syscall_read( s ):
     data        = os.read( fd, nbytes )
     nbytes_read = len( data )
     errno       = 0
-    # Write data to simulated memory
-    for i, char in enumerate( data ):
-      s.mem.data[ data_ptr+i ] = char
+
+    put_str( s, data_ptr, data )
 
   except OSError as e:
     print "OSError in syscall_read: errno=%d" % e.errno
@@ -151,9 +178,7 @@ def syscall_write( s ):
 
   fd = file_descriptors[ file_ptr ]
 
-  # TODO: use mem.read()
-  assert data_ptr >= 0 and nbytes >= 0
-  data = ''.join( s.mem.data[data_ptr:data_ptr+nbytes] )
+  data = get_str( s, data_ptr, nbytes )
 
   try:
     nbytes_written = os.write( fd, data )
@@ -183,10 +208,8 @@ def syscall_open( s ):
       open_flags |= linux
 
   # get the filename
-  filename = s.mem.data[ filename_ptr ]     # TODO: use mem.read()
-  while filename[ -1 ] != '\0':
-    filename_ptr += 1
-    filename += s.mem.data[ filename_ptr ]  # TODO: use mem.read()
+
+  filename = get_str( s, filename_ptr )
 
   try:
     # open vs. os.open():  http://stackoverflow.com/a/15039662
@@ -272,9 +295,7 @@ def syscall_uname( s ):
 
     # TODO: provide char/string block write interface to memory?
     padding = '\0' * (field_nchars - len(field))
-    for char in field + padding:
-      s.mem.data[ mem_addr ] = char
-      mem_addr += 1
+    put_str( s, mem_addr, field + padding )
 
   s.rf[ v0 ] = 0
 
