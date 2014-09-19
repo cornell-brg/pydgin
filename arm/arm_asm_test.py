@@ -13,7 +13,7 @@ import pprint
 # test configuration
 #-----------------------------------------------------------------------
 
-assembler   = 'arm-unknown-linux-uclibcgnueabi-as'
+assembler   = 'arm-unknown-linux-uclibcgnueabi-gcc -nostdlib'
 test_dir    = '../arm/asm_tests'
 
 # arm instruction set simulator
@@ -37,9 +37,10 @@ file_tests = [
 
   #  Filename,  Expected Register File State
 
-  [ 'mov-00.s', {4:1,          N:0, Z:0, C:0, V:0} ],
-  [ 'mov-01.s', {4:0,          N:0, Z:0, C:0, V:0} ],
-  [ 'cmp-00.s', {4:0xFFFFFFFF, N:1, Z:0, C:1, V:0} ],
+  [ 'mov-00.S', {4:1,          N:0, Z:0, C:0, V:0} ],
+  [ 'mov-01.S', {4:0,          N:0, Z:0, C:0, V:0} ],
+  [ 'cmp-00.S', {4:0xFFFFFFFF, N:1, Z:0, C:1, V:0} ],
+
 ]
 
 #-----------------------------------------------------------------------
