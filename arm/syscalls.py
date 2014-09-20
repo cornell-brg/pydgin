@@ -335,6 +335,11 @@ def do_syscall( s, syscall_num ):
     return
 
   # TODO: make prints debug mode only!
-  print syscall_num, syscall_names[ syscall_num ],
+  if s.debug.enabled('syscalls'):
+    print syscall_num, syscall_names[ syscall_num ],
   syscall_funcs[ syscall_num ]( s )
-  print hex(s.rf[ a0 ]),
+  if s.debug.enabled('syscalls'):
+    if s.debug.enabled('insts'):
+      print hex(s.rf[ a0 ]),
+    else:
+      print hex(s.rf[ a0 ])
