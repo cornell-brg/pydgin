@@ -130,7 +130,7 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   # FIXME: this is fails for GEM5's hacky offset...
   #assert offset == stack_ptr
 
-  if debug:
+  if debug.enabled( 'bootstrap' ):
     print 'stack base', hex( stack_base )
     print 'stack min ', hex( stack_ptr )
     print 'stack size', stack_base - stack_ptr
@@ -210,7 +210,7 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   # initialize processor state
   state = State( mem, debug, reset_addr=0x1000 )
 
-  if debug:
+  if debug.enabled( 'bootstrap' ):
     print '---'
     #print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
     #for i, ptr in enumerate(argv_ptrs):
@@ -237,5 +237,9 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   state.rf[ 13 ] = stack_ptr    # stack pointer reg
   state.rf[ 15 ] = state.pc + 8 # pc: pointer to two instructions after the
                                 # currently executing instruction!
+
+  if debug.enabled( 'bootstrap' ):
+    state.rf.print_regs( per_row=4 )
+    print '='* 20, 'end bootstrap', '='*20
 
   return state

@@ -38,6 +38,7 @@ usage: %s <args> <sim_exe> <sim_args>
        mem                memory accesses
        regdump            register dump
        syscalls           syscall information
+       bootstrap          initial stack and register state
 
 """
 
