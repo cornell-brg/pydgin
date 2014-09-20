@@ -13,6 +13,8 @@ page_size   = 8192
 #stack_base = 0x7FFFFFFF
 stack_base = memory_size-1   # TODO: set this correctly!
 
+EMULATE_GEM5 = False
+
 #-----------------------------------------------------------------------
 # syscall_init
 #-----------------------------------------------------------------------
@@ -81,7 +83,8 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   # TODO: handle auxv, envp variables
   auxv = []
   envp = []
-  argv = argv[1:]
+  if EMULATE_GEM5:
+    argv = argv[1:]
   argc = len( argv )
 
   def sum_( x ):
@@ -119,16 +122,19 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   # TODO: round to nearest page size?
   stack_ptr = round_down( stack_base - sum_( stack_nbytes ) )
 
-  # FIXME: this offset seems really wrong, but this is how gem5 does it!
-  #offset    = stack_ptr + sum_( stack_nbytes )
-  offset    = stack_base
+  if EMULATE_GEM5:
+    # FIXME: this offset seems really wrong, but this is how gem5 does it!
+    offset  = stack_base
+  else:
+    offset  = stack_ptr + sum_( stack_nbytes )
 
   stack_off = []
   for nbytes in stack_nbytes:
     offset -= nbytes
     stack_off.append( offset )
   # FIXME: this is fails for GEM5's hacky offset...
-  #assert offset == stack_ptr
+  if not EMULATE_GEM5:
+    assert offset == stack_ptr
 
   if debug.enabled( 'bootstrap' ):
     print 'stack base', hex( stack_base )
