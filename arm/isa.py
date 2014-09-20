@@ -2,12 +2,24 @@
 # isa.py
 #=======================================================================
 
-from utils import shifter_operand
-from utils import trim_32, trim_16, trim_8
-from utils import condition_passed, carry_from, borrow_from
-from utils import overflow_from_add, overflow_from_sub
-from utils import sign_extend_30, signed
-from utils import addressing_mode_2, addressing_mode_3, addressing_mode_4
+from utils import (
+  shifter_operand,
+  trim_32,
+  trim_16,
+  trim_8,
+  condition_passed,
+  carry_from,
+  borrow_from,
+  overflow_from_add,
+  overflow_from_sub,
+  sign_extend_30,
+  sign_extend_half,
+  sign_extend_byte,
+  signed,
+  addressing_mode_2,
+  addressing_mode_3,
+  addressing_mode_4,
+)
 
 from instruction import *
 from pydgin.misc import create_risc_decoder
@@ -102,6 +114,7 @@ encodings = [
   ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'], # ambiguous with and
   ['strh',     'xxxx000xxxx0xxxxxxxxxxxx1011xxxx'], # ambiguous with orr
   ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'], # ambiguous with bic
+  ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'], # ambiguous with bic
   ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'], # ambiguous with eor
 
   ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
@@ -135,7 +148,7 @@ encodings = [
 # ['ldrex',    'xxxx000110001xxxxxxxxxxx1001xxxx'], # v6
 # ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'], # SEE ABOVE
   ['ldrsb',    'xxxx000xxxx1xxxxxxxxxxxx1101xxxx'],
-  ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'],
+#  ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'], # SEE ABOVE
   ['ldrt',     'xxxx01x0x011xxxxxxxxxxxxxxxxxxxx'],
   ['mcr',      'xxxx1110xxx0xxxxxxxxxxxxxxx1xxxx'],
   ['mcr2',     '11111110xxx0xxxxxxxxxxxxxxx1xxxx'],
@@ -635,9 +648,19 @@ def execute_ldrsb( s, inst ):
 # ldrsh
 #-----------------------------------------------------------------------
 def execute_ldrsh( s, inst ):
-  raise Exception('"ldrsh" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+
+    addr = addressing_mode_3( s, inst )
+
+    # TODO: support multiple memory accessing modes?
+    # MemoryAccess( s.B, s.E )
+    # TODO: alignment fault checking?
+    # if (CP15_reg1_Ubit == 0) and address[0] == 0b1:
+    #   UNPREDICTABLE
+
+    s.rf[ rd(inst) ] = sign_extend_half( s.mem.read( addr, 2 ) )
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
