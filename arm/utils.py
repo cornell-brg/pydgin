@@ -427,6 +427,24 @@ def sign_extend_30( value ):
   return value
 
 #-----------------------------------------------------------------------
+# sign_extend_half
+#-----------------------------------------------------------------------
+# Sign extend 16-bit immediate fields.
+def sign_extend_half( value ):
+  if value & 0x8000:
+    return 0xFFFF0000 | value
+  return value
+
+#-----------------------------------------------------------------------
+# sign_extend_byte
+#-----------------------------------------------------------------------
+# Sign extend 8-bit immediate fields.
+def sign_extend_byte( value ):
+  if value & 0x80:
+    return 0xFFFFFF00 | value
+  return value
+
+#-----------------------------------------------------------------------
 # popcount
 #-----------------------------------------------------------------------
 # Implementation shamelessly borrowed from:
