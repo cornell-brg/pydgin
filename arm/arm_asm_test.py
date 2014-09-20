@@ -37,6 +37,8 @@ file_tests = [
 
   #  Filename,  Expected Register File State
 
+  [ 'add-00.S', {1:0,          N:0, Z:1, C:0, V:0} ],
+  [ 'add-01.S', {1:0x80000000, N:1, Z:0, C:0, V:1} ],
   [ 'mov-00.S', {4:1,          N:0, Z:0, C:0, V:0} ],
   [ 'mov-01.S', {4:0,          N:0, Z:0, C:0, V:0} ],
   [ 'cmp-00.S', {4:0xFFFFFFFF, N:1, Z:0, C:1, V:0} ],
@@ -84,7 +86,7 @@ def simulate_and_verify( sim, elf_file, expected_out ):
   # verify the output
 
   for key in expected_out:
-    print 'VERIFY: {:8x} == {:8x}'.format( rf[ key ], expected_out[ key ] )
+    print 'VERIFY {:1s}: {:8x} == {:8x}'.format( str(key), rf[ key ], expected_out[ key ] )
     assert rf[ key ] == expected_out[ key ]
 
 
