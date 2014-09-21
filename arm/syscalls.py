@@ -172,6 +172,9 @@ def syscall_write( s ):
   data_ptr = s.rf[ a1 ]
   nbytes   = s.rf[ a2 ]
 
+  # INST NUMBER 914
+  # INST NUMBER 914
+
   if file_ptr not in file_descriptors:
     s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
     return
@@ -283,7 +286,7 @@ def syscall_uname( s ):
   struct = [
     'Linux',                             # sysname
     'm5.eecs.umich.edu',                 # nodename
-    '3.10.2',                            # release
+    '3.12.2',                            # release
     '#1 Mon Aug 18 11:32:15 EDT 2003',   # version
     'armv7l',                            # machine
   ]
@@ -296,6 +299,7 @@ def syscall_uname( s ):
     # TODO: provide char/string block write interface to memory?
     padding = '\0' * (field_nchars - len(field))
     put_str( s, mem_addr, field + padding )
+    mem_addr += field_nchars
 
   s.rf[ v0 ] = 0
 
