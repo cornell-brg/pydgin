@@ -18,7 +18,7 @@ test_dir    = '../arm/asm_tests'
 
 # arm instruction set simulator
 
-dbg_opts    = '--debug insts,mem,regdump'
+dbg_opts    = '--debug insts,mem,regdump,syscalls'
 
 python_dbg  = 'python ../arm/arm-sim.py {}'   .format( dbg_opts )
 transl_dbg  = '../arm/pydgin-arm-jit-debug {}'.format( dbg_opts )
