@@ -116,6 +116,7 @@ encodings = [
   ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'], # ambiguous with bic
   ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'], # ambiguous with bic
   ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'], # ambiguous with eor
+  ['umull',    'xxxx0000100xxxxxxxxxxxxx1001xxxx'], # ambiguous with add
 
   ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
   ['add',      'xxxx00x0100xxxxxxxxxxxxxxxxxxxxx'],
@@ -255,7 +256,7 @@ encodings = [
 # ['uhsubaddx','xxxx01100111xxxxxxxxxxxx0101xxxx'], # v6
 # ['umaal',    'xxxx00000100xxxxxxxxxxxx1001xxxx'], # v6
   ['umlal',    'xxxx0000101xxxxxxxxxxxxx1001xxxx'],
-  ['umull',    'xxxx0000100xxxxxxxxxxxxx1001xxxx'],
+# ['umull',    'xxxx0000100xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
 # ['uqadd16',  'xxxx01100110xxxxxxxxxxxx0001xxxx'], # v6
 # ['uqadd8',   'xxxx01100110xxxxxxxxxxxx1001xxxx'], # v6
 # ['uqaddsubx','xxxx01100110xxxxxxxxxxxx0011xxxx'], # v6
@@ -378,7 +379,6 @@ def execute_bic( s, inst ):
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = cout
-      s.V = s.V
   s.pc += 4
 
 #-----------------------------------------------------------------------
