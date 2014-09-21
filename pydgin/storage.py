@@ -67,11 +67,9 @@ def Memory( data=None, size=2**10, byte_storage=False ):
 # Memory that uses ints instead of chars
 class _WordMemory( object ):
   def __init__( self, data=None, size=2**10 ):
-    if not data:
-      self.data = [0] * (size >> 2)
-    else:
-      self.data = data
-    self.size = len( self.data ) >> 2
+    self.data  = data if data else [0] * (size >> 2)
+    self.size  = len( self.data ) >> 2
+    self.debug = Debug()
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
@@ -79,16 +77,25 @@ class _WordMemory( object ):
     word = start_addr >> 2
     byte = start_addr &  0b11
 
+    if self.debug.enabled( "mem" ):
+      print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
+
+    value = 0
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
-      return self.data[ word ]
+      value = self.data[ word ]
     elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
       mask = 0xFFFF << (byte * 8)
-      return (self.data[ word ] & mask) >> (byte * 8)
+      value = (self.data[ word ] & mask) >> (byte * 8)
     elif num_bytes == 1:
       mask = 0xFF   << (byte * 8)
-      return (self.data[ word ] & mask) >> (byte * 8)
+      value = (self.data[ word ] & mask) >> (byte * 8)
+    else:
+      raise Exception('Invalid num_bytes: %d!' % num_bytes)
 
-    raise Exception('Not handled value for num_bytes')
+    if self.debug.enabled( "mem" ):
+      print '%s' % pad_hex( value ),
+
+    return value
 
   # this is instruction read, which is otherwise identical to read. The
   # only difference is the elidable annotation, which we assume the
@@ -109,26 +116,26 @@ class _WordMemory( object ):
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
       self.data[ word ] = value
     elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
-      mask = ~(0xFFFF << (byte * 8)) & 0xFFFFFFFF
-      self.data[ word ] = ( self.data[ word ] & mask ) | \
-                          ( (value & 0xFFFF) << (byte * 8) )
+      mask  = ~(0xFFFF << (byte * 8)) & 0xFFFFFFFF
+      value = ( self.data[ word ] & mask ) | ( (value & 0xFFFF) << (byte * 8) )
     elif num_bytes == 1:
-      mask = ~(0xFF   << (byte * 8)) & 0xFFFFFFFF
-      self.data[ word ] = ( self.data[ word ] & mask ) | \
-                          ( (value & 0xFF  ) << (byte * 8) )
+      mask  = ~(0xFF   << (byte * 8)) & 0xFFFFFFFF
+      value = ( self.data[ word ] & mask ) | ( (value & 0xFF  ) << (byte * 8) )
     else:
-      raise Exception('Not handled value for num_bytes')
+      raise Exception('Invalid num_bytes: %d!' % num_bytes)
+
+    if self.debug.enabled( "mem" ):
+      print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
+                                     pad_hex( value ) ),
+    self.data[ word ] = value
 
 #-----------------------------------------------------------------------
 # _ByteMemory
 #-----------------------------------------------------------------------
 class _ByteMemory( object ):
   def __init__( self, data=None, size=2**10 ):
-    if not data:
-      self.data = [' '] * size
-    else:
-      self.data = data
-    self.size = len( self.data )
+    self.data  = data if data else [' '] * size
+    self.size  = len( self.data )
     self.debug = Debug()
 
   def bounds_check( self, addr ):
