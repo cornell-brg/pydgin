@@ -7,11 +7,16 @@ TESTS = read-test.c \
 				open-close-test.c \
 				args-test.c \
 
+ARM_TESTS = uname-test.c \
+
 # TODO: create objects first?
 
 NATIVE_TARGETS = $(patsubst %.c, %-native, $(TESTS))
 MAVEN_TARGETS  = $(patsubst %.c, %-maven,  $(TESTS))
 ARM_TARGETS    = $(patsubst %.c, %-arm,    $(TESTS))
+
+NATIVE_TARGETS+= $(patsubst %.c, %-native, $(ARM_TESTS))
+ARM_TARGETS   += $(patsubst %.c, %-arm,    $(ARM_TESTS))
 
 all : $(NATIVE_TARGETS) $(MAVEN_TARGETS) $(ARM_TARGETS)
 
