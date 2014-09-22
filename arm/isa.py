@@ -109,6 +109,7 @@ encodings = [
   ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'], # ambiguous with bic
   ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'], # ambiguous with eor
   ['umull',    'xxxx0000100xxxxxxxxxxxxx1001xxxx'], # ambiguous with add
+  ['smull',    'xxxx0000110xxxxxxxxxxxxx1001xxxx'], # ambiguous with sbc
 
   ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
   ['add',      'xxxx00x0100xxxxxxxxxxxxxxxxxxxxx'],
@@ -203,7 +204,7 @@ encodings = [
 # ['smmls',    'xxxx01110101xxxxxxxxxxxx11x1xxxx'], # v6
 # ['smmul',    'xxxx01110101xxxx1111xxxx00x1xxxx'], # v6
 # ['smuad',    'xxxx01110000xxxx1111xxxx00x1xxxx'], # v6
-  ['smull',    'xxxx0000110xxxxxxxxxxxxx1001xxxx'],
+# ['smull',    'xxxx0000110xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
 #?['smul_xy',  'xxxx00010110xxxxxxxxxxxx1xx0xxxx'],
 #?['smulw',    'xxxx00010010xxxxxxxxxxxx1x10xxxx'],
 # ['smusd',    'xxxx01110000xxxx1111xxxx01x1xxxx'], # v6
@@ -891,9 +892,24 @@ def execute_smlal( s, inst ):
 # smull
 #-----------------------------------------------------------------------
 def execute_smull( s, inst ):
-  raise Exception('"smull" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rm(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rs(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rn(inst) == 15: raise Exception('UNPREDICTABLE')
+
+    RdHi, RdLo  = rn(inst), rd(inst)
+    Rm,   Rs    = signed(s.rf[ rm(inst) ]), signed(s.rf[ rs(inst) ])
+    result      = Rm * Rs
+
+    if RdHi == RdLo: raise Exception('UNPREDICTABLE')
+
+    s.rf[ RdHi ] = trim_32( result >> 32 )
+    s.rf[ RdLo ] = trim_32( result )
+
+    if S(inst):
+      s.N = (result >> 63)&1
+      s.Z = result == 0
   s.pc += 4
 
 #-----------------------------------------------------------------------
