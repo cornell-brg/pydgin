@@ -29,39 +29,31 @@ from pydgin.misc import create_risc_decoder
 #=======================================================================
 
 reg_map = {
-  '$0'   :  0,   '$1'   :  1,   '$2'   :  2,   '$3'   :  3,
-  '$4'   :  4,   '$5'   :  5,   '$6'   :  6,   '$7'   :  7,
-  '$8'   :  8,   '$9'   :  9,   '$10'  : 10,   '$11'  : 11,
-  '$12'  : 12,   '$13'  : 13,   '$14'  : 14,   '$15'  : 15,
-  '$16'  : 16,   '$17'  : 17,   '$18'  : 18,   '$19'  : 19,
-  '$20'  : 20,   '$21'  : 21,   '$22'  : 22,   '$23'  : 23,
-  '$24'  : 24,   '$25'  : 25,   '$26'  : 26,   '$27'  : 27,
-  '$28'  : 28,   '$29'  : 29,   '$30'  : 30,   '$31'  : 31,
 
   'r0'   :  0,   'r1'   :  1,   'r2'   :  2,   'r3'   :  3,
   'r4'   :  4,   'r5'   :  5,   'r6'   :  6,   'r7'   :  7,
   'r8'   :  8,   'r9'   :  9,   'r10'  : 10,   'r11'  : 11,
   'r12'  : 12,   'r13'  : 13,   'r14'  : 14,   'r15'  : 15,
-  'r16'  : 16,   'r17'  : 17,   'r18'  : 18,   'r19'  : 19,
-  'r20'  : 20,   'r21'  : 21,   'r22'  : 22,   'r23'  : 23,
-  'r24'  : 24,   'r25'  : 25,   'r26'  : 26,   'r27'  : 27,
-  'r28'  : 28,   'r29'  : 29,   'r30'  : 30,   'r31'  : 31,
 
   # http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0473c/CJAJBFHC.html
+  # http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0041c/ch09s02s02.html
+  # http://msdn.microsoft.com/en-us/library/aa448762.aspx
 
-  'a1'   :  0,   'a2'   :  1,   'a3'   :  2,   'a4'   :  3,
-  'v1'   :  4,   'v2'   :  5,   'v3'   :  6,   'v4'   :  7,
-  'v5'   :  8,   'v6'   :  9,   'v7'   : 10,   'v8'   : 11,
+  'a1'   :  0,   'a2'   :  1,   'a3'   :  2,   'a4'   :  3, # scratch  registers
+  'v1'   :  4,   'v2'   :  5,   'v3'   :  6,   'v4'   :  7, # variable registers
+  'v5'   :  8,   'v6'   :  9,   'v7'   : 10,   'v8'   : 11, # variable registers
 
-  'sb'   :  9,  # static base
-  'ip'   : 12,  # intra procedure call scratch
+  'sb'   :  9,  # stack base
+  'sl'   : 10,  # stack limit
+  'fp'   : 11,  # frame pointer
+  'ip'   : 12,  # intra-procedure call scratch
   'sp'   : 13,  # stack pointer
   'lr'   : 14,  # link register
+  'pc'   : 15,  # pc
   # NOTE: in ARM the PC is address of the current instruction being
   #       executed + 8!! That means for a given cycle in our simulator,
   #       PC read by fetch and PC read by execute need different values.
   #       Best way to do this?
-  'pc'   : 15,  # pc
 
   # cpsr/spsr bits
   #
