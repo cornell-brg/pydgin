@@ -1096,7 +1096,7 @@ def execute_umull( s, inst ):
 
     RdHi, RdLo  = rn(inst), rd(inst)
     Rm,   Rs    = s.rf[ rm(inst) ], s.rf[ rs(inst) ]
-    result      = trim_32(Rm * Rs)
+    result      = Rm * Rs
 
     if RdHi == RdLo: raise Exception('UNPREDICTABLE')
 
