@@ -355,10 +355,9 @@ def execute_b( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bl( s, inst ):
   if condition_passed( s, cond(inst) ):
-    s.rf[LR] = s.rf[PC] + 4
+    s.rf[LR] = trim_32( s.fetch_pc + 4 )
     offset   = signed( sign_extend_30( imm_24( inst ) ) << 2 )
     s.rf[PC] = trim_32( s.rf[PC] + offset )
-    raise Exception("UPDATING LR/PC NOT TESTED", s.rf[LR], s.rf[PC] )
     return
   s.rf[PC] = s.fetch_pc + 4
 
@@ -397,10 +396,9 @@ def execute_blx1( s, inst ):
 #-----------------------------------------------------------------------
 def execute_blx2( s, inst ):
   if condition_passed( s, cond(inst) ):
-    s.rf[LR] = trim_32( s.rf[PC] + 4 )
+    s.rf[LR] = trim_32( s.fetch_pc + 4 )
     s.T      = s.rf[ rm(inst) ] & 0x00000001
     s.rf[PC] = s.rf[ rm(inst) ] & 0xFFFFFFFE
-    raise Exception("UPDATING LR/PC NOT TESTED", s.rf[LR], s.rf[PC] )
     if s.T:
       raise Exception( "Entering THUMB mode! Unsupported!")
 
@@ -415,7 +413,6 @@ def execute_bx( s, inst ):
   if condition_passed( s, cond(inst) ):
     s.T      = s.rf[ rm(inst) ] & 0x00000001
     s.rf[PC] = s.rf[ rm(inst) ] & 0xFFFFFFFE
-    raise Exception("UPDATING PC NOT TESTED", s.rf[PC] )
     if s.T:
       raise Exception( "Entering THUMB mode! Unsupported!")
 
@@ -546,7 +543,6 @@ def execute_ldm1( s, inst ):
 
     if register_mask & 0b1:  # reg 15
       s.rf[PC] = s.mem.read( addr, 4 ) & 0xFFFFFFFE
-      raise Exception("UPDATING PC NOT TESTED", s.rf[PC] )
       s.T  = s.rf[PC] & 0b1
       if s.T: raise Exception( "Entering THUMB mode! Unsupported!")
       assert end_addr == addr
@@ -596,7 +592,6 @@ def execute_ldr( s, inst ):
 
     if rd(inst) == 15:
       s.rf[PC] = data & 0xFFFFFFFE
-      raise Exception("UPDATING PC NOT TESTED", s.rf[PC] )
       s.T  = data & 0b1
       return
     else:
