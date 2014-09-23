@@ -241,7 +241,7 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   state.rf[  1 ] = stack_off[6] # argument 1 reg = argv ptr addr
   state.rf[  2 ] = stack_off[5] # argument 2 reg = envp ptr addr
   state.rf[ 13 ] = stack_ptr    # stack pointer reg
-  state.rf[ 15 ] = entrypoint+8 # program counter
+  state.rf[ 15 ] = entrypoint   # program counter
 
   if debug.enabled( 'bootstrap' ):
     state.rf.print_regs( per_row=4 )

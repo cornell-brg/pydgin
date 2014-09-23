@@ -278,7 +278,7 @@ LR = reg_map['lr']
 #=======================================================================
 
 def execute_nop( s, inst ):
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # adc
@@ -295,7 +295,10 @@ def execute_adc( s, inst ):
       s.Z = trim_32( result ) == 0
       s.C = carry_from( result )
       s.V = overflow_from_add( a, b, result )
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # add
@@ -314,8 +317,8 @@ def execute_add( s, inst ):
       s.V = overflow_from_add( a, b, result )
 
     if rd(inst) == 15:
-      raise Exception()
-  s.rf[PC] += 4
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # and
@@ -332,7 +335,10 @@ def execute_and( s, inst ):
       s.Z = trim_32( result ) == 0
       s.C = cout
       s.V = s.V
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # b
@@ -341,9 +347,8 @@ def execute_b( s, inst ):
   if condition_passed( s, cond(inst) ):
     offset   = signed( sign_extend_30( imm_24( inst ) ) << 2 )
     s.rf[PC] = trim_32( s.rf[PC] + offset )
-    raise Exception("UPDATING PC NOT TESTED", s.rf[LR], s.rf[PC] )
     return
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # bl
@@ -355,7 +360,7 @@ def execute_bl( s, inst ):
     s.rf[PC] = trim_32( s.rf[PC] + offset )
     raise Exception("UPDATING LR/PC NOT TESTED", s.rf[LR], s.rf[PC] )
     return
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # bic
@@ -371,21 +376,21 @@ def execute_bic( s, inst ):
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = cout
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # bkpt
 #-----------------------------------------------------------------------
 def execute_bkpt( s, inst ):
   raise Exception('"bkpt" instruction unimplemented!')
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # blx1
 #-----------------------------------------------------------------------
 def execute_blx1( s, inst ):
   raise Exception('Called blx1: Entering THUMB mode! Unsupported')
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # blx2
@@ -400,7 +405,8 @@ def execute_blx2( s, inst ):
       raise Exception( "Entering THUMB mode! Unsupported!")
 
   # no pc + 4 on success
-  else: s.rf[PC] += 4
+  else:
+    s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # bx
@@ -414,7 +420,8 @@ def execute_bx( s, inst ):
       raise Exception( "Entering THUMB mode! Unsupported!")
 
   # no pc + 4 on success
-  else: s.rf[PC] += 4
+  else:
+    s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # cdp
@@ -423,7 +430,7 @@ def execute_cdp( s, inst ):
   raise Exception('"cdp" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # clz
@@ -446,7 +453,9 @@ def execute_clz( s, inst ):
       assert leading_zeros != 32
       s.rf[ rd(inst) ] = leading_zeros
 
-  s.rf[PC] += 4
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # cmn
@@ -460,7 +469,10 @@ def execute_cmn( s, inst ):
     s.Z = trim_32( result ) == 0
     s.C = carry_from( result )
     s.V = overflow_from_add( a, b, result )
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # cmp
@@ -474,7 +486,10 @@ def execute_cmp( s, inst ):
     s.Z = trim_32( result ) == 0
     s.C = not borrow_from( result )
     s.V = overflow_from_sub( a, b, result )
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # eor
@@ -491,7 +506,10 @@ def execute_eor( s, inst ):
       s.Z = trim_32( result ) == 0
       s.C = cout
       s.V = s.V
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldc
@@ -500,14 +518,14 @@ def execute_ldc( s, inst ):
   raise Exception('"ldc" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldc2
 #-----------------------------------------------------------------------
 def execute_ldc2( s, inst ):
   raise Exception('"ldc2" instruction unimplemented!')
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldm1
@@ -536,7 +554,7 @@ def execute_ldm1( s, inst ):
 
     assert end_addr == addr - 4
 
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldm2
@@ -545,7 +563,7 @@ def execute_ldm2( s, inst ):
   raise Exception('"ldm2" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldm3
@@ -554,7 +572,7 @@ def execute_ldm3( s, inst ):
   raise Exception('"ldm3" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldr
@@ -584,7 +602,7 @@ def execute_ldr( s, inst ):
     else:
       s.rf[ rd(inst) ] = data
 
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldrb
@@ -600,7 +618,7 @@ def execute_ldrb( s, inst ):
 
     s.rf[ rd(inst) ] = s.mem.read( addr, 1 )
 
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldrbt
@@ -609,7 +627,7 @@ def execute_ldrbt( s, inst ):
   raise Exception('"ldrbt" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldrh
@@ -628,7 +646,7 @@ def execute_ldrh( s, inst ):
 
     s.rf[ rd(inst) ] = s.mem.read( addr, 2 )
 
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldrsb
@@ -637,7 +655,7 @@ def execute_ldrsb( s, inst ):
   raise Exception('"ldsb" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldrsh
@@ -656,7 +674,7 @@ def execute_ldrsh( s, inst ):
 
     s.rf[ rd(inst) ] = sign_extend_half( s.mem.read( addr, 2 ) )
 
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # ldrt
@@ -665,7 +683,7 @@ def execute_ldrt( s, inst ):
   raise Exception('"ldrt" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mcr
@@ -674,14 +692,14 @@ def execute_mcr( s, inst ):
   raise Exception('"mcr" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mcr2
 #-----------------------------------------------------------------------
 def execute_mcr2( s, inst ):
   raise Exception('"mcr2" instruction unimplemented!')
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mcrr
@@ -690,14 +708,14 @@ def execute_mcrr( s, inst ):
   raise Exception('"mcrr" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mcrr2
 #-----------------------------------------------------------------------
 def execute_mcrr2( s, inst ):
   raise Exception('"mcrr2" instruction unimplemented!')
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mla
@@ -717,7 +735,7 @@ def execute_mla( s, inst ):
       s.N = (result >> 31)&1
       s.Z = result == 0
 
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mov
@@ -739,9 +757,8 @@ def execute_mov( s, inst ):
       s.V = s.V
 
     if rd(inst) == 15:
-      raise Exception()
-
-  s.rf[PC] += 4
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mrc
@@ -750,14 +767,14 @@ def execute_mrc( s, inst ):
   raise Exception('"mrc" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mrc2
 #-----------------------------------------------------------------------
 def execute_mrc2( s, inst ):
   raise Exception('"mrc2" instruction unimplemented!')
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mrs
@@ -766,7 +783,7 @@ def execute_mrs( s, inst ):
   raise Exception('"mrs" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # msr
@@ -775,7 +792,7 @@ def execute_msr( s, inst ):
   raise Exception('"msr" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mul
@@ -792,7 +809,10 @@ def execute_mul( s, inst ):
       if rs(inst) == 15: raise Exception('UNPREDICTABLE')
       s.N = (result >> 31)&1
       s.Z = result == 0
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # mvn
@@ -809,7 +829,10 @@ def execute_mvn( s, inst ):
       s.Z = trim_32( result ) == 0
       s.C = cout
       s.V = s.V
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # orr
@@ -826,7 +849,10 @@ def execute_orr( s, inst ):
       s.Z = trim_32( result ) == 0
       s.C = cout
       s.V = s.V
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # rsb
@@ -843,7 +869,10 @@ def execute_rsb( s, inst ):
       s.Z = trim_32( result ) == 0
       s.C = not borrow_from( result )
       s.V = overflow_from_sub( b, a, result )
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # rsc
@@ -860,7 +889,10 @@ def execute_rsc( s, inst ):
       s.Z = trim_32( result ) == 0
       s.C = not borrow_from( result )
       s.V = overflow_from_sub( b, a, result )
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # sbc
@@ -877,7 +909,10 @@ def execute_sbc( s, inst ):
       s.Z = trim_32( result ) == 0
       s.C = not borrow_from( result )
       s.V = overflow_from_sub( a, b, result )
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # smlal
@@ -886,7 +921,7 @@ def execute_smlal( s, inst ):
   raise Exception('"smlal" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # smull
@@ -910,7 +945,7 @@ def execute_smull( s, inst ):
     if S(inst):
       s.N = (result >> 63)&1
       s.Z = result == 0
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # stc
@@ -919,7 +954,7 @@ def execute_stc( s, inst ):
   raise Exception('"stc" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # stm1
@@ -939,7 +974,7 @@ def execute_stm1( s, inst ):
       register_mask >>= 1
 
     assert end_addr == addr - 4
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # stm2
@@ -948,7 +983,7 @@ def execute_stm2( s, inst ):
   raise Exception('"stm2" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # str
@@ -963,7 +998,7 @@ def execute_str( s, inst ):
 
     s.mem.write( addr, 4, s.rf[ rd(inst) ] )
 
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # strb
@@ -975,7 +1010,7 @@ def execute_strb( s, inst ):
 
     s.mem.write( addr, 1, trim_8( s.rf[ rd(inst) ] ) )
 
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # strbt
@@ -984,7 +1019,7 @@ def execute_strbt( s, inst ):
   raise Exception('"strbt" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # strh
@@ -1002,14 +1037,14 @@ def execute_strh( s, inst ):
 
     s.mem.write( addr, 2, s.rf[ rd(inst) ] & 0xFFFF )
 
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # strt
 #-----------------------------------------------------------------------
 def execute_strt( s, inst ):
   raise Exception('"strt" instruction unimplemented!')
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # sub
@@ -1026,7 +1061,10 @@ def execute_sub( s, inst ):
       s.Z = trim_32( result ) == 0
       s.C = not borrow_from( result )
       s.V = overflow_from_sub( a, b, result )
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # swi
@@ -1035,7 +1073,7 @@ from syscalls import do_syscall
 def execute_swi( s, inst ):
   if condition_passed( s, cond(inst) ):
     do_syscall( s, s.rf[7] )
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # swp
@@ -1044,7 +1082,7 @@ def execute_swp( s, inst ):
   raise Exception('"swp" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # swpb
@@ -1053,7 +1091,7 @@ def execute_swpb( s, inst ):
   raise Exception('"swpb" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # teq
@@ -1067,7 +1105,10 @@ def execute_teq( s, inst ):
       s.N = (result >> 31)&1
       s.Z = result == 0
       s.C = cout
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # tst
@@ -1081,7 +1122,10 @@ def execute_tst( s, inst ):
       s.N = (result >> 31)&1
       s.Z = result == 0
       s.C = cout
-  s.rf[PC] += 4
+
+    if rd(inst) == 15:
+      return
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # umlal
@@ -1090,7 +1134,7 @@ def execute_umlal( s, inst ):
   raise Exception('"umlal" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
     pass
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
 # umull
@@ -1114,7 +1158,7 @@ def execute_umull( s, inst ):
     if S(inst):
       s.N = (result >> 63)&1
       s.Z = result == 0
-  s.rf[PC] += 4
+  s.rf[PC] = s.fetch_pc + 4
 
 #=======================================================================
 # Create Decoder

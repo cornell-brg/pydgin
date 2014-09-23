@@ -3,6 +3,7 @@
 #=======================================================================
 
 from pydgin.storage import RegisterFile
+from pydgin.debug   import Debug, pad, pad_hex
 
 #-----------------------------------------------------------------------
 # State
@@ -10,7 +11,7 @@ from pydgin.storage import RegisterFile
 class State( object ):
   def __init__( self, memory, debug, reset_addr=0x400 ):
     #self.pc       = reset_addr
-    self.rf       = RegisterFile(constant_zero=False, num_regs=16)
+    self.rf       = ArmRegisterFile( num_regs=16 )
     self.mem      = memory
 
     self    .debug = debug
@@ -42,5 +43,26 @@ class State( object ):
 
   @property
   def fetch_pc( self ):
-    return self.rf[ 15 ] - 8
+    return self.rf.regs[15]
+
+#-----------------------------------------------------------------------
+# ArmRegisterFile
+#-----------------------------------------------------------------------
+class ArmRegisterFile( RegisterFile ):
+  def __init__( self, num_regs=16 ):
+    super( ArmRegisterFile, self ).__init__( constant_zero=False, num_regs=num_regs )
+
+  def __getitem__( self, idx ):
+    if self.debug.enabled( "rf" ):
+      print ':: RD.RF[%s] = %s%s' % (
+                          pad( "%d" % idx, 2 ),
+                          pad_hex( self.regs[idx] ),
+                          '+ 8' if idx == 15 else ''),
+
+    if idx == 15:
+      return self.regs[15] + 8
+    else:
+      return self.regs[idx]
+
+
 
