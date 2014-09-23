@@ -379,8 +379,9 @@ def condition_passed( s, cond ):
   elif cond == 0b1110: passed = True
   else:                passed = True
 
-  # TODO: make this debug only!
-  #if not passed: print 'Predicated False!',
+  if s.debug.enabled('insts') and not passed:
+    print 'Predicated False!',
+
   return passed
 
 #-----------------------------------------------------------------------
