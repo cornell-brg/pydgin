@@ -106,6 +106,7 @@ encodings = [
   ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'], # ambiguous with and
   ['strh',     'xxxx000xxxx0xxxxxxxxxxxx1011xxxx'], # ambiguous with orr
   ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'], # ambiguous with bic
+  ['ldrsb',    'xxxx000xxxx1xxxxxxxxxxxx1101xxxx'], # ambiguous with bic
   ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'], # ambiguous with bic
   ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'], # ambiguous with eor
   ['umull',    'xxxx0000100xxxxxxxxxxxxx1001xxxx'], # ambiguous with add
@@ -141,8 +142,8 @@ encodings = [
 #?['ldrd',     'xxxx000puiw0xxxxxxxxxxxx1101xxxx'],
 # ['ldrex',    'xxxx000110001xxxxxxxxxxx1001xxxx'], # v6
 # ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'], # SEE ABOVE
-  ['ldrsb',    'xxxx000xxxx1xxxxxxxxxxxx1101xxxx'],
-#  ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'], # SEE ABOVE
+# ['ldrsb',    'xxxx000xxxx1xxxxxxxxxxxx1101xxxx'], # SEE ABOVE
+# ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'], # SEE ABOVE
   ['ldrt',     'xxxx01x0x011xxxxxxxxxxxxxxxxxxxx'],
   ['mcr',      'xxxx1110xxx0xxxxxxxxxxxxxxx1xxxx'],
   ['mcr2',     '11111110xxx0xxxxxxxxxxxxxxx1xxxx'],
@@ -592,7 +593,7 @@ def execute_ldr( s, inst ):
 
     if rd(inst) == 15:
       s.rf[PC] = data & 0xFFFFFFFE
-      s.T  = data & 0b1
+      s.T      = data & 0b1
       return
     else:
       s.rf[ rd(inst) ] = data
@@ -647,9 +648,19 @@ def execute_ldrh( s, inst ):
 # ldrsb
 #-----------------------------------------------------------------------
 def execute_ldrsb( s, inst ):
-  raise Exception('"ldsb" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+
+    addr = addressing_mode_3( s, inst )
+
+    # TODO: support multiple memory accessing modes?
+    # MemoryAccess( s.B, s.E )
+    # TODO: alignment fault checking?
+    # if (CP15_reg1_Ubit == 0) and address[0] == 0b1:
+    #   UNPREDICTABLE
+
+    s.rf[ rd(inst) ] = sign_extend_byte( s.mem.read( addr, 1 ) )
+
   s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
