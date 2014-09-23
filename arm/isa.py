@@ -376,6 +376,9 @@ def execute_bic( s, inst ):
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = cout
+
+    if rd(inst) == 15:
+      return
   s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
