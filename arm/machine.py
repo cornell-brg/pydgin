@@ -50,7 +50,7 @@ class State( object ):
 #-----------------------------------------------------------------------
 class ArmRegisterFile( RegisterFile ):
   def __init__( self, num_regs=16 ):
-    super( ArmRegisterFile, self ).__init__( constant_zero=False, num_regs=num_regs )
+    RegisterFile.__init__( self, constant_zero=False, num_regs=num_regs )
 
   def __getitem__( self, idx ):
     if self.debug.enabled( "rf" ):
