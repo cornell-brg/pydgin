@@ -4,6 +4,7 @@
 
 from utils import (
   shifter_operand,
+  trim_64,
   trim_32,
   trim_16,
   trim_8,
@@ -110,6 +111,7 @@ encodings = [
   ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'], # ambiguous with bic
   ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'], # ambiguous with eor
   ['umull',    'xxxx0000100xxxxxxxxxxxxx1001xxxx'], # ambiguous with add
+  ['umlal',    'xxxx0000101xxxxxxxxxxxxx1001xxxx'], # ambiguous with adc
   ['smull',    'xxxx0000110xxxxxxxxxxxxx1001xxxx'], # ambiguous with sbc
 
   ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
@@ -249,7 +251,7 @@ encodings = [
 # ['uhsub8',   'xxxx01100111xxxxxxxxxxxx1111xxxx'], # v6
 # ['uhsubaddx','xxxx01100111xxxxxxxxxxxx0101xxxx'], # v6
 # ['umaal',    'xxxx00000100xxxxxxxxxxxx1001xxxx'], # v6
-  ['umlal',    'xxxx0000101xxxxxxxxxxxxx1001xxxx'],
+# ['umlal',    'xxxx0000101xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
 # ['umull',    'xxxx0000100xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
 # ['uqadd16',  'xxxx01100110xxxxxxxxxxxx0001xxxx'], # v6
 # ['uqadd8',   'xxxx01100110xxxxxxxxxxxx1001xxxx'], # v6
@@ -1140,9 +1142,25 @@ def execute_tst( s, inst ):
 # umlal
 #-----------------------------------------------------------------------
 def execute_umlal( s, inst ):
-  raise Exception('"umlal" instruction unimplemented!')
   if condition_passed( s, cond(inst) ):
-    pass
+    if rd(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rm(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rs(inst) == 15: raise Exception('UNPREDICTABLE')
+    if rn(inst) == 15: raise Exception('UNPREDICTABLE')
+
+    RdHi, RdLo  = rn(inst), rd(inst)
+    Rm,   Rs    = s.rf[ rm(inst) ], s.rf[ rs(inst) ]
+    accumulate  = (s.rf[ RdHi ] << 32) | s.rf[ RdLo ]
+    result      = (Rm * Rs) + accumulate
+
+    if RdHi == RdLo: raise Exception('UNPREDICTABLE')
+
+    s.rf[ RdHi ] = trim_32( result >> 32 )
+    s.rf[ RdLo ] = trim_32( result )
+
+    if S(inst):
+      s.N = (result >> 63)&1
+      s.Z = trim_64( result ) == 0
   s.rf[PC] = s.fetch_pc + 4
 
 #-----------------------------------------------------------------------
@@ -1166,7 +1184,7 @@ def execute_umull( s, inst ):
 
     if S(inst):
       s.N = (result >> 63)&1
-      s.Z = result == 0
+      s.Z = trim_64( result ) == 0
   s.rf[PC] = s.fetch_pc + 4
 
 #=======================================================================
