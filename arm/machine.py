@@ -41,7 +41,6 @@ class State( object ):
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
 
-  @property
   def fetch_pc( self ):
     return self.rf.regs[15]
 
