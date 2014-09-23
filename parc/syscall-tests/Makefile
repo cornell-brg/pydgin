@@ -6,6 +6,7 @@ TESTS = read-test.c \
 				stat-test.c \
 				open-close-test.c \
 				args-test.c \
+				malloc-test.c \
 
 ARM_TESTS = uname-test.c \
 
