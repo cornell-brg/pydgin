@@ -4,7 +4,6 @@
 
 from utils import (
   shifter_operand,
-  trim_64,
   trim_32,
   trim_16,
   trim_8,
@@ -1160,7 +1159,7 @@ def execute_umlal( s, inst ):
 
     if S(inst):
       s.N = (result >> 63)&1
-      s.Z = trim_64( result ) == 0
+      s.Z = (s.rf[RdHi] == s.rf[RdLo] == 0)
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
@@ -1184,7 +1183,7 @@ def execute_umull( s, inst ):
 
     if S(inst):
       s.N = (result >> 63)&1
-      s.Z = trim_64( result ) == 0
+      s.Z = (s.rf[RdHi] == s.rf[RdLo] == 0)
   s.rf[PC] = s.fetch_pc() + 4
 
 #=======================================================================
