@@ -69,27 +69,27 @@ def run( state ):
   while s.status == 0:
 
     jitdriver.jit_merge_point(
-      pc       = s.pc,
+      pc       = s.fetch_pc,
       state    = s,
     )
 
     # constant-fold pc and mem
-    pc  = hint( s.pc, promote=True )
+    pc  = hint( s.fetch_pc, promote=True )
     old = pc
     mem = hint( s.mem, promote=True )
 
     if s.debug.enabled( "insts" ):
-      print pad( "%x" % s.pc, 6, " ", False ),
+      print pad( "%x" % s.fetch_pc, 6, " ", False ),
 
     # the print statement in memcheck conflicts with @elidable in iread.
     # So we use normal read if memcheck is enabled which includes the
     # memory checks
 
     if s.debug.enabled( "memcheck" ):
-      inst = mem.read( pc, 4 )
+      inst = mem.read( s.fetch_pc, 4 )
     else:
       # we use trace elidable iread instead of just read
-      inst = mem.iread( pc, 4 )
+      inst = mem.iread( s.fetch_pc, 4 )
 
     inst_str, exec_fun = decode( inst )
 
@@ -101,7 +101,6 @@ def run( state ):
 
     exec_fun( s, inst )
 
-    s.rf[15] = s.pc+8 # TODO: should this be done inside instruction definition?
     s.ncycles += 1    # TODO: should this be done inside instruction definition?
     if s.stats_en: s.stat_ncycles += 1
 
@@ -116,9 +115,9 @@ def run( state ):
         'V' if s.V else '-'
       )
 
-    if s.pc < old:
+    if s.fetch_pc < old:
       jitdriver.can_enter_jit(
-        pc       = s.pc,
+        pc       = s.fetch_pc,
         state    = s,
       )
 

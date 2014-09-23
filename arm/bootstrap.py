@@ -233,7 +233,7 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
     print 'STACK_PTR', hex( stack_ptr )
 
   # TODO: where should this go?
-  state.pc         = entrypoint
+  #state.pc         = entrypoint
   state.breakpoint = breakpoint
 
   # initialize processor registers
@@ -241,8 +241,7 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   state.rf[  1 ] = stack_off[6] # argument 1 reg = argv ptr addr
   state.rf[  2 ] = stack_off[5] # argument 2 reg = envp ptr addr
   state.rf[ 13 ] = stack_ptr    # stack pointer reg
-  state.rf[ 15 ] = state.pc + 8 # pc: pointer to two instructions after the
-                                # currently executing instruction!
+  state.rf[ 15 ] = entrypoint+8 # program counter
 
   if debug.enabled( 'bootstrap' ):
     state.rf.print_regs( per_row=4 )

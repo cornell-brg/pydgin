@@ -9,13 +9,15 @@ from pydgin.storage import RegisterFile
 #-----------------------------------------------------------------------
 class State( object ):
   def __init__( self, memory, debug, reset_addr=0x400 ):
-    self.pc       = reset_addr
+    #self.pc       = reset_addr
     self.rf       = RegisterFile(constant_zero=False, num_regs=16)
     self.mem      = memory
 
     self    .debug = debug
     self.rf .debug = debug
     self.mem.debug = debug
+
+    self.rf[ 15 ]  = reset_addr
 
     # current program status register (CPSR)
     self.N    = 0b0      # Negative condition
@@ -37,4 +39,8 @@ class State( object ):
 
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
+
+  @property
+  def fetch_pc( self ):
+    return self.rf[ 15 ] - 8
 
