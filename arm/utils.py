@@ -66,7 +66,7 @@ def shifter_operand( s, inst ):
 
   # Arithmetic or Load/Store instruction extension space
   else:
-    raise Exception('Not a data-processing instruction!')
+    raise Exception('Not a data-processing instruction! PC:', hex(s.fetch_pc))
 
 # Shifter constants
 
