@@ -114,7 +114,7 @@ def shifter_operand_imm( s, inst ):
   else:
     raise Exception('Impossible shift_op!')
 
-  return out, cout
+  return trim_32(out), cout
 
 #-----------------------------------------------------------------------
 # shifter_operand_reg
@@ -156,7 +156,7 @@ def shifter_operand_reg( s, inst ):
   else:
     raise Exception('Impossible shift_op!')
 
-  return out, cout
+  return trim_32(out), cout
 
 #-----------------------------------------------------------------------
 # carry_from
