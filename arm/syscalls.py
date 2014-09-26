@@ -305,6 +305,169 @@ def syscall_ioctl( s ):
   s.rf[ v0 ] = trim_32( result )
 
 #-----------------------------------------------------------------------
+# fstat
+#-------------------------------------------------------------------------
+def syscall_fstat( s ):
+
+  #fd       = s.rf[ a0 ]
+  #buf_ptr  = s.rf[ a1 ]
+
+  #if check_fd( s, fd ):
+  #  return
+
+  #errno = 0
+
+  #try:
+  #  # we get a python stat object
+  #  py_stat = os.fstat( fd )
+
+  #  # we construct a new simulated Stat object
+  #  stat = Stat()
+
+  #  # we convert this and copy it to the memory
+  #  stat.copy_stat_to_mem( py_stat, s.mem, buf_ptr )
+
+  #except OSError as e:
+  #  if s.debug.enabled( "syscalls" ):
+  #    print "OSError in syscall_fstat. errno=%d" % e.errno
+  #  errno = e.errno
+
+  #return_from_syscall( s, 0 if errno == 0 else -1, errno )
+  return 0
+
+#-------------------------------------------------------------------------
+# stat
+#-------------------------------------------------------------------------
+def syscall_stat( s ):
+
+  #path_ptr = s.rf[ a0 ]
+  #buf_ptr  = s.rf[ a1 ]
+
+  #path = get_str( s, path_ptr )
+
+  #errno = 0
+
+  #try:
+  #  # we get a python stat object
+  #  py_stat = os.stat( path )
+
+  #  # we construct a new simulated Stat object
+  #  stat = Stat()
+
+  #  # we convert this and copy it to the memory
+  #  stat.copy_stat_to_mem( py_stat, s.mem, buf_ptr )
+
+  #except OSError as e:
+  #  if s.debug.enabled( "syscalls" ):
+  #    print "OSError in syscall_stat. errno=%d" % e.errno
+  #  errno = e.errno
+
+  #return_from_syscall( s, 0 if errno == 0 else -1, errno )
+  return 0
+
+#-------------------------------------------------------------------------
+# return_from_syscall
+#-------------------------------------------------------------------------
+# copies the return value and the errno to proper registers
+def return_from_syscall( s, retval, errno ):
+  s.rf[ v0 ] = trim_32( retval )
+
+#-------------------------------------------------------------------------
+# check_fd
+#-------------------------------------------------------------------------
+# checks if the fd is in the open file descriptors, returns True on
+# failure
+def check_fd( s, fd ):
+  if fd not in file_descriptors:
+    if s.debug.enabled( "syscalls" ):
+      print ( "Could not find fd=%d in open file_descriptors,"
+              " returning errno=9" ) % fd
+    # we return a bad file descriptor error (9)
+    return_from_syscall( s, -1, 9 )
+    return True
+
+  return False
+
+#-------------------------------------------------------------------------
+# Stat
+#-------------------------------------------------------------------------
+# We represent the stat structure of the simulated system here and provide
+# utility functions to convert Python stat object to this.
+class Stat( object ):
+
+  # assuming the newlib style stat datastructure
+  # https://github.com/cornell-brg/maven-sim-isa/blob/master/appsvr/sysargs.h#L39,L59)
+  # and https://github.com/cornell-brg/maven-sys-xcc/blob/master/src/newlib/libc/include/sys/stat.h#L25-L51)
+
+  #               sz off
+  ST_DEV      = ( 2, 0  )
+  ST_INO      = ( 2, 2  )
+  ST_MODE     = ( 4, 4  )
+  ST_NLINK    = ( 2, 8  )
+  ST_UID      = ( 2, 10 )
+  ST_GID      = ( 2, 12 )
+  ST_RDEV     = ( 2, 14 )
+  ST_SIZE     = ( 4, 16 )
+  #ST_PAD3     = ( 4, 20 )
+  ST_ATIME    = ( 4, 20 )
+  ST_SPARE1   = ( 4, 24 )
+  ST_MTIME    = ( 4, 28 )
+  ST_SPARE2   = ( 4, 32 )
+  ST_CTIME    = ( 4, 36 )
+  ST_SPARE3   = ( 4, 40 )
+  ST_BLKSIZE  = ( 4, 44 )
+  ST_BLOCKS   = ( 4, 48 )
+  ST_SPARE4   = ( 8, 52 )
+
+  # Alternatively:
+  # gem5 ARM:
+  # https://github.com/cornell-brg/gem5-mcpat/blob/master/src/arch/arm/linux/linux.hh#L118-L135
+  # gem5 Linux:
+  # https://github.com/cornell-brg/gem5-mcpat/blob/master/src/kern/linux/linux.hh#L72-L89
+
+  SIZE = 64
+
+  def __init__( self ):
+    # we represent this stat object as a character array
+    self.buffer = [ "\0" ] * Stat.SIZE
+
+  # given the field tuple which contains the size and offset information,
+  # we write the value to the buffer
+  def set_field( self, field, val ):
+    size, offset = field
+
+    # we copy the value byte by byte to the buffer
+    for i in xrange( size ):
+      self.buffer[ offset + i ] = chr( 0xff & val )
+      val = val >> 8
+
+  # converts and copies the python stat object to the simulated memory
+  def copy_stat_to_mem( self, py_stat, mem, addr ):
+
+    # we set the buffer fields one by one. Only copying the fields that
+    # are os-independent according to
+    # https://docs.python.org/2/library/os.html#os.stat
+
+    self.set_field( Stat.ST_MODE,       py_stat.st_mode    )
+    self.set_field( Stat.ST_INO,        py_stat.st_ino     )
+    self.set_field( Stat.ST_DEV,        py_stat.st_dev     )
+    self.set_field( Stat.ST_NLINK,      py_stat.st_nlink   )
+    self.set_field( Stat.ST_UID,        py_stat.st_uid     )
+    self.set_field( Stat.ST_GID,        py_stat.st_gid     )
+    self.set_field( Stat.ST_SIZE,       py_stat.st_size    )
+    # atime, mtime, ctime are floats, so we cast them to int
+    self.set_field( Stat.ST_ATIME, int( py_stat.st_atime ) )
+    self.set_field( Stat.ST_MTIME, int( py_stat.st_mtime ) )
+    self.set_field( Stat.ST_CTIME, int( py_stat.st_ctime ) )
+
+    # now we can copy the buffer
+
+    # TODO: this could be more efficient
+    assert addr >= 0
+    for i in xrange( Stat.SIZE ):
+      mem.write( addr + i, 1, ord( self.buffer[i] ) )
+
+#-----------------------------------------------------------------------
 # syscall number mapping
 #-----------------------------------------------------------------------
 syscall_funcs = {
@@ -316,10 +479,13 @@ syscall_funcs = {
     5: syscall_open,
     6: syscall_close,
 
-#      GLIBC
+#      UCLIBC/GLIBS
+#      see: https://github.com/qemu/qemu/blob/master/linux-user/arm/syscall_nr.h
    45: syscall_brk,
    54: syscall_ioctl,
-  122: syscall_uname,
+  106: syscall_stat,
+  108: syscall_fstat,
+# 122: syscall_uname,
 }
 
 syscall_names = {k: v.func_name for (k,v) in syscall_funcs.items()}
