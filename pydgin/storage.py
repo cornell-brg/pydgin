@@ -68,8 +68,25 @@ def Memory( data=None, size=2**10, byte_storage=False ):
 class _WordMemory( object ):
   def __init__( self, data=None, size=2**10 ):
     self.data  = data if data else [0] * (size >> 2)
-    self.size  = len( self.data ) >> 2
+    self.size  = (len( self.data ) << 2)
     self.debug = Debug()
+
+  def bounds_check( self, addr, x ):
+    # check if the accessed data is larger than the memory size
+    if addr > self.size:
+      print ("WARNING: %s accessing larger address than memory size. "
+             "addr=%s size=%s") % ( x, pad_hex( addr ), pad_hex( self.size ) )
+      raise Exception()
+    if addr == 0:
+      print "WARNING: accessing null pointer!"
+      raise Exception()
+
+    # Special write checks
+    if x == 'WR'and addr < self.data_section:
+      print ("WARNING: %s writing address below .data section!!!. "
+             "addr=%s size=%s") % ( x, pad_hex( addr ), pad_hex( self.data_section ) )
+      raise Exception()
+
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
@@ -79,6 +96,8 @@ class _WordMemory( object ):
 
     if self.debug.enabled( "mem" ):
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
+    if self.debug.enabled( "memcheck" ):
+      self.bounds_check( start_addr, 'RD' )
 
     value = 0
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
@@ -113,6 +132,9 @@ class _WordMemory( object ):
     word = start_addr >> 2
     byte = start_addr &  0b11
 
+    if self.debug.enabled( "memcheck" ):
+      self.bounds_check( start_addr, 'WR' )
+
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
       self.data[ word ] = value
     elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
@@ -143,6 +165,9 @@ class _ByteMemory( object ):
     if addr > self.size:
       print "WARNING: accessing larger address than memory size. " + \
             "addr=%s size=%s" % ( pad_hex( addr ), pad_hex( self.size ) )
+    if addr == 0:
+      print "WARNING: writing null pointer!"
+      raise Exception()
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):

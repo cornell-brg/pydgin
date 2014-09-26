@@ -25,6 +25,8 @@ def load_program( fp, mem, alignment=0 ):
     #       address in the elf header!
     if section.name == '.text':
       entrypoint = section.addr
+    if section.name == '.data':
+      mem.data_section = section.addr
 
   assert entrypoint >= 0
   assert sections[-1].name == '.bss'
