@@ -53,8 +53,8 @@ def get_location( pc ):
   # TODO: add the disassembly of the instruction here as well
   return "pc: %x" % pc
 
-jitdriver = JitDriver( greens =['pc'],
-                       reds   =['state'],
+jitdriver = JitDriver( greens =['pc',],
+                       reds   =['max_insts','state',],
                        get_printable_location=get_location,
                      )
 
@@ -71,8 +71,9 @@ def run( state, max_insts=0 ):
   while s.status == 0:
 
     jitdriver.jit_merge_point(
-      pc       = s.fetch_pc(),
-      state    = s,
+      pc        = s.fetch_pc(),
+      max_insts = max_insts,
+      state     = s,
     )
 
     # constant-fold pc and mem
@@ -125,8 +126,9 @@ def run( state, max_insts=0 ):
 
     if s.fetch_pc() < old:
       jitdriver.can_enter_jit(
-        pc       = s.fetch_pc(),
-        state    = s,
+        pc        = s.fetch_pc(),
+        max_insts = max_insts,
+        state     = s,
       )
 
   print 'DONE! Status =', s.status
