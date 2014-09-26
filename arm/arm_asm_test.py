@@ -130,6 +130,10 @@ file_tests = [
   [ 'rsbne-00.S', {1:0xfffffff9, N:0, Z:0, C:1, V:0} ],
   [ 'rsble-00.S', {1:0xfffffff9, N:0, Z:1, C:1, V:0} ],
   [ 'rsble-01.S', {1:0xfffffff9, N:1, Z:0, C:0, V:0} ],
+  [ 'smull-00.S', {1:0x85d093ea,
+                   2:0x834e0b5f,
+                   14:0x00007e56,
+                   3:0xffffc276, N:0, Z:0, C:0, V:0} ],
   [ 'smull-01.S', {3:0, 4:0,     N:0, Z:1, C:0, V:0} ],
   [ 'smull-02.S', {3:0x80000001, 
 		   4:0xffffffff, N:1, Z:0, C:0, V:0} ],
@@ -181,10 +185,6 @@ file_tests = [
   [ 'umull-01.S', {3:0, 4:1,     N:0, Z:0, C:0, V:0} ],
   [ 'umull-02.S', {3:0x40000000,
                    4:0xbfffffff, N:1, Z:0, C:0, V:0} ],
-  [ 'smull-00.S', {1:0x85d093ea,
-                   2:0x834e0b5f,
-                   14:0x00007e56,
-                   3:0xffffc276, N:0, Z:0, C:0, V:0} ],
 
 ]
 
