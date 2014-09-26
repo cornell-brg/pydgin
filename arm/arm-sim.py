@@ -40,6 +40,8 @@ usage: %s <args> <sim_exe> <sim_args>
        syscalls           syscall information
        bootstrap          initial stack and register state
 
+  --max-insts <i> run until the maximum number of instructions
+
 """
 
 #-----------------------------------------------------------------------
@@ -63,7 +65,7 @@ def jitpolicy(driver):
 #-----------------------------------------------------------------------
 # run
 #-----------------------------------------------------------------------
-def run( state ):
+def run( state, max_insts=0 ):
   s = state
 
   while s.status == 0:
@@ -115,6 +117,12 @@ def run( state ):
         'V' if s.V else '-'
       )
 
+    # check if we have reached the end of the maximum instructions and
+    # exit if necessary
+    if max_insts != 0 and s.ncycles >= max_insts:
+      print "Reached the max_insts (%d), exiting." % max_insts
+      break
+
     if s.fetch_pc() < old:
       jitdriver.can_enter_jit(
         pc       = s.fetch_pc(),
@@ -132,12 +140,14 @@ def entry_point( argv ):
   filename_idx = 0
   debug_flags = []
   testbin = False
+  max_insts = 0
 
   # we're using a mini state machine to parse the args, and these are two
   # states we have
 
   ARGS        = 0
   DEBUG_FLAGS = 1
+  MAX_INSTS   = 2
   token_type = ARGS
 
   # go through the args one by one and parse accordingly
@@ -161,6 +171,9 @@ def entry_point( argv ):
           print "WARNING: debugs are not enabled for this translation. " + \
                 "To allow debugs, translate with --debug option."
 
+      elif token == "--max-insts":
+        token_type = MAX_INSTS
+
       elif token[:2] == "--":
         # unknown option
         print "Unknown argument %s" % token
@@ -173,6 +186,9 @@ def entry_point( argv ):
 
     elif token_type == DEBUG_FLAGS:
       debug_flags = token.split( "," )
+      token_type = ARGS
+    elif token_type == MAX_INSTS:
+      max_insts = int( token )
       token_type = ARGS
 
   if filename_idx == 0:
@@ -205,7 +221,7 @@ def entry_point( argv ):
 
   # Execute the program
 
-  run( state )
+  run( state, max_insts )
 
   return 0
 
