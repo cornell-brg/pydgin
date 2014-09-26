@@ -241,9 +241,9 @@ def addressing_mode_2( s, inst ):
 
   # Offset Addressing vs. Pre-/Post-Indexed Addressing
   if not (P(inst) ^ W(inst)):
-    s.rf[rn(inst)] = offset_addr
+    s.rf[rn(inst)] = trim_32( offset_addr )
 
-  return addr
+  return trim_32( addr )
 
 #=======================================================================
 # Addressing Mode 3 - Miscellaneous Loads and Stores (page A5-33)
@@ -279,9 +279,9 @@ def addressing_mode_3( s, inst ):
 
   # Offset Addressing vs. Pre-/Post-Indexed Addressing
   if not (P(inst) ^ W(inst)):
-    s.rf[rn(inst)] = offset_addr
+    s.rf[rn(inst)] = trim_32( offset_addr )
 
-  return addr
+  return trim_32( addr )
 
 #=======================================================================
 # Addressing Mode 4 - Load and Store Multiple (page A5-41)
@@ -319,13 +319,15 @@ def addressing_mode_4( s, inst ):
   else:            start_addr, end_addr = Rn-nbytes,   Rn-4
 
   if W(inst):
-    s.rf[ rn(inst) ] = (Rn + nbytes) if U(inst) else (Rn - nbytes)
+    s.rf[ rn(inst) ] = trim_32( (Rn + nbytes) if U(inst) else (Rn - nbytes) )
 
-  return start_addr, end_addr
+  return trim_32( start_addr ), trim_32( end_addr )
 
 #=======================================================================
 # Addressing Mode 5 - Load and Store Coprocessor (page A5-49)
 #=======================================================================
+
+# TODO
 
 #=======================================================================
 # Miscellaneous
