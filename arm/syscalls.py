@@ -10,31 +10,22 @@
 # - https://github.com/cornell-brg/maven-sys-xcc/blob/master/src/libgloss/maven/machine/syscfg.h
 # - https://github.com/cornell-brg/gem5-mcpat/blob/master/src/arch/mips/linux/process.cc
 #
-# Implementation details from the Maven proxy kernel:
+#  Example ARM syscall:
 #
-# - https://github.com/cornell-brg/pyparc/blob/master/pkernel/pkernel/pkernel.c#L463-L544
-# - https://github.com/cornell-brg/pyparc/blob/master/pkernel/pkernel/pkernel-xcpthandler.S#L78-L89
+#   // Note that some operating systems use the immediate field of the swi
+#   // instruction rather than $r7 to set the syscall number
 #
-#   // Jump to C function to handle syscalls
+#   move    $r0, #<arg0>
+#   move    $r1, #<arg1>
+#   move    $r2, #<arg2>
+#   move    $r7, #<syscall_num>
+#   swi     0x00000000
 #
-#   move    $a3, $a2 // arg2
-#   move    $a2, $a1 // arg1
-#   move    $a1, $a0 // arg0
-#   move    $a0, $v0 // syscall number
-#   la      $t0, handle_syscall
-#   jalr    $t0
-#
-#   // Restore user context
-#
-#   move    $k0, $sp
+#   // result of syscall stored in $r0
 #
 # Details for newlib syscalls from the Maven cross compiler:
 #
 # - https://github.com/cornell-brg/maven-sys-xcc/blob/master/src/libgloss/maven/syscalls.c
-#
-# According to Berkin, only the following syscalls are needed by pbbs:
-#
-# - read (2), write (3), open (4), close (5), lseek (8)
 #
 # Other syscall emulation resources:
 #
