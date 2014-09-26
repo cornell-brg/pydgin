@@ -248,12 +248,6 @@ def syscall_close( s ):
   s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
 
 #-----------------------------------------------------------------------
-# lseek
-#-----------------------------------------------------------------------
-def syscall_lseek( s ):
-  raise Exception('lseek unimplemented!')
-
-#-----------------------------------------------------------------------
 # brk
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/questions/6988487/what-does-brk-system-call-do
@@ -333,8 +327,7 @@ def syscall_lseek( s ):
     errno = e.errno
     new_pos = -1
 
-  return_from_syscall( s, new_pos, errno )
-
+  return_from_syscall( s, trim_32( new_pos ), errno )
 
 #-------------------------------------------------------------------------
 # fstat
@@ -365,7 +358,7 @@ def syscall_fstat( s ):
   #  errno = e.errno
 
   #return_from_syscall( s, 0 if errno == 0 else -1, errno )
-  return 0
+  return_from_syscall( s, 0, 0 )
 
 #-------------------------------------------------------------------------
 # stat
@@ -395,7 +388,7 @@ def syscall_stat( s ):
   #  errno = e.errno
 
   #return_from_syscall( s, 0 if errno == 0 else -1, errno )
-  return 0
+  return_from_syscall( s, 0, 0 )
 
 #-------------------------------------------------------------------------
 # return_from_syscall
