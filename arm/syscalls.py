@@ -305,6 +305,38 @@ def syscall_ioctl( s ):
   s.rf[ v0 ] = trim_32( result )
 
 #-----------------------------------------------------------------------
+# lseek
+#-----------------------------------------------------------------------
+def syscall_lseek( s ):
+
+  fd  = s.rf[ a0 ]
+  pos = s.rf[ a1 ]
+  how = s.rf[ a2 ]
+
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_lseek( fd=%x, pos=%x, how=%x )" % ( fd, pos, how ),
+
+  if check_fd( s, fd ):
+    return
+
+  errno = 0
+
+  try:
+    # NOTE: rpython gives some weird errors in rtyping stage if we don't
+    # explicitly cast the return value of os.lseek to int
+
+    new_pos = int( os.lseek( fd, pos, how ) )
+
+  except OSError as e:
+    if s.debug.enabled( "syscalls" ):
+      print "OSError in syscall_lseek. errno=%d" % e.errno
+    errno = e.errno
+    new_pos = -1
+
+  return_from_syscall( s, new_pos, errno )
+
+
+#-------------------------------------------------------------------------
 # fstat
 #-------------------------------------------------------------------------
 def syscall_fstat( s ):
@@ -481,6 +513,7 @@ syscall_funcs = {
 
 #      UCLIBC/GLIBS
 #      see: https://github.com/qemu/qemu/blob/master/linux-user/arm/syscall_nr.h
+   19: syscall_lseek,
    45: syscall_brk,
    54: syscall_ioctl,
   106: syscall_stat,
