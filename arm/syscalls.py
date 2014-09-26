@@ -526,14 +526,16 @@ syscall_names = {k: v.func_name for (k,v) in syscall_funcs.items()}
 def do_syscall( s, syscall_num ):
   if syscall_num not in syscall_funcs:
     print "WARNING: syscall %d not implemented!" % syscall_num,
+    raise Exception()
     return
 
   # TODO: make prints debug mode only!
   if s.debug.enabled('syscalls'):
     print syscall_num, syscall_names[ syscall_num ],
+    print '%s %s %s %s' % (hex(s.rf[0]), hex(s.rf[1]), hex(s.rf[2]), hex(s.rf[3])),
   syscall_funcs[ syscall_num ]( s )
   if s.debug.enabled('syscalls'):
     if s.debug.enabled('insts'):
-      print hex(s.rf[ a0 ]),
+      print ' = ', hex(s.rf[ a0 ]),
     else:
-      print hex(s.rf[ a0 ])
+      print ' = ', hex(s.rf[ a0 ])
