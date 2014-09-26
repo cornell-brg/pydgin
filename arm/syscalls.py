@@ -153,7 +153,7 @@ def syscall_read( s ):
     nbytes_read = -1
     errno       = e.errno
 
-  s.rf[ v0 ] = nbytes_read
+  s.rf[ v0 ] = trim_32(nbytes_read)
 
 #-----------------------------------------------------------------------
 # write
@@ -185,7 +185,7 @@ def syscall_write( s ):
     nbytes_written = -1
     errno          = e.errno
 
-  s.rf[ v0 ] = nbytes_written
+  s.rf[ v0 ] = trim_32(nbytes_written)
 
 #-----------------------------------------------------------------------
 # open
@@ -216,9 +216,9 @@ def syscall_open( s ):
     errno = e.errno
 
   if fd > 0:
-    file_descriptors[ fd ] = fd
+    file_descriptors[ fd ] = trim_32(fd)
 
-  s.rf[ v0 ] = fd
+  s.rf[ v0 ] = trim_32(fd)
 
 #-----------------------------------------------------------------------
 # close
@@ -245,7 +245,7 @@ def syscall_close( s ):
     print "OSError in syscall_close: errno=%d" % e.errno
     errno = e.errno
 
-  s.rf[ v0 ] = 0 if errno == 0 else -1
+  s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
 
 #-----------------------------------------------------------------------
 # lseek
@@ -263,7 +263,7 @@ def syscall_brk( s ):
   if new_brk != 0:
     s.breakpoint = new_brk
 
-  s.rf[ v0 ] = s.breakpoint
+  s.rf[ v0 ] = trim_32(s.breakpoint)
 
 #-----------------------------------------------------------------------
 # uname
