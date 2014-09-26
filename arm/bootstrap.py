@@ -5,15 +5,19 @@
 from machine        import State
 #from pydgin.storage import Memory
 
+EMULATE_GEM5  = False
+EMULATE_SIMIT = True
+
 # Currently these constants are set to match gem5
 memory_size = 2**27
 page_size   = 8192
+if EMULATE_SIMIT:
+  memory_size = 0xc0000000 + 1
+  MAX_ENVIRON = 1024 * 16
 
 # MIPS stack starts at top of kuseg (0x7FFF.FFFF) and grows down
 #stack_base = 0x7FFFFFFF
 stack_base = memory_size-1   # TODO: set this correctly!
-
-EMULATE_GEM5 = False
 
 #-----------------------------------------------------------------------
 # syscall_init
@@ -104,6 +108,9 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
                     4*(len(argv) + 1),              # argv     nbytes
                     4 ]                             # argc     nbytes
 
+  if EMULATE_SIMIT:
+    stack_nbytes[4] = 0  # don't to auxv for simit
+
   def round_up( val ):
     alignment = 16
     return (val + alignment - 1) & ~(alignment - 1)
@@ -113,6 +120,8 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   #stack_nbytes[3] = 16 - (sum_(stack_nbytes[:3]) % 16)
   # NOTE: gem5 ARM approach
   stack_nbytes[3] = round_up( sum_(stack_nbytes) ) - sum_(stack_nbytes)
+  if EMULATE_SIMIT:
+    stack_nbytes[3] = 0
 
   def round_down( val ):
     alignment = 16
@@ -121,12 +130,16 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   # calculate stack pointer based on size of storage needed for args
   # TODO: round to nearest page size?
   stack_ptr = round_down( stack_base - sum_( stack_nbytes ) )
+  if EMULATE_SIMIT:
+    stack_ptr = stack_base - MAX_ENVIRON
 
+
+  offset  = stack_ptr + sum_( stack_nbytes )
+  # FIXME: this offset seems really wrong, but this is how gem5 does it!
   if EMULATE_GEM5:
-    # FIXME: this offset seems really wrong, but this is how gem5 does it!
-    offset  = stack_base
-  else:
-    offset  = stack_ptr + sum_( stack_nbytes )
+    offset = stack_base
+
+  print "XXX", offset
 
   stack_off = []
   for nbytes in stack_nbytes:
@@ -184,9 +197,10 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
 
   # write auxv vectors to memory
   offset   = stack_off[4]
-  for type_, value in auxv + [(0,0)]:
-    offset = int_to_mem( mem, type_, offset )
-    offset = int_to_mem( mem, value, offset )
+  if not EMULATE_SIMIT:
+    for type_, value in auxv + [(0,0)]:
+      offset = int_to_mem( mem, type_, offset )
+      offset = int_to_mem( mem, value, offset )
   assert offset == stack_off[3]
 
   # write envp pointers to memory
@@ -240,6 +254,9 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
   state.rf[  0 ] = 0            # ptr to func to run when program exits, disable
   state.rf[  1 ] = stack_off[6] # argument 1 reg = argv ptr addr
   state.rf[  2 ] = stack_off[5] # argument 2 reg = envp ptr addr
+  if EMULATE_SIMIT:
+    state.rf[  1 ] = argc         # argument 1 reg = argc
+    state.rf[  2 ] = stack_off[6] # argument 2 reg = argv ptr addr
   state.rf[ 13 ] = stack_ptr    # stack pointer reg
   state.rf[ 15 ] = entrypoint   # program counter
 
