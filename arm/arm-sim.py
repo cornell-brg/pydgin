@@ -55,6 +55,7 @@ def get_location( pc ):
 
 jitdriver = JitDriver( greens =['pc',],
                        reds   =['max_insts','state',],
+                       virtualizables  =['state',],
                        get_printable_location=get_location,
                      )
 
