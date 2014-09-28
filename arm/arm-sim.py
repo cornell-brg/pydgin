@@ -54,7 +54,7 @@ def get_location( pc ):
   return "pc: %x" % pc
 
 jitdriver = JitDriver( greens =['pc',],
-                       reds   =['max_insts','state',],
+                       reds   =['state',],
                        virtualizables  =['state',],
                        get_printable_location=get_location,
                      )
@@ -66,14 +66,13 @@ def jitpolicy(driver):
 #-----------------------------------------------------------------------
 # run
 #-----------------------------------------------------------------------
-def run( state, max_insts=0 ):
+def run( state ):
   s = state
 
   while s.status == 0:
 
     jitdriver.jit_merge_point(
       pc        = s.fetch_pc(),
-      max_insts = max_insts,
       state     = s,
     )
 
@@ -119,16 +118,9 @@ def run( state, max_insts=0 ):
         'V' if s.V else '-'
       )
 
-    # check if we have reached the end of the maximum instructions and
-    # exit if necessary
-    if max_insts != 0 and s.ncycles >= max_insts:
-      print "Reached the max_insts (%d), exiting." % max_insts
-      break
-
     if s.fetch_pc() < old:
       jitdriver.can_enter_jit(
         pc        = s.fetch_pc(),
-        max_insts = max_insts,
         state     = s,
       )
 
@@ -143,7 +135,6 @@ def entry_point( argv ):
   filename_idx = 0
   debug_flags = []
   testbin = False
-  max_insts = 0
 
   # we're using a mini state machine to parse the args, and these are two
   # states we have
@@ -174,9 +165,6 @@ def entry_point( argv ):
           print "WARNING: debugs are not enabled for this translation. " + \
                 "To allow debugs, translate with --debug option."
 
-      elif token == "--max-insts":
-        token_type = MAX_INSTS
-
       elif token[:2] == "--":
         # unknown option
         print "Unknown argument %s" % token
@@ -189,9 +177,6 @@ def entry_point( argv ):
 
     elif token_type == DEBUG_FLAGS:
       debug_flags = token.split( "," )
-      token_type = ARGS
-    elif token_type == MAX_INSTS:
-      max_insts = int( token )
       token_type = ARGS
 
   if filename_idx == 0:
@@ -224,7 +209,7 @@ def entry_point( argv ):
 
   # Execute the program
 
-  run( state, max_insts )
+  run( state )
 
   return 0
 
