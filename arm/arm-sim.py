@@ -13,7 +13,7 @@ from bootstrap      import syscall_init, memory_size
 from isa            import decode
 
 from pydgin.debug     import Debug, pad, pad_hex
-from rpython.rlib.jit import JitDriver, hint
+from rpython.rlib.jit import JitDriver #, hint
 
 #-----------------------------------------------------------------------
 # help message
@@ -55,7 +55,7 @@ def get_location( pc ):
 
 jitdriver = JitDriver( greens =['pc',],
                        reds   =['state',],
-                       virtualizables  =['state',],
+                       #virtualizables  =['state',],
                        get_printable_location=get_location,
                      )
 
@@ -77,9 +77,11 @@ def run( state ):
     )
 
     # constant-fold pc and mem
-    pc  = hint( s.fetch_pc(), promote=True )
+    #pc  = hint( s.fetch_pc(), promote=True )
+    pc = s.fetch_pc()
     old = pc
-    mem = hint( s.mem, promote=True )
+    #mem = hint( s.mem, promote=True )
+    mem = s.mem
 
     if s.debug.enabled( "insts" ):
       print pad( "%x" % pc, 6, " ", False ),
@@ -92,7 +94,8 @@ def run( state ):
       inst = mem.read( pc, 4 )
     else:
       # we use trace elidable iread instead of just read
-      inst = mem.iread( pc, 4 )
+      #inst = mem.iread( pc, 4 )
+      inst = mem.read( pc, 4 )
 
     inst_str, exec_fun = decode( inst )
 
@@ -191,7 +194,8 @@ def entry_point( argv ):
 
   # Load the program into a memory object
 
-  mem = Memory( size=memory_size, byte_storage=False )
+  #mem = Memory( size=memory_size, byte_storage=False )
+  mem = Memory( size=memory_size, byte_storage=True )
   entrypoint, breakpoint = load_program(
       open( filename, 'rb' ), mem,
       # TODO: GEM5 uses this alignment, remove?

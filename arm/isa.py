@@ -23,7 +23,7 @@ from utils import (
 
 from instruction import *
 from pydgin.misc import create_risc_decoder
-from rpython.rlib.jit import unroll_safe
+#from rpython.rlib.jit import unroll_safe
 
 #=======================================================================
 # Register Definitions
@@ -438,7 +438,7 @@ def execute_cdp( s, inst ):
 #-----------------------------------------------------------------------
 # clz
 #-----------------------------------------------------------------------
-@unroll_safe
+#@unroll_safe
 def execute_clz( s, inst ):
   if condition_passed( s, cond(inst) ):
     Rm = s.rf[ rm(inst) ]
@@ -534,7 +534,7 @@ def execute_ldc2( s, inst ):
 #-----------------------------------------------------------------------
 # ldm1
 #-----------------------------------------------------------------------
-@unroll_safe
+#@unroll_safe
 def execute_ldm1( s, inst ):
   if condition_passed( s, cond(inst) ):
     addr, end_addr = addressing_mode_4( s, inst )
@@ -972,7 +972,7 @@ def execute_stc( s, inst ):
 #-----------------------------------------------------------------------
 # stm1
 #-----------------------------------------------------------------------
-@unroll_safe
+#@unroll_safe
 def execute_stm1( s, inst ):
   if condition_passed( s, cond(inst) ):
     addr, end_addr = addressing_mode_4( s, inst )

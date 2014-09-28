@@ -12,7 +12,8 @@ EMULATE_SIMIT = True
 memory_size = 2**27
 page_size   = 8192
 if EMULATE_SIMIT:
-  memory_size = 0xc0000000 + 1
+  memory_size = 0x10000000 + 1
+  #memory_size = 2**28
   MAX_ENVIRON = 1024 * 16
 
 # MIPS stack starts at top of kuseg (0x7FFF.FFFF) and grows down
