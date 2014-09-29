@@ -13,7 +13,7 @@ from bootstrap      import syscall_init, memory_size
 from isa            import decode
 
 from pydgin.debug     import Debug, pad, pad_hex
-from rpython.rlib.jit import JitDriver #, hint
+from rpython.rlib.jit import JitDriver , hint
 
 #-----------------------------------------------------------------------
 # help message
@@ -77,11 +77,11 @@ def run( state ):
     )
 
     # constant-fold pc and mem
-    #pc  = hint( s.fetch_pc(), promote=True )
-    pc = s.fetch_pc()
+    pc  = hint( s.fetch_pc(), promote=True )
+    #pc = s.fetch_pc()
     old = pc
-    #mem = hint( s.mem, promote=True )
-    mem = s.mem
+    mem = hint( s.mem, promote=True )
+    #mem = s.mem
 
     if s.debug.enabled( "insts" ):
       print pad( "%x" % pc, 6, " ", False ),
