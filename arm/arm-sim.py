@@ -94,8 +94,8 @@ def run( state ):
       inst = mem.read( pc, 4 )
     else:
       # we use trace elidable iread instead of just read
-      inst = mem.iread( pc, 4 )
-      #inst = mem.read( pc, 4 )
+      #inst = mem.iread( pc, 4 )
+      inst = mem.read( pc, 4 )
 
     inst_str, exec_fun = decode( inst )
 

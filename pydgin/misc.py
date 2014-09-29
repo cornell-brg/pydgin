@@ -72,8 +72,8 @@ def create_risc_decoder( encodings, isa_globals, debug=False ):
     else:
       decoder += '    return execute_{}\n'.format( encodings[i][0] )
 
-#@rpython.rlib.jit.elidable
   source = py.code.Source('''
+@rpython.rlib.jit.elidable
 def decode( inst ):
   {decoder_tree}
   else:
