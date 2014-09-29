@@ -194,8 +194,8 @@ def entry_point( argv ):
 
   # Load the program into a memory object
 
-  #mem = Memory( size=memory_size, byte_storage=False )
-  mem = Memory( size=memory_size, byte_storage=True )
+  mem = Memory( size=memory_size, byte_storage=False )
+  #mem = Memory( size=memory_size, byte_storage=True )
   entrypoint, breakpoint = load_program(
       open( filename, 'rb' ), mem,
       # TODO: GEM5 uses this alignment, remove?
