@@ -88,7 +88,7 @@ class _WordMemory( object ):
       raise Exception()
 
 
-  #@unroll_safe
+  @unroll_safe
   def read( self, start_addr, num_bytes ):
     assert 0 < num_bytes <= 4
     word = start_addr >> 2
@@ -120,13 +120,13 @@ class _WordMemory( object ):
   # only difference is the elidable annotation, which we assume the
   # instructions are not modified (no side effects, assumes the addresses
   # correspond to the same instructions)
-  #@elidable
-  #@unroll_safe
+  @elidable
+  @unroll_safe
   def iread( self, start_addr, num_bytes ):
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
     return self.data[ start_addr >> 2 ]
 
-  #@unroll_safe
+  @unroll_safe
   def write( self, start_addr, num_bytes, value ):
     assert 0 < num_bytes <= 4
     word = start_addr >> 2
@@ -169,7 +169,7 @@ class _ByteMemory( object ):
       print "WARNING: writing null pointer!"
       raise Exception()
 
-  #@unroll_safe
+  @unroll_safe
   def read( self, start_addr, num_bytes ):
     if self.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr )
@@ -187,7 +187,7 @@ class _ByteMemory( object ):
   # only difference is the elidable annotation, which we assume the
   # instructions are not modified (no side effects, assumes the addresses
   # correspond to the same instructions)
-  #@elidable
+  @elidable
   def iread( self, start_addr, num_bytes ):
     value = 0
     for i in range( num_bytes-1, -1, -1 ):
@@ -195,7 +195,7 @@ class _ByteMemory( object ):
       value = value | ord( self.data[ start_addr + i ] )
     return value
 
-  #@unroll_safe
+  @unroll_safe
   def write( self, start_addr, num_bytes, value ):
     if self.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr )
