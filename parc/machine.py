@@ -40,5 +40,4 @@ class State( object ):
     self.breakpoint = 0
 
     # shreesha: adding state for storing pointers to data structures
-    self.dstruct = RegisterFile()
-
+    self.dstruct = RegisterFile( False )

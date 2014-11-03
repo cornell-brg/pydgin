@@ -867,16 +867,16 @@ def execute_ds_alloc( s, inst ):
       break
 
   if index < s.dstruct.num_regs:
-    s.rf[ rs(inst) ] = index
+    s.rf[ rt(inst) ] = index
   else:
-    s.rf[ rs(inst) ] = -1
+    s.rf[ rt(inst) ] = -1
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # ds_dealloc instruction
 #-----------------------------------------------------------------------
 def execute_ds_dealloc( s , inst ):
-  s.dstruct[ rs(inst) ] = 0
+  s.dstruct[ s.rf[ rs(inst) ] ] = 0
   s.pc += 4
 
 #-----------------------------------------------------------------------
