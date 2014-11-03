@@ -39,3 +39,6 @@ class State( object ):
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
 
+    # shreesha: adding state for storing pointers to data structures
+    self.dstruct = RegisterFile()
+

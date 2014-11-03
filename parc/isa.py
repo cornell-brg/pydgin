@@ -8,6 +8,9 @@ from utils import trim, trim_5, signed, sext, sext_byte, \
 from instruction import rd, rs, rt, fd, fs, ft, imm, jtarg, shamt
 from pydgin.misc import create_risc_decoder
 
+# shreesha: to implement a gcd instruction
+#from fractions import gcd
+
 #=======================================================================
 # Register Definitions
 #=======================================================================
@@ -196,6 +199,15 @@ encodings = [
   ['cvt_w_s', '0100011000000000xxxxxxxxxx100100'],
   ['cvt_s_w', '0100011010000000xxxxxxxxxx100000'],
  ['trunc_w_s','0100011000000000xxxxxxxxxx001101'],
+  # shreesha: gcd instruction
+ #['gcd',      '100111xxxxxxxxxxxxxxx00000010011'],
+  # shreesha: polyhs extensions
+ ['ds_get',   '100111xxxxxxxxxxxxxxx00000010011'],
+ ['ds_set',   '100111xxxxxxxxxxxxxxx00000010100'],
+ ['ds_init',  '100111xxxxxxxxxxxxxxx00000010101'],
+ ['ds_alloc', '00100000000xxxxxxxxxxxxxxxxxxxxx'],
+ ['ds_dealloc','100111xxxxx000000000000000010110'],
+
 ]
 
 #=======================================================================
@@ -820,6 +832,94 @@ def execute_trunc_w_s( s, inst ):
   # TODO: check for overflow
   x = bits2float( s.rf[ fs(inst) ] )
   s.rf[ fd(inst) ] = trim(int(x))  # round down
+  s.pc += 4
+
+##-----------------------------------------------------------------------
+## gcd
+##-----------------------------------------------------------------------
+#def execute_gcd( s, inst ):
+#  s.rf[ rd(inst) ] = trim( gcd( s.rf[ rs(inst) ], s.rf[ rt(inst) ] ) )
+#  s.pc += 4
+
+##-----------------------------------------------------------------------
+## gcd -- fake vecincr accelerator
+##-----------------------------------------------------------------------
+#def execute_gcd( s, inst ):
+#  src_base  = s.rf[ rs(inst) ]
+#  dest_base = s.rf[ rd(inst) ]
+#  len_ = s.rf[ rt(inst) ]
+#  for off in range( len_ ):
+#    src_addr  = src_base  + ( off * 4 )
+#    dest_addr = dest_base + ( off * 4 )
+#    update    = s.mem.read( src_addr, 4 ) + 1
+#    s.mem.write( dest_addr, 4, update )
+#  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_alloc instruction
+#-----------------------------------------------------------------------
+def execute_ds_alloc( s, inst ):
+  # determine the next available index in s.dstruct
+  index = 0
+  for x in xrange( 0, s.dstruct.num_regs ):
+    if s.dstruct[ x ] == 0:
+      index = x
+      break
+
+  if index < s.dstruct.num_regs:
+    s.rf[ rs(inst) ] = index
+  else:
+    s.rf[ rs(inst) ] = -1
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_dealloc instruction
+#-----------------------------------------------------------------------
+def execute_ds_dealloc( s , inst ):
+  s.dstruct[ rs(inst) ] = 0
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_init instruction
+#-----------------------------------------------------------------------
+def execute_ds_init( s, inst ):
+  s.dstruct[ s.rf[ rd(inst) ] ] = s.rf[ rs(inst) ]
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_get instruction
+#-----------------------------------------------------------------------
+def execute_ds_get( s, inst ):
+  # need to get the data structure type in here somehow; currently only
+  # supports vector of ints
+  index = s.rf[ rt(inst) ]
+  ds_id = s.rf[ rs(inst) ]
+
+  # transform the index into memory address
+  base_addr = s.dstruct[ ds_id ]
+  # vector element location: base + ( index * sizeof( T ) )
+  mem_addr  = base_addr + ( index * 4 )
+
+  # load memory location
+  s.rf[ rd(inst) ] = s.mem.read( mem_addr, 4 )
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_set instruction
+#-----------------------------------------------------------------------
+def execute_ds_set( s, inst ):
+  # need to get the data structure type in here somehow; currently only
+  # supports vector of ints
+  index = s.rf[ rs(inst) ]
+  ds_id = s.rf[ rd(inst) ]
+
+  # transform the index into memory address
+  base_addr = s.dstruct[ ds_id ]
+  # vector element location: base + ( index * sizeof( T ) )
+  mem_addr  = base_addr + ( index * 4 )
+
+  # store to memory location
+  s.mem.write( mem_addr, 4, s.rf[rt(inst)] )
   s.pc += 4
 
 #=======================================================================

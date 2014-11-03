@@ -5,7 +5,8 @@
 import sys
 # TODO: figure out a better way to set PYTHONENV
 sys.path.append('..')
-sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
+#sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
+sys.path.append('/Users/shreesha/vc/git-brg/pypy-2.4.0-src')
 
 import elf
 
