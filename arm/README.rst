@@ -65,7 +65,7 @@ translation (takes ~5 minutes), run::
 
 To execute, run::
 
-  $ arm-sim-c ../ubmark-nosyscalls/build-parc/ubmark-vvadd
+  $ pydgin-arm-jit ../ubmark-nosyscalls/build-parc/ubmark-vvadd
 
 We can also generate a C executable *without* the JIT-optimizing
 compiler by removing the ``--opt=jit`` flag.  While typically not as

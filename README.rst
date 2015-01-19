@@ -27,7 +27,7 @@ into a C executable implementing a *JIT-enabled interpretive* simulator,
 providing a high-performance implementation suitable for application
 development. Generated Pydgin executables provide significant
 performance benefits in two ways. First, the compiled C implementation
-enable much more efficient execution of instruction-by-instruction
+enables much more efficient execution of instruction-by-instruction
 interpretive simulation than the original Python implementation. Second,
 the generated executable provides a just-in-time optimizer, which h
 

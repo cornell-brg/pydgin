@@ -18,8 +18,8 @@ you have the maven cross compiler installed (available on the BRG
 servers) and execute the following::
 
   $ cd ~/vcd/git-brg/pydgin/ubmark-nosyscalls
-  $ mkdir build-parc
-  $ cd build-parc
+  $ mkdir build-
+  $ cd build-
   $ ../configure --host=maven
   $ make ubmark-vvadd
 
@@ -33,8 +33,8 @@ maven-apps-misc repository from Github::
 
   $ cd ~/vc/git-brg
   $ git clone git@github.com:cornell-brg/maven-app-misc.git
-  $ mkdir ~/vc/git-brg/maven-app-misc/build-parc
-  $ cd ~/vc/git-brg/maven-app-misc/build-parc
+  $ mkdir ~/vc/git-brg/maven-app-misc/build-
+  $ cd ~/vc/git-brg/maven-app-misc/build-
   $ ../configure --host=maven
   $ make
 
@@ -49,7 +49,7 @@ The PARC ISS can be executed directly with a Python interpreter. While
 slow, it provides a faster code-test-debug cycle than the compiled
 interpreter. To execute, run::
 
-  $ python pisa-sim.py ../ubmark-nosyscalls/build-parc/ubmark-vvadd
+  $ python parc-sim.py ../ubmark-nosyscalls/build-/ubmark-vvadd
 
 With C and JIT
 --------------
@@ -61,11 +61,11 @@ translation (takes ~5 minutes), run::
   $ PYTHONPATH='/work/bits0/dml257/hg-pypy/pypy' python \
     /work/bits0/dml257/hg-pypy/pypy/rpython/translator/goal/translate.py \
     --opt=jit \
-    pisa-sim.py
+    -sim.py
 
 To execute, run::
 
-  $ pisa-sim-c ../ubmark-nosyscalls/build-parc/ubmark-vvadd
+  $ pydgin-parc-jit ../ubmark-nosyscalls/build-/ubmark-vvadd
 
 We can also generate a C executable *without* the JIT-optimizing
 compiler by removing the ``--opt=jit`` flag.  While typically not as
