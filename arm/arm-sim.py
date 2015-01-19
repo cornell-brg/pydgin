@@ -10,6 +10,7 @@ sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 from pydgin.storage import Memory
 from pydgin.misc    import load_program
 from bootstrap      import syscall_init, memory_size
+from instruction    import Instruction
 from isa            import decode
 
 from pydgin.debug     import Debug, pad, pad_hex
@@ -103,7 +104,7 @@ def run( state, max_insts=0 ):
               pad( inst_str, 8 ),
               pad( "%d" % s.ncycles, 8 ), ),
 
-    exec_fun( s, inst )
+    exec_fun( s, Instruction(inst) )
 
     s.ncycles += 1    # TODO: should this be done inside instruction definition?
     if s.stats_en: s.stat_ncycles += 1

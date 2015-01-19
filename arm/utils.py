@@ -49,19 +49,19 @@ def shifter_operand( s, inst ):
 
   # 32-bit immediate
   # http://stackoverflow.com/a/2835503
-  if   I(inst) == 1:
-    rotate_imm = rotate( inst )
-    operand    = rotate_right( imm_8(inst), rotate_imm*2 )
+  if   inst.I() == 1:
+    rotate_imm = inst.rotate()
+    operand    = rotate_right( inst.imm_8(), rotate_imm*2 )
     if rotate_imm == 0: cout = s.C
     else:               cout = operand >> 3
     return operand, cout
 
   # 32-bit register shifted by 5-bit immediate
-  elif (inst >>  4 & 0b1) == 0:
+  elif (inst.bits >>  4 & 0b1) == 0:
     return shifter_operand_imm( s, inst )
 
   # 32-bit register shifted by 32-bit register
-  elif (inst >>  7 & 0b1) == 0:
+  elif (inst.bits >>  7 & 0b1) == 0:
     return shifter_operand_reg( s, inst )
 
   # Arithmetic or Load/Store instruction extension space
@@ -79,9 +79,9 @@ ROTATE_RIGHT      = 0b11
 # shifter_operand_imm
 #-----------------------------------------------------------------------
 def shifter_operand_imm( s, inst ):
-  shift_op  = shift( inst )
-  Rm        = s.rf[ rm(inst) ]
-  shift_imm = shift_amt( inst )
+  shift_op  = inst.shift()
+  Rm        = s.rf[ inst.rm() ]
+  shift_imm = inst.shift_amt()
   assert 0 <= shift_imm <= 31
 
   if   shift_op == LOGIC_SHIFT_LEFT:
@@ -120,9 +120,9 @@ def shifter_operand_imm( s, inst ):
 # shifter_operand_reg
 #-----------------------------------------------------------------------
 def shifter_operand_reg( s, inst ):
-  shift_op = shift( inst )
-  Rm       = s.rf[ rm(inst) ]
-  Rs       = s.rf[ rs(inst) ] & 0xFF
+  shift_op = inst.shift()
+  Rm       = s.rf[ inst.rm() ]
+  Rs       = s.rf[ inst.rs() ] & 0xFF
 
   out = cout = 0
 
@@ -229,19 +229,19 @@ def rotate_right( data, shift ):
 def addressing_mode_2( s, inst ):
 
   # Immediate vs. Register Offset
-  if not I(inst): index    = imm_12(inst)
+  if not inst.I(): index    = inst.imm_12()
   else:           index, _ = shifter_operand_imm(s, inst)
 
-  Rn          = s.rf[rn(inst)]
-  offset_addr = Rn + index if U(inst) else Rn - index
+  Rn          = s.rf[inst.rn()]
+  offset_addr = Rn + index if inst.U() else Rn - index
 
   # Offset Addressing/Pre-Indexed Addressing vs. Post-Indexed Addressing
-  if P(inst): addr = offset_addr
-  else:       addr = Rn
+  if inst.P(): addr = offset_addr
+  else:        addr = Rn
 
   # Offset Addressing vs. Pre-/Post-Indexed Addressing
-  if not (P(inst) ^ W(inst)):
-    s.rf[rn(inst)] = trim_32( offset_addr )
+  if not (inst.P() ^ inst.W()):
+    s.rf[inst.rn()] = trim_32( offset_addr )
 
   return trim_32( addr )
 
@@ -263,23 +263,23 @@ def addressing_mode_2( s, inst ):
 # 0 0 0 0 Register Post-indexed
 #
 def addressing_mode_3( s, inst ):
-  if SH(inst) == 0b00:
+  if inst.SH() == 0b00:
     raise Exception('Not a load/store instruction!')
 
   # Immediate vs. Register Offset
-  if B(inst): index = (imm_H(inst) << 4) | imm_L(inst)
-  else:       index = s.rf[rm(inst)]
+  if inst.B(): index = (inst.imm_H() << 4) | inst.imm_L()
+  else:        index = s.rf[inst.rm()]
 
-  Rn          = s.rf[rn(inst)]
-  offset_addr = Rn + index if U(inst) else Rn - index
+  Rn          = s.rf[inst.rn()]
+  offset_addr = Rn + index if inst.U() else Rn - index
 
   # Offset Addressing/Pre-Indexed Addressing vs. Post-Indexed Addressing
-  if P(inst): addr = offset_addr
-  else:       addr = Rn
+  if inst.P(): addr = offset_addr
+  else:        addr = Rn
 
   # Offset Addressing vs. Pre-/Post-Indexed Addressing
-  if not (P(inst) ^ W(inst)):
-    s.rf[rn(inst)] = trim_32( offset_addr )
+  if not (inst.P() ^ inst.W()):
+    s.rf[inst.rn()] = trim_32( offset_addr )
 
   return trim_32( addr )
 
@@ -309,17 +309,17 @@ def addressing_mode_4( s, inst ):
   DA = 0b00
   DB = 0b10
 
-  mode   = (P(inst) << 1) | U(inst)
-  Rn     = s.rf[ rn(inst) ]
-  nbytes = 4 * popcount(register_list(inst))
+  mode   = (inst.P() << 1) | inst.U()
+  Rn     = s.rf[ inst.rn() ]
+  nbytes = 4 * popcount( inst.register_list() )
 
   if   mode == IA: start_addr, end_addr = Rn,          Rn+nbytes-4
   elif mode == IB: start_addr, end_addr = Rn+4,        Rn+nbytes
   elif mode == DA: start_addr, end_addr = Rn-nbytes+4, Rn
   else:            start_addr, end_addr = Rn-nbytes,   Rn-4
 
-  if W(inst):
-    s.rf[ rn(inst) ] = trim_32( (Rn + nbytes) if U(inst) else (Rn - nbytes) )
+  if inst.W():
+    s.rf[ inst.rn() ] = trim_32( (Rn + nbytes) if inst.U() else (Rn - nbytes) )
 
   return trim_32( start_addr ), trim_32( end_addr )
 

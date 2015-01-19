@@ -2,81 +2,87 @@
 # instruction.py
 #=======================================================================
 
-def cond( inst ):
-  return (inst >> 28) & 0xF
 
-def rn( inst ):
-  return (inst >> 16) & 0xF
+class Instruction( object ):
 
-def rd( inst ):
-  return (inst >> 12) & 0xF
+  def __init__( self, bits ):
+    self.bits = bits
 
-def rm( inst ):
-  return inst & 0xF
+  def cond( self ):
+    return (self.bits >> 28) & 0xF
 
-def rs( inst ):
-  return (inst >> 8) & 0xF
+  def rn( self ):
+    return (self.bits >> 16) & 0xF
 
-def shift( inst ):
-  return (inst >> 5) & 0b11
+  def rd( self ):
+    return (self.bits >> 12) & 0xF
 
-def shift_amt( inst ):
-  return (inst >> 7) & 0x1F
+  def rm( self ):
+    return self.bits & 0xF
 
-def rotate( inst ):
-  return (inst >> 8) & 0xF
+  def rs( self ):
+    return (self.bits >> 8) & 0xF
 
-def imm_8( inst ):
-  return inst & 0xFF
+  def shift( self ):
+    return (self.bits >> 5) & 0b11
 
-def imm_12( inst ):
-  return inst & 0xFFF
+  def shift_amt( self ):
+    return (self.bits >> 7) & 0x1F
 
-def imm_24( inst ):
-  return inst & 0xFFFFFF
+  def rotate( self ):
+    return (self.bits >> 8) & 0xF
 
-def imm_H( inst ):
-  return (inst >> 8) & 0xF
+  def imm_8( self ):
+    return self.bits & 0xFF
 
-def imm_L( inst ):
-  return inst & 0xF
+  def imm_12( self ):
+    return self.bits & 0xFFF
 
-def register_list( inst ):
-  return inst & 0xFFFF
+  def imm_24( self ):
+    return self.bits & 0xFFFFFF
 
-def cp_num( inst ):
-  return (inst >> 8) & 0xF
+  def imm_H( self ):
+    return (self.bits >> 8) & 0xF
 
-def opcode( inst ):
-  return (inst >> 21) & 0xF
+  def imm_L( self ):
+    return self.bits & 0xF
 
-def opcode_1( inst ):
-  return (inst >> 20) & 0x1F
+  def register_list( self ):
+    return self.bits & 0xFFFF
 
-def opcode_2( inst ):
-  return (inst >> 5) & 0b111
+  def cp_num( self ):
+    return (self.bits >> 8) & 0xF
 
-def I( inst ):
-  return (inst >> 25) & 0b1
+  def opcode( self ):
+    return (self.bits >> 21) & 0xF
 
-def P( inst ):
-  return (inst >> 24) & 0b1
+  def opcode_1( self ):
+    return (self.bits >> 20) & 0x1F
 
-def U( inst ):
-  return (inst >> 23) & 0b1
+  def opcode_2( self ):
+    return (self.bits >> 5) & 0b111
 
-def B( inst ):
-  return (inst >> 22) & 0b1
+  def I( self ):
+    return (self.bits >> 25) & 0b1
 
-def W( inst ):
-  return (inst >> 21) & 0b1
+  def P( self ):
+    return (self.bits >> 24) & 0b1
 
-#def L( inst ):
-#  return (inst >> 20) & 0b1
+  def U( self ):
+    return (self.bits >> 23) & 0b1
 
-def S( inst ):
-  return (inst >> 20) & 0b1
+  def B( self ):
+    return (self.bits >> 22) & 0b1
 
-def SH( inst ):
-  return (inst >> 5) & 0b11
+  def W( self ):
+    return (self.bits >> 21) & 0b1
+
+  #def L( self ):
+  #  return (self.bits >> 20) & 0b1
+
+  def S( self ):
+    return (self.bits >> 20) & 0b1
+
+  def SH( self ):
+    return (self.bits >> 5) & 0b11
 
