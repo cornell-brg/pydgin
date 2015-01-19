@@ -54,7 +54,7 @@ def get_location( pc ):
   return "pc: %x" % pc
 
 jitdriver = JitDriver( greens =['pc'],
-                       reds   =['state'],
+                       reds   =['max_insts','state',],
                        get_printable_location=get_location,
                      )
 
@@ -71,8 +71,9 @@ def run( state, max_insts=0 ):
   while s.running:
 
     jitdriver.jit_merge_point(
-      pc       = s.pc,
-      state    = s,
+      pc        = s.pc,
+      max_insts = max_insts,
+      state     = s,
     )
 
     # constant fold the pc
@@ -123,8 +124,9 @@ def run( state, max_insts=0 ):
 
     if s.pc < old:
       jitdriver.can_enter_jit(
-        pc       = s.pc,
-        state    = s,
+        pc        = s.pc,
+        max_insts = max_insts,
+        state     = s,
       )
 
   print 'DONE! Status =', s.status
