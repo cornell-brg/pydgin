@@ -2,30 +2,34 @@
 # instruction.py
 #=======================================================================
 
-def rd( inst ):
-  return (inst >> 11) & 0x1F
+class Instruction( object ):
+  def __init__( self, bits ):
+    self.bits = bits
 
-def rt( inst ):
-  return (inst >> 16) & 0x1F
+  def rd( self ):
+    return (self.bits >> 11) & 0x1F
 
-def rs( inst ):
-  return (inst >> 21) & 0x1F
+  def rt( self ):
+    return (self.bits >> 16) & 0x1F
 
-def fd( inst ):
-  return (inst >>  6) & 0x1F
+  def rs( self ):
+    return (self.bits >> 21) & 0x1F
 
-def ft( inst ):
-  return (inst >> 16) & 0x1F
+  def fd( self ):
+    return (self.bits >>  6) & 0x1F
 
-def fs( inst ):
-  return (inst >> 11) & 0x1F
+  def ft( self ):
+    return (self.bits >> 16) & 0x1F
 
-def imm( inst ):
-  return inst & 0xFFFF
+  def fs( self ):
+    return (self.bits >> 11) & 0x1F
 
-def jtarg( inst ):
-  return inst & 0x3FFFFFF
+  def imm( self ):
+    return self.bits & 0xFFFF
 
-def shamt( inst ):
-  return (inst >> 6) & 0x1F
+  def jtarg( self ):
+    return self.bits & 0x3FFFFFF
+
+  def shamt( self ):
+    return (self.bits >> 6) & 0x1F
 
