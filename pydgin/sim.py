@@ -25,8 +25,40 @@ def jitpolicy(driver):
 #-------------------------------------------------------------------------
 # Sim
 #-------------------------------------------------------------------------
+# Abstract simulator class
 
 class Sim( object ):
+
+  def __init__( self, arch_name, jit_enabled=False ):
+
+    self.arch_name   = arch_name
+
+    self.jit_enabled = jit_enabled
+
+    if jit_enabled:
+      self.jitdriver = JitDriver( greens =['pc',],
+                             reds   =['max_insts','state',],
+                             virtualizables  =['state',],
+                             get_printable_location=self.get_location,
+                           )
+
+    self.max_insts = 0
+
+  #-----------------------------------------------------------------------
+  # decode
+  #-----------------------------------------------------------------------
+  # This needs to be implemented in the child class
+
+  def decode( self, bits ):
+    raise NotImplementedError()
+
+  #-----------------------------------------------------------------------
+  # init_state
+  #-----------------------------------------------------------------------
+  # This needs to be implemented in the child class
+
+  def init_state( self, exe_file, run_argv ):
+    raise NotImplementedError()
 
   #-----------------------------------------------------------------------
   # help message
@@ -58,29 +90,14 @@ class Sim( object ):
   """
 
   #-----------------------------------------------------------------------
-  # jit
+  # get_location
   #-----------------------------------------------------------------------
-
   # for debug printing in PYPYLOG
+
   @staticmethod
   def get_location( pc ):
     # TODO: add the disassembly of the instruction here as well
     return "pc: %x" % pc
-
-  def __init__( self, arch_name, jit_enabled=False ):
-
-    self.arch_name   = arch_name
-
-    self.jit_enabled = jit_enabled
-
-    if jit_enabled:
-      self.jitdriver = JitDriver( greens =['pc',],
-                             reds   =['max_insts','state',],
-                             virtualizables  =['state',],
-                             get_printable_location=self.get_location,
-                           )
-
-    self.max_insts = 0
 
   #-----------------------------------------------------------------------
   # run
@@ -237,20 +254,6 @@ class Sim( object ):
 
       run_argv = argv[ filename_idx : ]
 
-      # Load the program into a memory object
-
-      #mem = Memory( size=memory_size, byte_storage=False )
-      #entrypoint, breakpoint = load_program(
-      #    open( filename, 'rb' ), mem,
-      #    # TODO: GEM5 uses this alignment, remove?
-      #    alignment = 1<<12
-      #)
-
-
-      # Insert bootstrapping code into memory and initialize processor state
-
-      #state = syscall_init( mem, entrypoint, breakpoint, run_argv, debug )
-
       # Open the executable for reading
 
       try:
@@ -272,7 +275,6 @@ class Sim( object ):
       # Execute the program
 
       self.run()
-      #run( state, max_insts )
 
       return 0
 
@@ -282,7 +284,7 @@ class Sim( object ):
   # target
   #-----------------------------------------------------------------------
   # Enables RPython translation of our interpreter.
-  #def get_target( self ):
+
   def target( self, driver, args ):
 
     # if --debug flag is provided in translation, we enable debug printing
@@ -315,6 +317,10 @@ class Sim( object ):
 #-------------------------------------------------------------------------
 # init_sim
 #-------------------------------------------------------------------------
+# Simulator implementations need to call this function at the top level.
+# This takes care of adding target function to top level environment and
+# running the simulation in interpreted mode if directly called
+# ( __name__ == "__main__" )
 
 def init_sim( sim ):
 
@@ -322,13 +328,8 @@ def init_sim( sim ):
   # the stack frame to determine if this is being run top level and add
   # target function required by rpython toolchain
 
-  print "__name__:", __name__
-  print "globals", globals()
-
   caller_globals = sys._getframe(1).f_globals
   caller_name    = caller_globals[ "__name__" ]
-
-  print "caller __name__:", caller_name
 
   # add target function to top level
 
