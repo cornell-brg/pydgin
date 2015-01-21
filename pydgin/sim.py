@@ -37,10 +37,10 @@ class Sim( object ):
 
     if jit_enabled:
       self.jitdriver = JitDriver( greens =['pc',],
-                             reds   =['max_insts','state',],
-                             virtualizables  =['state',],
-                             get_printable_location=self.get_location,
-                           )
+                                  reds   = ['state','sim'],
+                                  virtualizables  =['state',],
+                                  get_printable_location=self.get_location,
+                                )
 
     self.max_insts = 0
 
@@ -103,6 +103,7 @@ class Sim( object ):
   # run
   #-----------------------------------------------------------------------
   def run( self ): #, state, max_insts=0 ):
+    self = hint( self, promote=True )
     s = self.state
 
     max_insts = self.max_insts
@@ -112,7 +113,7 @@ class Sim( object ):
 
       jitdriver.jit_merge_point(
         pc        = s.fetch_pc(),
-        max_insts = max_insts,
+        sim       = self,
         state     = s,
       )
 
@@ -169,7 +170,7 @@ class Sim( object ):
       if s.fetch_pc() < old:
         jitdriver.can_enter_jit(
           pc        = s.fetch_pc(),
-          max_insts = max_insts,
+          sim       = self,
           state     = s,
         )
 
