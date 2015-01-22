@@ -39,6 +39,9 @@ class State( object ):
     self.stats_en      = 0
     self.stat_ncycles  = 0
 
+    # marks if should be running, syscall_exit sets it false
+    self.running       = True
+
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
 

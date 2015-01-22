@@ -109,7 +109,7 @@ class Sim( object ):
     max_insts = self.max_insts
     jitdriver = self.jitdriver
 
-    while s.status == 0:
+    while s.running:
 
       jitdriver.jit_merge_point(
         pc        = s.fetch_pc(),
@@ -154,6 +154,7 @@ class Sim( object ):
         print
       if s.debug.enabled( "regdump" ):
         s.rf.print_regs( per_row=4 )
+        # TODO: move this to arm reg file
         print '%s%s%s%s' % (
           'N' if s.N else '-',
           'Z' if s.Z else '-',
