@@ -8,6 +8,16 @@ import py
 import rpython
 
 #-----------------------------------------------------------------------
+# FatalError
+#-----------------------------------------------------------------------
+# We use our own exception class to terminate execution on a fatal error.
+
+class FatalError( Exception ):
+
+  def __init__( self, msg ):
+    self.msg = msg
+
+#-----------------------------------------------------------------------
 # load_program
 #-----------------------------------------------------------------------
 def load_program( fp, mem, alignment=0 ):

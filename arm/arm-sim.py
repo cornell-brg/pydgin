@@ -8,7 +8,7 @@ sys.path.append('..')
 sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 from pydgin.storage import Memory
-from pydgin.misc    import load_program
+from pydgin.misc    import load_program, FatalError
 from bootstrap      import syscall_init, memory_size
 from instruction    import Instruction
 from isa            import decode
@@ -104,7 +104,14 @@ def run( state, max_insts=0 ):
               pad( inst_str, 8 ),
               pad( "%d" % s.ncycles, 8 ), ),
 
-    exec_fun( s, Instruction(inst) )
+    try:
+      exec_fun( s, Instruction(inst) )
+    except FatalError as error:
+      # TODO: maybe we can add a command line arg to just give a warning
+      # and not terminate execution
+      print "Exception in execution, aborting!"
+      print "Exception message: %s" % error.msg
+      break
 
     s.ncycles += 1    # TODO: should this be done inside instruction definition?
     if s.stats_en: s.stat_ncycles += 1

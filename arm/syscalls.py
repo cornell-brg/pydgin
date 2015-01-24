@@ -35,8 +35,9 @@
 # - http://www.embecosm.com/appnotes/ean9/ean9-howto-newlib-1.0.html
 #
 
-from isa   import reg_map
-from utils import trim_32
+from pydgin.misc import FatalError
+from isa         import reg_map
+from utils       import trim_32
 import sys
 import os
 import errno
@@ -518,9 +519,7 @@ syscall_names = {k: v.func_name for (k,v) in syscall_funcs.items()}
 
 def do_syscall( s, syscall_num ):
   if syscall_num not in syscall_funcs:
-    print "WARNING: syscall %d not implemented!" % syscall_num,
-    raise Exception()
-    return
+    raise FatalError( "Syscall %d not implemented!" % syscall_num )
 
   # TODO: make prints debug mode only!
   if s.debug.enabled('syscalls'):
