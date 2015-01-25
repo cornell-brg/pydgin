@@ -248,6 +248,60 @@ def syscall_close( s ):
 
   s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
 
+#-------------------------------------------------------------------------
+# link
+#-------------------------------------------------------------------------
+
+def syscall_link( s ):
+
+  src_ptr  = s.rf[ a0 ]
+  link_ptr = s.rf[ a1 ]
+
+  #if s.debug.enabled( "syscalls" ):
+  #  print "syscall_link( src=%x, link=%x )" % \
+  #        ( src_ptr, link_ptr ),
+
+  src       = get_str( s, src_ptr )
+  link_name = get_str( s, link_ptr )
+
+  errno = 0
+
+  try:
+    os.link( src, link_name )
+
+  except OSError as e:
+    if s.debug.enabled( "syscalls" ):
+      print "OSError in syscall_link. errno=%d" % e.errno
+    errno = e.errno
+
+  s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
+
+#-------------------------------------------------------------------------
+# unlink
+#-------------------------------------------------------------------------
+
+def syscall_unlink( s ):
+
+  path_ptr  = s.rf[ a0 ]
+
+  #if s.debug.enabled( "syscalls" ):
+  #  print "syscall_unlink( path=%x )" % path_ptr,
+
+  path = get_str( s, path_ptr )
+
+  errno = 0
+
+  try:
+    os.unlink( path )
+
+  except OSError as e:
+    if s.debug.enabled( "syscalls" ):
+      print "OSError in syscall_unlink. errno=%d" % e.errno
+    errno = e.errno
+
+  s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
+
+
 #-----------------------------------------------------------------------
 # brk
 #-----------------------------------------------------------------------
@@ -504,6 +558,8 @@ syscall_funcs = {
     4: syscall_write,
     5: syscall_open,
     6: syscall_close,
+    9: syscall_link,
+   10: syscall_unlink,
 
 #      UCLIBC/GLIBS
 #      see: https://github.com/qemu/qemu/blob/master/linux-user/arm/syscall_nr.h
@@ -521,7 +577,6 @@ def do_syscall( s, syscall_num ):
   if syscall_num not in syscall_funcs:
     raise FatalError( "Syscall %d not implemented!" % syscall_num )
 
-  # TODO: make prints debug mode only!
   if s.debug.enabled('syscalls'):
     print syscall_num, syscall_names[ syscall_num ],
     print '%s %s %s %s' % (hex(s.rf[0]), hex(s.rf[1]), hex(s.rf[2]), hex(s.rf[3])),
