@@ -136,7 +136,7 @@ class _WordMemory( object ):
       self.bounds_check( start_addr, 'WR' )
 
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
-      self.data[ word ] = value
+      pass # no masking needed
     elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
       mask  = ~(0xFFFF << (byte * 8)) & 0xFFFFFFFF
       value = ( self.data[ word ] & mask ) | ( (value & 0xFFFF) << (byte * 8) )
