@@ -9,9 +9,10 @@ from pydgin.debug   import Debug, pad, pad_hex
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  _virtualizable_ = ['pc', 'ncycles']
+  _virtualizable_ = ['pc', 'ncycles', 'regs[*]', 'N', 'Z', 'C', 'V']
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
+    self.regs     = [0] * 16
     self.rf       = ArmRegisterFile( self, num_regs=16 )
     self.mem      = memory
 
@@ -48,9 +49,10 @@ class State( object ):
 #-----------------------------------------------------------------------
 # ArmRegisterFile
 #-----------------------------------------------------------------------
-class ArmRegisterFile( RegisterFile ):
+#class ArmRegisterFile( RegisterFile ):
+class ArmRegisterFile( object ):
   def __init__( self, state, num_regs=16 ):
-    RegisterFile.__init__( self, constant_zero=False, num_regs=num_regs )
+    #RegisterFile.__init__( self, constant_zero=False, num_regs=num_regs )
     self.state = state
 
   def __getitem__( self, idx ):
@@ -59,14 +61,14 @@ class ArmRegisterFile( RegisterFile ):
       if idx == 15:
         rd_str = pad_hex( self.state.pc ) + "+ 8"
       else:
-        rd_str = pad_hex( self.regs[idx] )
+        rd_str = pad_hex( self.state.regs[idx] )
 
       print ':: RD.RF[%s] = %s' % ( pad( "%d" % idx, 2 ), rd_str ),
 
     if idx == 15:
       return self.state.pc + 8
     else:
-      return self.regs[idx]
+      return self.state.regs[idx]
 
   def __setitem__( self, idx, value ):
     if idx == 15:
@@ -74,7 +76,7 @@ class ArmRegisterFile( RegisterFile ):
       if self.debug.enabled( "rf" ):
         print ':: WR.RF[15] = %s' % ( pad_hex( value ) ),
     else:
-      self.regs[idx] = value
+      self.state.regs[idx] = value
       if self.debug.enabled( "rf" ):
         print ':: WR.RF[%s] = %s' % (
                           pad( "%d" % idx, 2 ),
