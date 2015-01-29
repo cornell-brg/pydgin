@@ -2,7 +2,7 @@
 # storage.py
 #=======================================================================
 
-from rpython.rlib.jit import elidable, unroll_safe
+from rpython.rlib.jit import elidable, unroll_safe, hint
 from debug            import Debug, pad, pad_hex
 
 #-----------------------------------------------------------------------
@@ -55,11 +55,18 @@ class RegisterFile( object ):
 #-----------------------------------------------------------------------
 # Memory
 #-----------------------------------------------------------------------
-def Memory( data=None, size=2**10, byte_storage=False ):
-  if byte_storage:
-    return _ByteMemory( data, size )
+def Memory( data=None, size=2**10, byte_storage=False,
+            sparse_storage=False ):
+  if sparse_storage:
+    if byte_storage:
+      return _SparseMemory( _ByteMemory )
+    else:
+      return _SparseMemory( _WordMemory )
   else:
-    return _WordMemory( data, size )
+    if byte_storage:
+      return _ByteMemory( data, size )
+    else:
+      return _WordMemory( data, size )
 
 #-------------------------------------------------------------------------
 # _WordMemory
@@ -205,5 +212,63 @@ class _ByteMemory( object ):
     for i in range( num_bytes ):
       self.data[ start_addr + i ] = chr(value & 0xFF)
       value = value >> 8
+
+#-----------------------------------------------------------------------
+# _SparseMemory
+#-----------------------------------------------------------------------
+
+class _SparseMemory( object ):
+  _immutable_fields_ = [ "BlockMemory", "block_size", "addr_mask",
+                         "block_mask" ]
+
+  def __init__( self, BlockMemory, block_size=2**10 ):
+    self.BlockMemory = BlockMemory
+    self.block_size = block_size
+    self.addr_mask  = block_size - 1
+    self.block_mask = 0xffffffff ^ self.addr_mask
+    print "sparse memory size %x addr mask %x block mask %x" \
+          % ( self.block_size, self.addr_mask, self.block_mask )
+    #blocks     = []
+    self.block_dict = {}
+
+  def add_block( self, block_addr ):
+    #print "adding block: %x" % block_addr
+    self.block_dict[ block_addr ] = self.BlockMemory( size=self.block_size )
+
+  @unroll_safe
+  @elidable
+  def get_block_mem( self, block_addr ):
+    #block_idx  = block_dict[ 
+    if block_addr not in self.block_dict:
+      self.add_block( block_addr )
+    block_mem = self.block_dict[ block_addr ]
+    return block_mem
+
+  @elidable
+  def iread( self, start_addr, num_bytes ):
+    start_addr = hint( start_addr, promote=True )
+    num_bytes  = hint( num_bytes,  promote=True )
+
+    block_addr = self.block_mask & start_addr
+    #block_addr = hint( block_addr, promote=True )
+    block_mem = self.get_block_mem( block_addr )
+    #block_mem = self.get_block_mem( start_addr )
+    return block_mem.iread( start_addr & self.addr_mask, num_bytes )
+
+  def read( self, start_addr, num_bytes ):
+    block_addr = self.block_mask & start_addr
+    block_addr = hint( block_addr, promote=True )
+    block_mem = self.get_block_mem( block_addr )
+    #block_mem = self.get_block_mem( start_addr )
+    return block_mem.read( start_addr & self.addr_mask, num_bytes )
+
+  def write( self, start_addr, num_bytes, value ):
+    block_addr = self.block_mask & start_addr
+    block_addr = hint( block_addr, promote=True )
+    block_mem = self.get_block_mem( block_addr )
+    #block_mem = self.get_block_mem( start_addr )
+    block_mem.write( start_addr & self.addr_mask, num_bytes, value )
+
+
 
 
