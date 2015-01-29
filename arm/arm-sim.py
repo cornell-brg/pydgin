@@ -14,7 +14,7 @@ from instruction    import Instruction
 from isa            import decode
 
 from pydgin.debug     import Debug, pad, pad_hex
-from rpython.rlib.jit import JitDriver, hint
+from rpython.rlib.jit import JitDriver, hint, set_user_param
 
 #-----------------------------------------------------------------------
 # help message
@@ -29,7 +29,7 @@ usage: %s <args> <sim_exe> <sim_args>
 <sim_args> arguments to be passed to the simulated executable
 <args>     the following optional arguments are supported:
 
-  --help          show this message and exit
+  --help,-h       show this message and exit
   --test          run in testing mode (for running asm tests)
   --debug <flags> enable debug flags in a comma-separated form (e.g.
                   "--debug syscalls,insts"). the following flags are
@@ -42,6 +42,8 @@ usage: %s <args> <sim_exe> <sim_args>
        bootstrap          initial stack and register state
 
   --max-insts <i> run until the maximum number of instructions
+  --jit <flags>   set flags to tune the JIT (see
+                  rpython.rlib.jit.PARAMETER_DOCS)
 
 """
 
@@ -159,6 +161,7 @@ def entry_point( argv ):
   ARGS        = 0
   DEBUG_FLAGS = 1
   MAX_INSTS   = 2
+  JIT_FLAGS   = 3
   token_type = ARGS
 
   # go through the args one by one and parse accordingly
@@ -168,7 +171,7 @@ def entry_point( argv ):
 
     if token_type == ARGS:
 
-      if token == "--help":
+      if token == "--help" or token == "-h":
         print help_message % argv[0]
         return 0
 
@@ -185,6 +188,9 @@ def entry_point( argv ):
       elif token == "--max-insts":
         token_type = MAX_INSTS
 
+      elif token == "--jit":
+        token_type = JIT_FLAGS
+
       elif token[:2] == "--":
         # unknown option
         print "Unknown argument %s" % token
@@ -200,6 +206,10 @@ def entry_point( argv ):
       token_type = ARGS
     elif token_type == MAX_INSTS:
       max_insts = int( token )
+      token_type = ARGS
+    elif token_type == JIT_FLAGS:
+      # pass the jit flags to rpython.rlib.jit
+      set_user_param( jitdriver, token )
       token_type = ARGS
 
   if filename_idx == 0:
