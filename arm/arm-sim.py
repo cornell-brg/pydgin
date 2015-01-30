@@ -15,6 +15,7 @@ from isa            import decode
 
 from pydgin.debug     import Debug, pad, pad_hex
 from rpython.rlib.jit import JitDriver, hint, set_user_param
+from machine          import ReturnException
 
 #-----------------------------------------------------------------------
 # help message
@@ -58,7 +59,7 @@ def get_location( pc ):
 
 jitdriver = JitDriver( greens =['pc',],
                        reds   =['max_insts','state',],
-                       virtualizables  =['state',],
+                       #virtualizables  =['state',],
                        get_printable_location=get_location,
                      )
 
@@ -71,6 +72,13 @@ def jitpolicy(driver):
 #-----------------------------------------------------------------------
 def run( state, max_insts=0 ):
   s = state
+
+  # trigger can enter jit on recursive calls
+  jitdriver.can_enter_jit(
+    pc        = s.fetch_pc(),
+    max_insts = max_insts,
+    state     = s,
+  )
 
   while s.status == 0:
 
@@ -106,17 +114,25 @@ def run( state, max_insts=0 ):
               pad( inst_str, 8 ),
               pad( "%d" % s.ncycles, 8 ), ),
 
+    # increment ncycles before so that recursion still keeps track of
+    # ncycles correctly
+    s.ncycles += 1    # TODO: should this be done inside instruction definition?
+    if s.stats_en: s.stat_ncycles += 1
+
     try:
       exec_fun( s, Instruction(inst) )
+    except ReturnException as ret_exception:
+      if ret_exception.num_levels > 1:
+        ret_exception.num_levels -= 1
+        raise ret_exception
+        #raise ReturnException( ret_exception.num_levels - 1 )
+      return
     except FatalError as error:
       # TODO: maybe we can add a command line arg to just give a warning
       # and not terminate execution
       print "Exception in execution, aborting!"
       print "Exception message: %s" % error.msg
       break
-
-    s.ncycles += 1    # TODO: should this be done inside instruction definition?
-    if s.stats_en: s.stat_ncycles += 1
 
     if s.debug.enabled( "insts" ):
       print
@@ -239,6 +255,11 @@ def entry_point( argv ):
   # Insert bootstrapping code into memory and initialize processor state
 
   state = syscall_init( mem, entrypoint, breakpoint, run_argv, debug )
+
+  # TODO: temporary, add max_insts to state
+
+  state.max_insts = max_insts
+  state.run = run
 
   # Execute the program
 

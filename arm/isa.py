@@ -358,9 +358,13 @@ def execute_b( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bl( s, inst ):
   if condition_passed( s, inst.cond() ):
+    curr_pc = s.fetch_pc()
+    #print "fun_call %x %d" % (s.pc, s.nest_level)
     s.rf[LR] = trim_32( s.fetch_pc() + 4 )
     offset   = signed( sign_extend_30( inst.imm_24() ) << 2 )
     s.rf[PC] = trim_32( s.rf[PC] + offset )
+    target_pc = s.fetch_pc()
+    s.fun_call( curr_pc, target_pc )
     return
   s.rf[PC] = s.fetch_pc() + 4
 
@@ -417,10 +421,16 @@ def execute_blx2( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bx( s, inst ):
   if condition_passed( s, inst.cond() ):
+    curr_pc = s.fetch_pc()
+    #print "fun_return %x %d %d" % (s.pc, s.nest_level, inst.rm())
     s.T      = s.rf[ inst.rm() ] & 0x00000001
     s.rf[PC] = s.rf[ inst.rm() ] & 0xFFFFFFFE
     if s.T:
       raise FatalError( "Entering THUMB mode! Unsupported!")
+
+    target_pc = s.fetch_pc()
+    #if inst.rm() == LR:
+    s.fun_return( curr_pc, target_pc )
 
   # no pc + 4 on success
   else:
