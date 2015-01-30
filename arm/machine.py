@@ -19,8 +19,6 @@ class State( object ):
   def __init__( self, memory, debug, reset_addr=0x400, copy_from=None ):
     if copy_from is not None:
 
-      hint( copy_from, force_virtualizable=True )
-
       self.pc       = copy_from.pc
       self.rf       = copy_from.rf
       self.rf.state = self
@@ -51,11 +49,12 @@ class State( object ):
       # syscall stuff... TODO: should this be here?
       self.breakpoint = copy_from.breakpoint
 
-      #self.call_stack = []
-      self.call_stack = copy_from.call_stack
-
       self.run = copy_from.run
       self.max_insts = copy_from.max_insts
+
+      self.nest_level = copy_from.nest_level + 1
+      self.linked_state = copy_from
+      self.link_pc = 0
 
     else:
 
@@ -91,13 +90,14 @@ class State( object ):
       self.breakpoint = 0
 
       self.nest_level = 0
-      self.call_stack = []
+      self.linked_state = None
+      self.link_pc = 0
 
   def fetch_pc( self ):
     return self.pc
 
   def return_copy( self, other ):
-    hint( other, force_virtualizable=True )
+    #hint( other, force_virtualizable=True )
     self.pc         = other.pc
     self.N          = other.N
     self.Z          = other.Z
@@ -111,32 +111,31 @@ class State( object ):
     self.rf.state   = self
 
   def fun_call( self, old_pc, new_pc ):
-    #print "fun_call %x %x %d" % ( old_pc, new_pc, len(self.call_stack) )
-    self.call_stack.append( (old_pc, self) )
+    #print "fun_call %x %x %d" % ( old_pc, new_pc, self.nest_level )
+
+    self.link_pc = old_pc
     new_state = State( None, None, copy_from=self )
-    #self.run( self, self.max_insts )
-    self.run( new_state, self.max_insts )
+    new_state.run( new_state, new_state.max_insts )
 
   @unroll_safe
   def fun_return( self, old_pc, new_pc ):
 
     search_space = 5
+    state = self
 
-    for i in xrange( 1, min( len( self.call_stack ), search_space ) ):
-      exp_pc, _ = self.call_stack[ -i ]
-      exp_pc = exp_pc + 4
-      if exp_pc == new_pc:
+    for i in xrange( 1, search_space ):
+      state = state.linked_state
+
+      if state is None:
+        break
+
+      #print "fun_return try %d %x %x" % (i, state.link_pc, new_pc)
+      if state.link_pc + 4 == new_pc:
+        state.return_copy( self )
         #print "fun_return %d %x %x %d" % (i, old_pc, new_pc,
-        #                                  len(self.call_stack) )
-        # dumb: have to initialize popped_state
-        popped_state = self
-        for j in xrange( i ):
-          _, popped_state = self.call_stack.pop()
-        popped_state.return_copy( self )
+        #                                  self.nest_level)
         raise ReturnException( i )
-
-      #print "fun_noreturn %x %x %d" % (old_pc, new_pc, len(self.call_stack) )
-      pass
+    #print "fun_noreturn %x %x %d" % (old_pc, new_pc, self.nest_level )
 
 #-----------------------------------------------------------------------
 # ArmRegisterFile

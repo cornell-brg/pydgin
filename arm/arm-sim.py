@@ -125,7 +125,6 @@ def run( state, max_insts=0 ):
       if ret_exception.num_levels > 1:
         ret_exception.num_levels -= 1
         raise ret_exception
-        #raise ReturnException( ret_exception.num_levels - 1 )
 
       return
     except FatalError as error:
@@ -162,8 +161,8 @@ def run( state, max_insts=0 ):
   print 'DONE! Status =', s.status
   print 'Instructions Executed =', s.ncycles
   # TODO: temporary -- throw a return execution to end execution
-  if len( s.call_stack ) > 0:
-    raise ReturnException( len( s.call_stack ) )
+  if s.nest_level > 0:
+    raise ReturnException( s.nest_level )
 
 #-----------------------------------------------------------------------
 # entry_point
