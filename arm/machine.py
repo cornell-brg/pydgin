@@ -4,7 +4,7 @@
 
 from pydgin.storage import RegisterFile
 from pydgin.debug   import Debug, pad, pad_hex
-from rpython.rlib.jit import unroll_safe
+from rpython.rlib.jit import unroll_safe, hint
 
 class ReturnException( Exception ):
 
@@ -15,74 +15,127 @@ class ReturnException( Exception ):
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  #_virtualizable_ = ['pc', 'ncycles']
-  def __init__( self, memory, debug, reset_addr=0x400 ):
-    self.pc       = reset_addr
-    self.rf       = ArmRegisterFile( self, num_regs=16 )
-    self.mem      = memory
+  _virtualizable_ = ['pc', 'ncycles', 'N', 'Z', 'C', 'V', 'status']
+  def __init__( self, memory, debug, reset_addr=0x400, copy_from=None ):
+    if copy_from is not None:
 
-    self    .debug = debug
-    self.rf .debug = debug
-    self.mem.debug = debug
+      hint( copy_from, force_virtualizable=True )
 
-    self.rf[ 15 ]  = reset_addr
+      self.pc       = copy_from.pc
+      self.rf       = copy_from.rf
+      self.rf.state = self
+      self.mem      = copy_from.mem
 
-    # current program status register (CPSR)
-    self.N    = 0b0      # Negative condition
-    self.Z    = 0b0      # Zero condition
-    self.C    = 0b0      # Carry condition
-    self.V    = 0b0      # Overflow condition
-    #self.J    = 0b0      # Jazelle state flag
-    #self.I    = 0b0      # IRQ Interrupt Mask
-    #self.F    = 0b0      # FIQ Interrupt Mask
-    #self.T    = 0b0      # Thumb state flag
-    #self.M    = 0b00000  # Processor Mode
+      self    .debug = copy_from.debug
 
-    # other registers
-    self.status        = 0
-    self.ncycles       = 0
-    # unused
-    self.stats_en      = 0
-    self.stat_ncycles  = 0
+      # current program status register (CPSR)
+      self.N    = copy_from.N      # Negative condition
+      self.Z    = copy_from.Z      # Zero condition
+      self.C    = copy_from.C      # Carry condition
+      self.V    = copy_from.V      # Overflow condition
+      #self.J    = 0b0      # Jazelle state flag
+      #self.I    = 0b0      # IRQ Interrupt Mask
+      #self.F    = 0b0      # FIQ Interrupt Mask
+      #self.T    = 0b0      # Thumb state flag
+      #self.M    = 0b00000  # Processor Mode
 
-    # syscall stuff... TODO: should this be here?
-    self.breakpoint = 0
+      # other registers
+      self.status        = copy_from.status
+      self.ncycles       = copy_from.ncycles
+      self.status        = copy_from.status
+      self.ncycles       = copy_from.ncycles
+      # unused
+      self.stats_en      = copy_from.stats_en
+      self.stat_ncycles  = copy_from.stat_ncycles
 
-    self.nest_level = 0
-    self.call_stack = []
+      # syscall stuff... TODO: should this be here?
+      self.breakpoint = copy_from.breakpoint
+
+      #self.call_stack = []
+      self.call_stack = copy_from.call_stack
+
+      self.run = copy_from.run
+      self.max_insts = copy_from.max_insts
+
+    else:
+
+      self.pc       = reset_addr
+      self.rf       = ArmRegisterFile( self, num_regs=16 )
+      self.mem      = memory
+
+      self    .debug = debug
+      self.rf .debug = debug
+      self.mem.debug = debug
+
+      self.rf[ 15 ]  = reset_addr
+
+      # current program status register (CPSR)
+      self.N    = 0b0      # Negative condition
+      self.Z    = 0b0      # Zero condition
+      self.C    = 0b0      # Carry condition
+      self.V    = 0b0      # Overflow condition
+      #self.J    = 0b0      # Jazelle state flag
+      #self.I    = 0b0      # IRQ Interrupt Mask
+      #self.F    = 0b0      # FIQ Interrupt Mask
+      #self.T    = 0b0      # Thumb state flag
+      #self.M    = 0b00000  # Processor Mode
+
+      # other registers
+      self.status        = 0
+      self.ncycles       = 0
+      ## unused
+      self.stats_en      = 0
+      self.stat_ncycles  = 0
+
+      # syscall stuff... TODO: should this be here?
+      self.breakpoint = 0
+
+      self.nest_level = 0
+      self.call_stack = []
 
   def fetch_pc( self ):
     return self.pc
 
+  def return_copy( self, other ):
+    hint( other, force_virtualizable=True )
+    self.pc         = other.pc
+    self.N          = other.N
+    self.Z          = other.Z
+    self.C          = other.C
+    self.V          = other.V
+    self.status     = other.status
+    self.ncycles    = other.ncycles
+    self.breakpoint = other.breakpoint
+    self.stats_en   = other.stats_en
+    self.stat_ncycles = other.stat_ncycles
+    self.rf.state   = self
+
   def fun_call( self, old_pc, new_pc ):
-    #print "fun_call %x %x %d" % ( old_pc, new_pc, self.nest_level )
-    self.nest_level += 1
-    self.call_stack.append( old_pc )
-    self.run( self, self.max_insts )
+    #print "fun_call %x %x %d" % ( old_pc, new_pc, len(self.call_stack) )
+    self.call_stack.append( (old_pc, self) )
+    new_state = State( None, None, copy_from=self )
+    #self.run( self, self.max_insts )
+    self.run( new_state, self.max_insts )
 
   @unroll_safe
   def fun_return( self, old_pc, new_pc ):
-    exp_pc = self.call_stack[-1] + 4
-    if exp_pc == new_pc:
-      self.call_stack.pop()
-      self.nest_level -= 1
-      #print "fun_return %x %x %d" % (old_pc, new_pc, self.nest_level )
-      raise ReturnException()
-    else:
-      # we search for other frames this might be returning to
-      search_space = 5
 
-      for i in xrange( 1, min( len( self.call_stack ), search_space ) ):
-        exp_pc = self.call_stack[ -i ] + 4
-        #print "fun try %d %x %x %x" % ( i, exp_pc, old_pc, new_pc )
-        if exp_pc == new_pc:
-          #print "fun found return %d %x %x" % ( i, old_pc, new_pc )
-          for j in xrange( i ):
-            self.call_stack.pop()
-          self.nest_level -= i
-          raise ReturnException( i )
+    search_space = 5
 
-      #print "fun_noreturn %x %x %d" % (old_pc, new_pc, self.nest_level )
+    for i in xrange( 1, min( len( self.call_stack ), search_space ) ):
+      exp_pc, _ = self.call_stack[ -i ]
+      exp_pc = exp_pc + 4
+      if exp_pc == new_pc:
+        #print "fun_return %d %x %x %d" % (i, old_pc, new_pc,
+        #                                  len(self.call_stack) )
+        # dumb: have to initialize popped_state
+        popped_state = self
+        for j in xrange( i ):
+          _, popped_state = self.call_stack.pop()
+        popped_state.return_copy( self )
+        raise ReturnException( i )
+
+      #print "fun_noreturn %x %x %d" % (old_pc, new_pc, len(self.call_stack) )
       pass
 
 #-----------------------------------------------------------------------

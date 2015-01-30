@@ -59,7 +59,7 @@ def get_location( pc ):
 
 jitdriver = JitDriver( greens =['pc',],
                        reds   =['max_insts','state',],
-                       #virtualizables  =['state',],
+                       virtualizables  =['state',],
                        get_printable_location=get_location,
                      )
 
@@ -126,6 +126,7 @@ def run( state, max_insts=0 ):
         ret_exception.num_levels -= 1
         raise ret_exception
         #raise ReturnException( ret_exception.num_levels - 1 )
+
       return
     except FatalError as error:
       # TODO: maybe we can add a command line arg to just give a warning
@@ -160,6 +161,9 @@ def run( state, max_insts=0 ):
 
   print 'DONE! Status =', s.status
   print 'Instructions Executed =', s.ncycles
+  # TODO: temporary -- throw a return execution to end execution
+  if len( s.call_stack ) > 0:
+    raise ReturnException( len( s.call_stack ) )
 
 #-----------------------------------------------------------------------
 # entry_point
