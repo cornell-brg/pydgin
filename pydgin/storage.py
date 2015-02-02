@@ -71,6 +71,9 @@ class _WordMemory( object ):
     self.size  = (len( self.data ) << 2)
     self.debug = Debug()
 
+    # TODO: pass data_section to memory for bounds checking
+    self.data_section = 0x00000000
+
   def bounds_check( self, addr, x ):
     # check if the accessed data is larger than the memory size
     if addr > self.size:
@@ -82,7 +85,7 @@ class _WordMemory( object ):
       raise Exception()
 
     # Special write checks
-    if x == 'WR'and addr < self.data_section:
+    if x == 'WR' and addr < self.data_section:
       print ("WARNING: %s writing address below .data section!!!. "
              "addr=%s size=%s") % ( x, pad_hex( addr ), pad_hex( self.data_section ) )
       raise Exception()
