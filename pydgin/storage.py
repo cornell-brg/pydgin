@@ -2,8 +2,9 @@
 # storage.py
 #=======================================================================
 
-from rpython.rlib.jit import elidable, unroll_safe
-from debug            import Debug, pad, pad_hex
+from rpython.rlib.jit         import elidable, unroll_safe
+from debug                    import Debug, pad, pad_hex
+from rpython.rlib.rarithmetic import r_uint32, widen
 
 #-----------------------------------------------------------------------
 # RegisterFile
@@ -67,7 +68,7 @@ def Memory( data=None, size=2**10, byte_storage=False ):
 # Memory that uses ints instead of chars
 class _WordMemory( object ):
   def __init__( self, data=None, size=2**10 ):
-    self.data  = data if data else [0] * (size >> 2)
+    self.data  = data if data else [ r_uint32(0) ] * (size >> 2)
     self.size  = (len( self.data ) << 2)
     self.debug = Debug()
 
@@ -104,13 +105,13 @@ class _WordMemory( object ):
 
     value = 0
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
-      value = self.data[ word ]
+      value = widen( self.data[ word ] )
     elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
       mask = 0xFFFF << (byte * 8)
-      value = (self.data[ word ] & mask) >> (byte * 8)
+      value = ( widen( self.data[ word ] ) & mask) >> (byte * 8)
     elif num_bytes == 1:
       mask = 0xFF   << (byte * 8)
-      value = (self.data[ word ] & mask) >> (byte * 8)
+      value = ( widen( self.data[ word ] ) & mask) >> (byte * 8)
     else:
       raise Exception('Invalid num_bytes: %d!' % num_bytes)
 
@@ -127,7 +128,7 @@ class _WordMemory( object ):
   @unroll_safe
   def iread( self, start_addr, num_bytes ):
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
-    return self.data[ start_addr >> 2 ]
+    return widen( self.data[ start_addr >> 2 ] )
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
@@ -142,17 +143,19 @@ class _WordMemory( object ):
       pass # no masking needed
     elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
       mask  = ~(0xFFFF << (byte * 8)) & 0xFFFFFFFF
-      value = ( self.data[ word ] & mask ) | ( (value & 0xFFFF) << (byte * 8) )
+      value = ( widen( self.data[ word ] ) & mask ) \
+              | ( (value & 0xFFFF) << (byte * 8) )
     elif num_bytes == 1:
       mask  = ~(0xFF   << (byte * 8)) & 0xFFFFFFFF
-      value = ( self.data[ word ] & mask ) | ( (value & 0xFF  ) << (byte * 8) )
+      value = ( widen( self.data[ word ] ) & mask ) \
+              | ( (value & 0xFF  ) << (byte * 8) )
     else:
       raise Exception('Invalid num_bytes: %d!' % num_bytes)
 
     if self.debug.enabled( "mem" ):
       print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
                                      pad_hex( value ) ),
-    self.data[ word ] = value
+    self.data[ word ] = r_uint32( value )
 
 #-----------------------------------------------------------------------
 # _ByteMemory
