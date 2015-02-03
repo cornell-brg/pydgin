@@ -3,6 +3,7 @@
 #=======================================================================
 # Collection of utility functions for ARM instruction implementations.
 
+from pydgin.misc import FatalError
 from instruction import *
 
 #=======================================================================
@@ -66,7 +67,7 @@ def shifter_operand( s, inst ):
 
   # Arithmetic or Load/Store instruction extension space
   else:
-    raise Exception('Not a data-processing instruction! PC: %x' % s.fetch_pc())
+    raise FatalError('Not a data-processing instruction! PC: %x' % s.fetch_pc())
 
 # Shifter constants
 
@@ -112,7 +113,7 @@ def shifter_operand_imm( s, inst ):
       cout = (Rm >> shift_imm - 1)&1
 
   else:
-    raise Exception('Impossible shift_op!')
+    raise FatalError('Impossible shift_op!')
 
   return trim_32(out), cout
 
@@ -154,7 +155,7 @@ def shifter_operand_reg( s, inst ):
     elif Rs4 >  0: out, cout = rotate_right(Rm, Rs4), (Rm >> Rs4 - 1)&1
 
   else:
-    raise Exception('Impossible shift_op!')
+    raise FatalError('Impossible shift_op!')
 
   return trim_32(out), cout
 
@@ -264,7 +265,7 @@ def addressing_mode_2( s, inst ):
 #
 def addressing_mode_3( s, inst ):
   if inst.SH() == 0b00:
-    raise Exception('Not a load/store instruction!')
+    raise FatalError('Not a load/store instruction!')
 
   # Immediate vs. Register Offset
   if inst.B(): index = (inst.imm_H() << 4) | inst.imm_L()

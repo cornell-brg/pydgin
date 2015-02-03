@@ -9,7 +9,7 @@ sys.path.append('..')
 
 from pydgin.sim     import Sim, init_sim
 from pydgin.storage import Memory
-from pydgin.misc    import load_program
+from pydgin.misc    import load_program, FatalError
 from bootstrap      import syscall_init, memory_size
 from instruction    import Instruction
 from isa            import decode

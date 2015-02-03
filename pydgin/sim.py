@@ -9,14 +9,9 @@ import sys
 #sys.path.append('..')
 sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
-#from pydgin.storage import Memory
-#from pydgin.misc    import load_program
-#from bootstrap      import syscall_init, memory_size
-#from instruction    import Instruction
-#from isa            import decode
-
 from pydgin.debug     import Debug, pad, pad_hex
-from rpython.rlib.jit import JitDriver, hint
+from pydgin.misc      import FatalError
+from rpython.rlib.jit import JitDriver, hint, set_user_param
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
@@ -73,7 +68,7 @@ class Sim( object ):
   <sim_args> arguments to be passed to the simulated executable
   <args>     the following optional arguments are supported:
 
-    --help          show this message and exit
+    --help,-h       show this message and exit
     --test          run in testing mode (for running asm tests)
     --debug <flags> enable debug flags in a comma-separated form (e.g.
                     "--debug syscalls,insts"). the following flags are
@@ -86,6 +81,8 @@ class Sim( object ):
          bootstrap          initial stack and register state
 
     --max-insts <i> run until the maximum number of instructions
+    --jit <flags>   set flags to tune the JIT (see
+                    rpython.rlib.jit.PARAMETER_DOCS)
 
   """
 
@@ -145,7 +142,12 @@ class Sim( object ):
         #        pad( inst.str, 8 ),
         #        pad( "%d" % s.ncycles, 8 ), ),
 
-      exec_fun( s, inst )
+      try:
+        exec_fun( s, inst )
+      except FatalError as error:
+        print "Exception in execution, aborting!"
+        print "Exception message: %s" % error.msg
+        break
 
       s.ncycles += 1    # TODO: should this be done inside instruction definition?
       if s.stats_en: s.stat_ncycles += 1
@@ -198,6 +200,7 @@ class Sim( object ):
       ARGS        = 0
       DEBUG_FLAGS = 1
       MAX_INSTS   = 2
+      JIT_FLAGS   = 3
       token_type = ARGS
 
       # go through the args one by one and parse accordingly
@@ -207,7 +210,7 @@ class Sim( object ):
 
         if token_type == ARGS:
 
-          if token == "--help":
+          if token == "--help" or token == "-h":
             print self.help_message % ( self.arch_name, argv[0] )
             return 0
 
@@ -224,7 +227,10 @@ class Sim( object ):
           elif token == "--max-insts":
             token_type = MAX_INSTS
 
-          elif token[:2] == "--":
+          elif token == "--jit":
+            token_type = JIT_FLAGS
+
+          elif token[:1] == "-":
             # unknown option
             print "Unknown argument %s" % token
             return 1
@@ -239,6 +245,10 @@ class Sim( object ):
           token_type = ARGS
         elif token_type == MAX_INSTS:
           max_insts = int( token )
+          token_type = ARGS
+        elif token_type == JIT_FLAGS:
+          # pass the jit flags to rpython.rlib.jit
+          set_user_param( self.jitdriver, token )
           token_type = ARGS
 
       if filename_idx == 0:

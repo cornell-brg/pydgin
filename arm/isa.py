@@ -22,7 +22,7 @@ from utils import (
 )
 
 from instruction import *
-from pydgin.misc import create_risc_decoder
+from pydgin.misc import create_risc_decoder, FatalError
 from rpython.rlib.jit import unroll_safe
 
 #=======================================================================
@@ -293,7 +293,7 @@ def execute_adc( s, inst ):
     s.rf[ inst.rd() ] = trim_32( result )
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = carry_from( result )
@@ -313,7 +313,7 @@ def execute_add( s, inst ):
     s.rf[ inst.rd() ] = trim_32( result )
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = carry_from( result )
@@ -333,7 +333,7 @@ def execute_and( s, inst ):
     s.rf[ inst.rd() ] = trim_32( result )
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = cout
@@ -374,7 +374,7 @@ def execute_bic( s, inst ):
     s.rf[ inst.rd() ] = trim_32( result )
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = cout
@@ -387,14 +387,14 @@ def execute_bic( s, inst ):
 # bkpt
 #-----------------------------------------------------------------------
 def execute_bkpt( s, inst ):
-  raise Exception('"bkpt" instruction unimplemented!')
+  raise FatalError('"bkpt" instruction unimplemented!')
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
 # blx1
 #-----------------------------------------------------------------------
 def execute_blx1( s, inst ):
-  raise Exception('Called blx1: Entering THUMB mode! Unsupported')
+  raise FatalError('Called blx1: Entering THUMB mode! Unsupported')
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
@@ -406,7 +406,7 @@ def execute_blx2( s, inst ):
     s.T      = s.rf[ inst.rm() ] & 0x00000001
     s.rf[PC] = s.rf[ inst.rm() ] & 0xFFFFFFFE
     if s.T:
-      raise Exception( "Entering THUMB mode! Unsupported!")
+      raise FatalError( "Entering THUMB mode! Unsupported!")
 
   # no pc + 4 on success
   else:
@@ -420,7 +420,7 @@ def execute_bx( s, inst ):
     s.T      = s.rf[ inst.rm() ] & 0x00000001
     s.rf[PC] = s.rf[ inst.rm() ] & 0xFFFFFFFE
     if s.T:
-      raise Exception( "Entering THUMB mode! Unsupported!")
+      raise FatalError( "Entering THUMB mode! Unsupported!")
 
   # no pc + 4 on success
   else:
@@ -430,7 +430,7 @@ def execute_bx( s, inst ):
 # cdp
 #-----------------------------------------------------------------------
 def execute_cdp( s, inst ):
-  raise Exception('"cdp" instruction unimplemented!')
+  raise FatalError('"cdp" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -505,7 +505,7 @@ def execute_eor( s, inst ):
     s.rf[ inst.rd() ] = trim_32( result )
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = cout
@@ -519,7 +519,7 @@ def execute_eor( s, inst ):
 # ldc
 #-----------------------------------------------------------------------
 def execute_ldc( s, inst ):
-  raise Exception('"ldc" instruction unimplemented!')
+  raise FatalError('"ldc" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -528,7 +528,7 @@ def execute_ldc( s, inst ):
 # ldc2
 #-----------------------------------------------------------------------
 def execute_ldc2( s, inst ):
-  raise Exception('"ldc2" instruction unimplemented!')
+  raise FatalError('"ldc2" instruction unimplemented!')
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
@@ -552,7 +552,7 @@ def execute_ldm1( s, inst ):
     if register_mask & 0b1:  # reg 15
       s.rf[PC] = s.mem.read( addr, 4 ) & 0xFFFFFFFE
       s.T  = s.rf[PC] & 0b1
-      if s.T: raise Exception( "Entering THUMB mode! Unsupported!")
+      if s.T: raise FatalError( "Entering THUMB mode! Unsupported!")
       assert end_addr == addr
       return
 
@@ -564,7 +564,7 @@ def execute_ldm1( s, inst ):
 # ldm2
 #-----------------------------------------------------------------------
 def execute_ldm2( s, inst ):
-  raise Exception('"ldm2" instruction unimplemented!')
+  raise FatalError('"ldm2" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -573,7 +573,7 @@ def execute_ldm2( s, inst ):
 # ldm3
 #-----------------------------------------------------------------------
 def execute_ldm3( s, inst ):
-  raise Exception('"ldm3" instruction unimplemented!')
+  raise FatalError('"ldm3" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -612,7 +612,7 @@ def execute_ldr( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldrb( s, inst ):
   if condition_passed( s, inst.cond() ):
-    if inst.rd() == 15: raise Exception('UNPREDICTABLE')
+    if inst.rd() == 15: raise FatalError('UNPREDICTABLE')
 
     addr = addressing_mode_2( s, inst )
 
@@ -627,7 +627,7 @@ def execute_ldrb( s, inst ):
 # ldrbt
 #-----------------------------------------------------------------------
 def execute_ldrbt( s, inst ):
-  raise Exception('"ldrbt" instruction unimplemented!')
+  raise FatalError('"ldrbt" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -637,7 +637,7 @@ def execute_ldrbt( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldrh( s, inst ):
   if condition_passed( s, inst.cond() ):
-    if inst.rd() == 15: raise Exception('UNPREDICTABLE')
+    if inst.rd() == 15: raise FatalError('UNPREDICTABLE')
 
     addr = addressing_mode_3( s, inst )
 
@@ -656,7 +656,7 @@ def execute_ldrh( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldrsb( s, inst ):
   if condition_passed( s, inst.cond() ):
-    if inst.rd() == 15: raise Exception('UNPREDICTABLE')
+    if inst.rd() == 15: raise FatalError('UNPREDICTABLE')
 
     addr = addressing_mode_3( s, inst )
 
@@ -675,7 +675,7 @@ def execute_ldrsb( s, inst ):
 #-----------------------------------------------------------------------
 def execute_ldrsh( s, inst ):
   if condition_passed( s, inst.cond() ):
-    if inst.rd() == 15: raise Exception('UNPREDICTABLE')
+    if inst.rd() == 15: raise FatalError('UNPREDICTABLE')
 
     addr = addressing_mode_3( s, inst )
 
@@ -693,7 +693,7 @@ def execute_ldrsh( s, inst ):
 # ldrt
 #-----------------------------------------------------------------------
 def execute_ldrt( s, inst ):
-  raise Exception('"ldrt" instruction unimplemented!')
+  raise FatalError('"ldrt" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -702,7 +702,7 @@ def execute_ldrt( s, inst ):
 # mcr
 #-----------------------------------------------------------------------
 def execute_mcr( s, inst ):
-  raise Exception('"mcr" instruction unimplemented!')
+  raise FatalError('"mcr" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -711,14 +711,14 @@ def execute_mcr( s, inst ):
 # mcr2
 #-----------------------------------------------------------------------
 def execute_mcr2( s, inst ):
-  raise Exception('"mcr2" instruction unimplemented!')
+  raise FatalError('"mcr2" instruction unimplemented!')
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
 # mcrr
 #-----------------------------------------------------------------------
 def execute_mcrr( s, inst ):
-  raise Exception('"mcrr" instruction unimplemented!')
+  raise FatalError('"mcrr" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -727,7 +727,7 @@ def execute_mcrr( s, inst ):
 # mcrr2
 #-----------------------------------------------------------------------
 def execute_mcrr2( s, inst ):
-  raise Exception('"mcrr2" instruction unimplemented!')
+  raise FatalError('"mcrr2" instruction unimplemented!')
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
@@ -735,10 +735,10 @@ def execute_mcrr2( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mla( s, inst ):
   if condition_passed( s, inst.cond() ):
-    if inst.rd() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rm() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rs() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rn() == 15: raise Exception('UNPREDICTABLE')
+    if inst.rd() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rm() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rs() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rn() == 15: raise FatalError('UNPREDICTABLE')
 
     Rm, Rs, Rd  = s.rf[ inst.rm() ], s.rf[ inst.rs() ], s.rf[ inst.rd() ]
     result      = trim_32(Rm * Rs + Rd)
@@ -758,7 +758,7 @@ def execute_mov( s, inst ):
     if inst.rd() == 15 and inst.S():
     # if not CurrentModeHasSPSR(): CPSR = SPSR
     # else:                        UNPREDICTABLE
-      raise Exception('UNPREDICTABLE in user and system mode!')
+      raise FatalError('UNPREDICTABLE in user and system mode!')
 
     result, cout = shifter_operand( s, inst )
     s.rf[ inst.rd() ] = trim_32( result )
@@ -777,7 +777,7 @@ def execute_mov( s, inst ):
 # mrc
 #-----------------------------------------------------------------------
 def execute_mrc( s, inst ):
-  raise Exception('"mrc" instruction unimplemented!')
+  raise FatalError('"mrc" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -786,14 +786,14 @@ def execute_mrc( s, inst ):
 # mrc2
 #-----------------------------------------------------------------------
 def execute_mrc2( s, inst ):
-  raise Exception('"mrc2" instruction unimplemented!')
+  raise FatalError('"mrc2" instruction unimplemented!')
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
 # mrs
 #-----------------------------------------------------------------------
 def execute_mrs( s, inst ):
-  raise Exception('"mrs" instruction unimplemented!')
+  raise FatalError('"mrs" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -802,7 +802,7 @@ def execute_mrs( s, inst ):
 # msr
 #-----------------------------------------------------------------------
 def execute_msr( s, inst ):
-  raise Exception('"msr" instruction unimplemented!')
+  raise FatalError('"msr" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -817,9 +817,9 @@ def execute_mul( s, inst ):
     s.rf[ inst.rn() ] = result
 
     if inst.S():
-      if inst.rn() == 15: raise Exception('UNPREDICTABLE')
-      if inst.rm() == 15: raise Exception('UNPREDICTABLE')
-      if inst.rs() == 15: raise Exception('UNPREDICTABLE')
+      if inst.rn() == 15: raise FatalError('UNPREDICTABLE')
+      if inst.rm() == 15: raise FatalError('UNPREDICTABLE')
+      if inst.rs() == 15: raise FatalError('UNPREDICTABLE')
       s.N = (result >> 31)&1
       s.Z = result == 0
 
@@ -837,7 +837,7 @@ def execute_mvn( s, inst ):
     s.rf[ inst.rd() ] = result
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = cout
@@ -857,7 +857,7 @@ def execute_orr( s, inst ):
     s.rf[ inst.rd() ] = trim_32( result )
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = cout
@@ -877,7 +877,7 @@ def execute_rsb( s, inst ):
     s.rf[ inst.rd() ] = trim_32( result )
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = not borrow_from( result )
@@ -897,7 +897,7 @@ def execute_rsc( s, inst ):
     s.rf[ inst.rd() ] = trim_32( result )
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = not borrow_from( result )
@@ -917,7 +917,7 @@ def execute_sbc( s, inst ):
     s.rf[ inst.rd() ] = trim_32( result )
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = not borrow_from( result )
@@ -931,7 +931,7 @@ def execute_sbc( s, inst ):
 # smlal
 #-----------------------------------------------------------------------
 def execute_smlal( s, inst ):
-  raise Exception('"smlal" instruction unimplemented!')
+  raise FatalError('"smlal" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -941,16 +941,16 @@ def execute_smlal( s, inst ):
 #-----------------------------------------------------------------------
 def execute_smull( s, inst ):
   if condition_passed( s, inst.cond() ):
-    if inst.rd() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rm() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rs() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rn() == 15: raise Exception('UNPREDICTABLE')
+    if inst.rd() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rm() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rs() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rn() == 15: raise FatalError('UNPREDICTABLE')
 
     RdHi, RdLo  = inst.rn(), inst.rd()
     Rm,   Rs    = signed(s.rf[ inst.rm() ]), signed(s.rf[ inst.rs() ])
     result      = Rm * Rs
 
-    if RdHi == RdLo: raise Exception('UNPREDICTABLE')
+    if RdHi == RdLo: raise FatalError('UNPREDICTABLE')
 
     s.rf[ RdHi ] = trim_32( result >> 32 )
     s.rf[ RdLo ] = trim_32( result )
@@ -964,7 +964,7 @@ def execute_smull( s, inst ):
 # stc
 #-----------------------------------------------------------------------
 def execute_stc( s, inst ):
-  raise Exception('"stc" instruction unimplemented!')
+  raise FatalError('"stc" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -994,7 +994,7 @@ def execute_stm1( s, inst ):
 # stm2
 #-----------------------------------------------------------------------
 def execute_stm2( s, inst ):
-  raise Exception('"stm2" instruction unimplemented!')
+  raise FatalError('"stm2" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -1030,7 +1030,7 @@ def execute_strb( s, inst ):
 # strbt
 #-----------------------------------------------------------------------
 def execute_strbt( s, inst ):
-  raise Exception('"strbt" instruction unimplemented!')
+  raise FatalError('"strbt" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -1057,7 +1057,7 @@ def execute_strh( s, inst ):
 # strt
 #-----------------------------------------------------------------------
 def execute_strt( s, inst ):
-  raise Exception('"strt" instruction unimplemented!')
+  raise FatalError('"strt" instruction unimplemented!')
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
@@ -1070,7 +1070,7 @@ def execute_sub( s, inst ):
     s.rf[ inst.rd() ] = trim_32( result )
 
     if inst.S():
-      if inst.rd() == 15: raise Exception('Writing SPSR not implemented!')
+      if inst.rd() == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
       s.C = not borrow_from( result )
@@ -1093,7 +1093,7 @@ def execute_swi( s, inst ):
 # swp
 #-----------------------------------------------------------------------
 def execute_swp( s, inst ):
-  raise Exception('"swp" instruction unimplemented!')
+  raise FatalError('"swp" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -1102,7 +1102,7 @@ def execute_swp( s, inst ):
 # swpb
 #-----------------------------------------------------------------------
 def execute_swpb( s, inst ):
-  raise Exception('"swpb" instruction unimplemented!')
+  raise FatalError('"swpb" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
     pass
   s.rf[PC] = s.fetch_pc() + 4
@@ -1146,17 +1146,17 @@ def execute_tst( s, inst ):
 #-----------------------------------------------------------------------
 def execute_umlal( s, inst ):
   if condition_passed( s, inst.cond() ):
-    if inst.rd() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rm() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rs() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rn() == 15: raise Exception('UNPREDICTABLE')
+    if inst.rd() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rm() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rs() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rn() == 15: raise FatalError('UNPREDICTABLE')
 
     RdHi, RdLo  = inst.rn(), inst.rd()
     Rm,   Rs    = s.rf[ inst.rm() ], s.rf[ inst.rs() ]
     accumulate  = (s.rf[ RdHi ] << 32) | s.rf[ RdLo ]
     result      = (Rm * Rs) + accumulate
 
-    if RdHi == RdLo: raise Exception('UNPREDICTABLE')
+    if RdHi == RdLo: raise FatalError('UNPREDICTABLE')
 
     s.rf[ RdHi ] = trim_32( result >> 32 )
     s.rf[ RdLo ] = trim_32( result )
@@ -1171,16 +1171,16 @@ def execute_umlal( s, inst ):
 #-----------------------------------------------------------------------
 def execute_umull( s, inst ):
   if condition_passed( s, inst.cond() ):
-    if inst.rd() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rm() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rs() == 15: raise Exception('UNPREDICTABLE')
-    if inst.rn() == 15: raise Exception('UNPREDICTABLE')
+    if inst.rd() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rm() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rs() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rn() == 15: raise FatalError('UNPREDICTABLE')
 
     RdHi, RdLo  = inst.rn(), inst.rd()
     Rm,   Rs    = s.rf[ inst.rm() ], s.rf[ inst.rs() ]
     result      = Rm * Rs
 
-    if RdHi == RdLo: raise Exception('UNPREDICTABLE')
+    if RdHi == RdLo: raise FatalError('UNPREDICTABLE')
 
     s.rf[ RdHi ] = trim_32( result >> 32 )
     s.rf[ RdLo ] = trim_32( result )
