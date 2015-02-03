@@ -84,3 +84,12 @@ class ArmRegisterFile( RegisterFile ):
                           pad_hex( value ) ),
 
 
+  # we also print the status flags on print_regs
+  def print_regs( self, per_row=6 ):
+    RegisterFile.print_regs( self, per_row )
+    print '%s%s%s%s' % (
+      'N' if self.state.N else '-',
+      'Z' if self.state.Z else '-',
+      'C' if self.state.C else '-',
+      'V' if self.state.V else '-'
+    )

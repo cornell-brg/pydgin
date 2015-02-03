@@ -156,13 +156,6 @@ class Sim( object ):
         print
       if s.debug.enabled( "regdump" ):
         s.rf.print_regs( per_row=4 )
-        # TODO: move this to arm reg file
-        print '%s%s%s%s' % (
-          'N' if s.N else '-',
-          'Z' if s.Z else '-',
-          'C' if s.C else '-',
-          'V' if s.V else '-'
-        )
 
       # check if we have reached the end of the maximum instructions and
       # exit if necessary
