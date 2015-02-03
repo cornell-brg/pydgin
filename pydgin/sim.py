@@ -132,15 +132,13 @@ class Sim( object ):
         # we use trace elidable iread instead of just read
         inst_bits = mem.iread( pc, 4 )
 
-      #inst_str, exec_fun = decode( inst )
       inst, exec_fun = self.decode( inst_bits )
 
       if s.debug.enabled( "insts" ):
-        print "%s %s" % ( inst, pad( "%d" % s.ncycles, 8 ), )
-        #print "%s %s %s" % (
-        #        pad_hex( inst ),
-        #        pad( inst.str, 8 ),
-        #        pad( "%d" % s.ncycles, 8 ), ),
+        print "%s %s %s" % (
+                pad_hex( inst_bits ),
+                pad( inst.str, 8 ),
+                pad( "%d" % s.ncycles, 8 ), ),
 
       try:
         exec_fun( s, inst )

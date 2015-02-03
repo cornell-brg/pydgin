@@ -34,7 +34,7 @@ class ArmSim( Sim ):
     # TODO add decode inside instruction:
     #return decode( bits )
     inst_str, exec_fun = decode( bits )
-    return Instruction( bits ), exec_fun
+    return Instruction( bits, inst_str ), exec_fun
 
   #-----------------------------------------------------------------------
   # init_state
