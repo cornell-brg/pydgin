@@ -8,6 +8,7 @@ from pydgin.storage import RegisterFile
 # State
 #-----------------------------------------------------------------------
 class State( object ):
+  _virtualizable_ = ['pc', 'ncycles']
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
 
@@ -39,3 +40,5 @@ class State( object ):
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
 
+  def fetch_pc( self ):
+    return self.pc

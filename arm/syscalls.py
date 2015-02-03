@@ -125,8 +125,9 @@ def syscall_exit( s ):
 
   # TODO: it seems like ARM ignores the exit_code when setting the
   #       return status value.  Is this okay?
-  s.status   = 1
-  s.rf[ v0 ] = 1
+  s.status   = exit_code
+  s.rf[ v0 ] = exit_code
+  s.running  = False
 
 #-----------------------------------------------------------------------
 # read

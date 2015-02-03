@@ -5,8 +5,9 @@
 
 class Instruction( object ):
 
-  def __init__( self, bits ):
+  def __init__( self, bits, str ):
     self.bits = bits
+    self.str  = str
 
   def cond( self ):
     return (self.bits >> 28) & 0xF

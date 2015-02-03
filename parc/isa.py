@@ -5,7 +5,7 @@
 from utils import trim, trim_5, signed, sext, sext_byte, \
                   bits2float, float2bits
 
-from pydgin.misc import create_risc_decoder
+from pydgin.misc import create_risc_decoder, FatalError
 
 #=======================================================================
 # Register Definitions
@@ -228,7 +228,7 @@ def execute_mfc0( s, inst ):
     print "WARNING: counthi always returns 0..."
     s.rf[inst.rt()] = 0
   else:
-    raise Exception('Invalid mfc0 destination: %d!' % inst.rd() )
+    raise FatalError('Invalid mfc0 destination: %d!' % inst.rd() )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -258,7 +258,7 @@ def execute_mtc0( s, inst ):
   #  print 'SUCCESS: s.rf[' + str( inst.rt() ) + '] == ' + str( sink[ s.sink_ptr ] )
   #  s.sink_ptr += 1
   else:
-    raise Exception('Invalid mtc0 destination: %d!' % inst.rd() )
+    raise FatalError('Invalid mtc0 destination: %d!' % inst.rd() )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -726,7 +726,7 @@ def execute_mtuts( s, inst ):
 # mfuts
 #-----------------------------------------------------------------------
 def execute_mfuts( s, inst ):
-  raise Exception('mfuts is unsupported!')
+  raise FatalError('mfuts is unsupported!')
   s.pc += 4
 
 #-----------------------------------------------------------------------
