@@ -32,7 +32,7 @@ class Sim( object ):
 
     if jit_enabled:
       self.jitdriver = JitDriver( greens =['pc',],
-                                  reds   = ['state','sim'],
+                                  reds   = ['max_insts', 'state', 'sim',],
                                   virtualizables  =['state',],
                                   get_printable_location=self.get_location,
                                 )
@@ -99,7 +99,7 @@ class Sim( object ):
   #-----------------------------------------------------------------------
   # run
   #-----------------------------------------------------------------------
-  def run( self ): #, state, max_insts=0 ):
+  def run( self ):
     self = hint( self, promote=True )
     s = self.state
 
@@ -110,8 +110,9 @@ class Sim( object ):
 
       jitdriver.jit_merge_point(
         pc        = s.fetch_pc(),
-        sim       = self,
+        max_insts = max_insts,
         state     = s,
+        sim       = self,
       )
 
       # constant-fold pc and mem
@@ -164,8 +165,9 @@ class Sim( object ):
       if s.fetch_pc() < old:
         jitdriver.can_enter_jit(
           pc        = s.fetch_pc(),
-          sim       = self,
+          max_insts = max_insts,
           state     = s,
+          sim       = self,
         )
 
     print 'DONE! Status =', s.status
@@ -235,7 +237,7 @@ class Sim( object ):
           debug_flags = token.split( "," )
           token_type = ARGS
         elif token_type == MAX_INSTS:
-          max_insts = int( token )
+          self.max_insts = int( token )
           token_type = ARGS
         elif token_type == JIT_FLAGS:
           # pass the jit flags to rpython.rlib.jit
