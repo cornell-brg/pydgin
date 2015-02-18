@@ -448,7 +448,7 @@ def execute_clz( s, inst ):
     else:
       mask = 0x80000000
       leading_zeros = 32
-      for x in range(31):
+      for x in range(32):
         if mask & Rm:
           leading_zeros = x
           break
