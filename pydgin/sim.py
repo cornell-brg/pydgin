@@ -70,9 +70,10 @@ class Sim( object ):
 
     --help,-h       show this message and exit
     --test          run in testing mode (for running asm tests)
-    --debug <flags> enable debug flags in a comma-separated form (e.g.
-                    "--debug syscalls,insts"). the following flags are
-                    supported:
+    --debug <flags>[:<start_after>] enable debug flags in a
+                    comma-separated form (e.g.  "--debug syscalls,insts").
+                    If provided, debugs starts after <start_after> cycles.
+                    The following flags are supported:
          insts              cycle-by-cycle instructions
          rf                 register file accesses
          mem                memory accesses
@@ -184,6 +185,7 @@ class Sim( object ):
 
       filename_idx = 0
       debug_flags = []
+      debug_starts_after = 0
       testbin = False
       max_insts = 0
 
@@ -234,7 +236,12 @@ class Sim( object ):
             break
 
         elif token_type == DEBUG_FLAGS:
-          debug_flags = token.split( "," )
+          # if debug start after provided (using a colon), parse it
+          debug_tokens = token.split( ":" )
+          if len( debug_tokens ) > 1:
+            debug_starts_after = int( debug_tokens[1] )
+
+          debug_flags = debug_tokens[0].split( "," )
           token_type = ARGS
         elif token_type == MAX_INSTS:
           self.max_insts = int( token )
@@ -250,8 +257,7 @@ class Sim( object ):
 
       # create a Debug object which contains the debug flags
 
-      self.debug = Debug()
-      self.debug.set_flags( debug_flags )
+      self.debug = Debug( debug_flags, debug_starts_after )
 
       filename = argv[ filename_idx ]
 
@@ -272,6 +278,10 @@ class Sim( object ):
       # etc.
 
       self.init_state( exe_file, run_argv )
+
+      # pass the state to debug for cycle-triggered debugging
+
+      self.debug.set_state( self.state )
 
       # Close after loading
 

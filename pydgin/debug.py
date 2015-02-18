@@ -9,6 +9,7 @@ from rpython.rlib.jit import elidable, unroll_safe
 #-----------------------------------------------------------------------
 # a class that contains different debug flags
 class Debug( object ):
+  _immutable_fields_ = [ 'enabled_flags', 'start_after', 'state' ]
 
   # NOTE: it doesn't seem possible to have conditional debug prints
   # without incurring performance losses. So, instead we are
@@ -18,8 +19,11 @@ class Debug( object ):
 
   global_enabled = False
 
-  def __init__( self ):
-    self.enabled_flags = [ ]
+  def __init__( self, flags = [], start_after = 0 ):
+    self.enabled_flags = flags
+    self.start_after = start_after
+    # we need the state to check the number of cycles
+    self.state = None
 
   #---------------------------------------------------------------------
   # enabled
@@ -28,14 +32,18 @@ class Debug( object ):
   # particular flag is turned on in command line.
   @elidable
   def enabled( self, flag ):
-    return Debug.global_enabled and ( flag in self.enabled_flags )
+    # TODO: because we use the start after annotation here, the elidable
+    # annotation is incorrect, which would be an issue if debugging with
+    # jitted interpreter
+    return Debug.global_enabled and ( flag in self.enabled_flags ) and \
+        ( self.state is None or self.start_after <= self.state.ncycles )
 
   #---------------------------------------------------------------------
-  # set_flags
+  # set_state
   #---------------------------------------------------------------------
-  # go through the flags and set them appropriately
-  def set_flags( self, flags ):
-    self.enabled_flags = flags
+  # set the state so that we can get the ncycles
+  def set_state( self, state ):
+    self.state = state
 
 #-------------------------------------------------------------------------
 # pad
