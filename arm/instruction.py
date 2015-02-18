@@ -87,3 +87,5 @@ class Instruction( object ):
   def SH( self ):
     return (self.bits >> 5) & 0b11
 
+  def R( self ):
+    return (self.bits >> 22) & 0b1

@@ -32,6 +32,16 @@ class State( object ):
     #self.T    = 0b0      # Thumb state flag
     #self.M    = 0b00000  # Processor Mode
 
+    # processor modes:
+    # 0b10000     usr
+    # 0b10001     fiq
+    # 0b10010     irq
+    # 0b10011     svc (supervisor)
+    # 0b10111     abt (abort)
+    # 0b11011     und (undefined)
+    # 0b11111     sys
+    self.mode = 0b10000
+
     # other registers
     self.status        = 0
     self.ncycles       = 0
@@ -47,6 +57,13 @@ class State( object ):
 
   def fetch_pc( self ):
     return self.pc
+
+  def cpsr( self ):
+    return ( self.N << 31 ) | \
+           ( self.Z << 30 ) | \
+           ( self.C << 29 ) | \
+           ( self.V << 28 ) | \
+           ( self.mode    )
 
 #-----------------------------------------------------------------------
 # ArmRegisterFile

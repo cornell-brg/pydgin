@@ -157,7 +157,7 @@ encodings = [
   ['mrc2',     '11111110xxx1xxxxxxxxxxxxxxx1xxxx'],
 #?['mrrc',     'xxxx11000101xxxxxxxxxxxxxxxxxxxx'],
 # ['mrrc2',    '111111000101xxxxxxxxxxxxxxxxxxxx'], # v6
-  ['mrs',      'xxxx00010x00xxxxxxxxxxxxxxxxxxxx'],
+  ['mrs',      'xxxx00010x001111xxxxxxxxxxxxxxxx'],
   ['msr',      'xxxx00x10x10xxxxxxxxxxxxxxxxxxxx'], # TODO
 # ['mul',      'xxxx0000000xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
   ['mvn',      'xxxx00x1111xxxxxxxxxxxxxxxxxxxxx'],
@@ -793,9 +793,11 @@ def execute_mrc2( s, inst ):
 # mrs
 #-----------------------------------------------------------------------
 def execute_mrs( s, inst ):
-  raise FatalError('"mrs" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
-    pass
+    if inst.R():
+      raise FatalError('Cannot read SPSR in "mrs"')
+    else:
+      s.rf[ inst.rd() ] = s.cpsr()
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
