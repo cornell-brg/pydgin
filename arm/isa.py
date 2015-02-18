@@ -977,6 +977,7 @@ def execute_stc( s, inst ):
 @unroll_safe
 def execute_stm1( s, inst ):
   if condition_passed( s, inst.cond() ):
+    orig_Rn = s.rf[ inst.rn() ]
     addr, end_addr = addressing_mode_4( s, inst )
     register_mask  = inst.register_list()
 
@@ -985,7 +986,18 @@ def execute_stm1( s, inst ):
 
     for i in range(16):
       if register_mask & 0b1:
-        s.mem.write( addr, 4, s.rf[i] )
+        # Note from ISA document page A4-190:
+        # If <Rn> is specified in <registers> and base register write-back
+        # is specified:
+        # - If <Rn> is the lowest-numbered register specified in
+        #   <registers>, the original value of <Rn> is stored.
+        # - Otherwise, the stored value of <Rn> is UNPREDICTABLE.
+        #
+        # We check if i is Rn, and if so, we use the original value
+        if i == inst.rn():
+          s.mem.write( addr, 4, orig_Rn )
+        else:
+          s.mem.write( addr, 4, s.rf[i] )
         addr += 4
       register_mask >>= 1
 
