@@ -1095,9 +1095,12 @@ def execute_swi( s, inst ):
 # swp
 #-----------------------------------------------------------------------
 def execute_swp( s, inst ):
-  raise FatalError('"swp" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
-    pass
+    addr = s.rf[ inst.rn() ]
+    temp = s.mem.read( addr, 4 )
+    s.mem.write( addr, 4, s.rf[ inst.rm() ] )
+    s.rf[ inst.rd() ] = temp
+
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
