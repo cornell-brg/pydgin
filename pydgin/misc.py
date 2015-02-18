@@ -87,7 +87,7 @@ def create_risc_decoder( encodings, isa_globals, debug=False ):
 def decode( inst ):
   {decoder_tree}
   else:
-    raise Exception('Invalid instruction 0x%x!' % inst )
+    raise FatalError('Invalid instruction 0x%x!' % inst )
   '''.format( decoder_tree = decoder ))
   #print source
   environment = dict(globals().items() + isa_globals.items())

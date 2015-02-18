@@ -133,18 +133,18 @@ class Sim( object ):
         # we use trace elidable iread instead of just read
         inst_bits = mem.iread( pc, 4 )
 
-      inst, exec_fun = self.decode( inst_bits )
-
-      if s.debug.enabled( "insts" ):
-        print "%s %s %s" % (
-                pad_hex( inst_bits ),
-                pad( inst.str, 8 ),
-                pad( "%d" % s.ncycles, 8 ), ),
-
       try:
+        inst, exec_fun = self.decode( inst_bits )
+
+        if s.debug.enabled( "insts" ):
+          print "%s %s %s" % (
+                  pad_hex( inst_bits ),
+                  pad( inst.str, 8 ),
+                  pad( "%d" % s.ncycles, 8 ), ),
+
         exec_fun( s, inst )
       except FatalError as error:
-        print "Exception in execution, aborting!"
+        print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
         print "Exception message: %s" % error.msg
         break
 
