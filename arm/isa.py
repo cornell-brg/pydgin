@@ -936,9 +936,25 @@ def execute_sbc( s, inst ):
 # smlal
 #-----------------------------------------------------------------------
 def execute_smlal( s, inst ):
-  raise FatalError('"smlal" instruction unimplemented!')
   if condition_passed( s, inst.cond() ):
-    pass
+    if inst.rd() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rm() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rs() == 15: raise FatalError('UNPREDICTABLE')
+    if inst.rn() == 15: raise FatalError('UNPREDICTABLE')
+
+    RdHi, RdLo  = inst.rn(), inst.rd()
+    Rm,   Rs    = signed(s.rf[ inst.rm() ]), signed(s.rf[ inst.rs() ])
+    accumulate  = (s.rf[ RdHi ] << 32) | s.rf[ RdLo ]
+    result      = (Rm * Rs) + accumulate
+
+    if RdHi == RdLo: raise FatalError('UNPREDICTABLE')
+
+    s.rf[ RdHi ] = trim_32( result >> 32 )
+    s.rf[ RdLo ] = trim_32( result )
+
+    if inst.S():
+      s.N = (result >> 63)&1
+      s.Z = (s.rf[RdHi] == s.rf[RdLo] == 0)
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
