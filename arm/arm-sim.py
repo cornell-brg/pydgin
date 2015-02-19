@@ -42,7 +42,7 @@ class ArmSim( Sim ):
   # This method is called to load the program and initialize architectural
   # state
 
-  def init_state( self, exe_file, run_argv ):
+  def init_state( self, exe_file, run_argv, run_envp ):
 
     # Load the program into a memory object
 
@@ -56,7 +56,7 @@ class ArmSim( Sim ):
     )
 
     self.state = syscall_init( mem, entrypoint, breakpoint,
-                               run_argv, self.debug )
+                               run_argv, run_envp, self.debug )
 
 
 # this initializes similator and allows translation and python

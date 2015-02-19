@@ -68,12 +68,17 @@ class Sim( object ):
   <sim_args> arguments to be passed to the simulated executable
   <args>     the following optional arguments are supported:
 
-    --help,-h       show this message and exit
-    --test          run in testing mode (for running asm tests)
-    --debug <flags>[:<start_after>] enable debug flags in a
-                    comma-separated form (e.g.  "--debug syscalls,insts").
-                    If provided, debugs starts after <start_after> cycles.
-                    The following flags are supported:
+    --help,-h       Show this message and exit
+    --test          Run in testing mode (for running asm tests)
+    --env,-e <NAME>=<VALUE>
+                    Set an environment variable to be passed to the
+                    simulated program. Can use multiple --env flags to set
+                    multiple environment variables.
+    --debug,-d <flags>[:<start_after>]
+                    Enable debug flags in a comma-separated form (e.g.
+                    "--debug syscalls,insts"). If provided, debugs starts
+                    after <start_after> cycles. The following flags are
+                    supported:
          insts              cycle-by-cycle instructions
          rf                 register file accesses
          mem                memory accesses
@@ -81,8 +86,8 @@ class Sim( object ):
          syscalls           syscall information
          bootstrap          initial stack and register state
 
-    --max-insts <i> run until the maximum number of instructions
-    --jit <flags>   set flags to tune the JIT (see
+    --max-insts <i> Run until the maximum number of instructions
+    --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
 
   """
@@ -183,11 +188,12 @@ class Sim( object ):
   def get_entry_point( self ):
     def entry_point( argv ):
 
-      filename_idx = 0
-      debug_flags = []
+      filename_idx       = 0
+      debug_flags        = []
       debug_starts_after = 0
-      testbin = False
-      max_insts = 0
+      testbin            = False
+      max_insts          = 0
+      envp               = []
 
       # we're using a mini state machine to parse the args, and these are
       # three states we have
@@ -196,7 +202,8 @@ class Sim( object ):
       DEBUG_FLAGS = 1
       MAX_INSTS   = 2
       JIT_FLAGS   = 3
-      token_type = ARGS
+      ENV_FLAGS   = 4
+      token_type  = ARGS
 
       # go through the args one by one and parse accordingly
 
@@ -212,7 +219,10 @@ class Sim( object ):
           elif token == "--test":
             testbin = True
 
-          elif token == "--debug":
+          elif token == "--env" or token == "-e":
+            token_type = ENV_FLAGS
+
+          elif token == "--debug" or token == "-d":
             token_type = DEBUG_FLAGS
             # warn the user if debugs are not enabled for this translation
             if not Debug.global_enabled:
@@ -235,6 +245,9 @@ class Sim( object ):
             filename_idx = i
             break
 
+        elif token_type == ENV_FLAGS:
+          envp.append( token )
+          token_type = ARGS
         elif token_type == DEBUG_FLAGS:
           # if debug start after provided (using a colon), parse it
           debug_tokens = token.split( ":" )
@@ -277,7 +290,7 @@ class Sim( object ):
       # Call ISA-dependent init_state to load program, initialize memory
       # etc.
 
-      self.init_state( exe_file, run_argv )
+      self.init_state( exe_file, run_argv, envp )
 
       # pass the state to debug for cycle-triggered debugging
 

@@ -30,7 +30,7 @@ stack_base = memory_size-1   # TODO: set this correctly!
 #   0x8000.0000 - Unmapped cached   (kseg0) - 512MB
 #   0x0000.0000 - 32-bit user space (kuseg) -   2GB
 #
-def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
+def syscall_init( mem, entrypoint, breakpoint, argv, envp, debug ):
 
   #---------------------------------------------------------------------
   # memory map initialization
@@ -86,7 +86,6 @@ def syscall_init( mem, entrypoint, breakpoint, argv, debug ):
 
   # TODO: handle auxv, envp variables
   auxv = []
-  envp = []
   if EMULATE_GEM5:
     argv = argv[1:]
   argc = len( argv )
