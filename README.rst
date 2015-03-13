@@ -31,22 +31,33 @@ implementation. Second, the generated executable provides a trace-JIT to
 dynamically compile frequently interpreted hot loops into optimized assembly.
 
 -------------------------------------------------------------------------------
+License
+-------------------------------------------------------------------------------
+
+Pydgin is offered under the terms of the Open Source Initiative BSD
+3-Clause License. More information about this license can be found here:
+
+- http://choosealicense.com/licenses/bsd-3-clause
+- http://opensource.org/licenses/BSD-3-Clause
+
+-------------------------------------------------------------------------------
 Publications
 -------------------------------------------------------------------------------
 
 If you end up using Pydgin in your research, please let us know!  We'd love to
 hear your feedback. Also, you can cite our paper! ::
 
-  @article{lockhart-pydgin-ispass2015,
+  @inproceedings{lockhart-pydgin-ispass2015,
     title     = {Pydgin: Generating Fast Instruction Set Simulators from
                  Simple Architecture Descriptions with Meta-Tracing JIT
                  Compilers},
     author    = {Derek Lockhart and Berkin Ilbeyi and Christopher Batten},
-    journal   = {2015 IEEE Int'l Symp. on Performance Analysis of Systems
-                 and Software (ISPASS-2015)},
+    booktitle = {2015 IEEE Int'l Symp. on Performance Analysis of Systems
+                 and Software (ISPASS)},
     month     = {Mar},
     year      = {2015},
   }
+
 
 -------------------------------------------------------------------------------
 Project Subdirectories
