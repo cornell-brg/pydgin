@@ -125,7 +125,6 @@ class _WordMemory( object ):
   # instructions are not modified (no side effects, assumes the addresses
   # correspond to the same instructions)
   @elidable
-  @unroll_safe
   def iread( self, start_addr, num_bytes ):
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
     return widen( self.data[ start_addr >> 2 ] )
