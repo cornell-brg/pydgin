@@ -117,7 +117,7 @@ def put_str( s, ptr, str ):
 # exit
 #-----------------------------------------------------------------------
 def syscall_exit( s ):
-  exit_code = s.rf[ a0 ]
+  exit_code = s.rf.__getitem__( a0 )
   print "num_instructions:", s.ncycles,
   print "exit_code: %d ::" % exit_code,
   # TODO: this is an okay way to terminate the simulator?
@@ -126,19 +126,19 @@ def syscall_exit( s ):
   # TODO: it seems like ARM ignores the exit_code when setting the
   #       return status value.  Is this okay?
   s.status   = exit_code
-  s.rf[ v0 ] = exit_code
+  s.rf.__setitem__( v0 , exit_code)
   s.running  = False
 
 #-----------------------------------------------------------------------
 # read
 #-----------------------------------------------------------------------
 def syscall_read( s ):
-  file_ptr = s.rf[ a0 ]
-  data_ptr = s.rf[ a1 ]
-  nbytes   = s.rf[ a2 ]
+  file_ptr = s.rf.__getitem__( a0 )
+  data_ptr = s.rf.__getitem__( a1 )
+  nbytes   = s.rf.__getitem__( a2 )
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
+    s.rf.__setitem__( v0 , -1 )  # TODO: return a bad file descriptor error (9)?)
     return
 
   fd = file_descriptors[ file_ptr ]
@@ -155,21 +155,21 @@ def syscall_read( s ):
     nbytes_read = -1
     errno       = e.errno
 
-  s.rf[ v0 ] = trim_32(nbytes_read)
+  s.rf.__setitem__( v0 , trim_32(nbytes_read))
 
 #-----------------------------------------------------------------------
 # write
 #-----------------------------------------------------------------------
 def syscall_write( s ):
-  file_ptr = s.rf[ a0 ]
-  data_ptr = s.rf[ a1 ]
-  nbytes   = s.rf[ a2 ]
+  file_ptr = s.rf.__getitem__( a0 )
+  data_ptr = s.rf.__getitem__( a1 )
+  nbytes   = s.rf.__getitem__( a2 )
 
   # INST NUMBER 914
   # INST NUMBER 914
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
+    s.rf.__setitem__( v0, -1 )   # TODO: return a bad file descriptor error (9)?
     return
 
   fd = file_descriptors[ file_ptr ]
@@ -187,15 +187,15 @@ def syscall_write( s ):
     nbytes_written = -1
     errno          = e.errno
 
-  s.rf[ v0 ] = trim_32(nbytes_written)
+  s.rf.__setitem__( v0 , trim_32(nbytes_written))
 
 #-----------------------------------------------------------------------
 # open
 #-----------------------------------------------------------------------
 def syscall_open( s ):
-  filename_ptr = s.rf[ a0 ]
-  flags        = s.rf[ a1 ]
-  mode         = s.rf[ a2 ]
+  filename_ptr = s.rf.__getitem__( a0 )
+  flags        = s.rf.__getitem__( a1 )
+  mode         = s.rf.__getitem__( a2 )
 
   # convert flags from solaris to linux (necessary?)
   open_flags = 0
@@ -220,22 +220,22 @@ def syscall_open( s ):
   if fd > 0:
     file_descriptors[ fd ] = trim_32(fd)
 
-  s.rf[ v0 ] = trim_32(fd)
+  s.rf.__setitem__( v0 , trim_32(fd))
 
 #-----------------------------------------------------------------------
 # close
 #-----------------------------------------------------------------------
 def syscall_close( s ):
-  file_ptr = s.rf[ a0 ]
+  file_ptr = s.rf.__getitem__( a0 )
 
   if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
+    s.rf.__setitem__( v0, -1 )   # TODO: return a bad file descriptor error (9)?
     return
 
   # TODO: hacky don't close the file for 0, 1, 2.
   #       gem5 does this, but is there a better way?
   if file_ptr <= 2:
-    s.rf[ v0 ] = 0
+    s.rf.__setitem__( v0 , 0)
     return
 
   try:
@@ -247,7 +247,7 @@ def syscall_close( s ):
     print "OSError in syscall_close: errno=%d" % e.errno
     errno = e.errno
 
-  s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
+  s.rf.__setitem__( v0 , 0 if errno == 0 else trim_32(-1))
 
 #-------------------------------------------------------------------------
 # link
@@ -255,8 +255,8 @@ def syscall_close( s ):
 
 def syscall_link( s ):
 
-  src_ptr  = s.rf[ a0 ]
-  link_ptr = s.rf[ a1 ]
+  src_ptr  = s.rf.__getitem__( a0 )
+  link_ptr = s.rf.__getitem__( a1 )
 
   #if s.debug.enabled( "syscalls" ):
   #  print "syscall_link( src=%x, link=%x )" % \
@@ -275,7 +275,7 @@ def syscall_link( s ):
       print "OSError in syscall_link. errno=%d" % e.errno
     errno = e.errno
 
-  s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
+  s.rf.__setitem__( v0 , 0 if errno == 0 else trim_32(-1))
 
 #-------------------------------------------------------------------------
 # unlink
@@ -283,7 +283,7 @@ def syscall_link( s ):
 
 def syscall_unlink( s ):
 
-  path_ptr  = s.rf[ a0 ]
+  path_ptr  = s.rf.__getitem__( a0 )
 
   #if s.debug.enabled( "syscalls" ):
   #  print "syscall_unlink( path=%x )" % path_ptr,
@@ -300,7 +300,7 @@ def syscall_unlink( s ):
       print "OSError in syscall_unlink. errno=%d" % e.errno
     errno = e.errno
 
-  s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
+  s.rf.__setitem__( v0 , 0 if errno == 0 else trim_32(-1))
 
 
 #-----------------------------------------------------------------------
@@ -308,12 +308,12 @@ def syscall_unlink( s ):
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/questions/6988487/what-does-brk-system-call-do
 def syscall_brk( s ):
-  new_brk = s.rf[ a0 ]
+  new_brk = s.rf.__getitem__( a0 )
 
   if new_brk != 0:
     s.breakpoint = new_brk
 
-  s.rf[ v0 ] = trim_32(s.breakpoint)
+  s.rf.__setitem__( v0 , trim_32(s.breakpoint))
 
 #-----------------------------------------------------------------------
 # uname
@@ -332,7 +332,7 @@ def syscall_uname( s ):
     'armv7l',                            # machine
   ]
 
-  mem_addr = s.rf[ a0 ]
+  mem_addr = s.rf.__getitem__( a0 )
 
   for field in struct:
     assert len(field) < field_nchars
@@ -342,26 +342,26 @@ def syscall_uname( s ):
     put_str( s, mem_addr, field + padding )
     mem_addr += field_nchars
 
-  s.rf[ v0 ] = 0
+  s.rf.__setitem__( v0 , 0)
 
 #-----------------------------------------------------------------------
 # ioctl
 #-----------------------------------------------------------------------
 def syscall_ioctl( s ):
-  fd  = s.rf[ a0 ]
-  req = s.rf[ a1 ]
+  fd  = s.rf.__getitem__( a0 )
+  req = s.rf.__getitem__( a1 )
 
   result     = -errno.ENOTTY if fd >= 0 else -errno.EBADF
-  s.rf[ v0 ] = trim_32( result )
+  s.rf.__setitem__( v0 , trim_32( result ))
 
 #-----------------------------------------------------------------------
 # lseek
 #-----------------------------------------------------------------------
 def syscall_lseek( s ):
 
-  fd  = s.rf[ a0 ]
-  pos = s.rf[ a1 ]
-  how = s.rf[ a2 ]
+  fd  = s.rf.__getitem__( a0 )
+  pos = s.rf.__getitem__( a1 )
+  how = s.rf.__getitem__( a2 )
 
   if s.debug.enabled( "syscalls" ):
     print "syscall_lseek( fd=%x, pos=%x, how=%x )" % ( fd, pos, how ),
@@ -390,8 +390,8 @@ def syscall_lseek( s ):
 #-------------------------------------------------------------------------
 def syscall_fstat( s ):
 
-  #fd       = s.rf[ a0 ]
-  #buf_ptr  = s.rf[ a1 ]
+  #fd       = s.rf.__getitem__( a0 )
+  #buf_ptr  = s.rf.__getitem__( a1 )
 
   #if check_fd( s, fd ):
   #  return
@@ -421,8 +421,8 @@ def syscall_fstat( s ):
 #-------------------------------------------------------------------------
 def syscall_stat( s ):
 
-  #path_ptr = s.rf[ a0 ]
-  #buf_ptr  = s.rf[ a1 ]
+  #path_ptr = s.rf.__getitem__( a0 )
+  #buf_ptr  = s.rf.__getitem__( a1 )
 
   #path = get_str( s, path_ptr )
 
@@ -451,7 +451,7 @@ def syscall_stat( s ):
 #-------------------------------------------------------------------------
 # copies the return value and the errno to proper registers
 def return_from_syscall( s, retval, errno ):
-  s.rf[ v0 ] = trim_32( retval )
+  s.rf.__setitem__( v0 , trim_32( retval ))
 
 #-------------------------------------------------------------------------
 # check_fd
@@ -580,10 +580,10 @@ def do_syscall( s, syscall_num ):
 
   if s.debug.enabled('syscalls'):
     print syscall_num, syscall_names[ syscall_num ],
-    print '%s %s %s %s' % (hex(s.rf[0]), hex(s.rf[1]), hex(s.rf[2]), hex(s.rf[3])),
+    print '%s %s %s %s' % (hex(s.rf.__getitem__(0)), hex(s.rf.__getitem__(1)), hex(s.rf.__getitem__(2)), hex(s.rf.__getitem__(3))),
   syscall_funcs[ syscall_num ]( s )
   if s.debug.enabled('syscalls'):
     if s.debug.enabled('insts'):
-      print ' = ', hex(s.rf[ a0 ]),
+      print ' = ', hex(s.rf.__getitem__( a0 )),
     else:
-      print ' = ', hex(s.rf[ a0 ])
+      print ' = ', hex(s.rf.__getitem__( a0 ))

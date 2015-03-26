@@ -19,7 +19,7 @@ class State( object ):
     self.rf .debug = debug
     self.mem.debug = debug
 
-    self.rf[ 15 ]  = reset_addr
+    self.rf.__setitem__( 15, reset_addr )
 
     # current program status register (CPSR)
     self.N    = 0b0      # Negative condition

@@ -81,7 +81,7 @@ ROTATE_RIGHT      = 0b11
 #-----------------------------------------------------------------------
 def shifter_operand_imm( s, inst ):
   shift_op  = inst.shift()
-  Rm        = s.rf[ inst.rm() ]
+  Rm        = s.rf.__getitem__( inst.rm() )
   shift_imm = inst.shift_amt()
   assert 0 <= shift_imm <= 31
 
@@ -122,8 +122,8 @@ def shifter_operand_imm( s, inst ):
 #-----------------------------------------------------------------------
 def shifter_operand_reg( s, inst ):
   shift_op = inst.shift()
-  Rm       = s.rf[ inst.rm() ]
-  Rs       = s.rf[ inst.rs() ] & 0xFF
+  Rm       = s.rf.__getitem__( inst.rm() )
+  Rs       = s.rf.__getitem__( inst.rs() ) & 0xFF
 
   out = cout = 0
 
@@ -233,7 +233,7 @@ def addressing_mode_2( s, inst ):
   if not inst.I(): index    = inst.imm_12()
   else:           index, _ = shifter_operand_imm(s, inst)
 
-  Rn          = s.rf[inst.rn()]
+  Rn          = s.rf.__getitem__(inst.rn())
   offset_addr = Rn + index if inst.U() else Rn - index
 
   # Offset Addressing/Pre-Indexed Addressing vs. Post-Indexed Addressing
@@ -242,7 +242,7 @@ def addressing_mode_2( s, inst ):
 
   # Offset Addressing vs. Pre-/Post-Indexed Addressing
   if not (inst.P() ^ inst.W()):
-    s.rf[inst.rn()] = trim_32( offset_addr )
+    s.rf.__setitem__(inst.rn(), trim_32( offset_addr ))
 
   return trim_32( addr )
 
@@ -269,9 +269,9 @@ def addressing_mode_3( s, inst ):
 
   # Immediate vs. Register Offset
   if inst.B(): index = (inst.imm_H() << 4) | inst.imm_L()
-  else:        index = s.rf[inst.rm()]
+  else:        index = s.rf.__getitem__(inst.rm())
 
-  Rn          = s.rf[inst.rn()]
+  Rn          = s.rf.__getitem__(inst.rn())
   offset_addr = Rn + index if inst.U() else Rn - index
 
   # Offset Addressing/Pre-Indexed Addressing vs. Post-Indexed Addressing
@@ -280,7 +280,7 @@ def addressing_mode_3( s, inst ):
 
   # Offset Addressing vs. Pre-/Post-Indexed Addressing
   if not (inst.P() ^ inst.W()):
-    s.rf[inst.rn()] = trim_32( offset_addr )
+    s.rf.__setitem__(inst.rn(), trim_32( offset_addr ))
 
   return trim_32( addr )
 
@@ -311,7 +311,7 @@ def addressing_mode_4( s, inst ):
   DB = 0b10
 
   mode   = (inst.P() << 1) | inst.U()
-  Rn     = s.rf[ inst.rn() ]
+  Rn     = s.rf.__getitem__( inst.rn() )
   nbytes = 4 * popcount( inst.register_list() )
 
   if   mode == IA: start_addr, end_addr = Rn,          Rn+nbytes-4
@@ -320,7 +320,7 @@ def addressing_mode_4( s, inst ):
   else:            start_addr, end_addr = Rn-nbytes,   Rn-4
 
   if inst.W():
-    s.rf[ inst.rn() ] = trim_32( (Rn + nbytes) if inst.U() else (Rn - nbytes) )
+    s.rf.__setitem__( inst.rn() , trim_32( (Rn + nbytes) if inst.U() else (Rn - nbytes) ))
 
   return trim_32( start_addr ), trim_32( end_addr )
 

@@ -250,14 +250,14 @@ def syscall_init( mem, entrypoint, breakpoint, argv, envp, debug ):
   state.breakpoint = breakpoint
 
   # initialize processor registers
-  state.rf[  0 ] = 0            # ptr to func to run when program exits, disable
-  state.rf[  1 ] = stack_off[6] # argument 1 reg = argv ptr addr
-  state.rf[  2 ] = stack_off[5] # argument 2 reg = envp ptr addr
+  state.rf.__setitem__( 0, 0            ) # ptr to func to run when program exits, disable
+  state.rf.__setitem__( 1, stack_off[6] ) # argument 1 reg = argv ptr addr
+  state.rf.__setitem__( 2, stack_off[5] ) # argument 2 reg = envp ptr addr
   if EMULATE_SIMIT:
-    state.rf[  1 ] = argc         # argument 1 reg = argc
-    state.rf[  2 ] = stack_off[6] # argument 2 reg = argv ptr addr
-  state.rf[ 13 ] = stack_ptr    # stack pointer reg
-  state.rf[ 15 ] = entrypoint   # program counter
+    state.rf.__setitem__( 1, argc         ) # argument 1 reg = argc
+    state.rf.__setitem__( 2, stack_off[6] ) # argument 2 reg = argv ptr addr
+  state.rf.__setitem__( 13, stack_ptr  )  # stack pointer reg
+  state.rf.__setitem__( 15, entrypoint )  # program counter
 
   if debug.enabled( 'bootstrap' ):
     state.rf.print_regs( per_row=4 )
