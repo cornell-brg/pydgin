@@ -1,5 +1,5 @@
 ===============================================================================
-Pydgin
+|Pydgin|
 ===============================================================================
 
 Pydgin: a (Py)thon (D)SL for (G)enerating (In)struction set simulators.
@@ -29,6 +29,8 @@ the compiled C implementation enables much more efficient execution of
 instruction-by-instruction interpretive simulation than the original Python
 implementation. Second, the generated executable provides a trace-JIT to
 dynamically compile frequently interpreted hot loops into optimized assembly.
+
+.. |Pydgin| image:: docs/pydgin_logo.png
 
 -------------------------------------------------------------------------------
 License
