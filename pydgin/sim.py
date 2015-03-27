@@ -363,6 +363,10 @@ def init_sim( sim ):
 
   caller_globals[ "target" ] = sim.target
 
+  # add jitpolicy function to top level
+
+  caller_globals[ "jitpolicy" ] = jitpolicy
+
   #-----------------------------------------------------------------------
   # main
   #-----------------------------------------------------------------------
