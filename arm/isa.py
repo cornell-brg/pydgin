@@ -115,65 +115,65 @@ encodings = [
   ['smlal',    'xxxx0000111xxxxxxxxxxxxx1001xxxx'], # ambiguous with rsc
   ['smull',    'xxxx0000110xxxxxxxxxxxxx1001xxxx'], # ambiguous with sbc
 
-  ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'],
-  ['add',      'xxxx00x0100xxxxxxxxxxxxxxxxxxxxx'],
-  ['and',      'xxxx00x0000xxxxxxxxxxxxxxxxxxxxx'],
-  ['b',        'xxxx1010xxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['bl',       'xxxx1011xxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['bic',      'xxxx00x1110xxxxxxxxxxxxxxxxxxxxx'],
-  ['bkpt',     '111000010010xxxxxxxxxxxx0111xxxx'],
-  ['blx1',     '1111101xxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['blx2',     'xxxx000100101111111111110011xxxx'],
-  ['bx',       'xxxx000100101111111111110001xxxx'],
-#?['bxj',      'xxxx000100101111111111110010xxxx'],
-  ['cdp',      'xxxx1110xxxxxxxxxxxxxxxxxxx0xxxx'],
-  ['clz',      'xxxx000101101111xxxx11110001xxxx'],
-  ['cmn',      'xxxx00x10111xxxx0000xxxxxxxxxxxx'],
-  ['cmp',      'xxxx00x10101xxxx0000xxxxxxxxxxxx'],
+  ['adc',      'xxxx00x0101xxxxxxxxxxxxxxxxxxxxx'], # v4
+  ['add',      'xxxx00x0100xxxxxxxxxxxxxxxxxxxxx'], # v4
+  ['and',      'xxxx00x0000xxxxxxxxxxxxxxxxxxxxx'], # v4
+  ['b',        'xxxx1010xxxxxxxxxxxxxxxxxxxxxxxx'], # v4
+  ['bl',       'xxxx1011xxxxxxxxxxxxxxxxxxxxxxxx'], # v4
+  ['bic',      'xxxx00x1110xxxxxxxxxxxxxxxxxxxxx'], # v4
+  ['bkpt',     '111000010010xxxxxxxxxxxx0111xxxx'], # v5T
+  ['blx1',     '1111101xxxxxxxxxxxxxxxxxxxxxxxxx'], # v5T
+  ['blx2',     'xxxx000100101111111111110011xxxx'], # v5T
+  ['bx',       'xxxx000100101111111111110001xxxx'], # v4T
+#?['bxj',      'xxxx000100101111111111110010xxxx'], # v5TEJ
+  ['cdp',      'xxxx1110xxxxxxxxxxxxxxxxxxx0xxxx'], # v4
+  ['clz',      'xxxx000101101111xxxx11110001xxxx'], # v5T
+  ['cmn',      'xxxx00x10111xxxx0000xxxxxxxxxxxx'], # v4
+  ['cmp',      'xxxx00x10101xxxx0000xxxxxxxxxxxx'], # v4
 # ['cps',      '111100010000xxx00000000xxxx0xxxx'], # v6
 # ['cpy',      'xxxx000110100000xxxx00000000xxxx'], # v6
-  ['eor',      'xxxx00x0001xxxxxxxxxxxxxxxxxxxxx'],
-  ['ldc',      'xxxx110xxxx1xxxxxxxxxxxxxxxxxxxx'],
-  ['ldc2',     '1111110xxxx1xxxxxxxxxxxxxxxxxxxx'],
-  ['ldm1',     'xxxx100xx0x1xxxxxxxxxxxxxxxxxxxx'],
-  ['ldm2',     'xxxx100xx101xxxx0xxxxxxxxxxxxxxx'],
-  ['ldm3',     'xxxx100xx1x1xxxx1xxxxxxxxxxxxxxx'],
-  ['ldr',      'xxxx01xxx0x1xxxxxxxxxxxxxxxxxxxx'],
+  ['eor',      'xxxx00x0001xxxxxxxxxxxxxxxxxxxxx'], # v4
+  ['ldc',      'xxxx110xxxx1xxxxxxxxxxxxxxxxxxxx'], # v4
+  ['ldc2',     '1111110xxxx1xxxxxxxxxxxxxxxxxxxx'], # v5T
+  ['ldm1',     'xxxx100xx0x1xxxxxxxxxxxxxxxxxxxx'], # v4
+  ['ldm2',     'xxxx100xx101xxxx0xxxxxxxxxxxxxxx'], # v4
+  ['ldm3',     'xxxx100xx1x1xxxx1xxxxxxxxxxxxxxx'], # v4
+  ['ldr',      'xxxx01xxx0x1xxxxxxxxxxxxxxxxxxxx'], # v4
 
-  ['ldrb',     'xxxx01xxx1x1xxxxxxxxxxxxxxxxxxxx'],
-  ['ldrbt',    'xxxx01x0x111xxxxxxxxxxxxxxxxxxxx'],
-#?['ldrd',     'xxxx000puiw0xxxxxxxxxxxx1101xxxx'],
+  ['ldrb',     'xxxx01xxx1x1xxxxxxxxxxxxxxxxxxxx'], # v4
+  ['ldrbt',    'xxxx01x0x111xxxxxxxxxxxxxxxxxxxx'], # v4
+#?['ldrd',     'xxxx000puiw0xxxxxxxxxxxx1101xxxx'], # v5TE
 # ['ldrex',    'xxxx000110001xxxxxxx111110011111'], # v6
-# ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'], # SEE ABOVE
-# ['ldrsb',    'xxxx000xxxx1xxxxxxxxxxxx1101xxxx'], # SEE ABOVE
-# ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'], # SEE ABOVE
-  ['ldrt',     'xxxx01x0x011xxxxxxxxxxxxxxxxxxxx'],
-  ['mcr',      'xxxx1110xxx0xxxxxxxxxxxxxxx1xxxx'],
-  ['mcr2',     '11111110xxx0xxxxxxxxxxxxxxx1xxxx'],
-  ['mcrr',     'xxxx11000100xxxxxxxxxxxxxxxxxxxx'],
-  ['mcrr2',    '111111000100xxxxxxxxxxxxxxxxxxxx'],
-# ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
-  ['mov',      'xxxx00x1101x0000xxxxxxxxxxxxxxxx'],
-  ['mrc',      'xxxx1110xxx1xxxxxxxxxxxxxxx1xxxx'],
-  ['mrc2',     '11111110xxx1xxxxxxxxxxxxxxx1xxxx'],
-#?['mrrc',     'xxxx11000101xxxxxxxxxxxxxxxxxxxx'],
+# ['ldrh',     'xxxx000xxxx1xxxxxxxxxxxx1011xxxx'], # v4, SEE ABOVE
+# ['ldrsb',    'xxxx000xxxx1xxxxxxxxxxxx1101xxxx'], # v4, SEE ABOVE
+# ['ldrsh',    'xxxx000xxxx1xxxxxxxxxxxx1111xxxx'], # v4, SEE ABOVE
+  ['ldrt',     'xxxx01x0x011xxxxxxxxxxxxxxxxxxxx'], # v4
+  ['mcr',      'xxxx1110xxx0xxxxxxxxxxxxxxx1xxxx'], # v4
+  ['mcr2',     '11111110xxx0xxxxxxxxxxxxxxx1xxxx'], # v5T
+  ['mcrr',     'xxxx11000100xxxxxxxxxxxxxxxxxxxx'], # v5TE
+  ['mcrr2',    '111111000100xxxxxxxxxxxxxxxxxxxx'], # v6
+# ['mla',      'xxxx0000001xxxxxxxxxxxxx1001xxxx'], # v4, SEE ABOVE
+  ['mov',      'xxxx00x1101x0000xxxxxxxxxxxxxxxx'], # v4
+  ['mrc',      'xxxx1110xxx1xxxxxxxxxxxxxxx1xxxx'], # v4
+  ['mrc2',     '11111110xxx1xxxxxxxxxxxxxxx1xxxx'], # v5T
+#?['mrrc',     'xxxx11000101xxxxxxxxxxxxxxxxxxxx'], # v5TE
 # ['mrrc2',    '111111000101xxxxxxxxxxxxxxxxxxxx'], # v6
-  ['mrs',      'xxxx00010x001111xxxx000000000000'],
-  ['msr',      'xxxx00x10x10xxxx1111xxxxxxxxxxxx'], # TODO
-# ['mul',      'xxxx0000000xxxxx0000xxxx1001xxxx'], # SEE ABOVE
-  ['mvn',      'xxxx00x1111x0000xxxxxxxxxxxxxxxx'],
-  ['orr',      'xxxx00x1100xxxxxxxxxxxxxxxxxxxxx'],
+  ['mrs',      'xxxx00010x001111xxxx000000000000'], # v4
+  ['msr',      'xxxx00x10x10xxxx1111xxxxxxxxxxxx'], # v4, TODO
+# ['mul',      'xxxx0000000xxxxx0000xxxx1001xxxx'], # v4, SEE ABOVE
+  ['mvn',      'xxxx00x1111x0000xxxxxxxxxxxxxxxx'], # v4
+  ['orr',      'xxxx00x1100xxxxxxxxxxxxxxxxxxxxx'], # v4
 # ['pkhbt',    'xxxx01101000xxxxxxxxxxxxx001xxxx'], # v6
 # ['pkhtb',    'xxxx01101000xxxxxxxxxxxxx101xxxx'], # v6
 
-#?['pld',      '111101x1x101xxxx1111xxxxxxxxxxxx'],
-#?['qadd',     'xxxx00010000xxxxxxxx00000101xxxx'],
+#?['pld',      '111101x1x101xxxx1111xxxxxxxxxxxx'], # v5TE
+#?['qadd',     'xxxx00010000xxxxxxxx00000101xxxx'], # v5TE
 # ['qadd16',   'xxxx01100010xxxxxxxx11110001xxxx'], # v6
 # ['qadd8',    'xxxx01100010xxxxxxxx11111001xxxx'], # v6
 # ['qaddsubx', 'xxxx01100010xxxxxxxx11110011xxxx'], # v6
-#?['qdadd',    'xxxx00010100xxxxxxxx00000101xxxx'],
-#?['qdsub',    'xxxx00010110xxxxxxxx00000101xxxx'],
-#?['qsub',     'xxxx00010010xxxxxxxx00000101xxxx'],
+#?['qdadd',    'xxxx00010100xxxxxxxx00000101xxxx'], # v5TE
+#?['qdsub',    'xxxx00010110xxxxxxxx00000101xxxx'], # v5TE
+#?['qsub',     'xxxx00010010xxxxxxxx00000101xxxx'], # v5TE
 # ['qsub16',   'xxxx01100010xxxxxxxx11110111xxxx'], # v6
 # ['qsub8',    'xxxx01100010xxxxxxxx11111111xxxx'], # v6
 # ['qsubaddx', 'xxxx01100010xxxxxxxx11110101xxxx'], # v6
@@ -181,12 +181,12 @@ encodings = [
 # ['rev16',    'xxxx011010111111xxxx11111011xxxx'], # v6
 # ['revsh',    'xxxx011011111111xxxx11111011xxxx'], # v6
 # ['rfe',      '1111100xx0x1xxxx0000101000000000'], # v6
-  ['rsb',      'xxxx00x0011xxxxxxxxxxxxxxxxxxxxx'],
-  ['rsc',      'xxxx00x0111xxxxxxxxxxxxxxxxxxxxx'],
+  ['rsb',      'xxxx00x0011xxxxxxxxxxxxxxxxxxxxx'], # v4
+  ['rsc',      'xxxx00x0111xxxxxxxxxxxxxxxxxxxxx'], # v4
 # ['sadd16',   'xxxx01100001xxxxxxxx11110001xxxx'], # v6
 # ['sadd8',    'xxxx01100001xxxxxxxx11111001xxxx'], # v6
 # ['saddsubx', 'xxxx01100001xxxxxxxx11110011xxxx'], # v6
-  ['sbc',      'xxxx00x0110xxxxxxxxxxxxxxxxxxxxx'],
+  ['sbc',      'xxxx00x0110xxxxxxxxxxxxxxxxxxxxx'], # v4
 # ['sel',      'xxxx01101000xxxxxxxx11111011xxxx'], # v6
 # ['setend',   '1111000100000001000000x000000000'], # v6
 # ['shadd16',  'xxxx01100011xxxxxxxx11110001xxxx'], # v6
@@ -196,21 +196,21 @@ encodings = [
 # ['shsub8',   'xxxx01100011xxxxxxxx11111111xxxx'], # v6
 # ['shsubaddx','xxxx01100011xxxxxxxx11110101xxxx'], # v6
 # ['smlad',    'xxxx01110000xxxxxxxxxxxx00x1xxxx'], # v6
-# ['smlal',    'xxxx0000111xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
+# ['smlal',    'xxxx0000111xxxxxxxxxxxxx1001xxxx'], # v4, SEE ABOVE
 # ['smlald',   'xxxx01110100xxxxxxxxxxxx00x1xxxx'], # v6
 
-#?['smla_xy',  'xxxx00010000xxxxxxxxxxxx1xx0xxxx'],
-#?['smlal_xy', 'xxxx00010100xxxxxxxxxxxx1xx0xxxx'],
-#?['smlaw_y',  'xxxx00010010xxxxxxxxxxxx1x00xxxx'],
+#?['smla_xy',  'xxxx00010000xxxxxxxxxxxx1xx0xxxx'], # v5TE
+#?['smlal_xy', 'xxxx00010100xxxxxxxxxxxx1xx0xxxx'], # v5TE
+#?['smlaw_y',  'xxxx00010010xxxxxxxxxxxx1x00xxxx'], # v5TE
 # ['smlsd',    'xxxx01110000xxxxxxxxxxxx01x1xxxx'], # v6
 # ['smlsld',   'xxxx01110100xxxxxxxxxxxx01x1xxxx'], # v6
 # ['smmla',    'xxxx01110101xxxxxxxxxxxx00x1xxxx'], # v6
 # ['smmls',    'xxxx01110101xxxxxxxxxxxx11x1xxxx'], # v6
 # ['smmul',    'xxxx01110101xxxx1111xxxx00x1xxxx'], # v6
 # ['smuad',    'xxxx01110000xxxx1111xxxx00x1xxxx'], # v6
-# ['smull',    'xxxx0000110xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
-#?['smul_xy',  'xxxx00010110xxxx0000xxxx1xx0xxxx'],
-#?['smulw',    'xxxx00010010xxxx0000xxxx1x10xxxx'],
+# ['smull',    'xxxx0000110xxxxxxxxxxxxx1001xxxx'], # v4, SEE ABOVE
+#?['smul_xy',  'xxxx00010110xxxx0000xxxx1xx0xxxx'], # v5TE
+#?['smulw',    'xxxx00010010xxxx0000xxxx1x10xxxx'], # v5TE
 # ['smusd',    'xxxx01110000xxxx1111xxxx01x1xxxx'], # v6
 # ['srs',      '1111100xx1x0110100000101000xxxxx'], # v6
 # ['ssat',     'xxxx0110101xxxxxxxxxxxxxxx01xxxx'], # v6
@@ -218,30 +218,30 @@ encodings = [
 # ['ssub16',   'xxxx01100001xxxxxxxx11110111xxxx'], # v6
 # ['ssub8',    'xxxx01100001xxxxxxxx11111111xxxx'], # v6
 # ['ssubaddx', 'xxxx01100001xxxxxxxx11110101xxxx'], # v6
-  ['stc',      'xxxx110xxxx0xxxxxxxxxxxxxxxxxxxx'],
-# ['stc2',     '1111110xxxx0xxxxxxxxxxxxxxxxxxxx'], # v6
-  ['stm1',     'xxxx100xx0x0xxxxxxxxxxxxxxxxxxxx'],
-  ['stm2',     'xxxx100xx100xxxxxxxxxxxxxxxxxxxx'],
-  ['str',      'xxxx01xxx0x0xxxxxxxxxxxxxxxxxxxx'],
-  ['strb',     'xxxx01xxx1x0xxxxxxxxxxxxxxxxxxxx'],
-  ['strbt',    'xxxx01x0x110xxxxxxxxxxxxxxxxxxxx'],
-#?['strd',     'xxxx000xxxx0xxxxxxxxxxxx1111xxxx'],
+  ['stc',      'xxxx110xxxx0xxxxxxxxxxxxxxxxxxxx'], # v4
+# ['stc2',     '1111110xxxx0xxxxxxxxxxxxxxxxxxxx'], # v5T
+  ['stm1',     'xxxx100xx0x0xxxxxxxxxxxxxxxxxxxx'], # v4
+  ['stm2',     'xxxx100xx100xxxxxxxxxxxxxxxxxxxx'], # v4
+  ['str',      'xxxx01xxx0x0xxxxxxxxxxxxxxxxxxxx'], # v4
+  ['strb',     'xxxx01xxx1x0xxxxxxxxxxxxxxxxxxxx'], # v4
+  ['strbt',    'xxxx01x0x110xxxxxxxxxxxxxxxxxxxx'], # v4
+#?['strd',     'xxxx000xxxx0xxxxxxxxxxxx1111xxxx'], # v5TE
 # ['strex',    'xxxx00011000xxxxxxxx11111001xxxx'], # v6
 
-# ['strh',     'xxxx000xxxx0xxxxxxxxxxxx1011xxxx'], # SEE ABOVE
-  ['strt',     'xxxx01x0x010xxxxxxxxxxxxxxxxxxxx'],
-  ['sub',      'xxxx00x0010xxxxxxxxxxxxxxxxxxxxx'],
-  ['swi',      'xxxx1111xxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['swp',      'xxxx00010000xxxxxxxx00001001xxxx'],
-  ['swpb',     'xxxx00010100xxxxxxxx00001001xxxx'],
+# ['strh',     'xxxx000xxxx0xxxxxxxxxxxx1011xxxx'], # v4, SEE ABOVE
+  ['strt',     'xxxx01x0x010xxxxxxxxxxxxxxxxxxxx'], # v4
+  ['sub',      'xxxx00x0010xxxxxxxxxxxxxxxxxxxxx'], # v4
+  ['swi',      'xxxx1111xxxxxxxxxxxxxxxxxxxxxxxx'], # v4
+  ['swp',      'xxxx00010000xxxxxxxx00001001xxxx'], # v4, Deprecated in v6
+  ['swpb',     'xxxx00010100xxxxxxxx00001001xxxx'], # v4, Deprecated in v6
 # ['sxtab',    'xxxx01101010xxxxxxxxxx000111xxxx'], # v6
 # ['sxtab16',  'xxxx01101000xxxxxxxxxx000111xxxx'], # v6
 # ['sxtah',    'xxxx01101011xxxxxxxxxx000111xxxx'], # v6
 # ['sxtb',     'xxxx011010101111xxxxxx000111xxxx'], # v6
 # ['sxtb16',   'xxxx011010001111xxxxxx000111xxxx'], # v6
 # ['sxth',     'xxxx011010111111xxxxxx000111xxxx'], # v6
-  ['teq',      'xxxx00x10011xxxx0000xxxxxxxxxxxx'],
-  ['tst',      'xxxx00x10001xxxx0000xxxxxxxxxxxx'],
+  ['teq',      'xxxx00x10011xxxx0000xxxxxxxxxxxx'], # v4
+  ['tst',      'xxxx00x10001xxxx0000xxxxxxxxxxxx'], # v4
 # ['uadd16',   'xxxx01100101xxxxxxxx11110001xxxx'], # v6
 # ['uadd8',    'xxxx01100101xxxxxxxx11111001xxxx'], # v6
 # ['uadd8subx','xxxx01100101xxxxxxxx11110011xxxx'], # v6
@@ -252,8 +252,8 @@ encodings = [
 # ['uhsub8',   'xxxx01100111xxxxxxxx11111111xxxx'], # v6
 # ['uhsubaddx','xxxx01100111xxxxxxxx11110101xxxx'], # v6
 # ['umaal',    'xxxx00000100xxxxxxxxxxxx1001xxxx'], # v6
-# ['umlal',    'xxxx0000101xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
-# ['umull',    'xxxx0000100xxxxxxxxxxxxx1001xxxx'], # SEE ABOVE
+# ['umlal',    'xxxx0000101xxxxxxxxxxxxx1001xxxx'], # v4, SEE ABOVE
+# ['umull',    'xxxx0000100xxxxxxxxxxxxx1001xxxx'], # v4, SEE ABOVE
 # ['uqadd16',  'xxxx01100110xxxxxxxx11110001xxxx'], # v6
 # ['uqadd8',   'xxxx01100110xxxxxxxx11111001xxxx'], # v6
 # ['uqaddsubx','xxxx01100110xxxxxxxx11110011xxxx'], # v6
