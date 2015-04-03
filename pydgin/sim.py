@@ -11,7 +11,7 @@ sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 from pydgin.debug     import Debug, pad, pad_hex
 from pydgin.misc      import FatalError
-from rpython.rlib.jit import JitDriver, hint, set_user_param
+from rpython.rlib.jit import JitDriver, hint, set_user_param, set_param
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
@@ -36,6 +36,10 @@ class Sim( object ):
                                   virtualizables  =['state',],
                                   get_printable_location=self.get_location,
                                 )
+
+      # Set the default trace limit here. Different ISAs can override this
+      # value if necessary
+      self.default_trace_limit = 400000
 
     self.max_insts = 0
 
@@ -187,6 +191,10 @@ class Sim( object ):
 
   def get_entry_point( self ):
     def entry_point( argv ):
+
+      # set the trace_limit parameter of the jitdriver
+      if self.jit_enabled:
+        set_param( self.jitdriver, "trace_limit", self.default_trace_limit )
 
       filename_idx       = 0
       debug_flags        = []
