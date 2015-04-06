@@ -1119,7 +1119,7 @@ def execute_sub( s, inst ):
 from syscalls import do_syscall
 def execute_swi( s, inst ):
   if condition_passed( s, inst.cond ):
-    do_syscall( s, s.rf[7] )
+    do_syscall( s )
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------

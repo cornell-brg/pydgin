@@ -552,4 +552,52 @@ def syscall_numcores( s, arg0, arg1, arg2 ):
   # always return 1 until multicore is implemented!
   return 1, 0
 
+#-----------------------------------------------------------------------
+# uname
+#-----------------------------------------------------------------------
+# TODO: Implementation copied directly from gem5 for verification
+# purposes. Fix later.
+def syscall_uname( s, arg0, arg1, arg2 ):
+
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_uname()",
+
+  # utsname struct is five fields, each 64 chars + 1 null char
+  field_nchars = 64 + 1
+  struct = [
+    'Linux',                             # sysname
+    'm5.eecs.umich.edu',                 # nodename
+    '3.12.2',                            # release
+    '#1 Mon Aug 18 11:32:15 EDT 2003',   # version
+    'armv7l',                            # machine
+  ]
+
+  mem_addr = arg0
+
+  for field in struct:
+    assert len(field) < field_nchars
+
+    # TODO: provide char/string block write interface to memory?
+    padding = '\0' * (field_nchars - len(field))
+    put_str( s, mem_addr, field + padding )
+    mem_addr += field_nchars
+
+  return 0, 0
+
+#-----------------------------------------------------------------------
+# ioctl
+#-----------------------------------------------------------------------
+
+import errno
+
+def syscall_ioctl( s, arg0, arg1, arg2 ):
+  fd  = arg0
+  req = arg1
+
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_ioctl( fd=%x, req=%x )" % ( fd, req ),
+
+  # TODO: not sure what this does... return errno 0
+  result     = -errno.ENOTTY if fd >= 0 else -errno.EBADF
+  return result, 0
 
