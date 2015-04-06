@@ -2,8 +2,10 @@
 # utils.py
 #=======================================================================
 
-from rpython.rlib.rstruct     import ieee
-from rpython.rlib.rarithmetic import intmask
+from rpython.rlib.rarithmetic import r_uint32, widen
+from rpython.rlib.longlong2float import uint2singlefloat, \
+                                        singlefloat2uint
+from rpython.rtyper.lltypesystem import lltype, rffi
 
 #-----------------------------------------------------------------------
 # sext
@@ -36,29 +38,24 @@ def signed( value ):
 # bits2float
 #-----------------------------------------------------------------------
 def bits2float( bits ):
-  #data_str = struct.pack  ( 'I', bits     )
-  #flt      = struct.unpack( 'f', data_str )[0]
 
-  flt = ieee.float_unpack( bits, 4 )
+  # This is a bit convoluted, but this is much faster than ieee.pack
+  # stuff. In addition to normal casting through uint2singlefloat, we have
+  # additional casting because integer and float types that we can do
+  # arithmetic operations on are standard Python sizes (native machine
+  # size). Here's the typing going on below:
+  # Python Int (64-bit) -> r_uint32 -> r_singlefloat -> Python Float (64-bit)
+  flt = rffi.cast( lltype.Float, uint2singlefloat( r_uint32( bits ) ) )
   return flt
 
 #-----------------------------------------------------------------------
 # float2bits
 #-----------------------------------------------------------------------
 def float2bits( flt ):
-  #data_str = struct.pack  ( 'f', flt      )
-  #bits     = struct.unpack( 'I', data_str )[0]
 
-  # float_pack returns an r_int rather than an int, must cast it or
-  # arithmetic operations behave differently!
-  try:
-    bits = trim( intmask( ieee.float_pack( flt, 4 ) ) )
-  # float_pack also will throw an OverflowError if the computed value
-  # won't fit in the expected number of bytes, catch this and return
-  # the encoding for inf/-inf
-  except OverflowError:
-    bits = 0x7f800000 if flt > 0 else 0xff800000
-
+  # See note above for bits2float. We're doing the reverse:
+  # Python Float (64-bit) -> r_singlefloat -> r_uint32 -> Python Int (64-bit)
+  bits = widen( singlefloat2uint( rffi.cast( lltype.SingleFloat, flt ) ) )
   return bits
 
 #-----------------------------------------------------------------------
