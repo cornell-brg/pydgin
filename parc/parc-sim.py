@@ -16,6 +16,7 @@ import elf
 from bootstrap      import syscall_init, test_init, memory_size
 from instruction    import Instruction
 from isa            import decode, reg_map
+from pipe_model     import StallingProcPipelineModel
 
 #-------------------------------------------------------------------------
 # ParcSim
@@ -40,6 +41,17 @@ class ParcSim( Sim ):
     return Instruction( bits, inst_str ), exec_fun
 
   #-----------------------------------------------------------------------
+  # post_exec
+  #-----------------------------------------------------------------------
+
+  def post_exec( self, inst ):
+    # TODO: add a cmdline flag for this
+    #pipe_model = None
+
+    if self.pipe_model is not None:
+      self.pipe_model.next_inst( inst )
+
+  #-----------------------------------------------------------------------
   # init_state
   #-----------------------------------------------------------------------
   # This method is called to load the program and initialize architectural
@@ -59,6 +71,9 @@ class ParcSim( Sim ):
     if testbin: self.state = test_init   ( mem, debug )
     else:       self.state = syscall_init( mem, breakpoint, run_argv,
                                            run_envp, self.debug )
+
+    # initialize pipe model
+    self.pipe_model = StallingProcPipelineModel( self.state )
 
 
 #-----------------------------------------------------------------------

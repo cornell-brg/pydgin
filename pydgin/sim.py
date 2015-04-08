@@ -107,6 +107,17 @@ class Sim( object ):
     return "pc: %x" % pc
 
   #-----------------------------------------------------------------------
+  # pre_exec and post_exec
+  #-----------------------------------------------------------------------
+  # Generic hooks for pre- and post-execution
+
+  def pre_exec( self, inst ):
+    pass
+
+  def post_exec( self, inst ):
+    pass
+
+  #-----------------------------------------------------------------------
   # run
   #-----------------------------------------------------------------------
   def run( self ):
@@ -152,7 +163,11 @@ class Sim( object ):
                   pad( inst.str, 8 ),
                   pad( "%d" % s.ncycles, 8 ), ),
 
+        # pre_exec and post_exec are generic hooks that arch-specifics
+        # simulators can do intersting stuff with
+        self.pre_exec( inst )
         exec_fun( s, inst )
+        self.post_exec( inst )
       except FatalError as error:
         print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
         print "Exception message: %s" % error.msg
