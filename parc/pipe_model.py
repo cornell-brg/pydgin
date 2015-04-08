@@ -12,11 +12,11 @@ class Execution( object ):
     self.pc   = pc
     self.inst = inst
 
-    self.read_regs = ()
+    #self.read_regs = []
     # assume we have a single write port
     self.write_reg = -1
 
-    self.is_branch = False
+    #self.is_branch = False
 
     self.squashed = False
     self.stalled  = False
