@@ -52,6 +52,14 @@ class ParcSim( Sim ):
       self.pipe_model.next_inst( inst )
 
   #-----------------------------------------------------------------------
+  # sim_done
+  #-----------------------------------------------------------------------
+
+  def sim_done( self ):
+    if self.pipe_model is not None:
+      print "num cycles: %d" % self.pipe_model.num_cycles
+
+  #-----------------------------------------------------------------------
   # init_state
   #-----------------------------------------------------------------------
   # This method is called to load the program and initialize architectural

@@ -118,6 +118,14 @@ class Sim( object ):
     pass
 
   #-----------------------------------------------------------------------
+  # sim_done
+  #-----------------------------------------------------------------------
+  # Hook to indicate the simulation is done
+
+  def sim_done( self ):
+    pass
+
+  #-----------------------------------------------------------------------
   # run
   #-----------------------------------------------------------------------
   def run( self ):
@@ -326,6 +334,10 @@ class Sim( object ):
       # Execute the program
 
       self.run()
+
+      # Call simulation done hook
+
+      self.sim_done()
 
       return 0
 
