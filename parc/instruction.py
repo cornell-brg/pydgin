@@ -3,6 +3,7 @@
 #=======================================================================
 
 class Instruction( object ):
+  _immutable_fields_ = ["bits", "str"]
   def __init__( self, bits, str ):
     self.bits = bits
     self.str  = str

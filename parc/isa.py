@@ -7,6 +7,8 @@ from utils import trim, trim_5, signed, sext, sext_byte, \
 
 from pydgin.misc import create_risc_decoder, FatalError
 
+from rpython.rlib.jit import elidable, look_inside
+
 #=======================================================================
 # Register Definitions
 #=======================================================================
@@ -203,7 +205,8 @@ encodings = [
 # Returns the register specifiers the instruction reads from and writes to
 # in the form of ( (tuple of read regs), (tuple of write regs) )
 
-#@elidable
+@elidable
+@look_inside
 def get_inst_rw( inst ):
   if   inst.str == "nop"     : return ( [ ]               , [ ]        )
   elif inst.str == "addiu"   : return ( [inst.rs,]        , [inst.rt,] )
@@ -278,7 +281,7 @@ def get_inst_rw( inst ):
   elif inst.str == "cvt_w_s" : return ( [inst.ft, inst.fs], [inst.fd,] )
   elif inst.str == "cvt_s_w" : return ( [inst.ft, inst.fs], [inst.fd,] )
   else                       :
-    print "WARNING: %s not in get_inst_rw table" % inst.str
+    #print "WARNING: %s not in get_inst_rw table" % inst.str
     return ( [ ]               , [ ]        )
 
 

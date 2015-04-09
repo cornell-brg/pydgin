@@ -4,6 +4,7 @@
 
 from pydgin.debug import pad, pad_hex
 from isa          import get_inst_rw
+from rpython.rlib.jit import unroll_safe
 
 class Execution( object ):
 
@@ -64,6 +65,7 @@ class StallingProcPipelineModel( object ):
       return True
     return False
 
+  @unroll_safe
   def next_inst( self, inst ):
 
     # for each instruction, we cycle until we see the inst in x
