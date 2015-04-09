@@ -43,6 +43,29 @@ class ExecutionToken( object ):
       self.valid = False
       self.stalled = False
 
+  def get_repr( self, disasm=False ):
+    repr = pad_hex( self.pc, 6 )
+    if disasm:
+      repr += ":" + self.inst.str
+    return repr
+
+  def get_stage_str( self, stage_idx ):
+    if stage_idx < 2:
+      nchars = 10
+      disasm = False
+    else:
+      nchars = 16
+      disasm = True
+
+    if not self.valid:
+      return pad( "", nchars )
+    elif self.stalled:
+      return pad( self.get_repr( disasm ) + " S", nchars )
+    elif self.squashed:
+      return pad( "--", nchars )
+    else:
+      return pad( self.get_repr( disasm ), nchars )
+
 #-------------------------------------------------------------------------
 # StallingProcPipelineModel
 #-------------------------------------------------------------------------
@@ -143,30 +166,9 @@ class StallingProcPipelineModel( object ):
 
   def print_trace( self ):
     trace = "%d: " % self.num_cycles + \
-            self.get_stage_str( self.F, 0 ) + "|" + \
-            self.get_stage_str( self.D, 1 ) + "|" + \
-            self.get_stage_str( self.X, 2 ) + "|" + \
-            self.get_stage_str( self.M, 3 ) + "|" + \
-            self.get_stage_str( self.W, 4 )
+            self.F.get_stage_str( 0 ) + "|" + \
+            self.D.get_stage_str( 1 ) + "|" + \
+            self.X.get_stage_str( 2 ) + "|" + \
+            self.M.get_stage_str( 3 ) + "|" + \
+            self.W.get_stage_str( 4 )
     print trace
-
-  def get_stage_str( self, stage, stage_idx ):
-    if stage_idx < 2:
-      nchars = 10
-    else:
-      nchars = 16
-
-    def get_inst_repr():
-      repr = pad_hex( stage.pc, 6 )
-      if stage_idx >= 2:
-        repr += ":" + stage.inst.str
-      return repr
-
-    if not stage.valid:
-      return pad( "", nchars )
-    elif stage.stalled:
-      return pad( get_inst_repr() + " S", nchars )
-    elif stage.squashed:
-      return pad( "--", nchars )
-    else:
-      return pad( get_inst_repr(), nchars )
