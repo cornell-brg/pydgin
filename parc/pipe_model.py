@@ -3,10 +3,14 @@
 #=========================================================================
 
 from pydgin.debug import pad, pad_hex
-from isa          import get_inst_rw
+from isa          import get_inst_rw, get_inst_stall_cycles
 from rpython.rlib.jit import unroll_safe
 
-class Execution( object ):
+#-------------------------------------------------------------------------
+# ExecutionToken
+#-------------------------------------------------------------------------
+
+class ExecutionToken( object ):
 
   def __init__( self, pc=0, inst=None, valid=True ):
 
@@ -27,7 +31,7 @@ class Execution( object ):
     if not self.stalled and not stall:
       if other.stalled:
         # create a bubble
-        return Execution( valid=False ), False
+        return ExecutionToken( valid=False ), False
       else:
         return other, False
     else:
@@ -39,17 +43,21 @@ class Execution( object ):
       self.valid = False
       self.stalled = False
 
+#-------------------------------------------------------------------------
+# StallingProcPipelineModel
+#-------------------------------------------------------------------------
+
 class StallingProcPipelineModel( object ):
 
   def __init__( self, state ):
 
     # pipeline stages -- these are either execution objects or none
 
-    self.F = Execution( valid=False )
-    self.D = Execution( valid=False )
-    self.X = Execution( valid=False )
-    self.M = Execution( valid=False )
-    self.W = Execution( valid=False )
+    self.F = ExecutionToken( valid=False )
+    self.D = ExecutionToken( valid=False )
+    self.X = ExecutionToken( valid=False )
+    self.M = ExecutionToken( valid=False )
+    self.W = ExecutionToken( valid=False )
 
     self.fetch_pc = state.fetch_pc()
     self.last_pc  = state.fetch_pc()
@@ -57,6 +65,9 @@ class StallingProcPipelineModel( object ):
     self.state    = state
 
     self.num_cycles = 0
+    self.num_squashes = 0
+    self.num_llfu_stalls = 0
+    self.num_raw_stalls = 0
 
   def is_in_flight( self, reg ):
     if self.M.valid and self.M.write_reg == reg:
@@ -78,12 +89,18 @@ class StallingProcPipelineModel( object ):
 
     self.X.inst = inst
     reg_reads, reg_writes = get_inst_rw( inst )
+    stall_cycles = get_inst_stall_cycles( inst )
     self.X.write_reg = reg_writes[0] if len( reg_writes ) > 0 else -1
     self.X.stalled = True
+
+    for i in xrange( stall_cycles ):
+      self.xtick()
+      self.num_llfu_stalls += 1
 
     for reg_read in reg_reads:
       while self.is_in_flight( reg_read ):
         self.xtick()
+        self.num_raw_stalls += 1
 
     self.X.stalled = False
 
@@ -96,6 +113,8 @@ class StallingProcPipelineModel( object ):
       # squash F and D
       self.F.squashed = True
       self.D.squashed = True
+
+      self.num_squashes += 2
 
     self.last_pc = pc
 
@@ -112,7 +131,7 @@ class StallingProcPipelineModel( object ):
     self.M, stalled = self.M.pipe_shift( self.X, stalled )
     self.X, stalled = self.X.pipe_shift( self.D, stalled )
     self.D, stalled = self.D.pipe_shift( self.F, stalled )
-    self.F, stalled = self.F.pipe_shift( Execution( pc=self.fetch_pc ), stalled )
+    self.F, stalled = self.F.pipe_shift( ExecutionToken( pc=self.fetch_pc ), stalled )
 
     #if self.state.debug.enabled( "trace" ):
     #  self.print_trace()
@@ -124,20 +143,30 @@ class StallingProcPipelineModel( object ):
 
   def print_trace( self ):
     trace = "%d: " % self.num_cycles + \
-            self.get_stage_str( self.F ) + \
-            self.get_stage_str( self.D ) + \
-            self.get_stage_str( self.X ) + \
-            self.get_stage_str( self.M ) + \
-            self.get_stage_str( self.W )
+            self.get_stage_str( self.F, 0 ) + "|" + \
+            self.get_stage_str( self.D, 1 ) + "|" + \
+            self.get_stage_str( self.X, 2 ) + "|" + \
+            self.get_stage_str( self.M, 3 ) + "|" + \
+            self.get_stage_str( self.W, 4 )
     print trace
 
-  def get_stage_str( self, stage ):
-    nchars = 10
+  def get_stage_str( self, stage, stage_idx ):
+    if stage_idx < 2:
+      nchars = 10
+    else:
+      nchars = 16
+
+    def get_inst_repr():
+      repr = pad_hex( stage.pc, 6 )
+      if stage_idx >= 2:
+        repr += ":" + stage.inst.str
+      return repr
+
     if not stage.valid:
       return pad( "", nchars )
     elif stage.stalled:
-      return pad( pad_hex( stage.pc, 6 ) + " S", nchars )
+      return pad( get_inst_repr() + " S", nchars )
     elif stage.squashed:
       return pad( "--", nchars )
     else:
-      return pad( pad_hex( stage.pc, 6 ), nchars )
+      return pad( get_inst_repr(), nchars )

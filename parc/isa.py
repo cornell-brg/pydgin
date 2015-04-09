@@ -275,7 +275,7 @@ def get_inst_rw( inst ):
   elif inst.str == "c_eq_s"  : return ( [inst.ft, inst.fs], [inst.fd,] )
   elif inst.str == "c_ngl_s" : return ( [inst.ft, inst.fs], [inst.fd,] )
   elif inst.str == "c_lt_s"  : return ( [inst.ft, inst.fs], [inst.fd,] )
-  elif inst.str == "c_nges_" : return ( [inst.ft, inst.fs], [inst.fd,] )
+  elif inst.str == "c_nge_s" : return ( [inst.ft, inst.fs], [inst.fd,] )
   elif inst.str == "c_le_s"  : return ( [inst.ft, inst.fs], [inst.fd,] )
   elif inst.str == "c_ngt_s" : return ( [inst.ft, inst.fs], [inst.fd,] )
   elif inst.str == "cvt_w_s" : return ( [inst.ft, inst.fs], [inst.fd,] )
@@ -284,6 +284,34 @@ def get_inst_rw( inst ):
     #print "WARNING: %s not in get_inst_rw table" % inst.str
     return ( [ ]               , [ ]        )
 
+#-------------------------------------------------------------------------
+# get_inst_stall_cycles
+#-------------------------------------------------------------------------
+# Returns stall cycles to model different long-latency events
+
+@elidable
+@look_inside
+def get_inst_stall_cycles( inst ):
+  if   inst.str == "mul"     : return 4
+  elif inst.str == "div"     : return 10
+  elif inst.str == "divu"    : return 10
+  elif inst.str == "rem"     : return 10
+  elif inst.str == "remu"    : return 10
+  elif inst.str == "add_s"   : return 4
+  elif inst.str == "sub_s"   : return 4
+  elif inst.str == "mul_s"   : return 6
+  elif inst.str == "div_s"   : return 6
+  elif inst.str == "c_f_s"   : return 2
+  elif inst.str == "c_un_s"  : return 2
+  elif inst.str == "c_eq_s"  : return 2
+  elif inst.str == "c_ngl_s" : return 2
+  elif inst.str == "c_lt_s"  : return 2
+  elif inst.str == "c_nge_s" : return 2
+  elif inst.str == "c_le_s"  : return 2
+  elif inst.str == "c_ngt_s" : return 2
+  elif inst.str == "cvt_w_s" : return 4
+  elif inst.str == "cvt_s_w" : return 4
+  else                       : return 0
 
 
 #=======================================================================

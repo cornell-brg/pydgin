@@ -57,7 +57,10 @@ class ParcSim( Sim ):
 
   def sim_done( self ):
     if self.pipe_model is not None:
-      print "num cycles: %d" % self.pipe_model.num_cycles
+      print "num_cycles = %d" % self.pipe_model.num_cycles
+      print "num_squashes = %d" % self.pipe_model.num_squashes
+      print "num_llfu_stalls = %d" % self.pipe_model.num_llfu_stalls
+      print "num_raw_stalls = %d" % self.pipe_model.num_raw_stalls
 
   #-----------------------------------------------------------------------
   # init_state
