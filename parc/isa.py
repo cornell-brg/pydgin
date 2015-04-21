@@ -102,11 +102,15 @@ reg_map = {
 
 encodings = [
   ['nop',      '00000000000000000000000000000000'],
+  #---------------------------------------------------------------------
   # Coprocessor
+  #---------------------------------------------------------------------
   ['mfc0',     '01000000000xxxxxxxxxx00000000000'],
   ['mtc0',     '01000000100xxxxxxxxxx00000000000'],
   #['mtc2',    '01001000100xxxxxxxxxx00000000000'],
+  #---------------------------------------------------------------------
   # Arithmetic
+  #---------------------------------------------------------------------
   ['addu',     '000000xxxxxxxxxxxxxxx00000100001'],
   ['subu',     '000000xxxxxxxxxxxxxxx00000100011'],
   ['and',      '000000xxxxxxxxxxxxxxx00000100100'],
@@ -115,7 +119,9 @@ encodings = [
   ['nor',      '000000xxxxxxxxxxxxxxx00000100111'],
   ['slt',      '000000xxxxxxxxxxxxxxx00000101010'],
   ['sltu',     '000000xxxxxxxxxxxxxxx00000101011'],
+  #---------------------------------------------------------------------
   # Arithmetic Immediate
+  #---------------------------------------------------------------------
   ['addiu',    '001001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['andi',     '001100xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['ori',      '001101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
@@ -123,78 +129,112 @@ encodings = [
   ['slti',     '001010xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['sltiu',    '001011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lui',      '00111100000xxxxxxxxxxxxxxxxxxxxx'],
+  #---------------------------------------------------------------------
   # Shift
+  #---------------------------------------------------------------------
   ['sll',      '00000000000xxxxxxxxxxxxxxx000000'],
   ['srl',      '00000000000xxxxxxxxxxxxxxx000010'],
   ['sra',      '00000000000xxxxxxxxxxxxxxx000011'],
   ['sllv',     '000000xxxxxxxxxxxxxxx00000000100'],
   ['srlv',     '000000xxxxxxxxxxxxxxx00000000110'],
   ['srav',     '000000xxxxxxxxxxxxxxx00000000111'],
+  #---------------------------------------------------------------------
   # Mul/Div/Rem
+  #---------------------------------------------------------------------
   ['mul',      '011100xxxxxxxxxxxxxxx00000000010'],
   ['div',      '100111xxxxxxxxxxxxxxx00000000101'],
   ['divu',     '100111xxxxxxxxxxxxxxx00000000111'],
   ['rem',      '100111xxxxxxxxxxxxxxx00000000110'],
   ['remu',     '100111xxxxxxxxxxxxxxx00000001000'],
+  #---------------------------------------------------------------------
   # Loads
+  #---------------------------------------------------------------------
   ['lw',       '100011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lh',       '100001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lhu',      '100101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lb',       '100000xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['lbu',      '100100xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  #---------------------------------------------------------------------
   # Stores
+  #---------------------------------------------------------------------
   ['sw',       '101011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['sh',       '101001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['sb',       '101000xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  #---------------------------------------------------------------------
   # Jumps
+  #---------------------------------------------------------------------
   ['j',        '000010xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['jal',      '000011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['jr',       '000000xxxxx000000000000000001000'],
   ['jalr',     '000000xxxxx00000xxxxx00000001001'],
+  #---------------------------------------------------------------------
   # Branches
+  #---------------------------------------------------------------------
   ['beq',      '000100xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['bne',      '000101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
   ['blez',     '000110xxxxx00000xxxxxxxxxxxxxxxx'],
   ['bgtz',     '000111xxxxx00000xxxxxxxxxxxxxxxx'],
   ['bltz',     '000001xxxxx00000xxxxxxxxxxxxxxxx'],
   ['bgez',     '000001xxxxx00001xxxxxxxxxxxxxxxx'],
+  #---------------------------------------------------------------------
   # Conditional
-  ['movn',    '000000xxxxxxxxxxxxxxx00000001011'],
-  ['movz',    '000000xxxxxxxxxxxxxxx00000001010'],
+  #---------------------------------------------------------------------
+  ['movn',     '000000xxxxxxxxxxxxxxx00000001011'],
+  ['movz',     '000000xxxxxxxxxxxxxxx00000001010'],
+  #---------------------------------------------------------------------
   # Syscall
-  ['syscall', '000000xxxxxxxxxxxxxxxxxxxx001100'],
-# ['eret',    '000000xxxxxxxxxxxxxxxxxxxx001100'],
+  #---------------------------------------------------------------------
+  ['syscall',  '000000xxxxxxxxxxxxxxxxxxxx001100'],
+# ['eret',     '000000xxxxxxxxxxxxxxxxxxxx001100'],
+  #---------------------------------------------------------------------
   # AMO
+  #---------------------------------------------------------------------
   ['amo_add',  '100111xxxxxxxxxxxxxxx00000000010'],
   ['amo_and',  '100111xxxxxxxxxxxxxxx00000000011'],
   ['amo_or',   '100111xxxxxxxxxxxxxxx00000000100'],
 # ['amo_xchg', '100111xxxxxxxxxxxxxxx00000001101'],
 # ['amo_min',  '100111xxxxxxxxxxxxxxx00000001110'],
+  #---------------------------------------------------------------------
   # Data-Parallel
-  ['xloop',   '110100xxxxx00000xxxxxxxxxxxxxxxx'],
-  ['stop',    '10011100000000000000000000000000'],
-  ['utidx',   '1001110000000000xxxxx00000001001'],
-  ['mtuts',   '01001000000xxxxxxxxxx00000001000'],
-  ['mfuts',   '010010xxxxxxxxxxxxxxx00000001001'],
-  # ???
-# ['syncl',   '10011100000000000000000000000001'],
-# ['stat',    '10011100000xxxxx0000000000001111'],
+  #---------------------------------------------------------------------
+  ['syncl',    '10011100000000000000000000000001'],
+  ['xloop',    '110100xxxxx00000xxxxxxxxxxxxxxxx'],
+  ['stop',     '10011100000000000000000000000000'],
+  ['utidx',    '1001110000000000xxxxx00000001001'],
+  ['mtuts',    '01001000000xxxxxxxxxx00000001000'],
+  ['mfuts',    '010010xxxxxxxxxxxxxxx00000001001'],
+  #---------------------------------------------------------------------
+  # XLOOPS
+  #---------------------------------------------------------------------
+  ['xloop_uc', '110001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['xloop_or', '110010xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['xloop_om', '111101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['xloop_orm','111010xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['addiu_xi', '110110xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['addu_xi',  '100111xxxxxxxxxxxxxxxxxxxx010000'],
+  ['subu_xi',  '100111xxxxxxxxxxxxxxxxxxxx010001'],
+  #---------------------------------------------------------------------
+  # Misc
+  #---------------------------------------------------------------------
+  ['stat',     '10011100000xxxxx0000000000001111'],
+  #---------------------------------------------------------------------
   # Floating Point
-  ['add_s',   '010001xxxxxxxxxxxxxxxxxxxx000000'],
-  ['sub_s',   '010001xxxxxxxxxxxxxxxxxxxx000001'],
-  ['mul_s',   '010001xxxxxxxxxxxxxxxxxxxx000010'],
-  ['div_s',   '010001xxxxxxxxxxxxxxxxxxxx000011'],
-  ['c_eq_s',  '01000110000xxxxxxxxxxxxxxx110010'],
-  ['c_lt_s',  '01000110000xxxxxxxxxxxxxxx111100'],
-  ['c_le_s',  '01000110000xxxxxxxxxxxxxxx111110'],
-# ['c_f_s',   '01000110000xxxxxxxxxxxxxxx110000'],
-# ['c_un_s',  '01000110000xxxxxxxxxxxxxxx110001'],
-# ['c_ngl_s', '01000110000xxxxxxxxxxxxxxx111011'],
-# ['c_nge_s'  '01000110000xxxxxxxxxxxxxxx111101'],
-# ['c_ngt_s', '01000110000xxxxxxxxxxxxxxx111111'],
-  ['cvt_w_s', '0100011000000000xxxxxxxxxx100100'],
-  ['cvt_s_w', '0100011010000000xxxxxxxxxx100000'],
- ['trunc_w_s','0100011000000000xxxxxxxxxx001101'],
+  #---------------------------------------------------------------------
+  ['add_s',    '010001xxxxxxxxxxxxxxxxxxxx000000'],
+  ['sub_s',    '010001xxxxxxxxxxxxxxxxxxxx000001'],
+  ['mul_s',    '010001xxxxxxxxxxxxxxxxxxxx000010'],
+  ['div_s',    '010001xxxxxxxxxxxxxxxxxxxx000011'],
+  ['c_eq_s',   '01000110000xxxxxxxxxxxxxxx110010'],
+  ['c_lt_s',   '01000110000xxxxxxxxxxxxxxx111100'],
+  ['c_le_s',   '01000110000xxxxxxxxxxxxxxx111110'],
+# ['c_f_s',    '01000110000xxxxxxxxxxxxxxx110000'],
+# ['c_un_s',   '01000110000xxxxxxxxxxxxxxx110001'],
+# ['c_ngl_s',  '01000110000xxxxxxxxxxxxxxx111011'],
+# ['c_nge_s'   '01000110000xxxxxxxxxxxxxxx111101'],
+# ['c_ngt_s',  '01000110000xxxxxxxxxxxxxxx111111'],
+  ['cvt_w_s',  '0100011000000000xxxxxxxxxx100100'],
+  ['cvt_s_w',  '0100011010000000xxxxxxxxxx100000'],
+  ['trunc_w_s','0100011000000000xxxxxxxxxx001101'],
 ]
 
 #=======================================================================
@@ -697,8 +737,16 @@ def execute_amo_or( s, inst ):
 #-----------------------------------------------------------------------
 
 #-----------------------------------------------------------------------
+# sync.l
+#-----------------------------------------------------------------------
+def execute_syncl( s, inst ):
+  # TODO: sync doesn't do anything in pydgin
+  s.pc += 4
+
+#-----------------------------------------------------------------------
 # xloop
 #-----------------------------------------------------------------------
+# Not to be confused with XLOOPS instructions
 def execute_xloop( s, inst ):
   print 'WARNING: xloop implemented as noop!'
   s.pc += 4
@@ -821,6 +869,70 @@ def execute_trunc_w_s( s, inst ):
   # TODO: check for overflow
   x = bits2float( s.rf[ inst.fs ] )
   s.rf[ inst.fd ] = trim(int(x))  # round down
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# XLOOPS instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# xloop_uc
+#-----------------------------------------------------------------------
+# implemented as bne
+def execute_xloop_uc( s, inst ):
+  execute_bne( s, inst )
+
+#-----------------------------------------------------------------------
+# xloop_or
+#-----------------------------------------------------------------------
+# implemented as bne
+def execute_xloop_or( s, inst ):
+  execute_bne( s, inst )
+
+#-----------------------------------------------------------------------
+# xloop_om
+#-----------------------------------------------------------------------
+# implemented as bne
+def execute_xloop_om( s, inst ):
+  execute_bne( s, inst )
+
+#-----------------------------------------------------------------------
+# xloop_orm
+#-----------------------------------------------------------------------
+# implemented as bne
+def execute_xloop_orm( s, inst ):
+  execute_bne( s, inst )
+
+#-----------------------------------------------------------------------
+# xloop_addiu_xi
+#-----------------------------------------------------------------------
+# implemented as addiu
+def execute_addiu_xi( s, inst ):
+  execute_addiu( s, inst )
+
+#-----------------------------------------------------------------------
+# xloop_addu_xi
+#-----------------------------------------------------------------------
+# implemented as addu
+def execute_addu_xi( s, inst ):
+  execute_addu( s, inst )
+
+#-----------------------------------------------------------------------
+# xloop_subu_xi
+#-----------------------------------------------------------------------
+# implemented as subu
+def execute_subu_xi( s, inst ):
+  execute_subu( s, inst )
+
+#-----------------------------------------------------------------------
+# Misc instructions
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# stat
+#-----------------------------------------------------------------------
+def execute_stat( s, inst ):
+  print 'WARNING: stat implemented as noop!'
   s.pc += 4
 
 #=======================================================================
