@@ -85,7 +85,7 @@ def main():
   print "Targets: {}".format( targets )
 
   # create build dir
-  build_dir = "builds/pydgin-{}".format( pydgin_ver )
+  build_dir = "builds/pydgin-{}/bin".format( pydgin_ver )
   subprocess.call( "mkdir -p {}".format( build_dir ), shell=True )
 
   for target in targets:
