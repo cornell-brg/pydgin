@@ -649,14 +649,16 @@ def execute_movz( s, inst ):
 #-----------------------------------------------------------------------
 # syscall
 #-----------------------------------------------------------------------
-from syscalls import syscall_funcs
+#from syscalls import syscall_funcs
+from syscalls import do_syscall
 def execute_syscall( s, inst ):
-  v0 = reg_map['v0']
-  syscall_number = s.rf[ v0 ]
-  if syscall_number in syscall_funcs:
-    syscall_funcs[ syscall_number ]( s )
-  else:
-    print "WARNING: syscall not implemented!", syscall_number
+  #v0 = reg_map['v0']
+  #syscall_number = s.rf[ v0 ]
+  #if syscall_number in syscall_funcs:
+  #  syscall_funcs[ syscall_number ]( s )
+  #else:
+  #  print "WARNING: syscall not implemented!", syscall_number
+  do_syscall( s )
   s.pc += 4
 
 #-----------------------------------------------------------------------
