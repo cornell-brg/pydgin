@@ -5,8 +5,9 @@
 from utils import trim, trim_5, signed, sext, sext_byte, \
                   bits2float, float2bits
 
-from instruction import rd, rs, rt, fd, fs, ft, imm, jtarg, shamt
-from pydgin.misc import create_risc_decoder
+from instruction  import rd, rs, rt, fd, fs, ft, imm, jtarg, shamt
+from pydgin.misc  import create_risc_decoder
+from polyhs_types import sizeof
 
 # shreesha: to implement a gcd instruction
 #from fractions import gcd
@@ -869,6 +870,7 @@ def execute_ds_alloc( s, inst ):
 
   if index < s.dstruct.num_regs:
     s.rf[ rt(inst) ] = index
+    s.dstruct_type[ index ] = imm( inst )
   else:
     s.rf[ rt(inst) ] = -1
   s.pc += 4
@@ -901,14 +903,15 @@ def execute_ds_get( s, inst ):
   # supports vector of ints
   index = s.rf[ rt(inst) ]
   ds_id = s.rf[ rs(inst) ]
+  size_ = sizeof( s.dstruct_type[ ds_id ] )
 
   # transform the index into memory address
   base_addr = s.dstruct[ ds_id ]
   # vector element location: base + ( index * sizeof( T ) )
-  mem_addr  = base_addr + ( index * 4 )
+  mem_addr  = base_addr + ( index * size_ )
 
   # load memory location
-  s.rf[ rd(inst) ] = s.mem.read( mem_addr, 4 )
+  s.rf[ rd(inst) ] = s.mem.read( mem_addr, size_ )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -919,14 +922,15 @@ def execute_ds_set( s, inst ):
   # supports vector of ints
   index = s.rf[ rs(inst) ]
   ds_id = s.rf[ rd(inst) ]
+  size_ = sizeof( s.dstruct_type[ ds_id ] )
 
   # transform the index into memory address
   base_addr = s.dstruct[ ds_id ]
   # vector element location: base + ( index * sizeof( T ) )
-  mem_addr  = base_addr + ( index * 4 )
+  mem_addr  = base_addr + ( index * size_ )
 
   # store to memory location
-  s.mem.write( mem_addr, 4, s.rf[rt(inst)] )
+  s.mem.write( mem_addr, size_, s.rf[rt(inst)] )
   s.pc += 4
 
 #=======================================================================
