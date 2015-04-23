@@ -219,13 +219,6 @@ def syscall_exit( s, arg0, arg1, arg2 ):
   if s.debug.enabled( "syscalls" ):
     print "syscall_exit( status=%x )" % exit_code
 
-  print
-  print "NUM  INSTS:", s.ncycles
-  # TODO: this is PARC-specific
-  #print "STAT INSTS:", s.stat_ncycles
-  print "EXIT CODE: ", exit_code
-  # TODO: this is an okay way to terminate the simulator?
-  #       sys.exit(1) is not valid python
   s.status = exit_code
   s.running = False
 

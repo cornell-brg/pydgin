@@ -60,6 +60,14 @@ class ParcSim( Sim ):
     else:       self.state = syscall_init( mem, breakpoint, run_argv,
                                            run_envp, self.debug )
 
+  #---------------------------------------------------------------------
+  # run
+  #---------------------------------------------------------------------
+  # Override sim's run to print stat_ncycles on exit
+
+  def run( self ):
+    Sim.run( self )
+    print "Instructions Executed in Stat Region =", self.state.stat_ncycles
 
 #-----------------------------------------------------------------------
 # load_program

@@ -283,15 +283,7 @@ def execute_mtc0( s, inst ):
     s.stats_en = s.rf[inst.rt]
   elif inst.rd == reg_map['c0_staten']:
     s.stats_en = s.rf[inst.rt]
-    if s.stats_en == 0:
-      print
-      print 'STATS OFF! Terminating!'
-      print 'timing cycles: %d' % (s.stat_ncycles)
-      print 'total  cycles: %d' % (s.ncycles)
-      # TODO: this is an okay way to terminate the simulator?
-      #       sys.exit(1) is not valid python
-      s.status = 1
-      s.running = False
+
   #elif inst.rd ==  2: pass
   #  if sink[ s.sink_ptr ] != s.rf[ inst.rt ]:
   #    print 'sink:', sink[ s.sink_ptr ], 's.rf:', s.rf[ inst.rt ]
