@@ -203,22 +203,25 @@ class Sim( object ):
       max_insts          = 0
       envp               = []
 
-      # we're using a mini state machine to parse the args, and these are
-      # three states we have
+      # we're using a mini state machine to parse the args
 
-      ARGS        = 0
-      DEBUG_FLAGS = 1
-      MAX_INSTS   = 2
-      JIT_FLAGS   = 3
-      ENV_FLAGS   = 4
-      token_type  = ARGS
+      prev_token = ""
+
+      # list of tokens that require an additional arg
+
+      tokens_with_args = [ "-h", "--help",
+                           "-e", "--env",
+                           "-d", "--debug",
+                           "--max-insts",
+                           "--jit",
+                         ]
 
       # go through the args one by one and parse accordingly
 
       for i in xrange( 1, len( argv ) ):
         token = argv[i]
 
-        if token_type == ARGS:
+        if prev_token == "":
 
           if token == "--help" or token == "-h":
             print self.help_message % ( self.arch_name, argv[0] )
@@ -227,21 +230,15 @@ class Sim( object ):
           elif token == "--test":
             testbin = True
 
-          elif token == "--env" or token == "-e":
-            token_type = ENV_FLAGS
-
           elif token == "--debug" or token == "-d":
-            token_type = DEBUG_FLAGS
+            prev_token = token
             # warn the user if debugs are not enabled for this translation
             if not Debug.global_enabled:
               print "WARNING: debugs are not enabled for this translation. " + \
                     "To allow debugs, translate with --debug option."
 
-          elif token == "--max-insts":
-            token_type = MAX_INSTS
-
-          elif token == "--jit":
-            token_type = JIT_FLAGS
+          elif token in tokens_with_args:
+            prev_token = token
 
           elif token[:1] == "-":
             # unknown option
@@ -253,24 +250,26 @@ class Sim( object ):
             filename_idx = i
             break
 
-        elif token_type == ENV_FLAGS:
-          envp.append( token )
-          token_type = ARGS
-        elif token_type == DEBUG_FLAGS:
-          # if debug start after provided (using a colon), parse it
-          debug_tokens = token.split( ":" )
-          if len( debug_tokens ) > 1:
-            debug_starts_after = int( debug_tokens[1] )
+        else:
+          if prev_token == "--env" or prev_token == "-e":
+            envp.append( token )
 
-          debug_flags = debug_tokens[0].split( "," )
-          token_type = ARGS
-        elif token_type == MAX_INSTS:
-          self.max_insts = int( token )
-          token_type = ARGS
-        elif token_type == JIT_FLAGS:
-          # pass the jit flags to rpython.rlib.jit
-          set_user_param( self.jitdriver, token )
-          token_type = ARGS
+          elif prev_token == "--debug" or prev_token == "-d":
+            # if debug start after provided (using a colon), parse it
+            debug_tokens = token.split( ":" )
+            if len( debug_tokens ) > 1:
+              debug_starts_after = int( debug_tokens[1] )
+
+            debug_flags = debug_tokens[0].split( "," )
+
+          elif prev_token == "--max-insts":
+            self.max_insts = int( token )
+
+          elif prev_token == "--jit":
+            # pass the jit flags to rpython.rlib.jit
+            set_user_param( self.jitdriver, token )
+
+          prev_token = ""
 
       if filename_idx == 0:
         print "You must supply a filename"
