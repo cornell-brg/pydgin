@@ -72,15 +72,5 @@ executing ELF binaries compiled with a cross-compiler.
 - arm:     Pydgin ISS for executing ARMv5 binaries.
 - parc:    Pydgin ISS for executing PARC binaries.
 
-The following directories contain experimental interpreters for executing
-textual files. They serve no purpose other than to learn more about the
-capabilities of the RPython translation toolchain.
-
-- parc_interp: An interpreter for the complete PARC ISA.
-- asm_toy_2:   A toy interpreter for (less) simple PARC assembly files.
-- asm_toy_1:   A toy interpreter for (very) simple PARC assembly files.
-- bf:          A simple interpreter for a toy language.
-
-
 Please see the README files in each subdirectory for more information.
 
