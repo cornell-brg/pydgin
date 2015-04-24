@@ -74,3 +74,42 @@ executing ELF binaries compiled with a cross-compiler.
 
 Please see the README files in each subdirectory for more information.
 
+-------------------------------------------------------------------------------
+Installing Dependencies
+-------------------------------------------------------------------------------
+
+Pydgin depends on the libraries provided by the RPython translation toolchain
+for jit annotations and interpreter translation. Before running a Pydgin
+simulator, please install the PyPy project source code and specify its location
+by creating a PYDGIN_PYPY_SRC_DIR environment variable::
+
+  $ hg clone https://bitbucket.org/pypy/pypy $SOME_DIR
+  $ export PYDGIN_PYPY_SRC_DIR=$SOME_DIR/pypy
+
+Pydgin simulator generation also works much faster if you have the PyPy
+binary installed. You can either compile this yourself from source, or
+download a precompiled version from the PyPy homepage:
+
+- http://pypy.org/download.html
+
+-------------------------------------------------------------------------------
+Running Pydgin Instruction Set Simulators
+-------------------------------------------------------------------------------
+
+Now that PyPy dependencies are installed, you can run Pydgin simulators
+directly with Python for debug purposes::
+
+  $ cd parc
+  $ python arm-sim.py <arm-binary>
+
+Finally, you can translate the Pydgin simulators into JIT-enabled simulator
+binaries using the RPython translation toolchain::
+
+  $ cd scripts
+  $ ./build.py $PYDGIN_PYPY_SRC_DIR
+
+The translation process will take several minutes. After it's done, you'll have
+a fast simulator to run your binaries::
+
+  $ ./builds/pydgin-arm-jit <arm-binary>
+

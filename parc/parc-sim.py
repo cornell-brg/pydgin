@@ -2,10 +2,19 @@
 # parc-sim.py
 #=========================================================================
 
+import os
 import sys
-# TODO: figure out a better way to set PYTHONENV
+
+# ensure we know where the pypy source code is
+try:
+  sys.path.append( os.environ['PYDGIN_PYPY_SRC_DIR'] )
+except KeyError as e:
+  raise ImportError( 'Please define the PYDGIN_PYPY_SRC_DIR '
+                     'environment variable!')
+
+# need to add parent directory to get access to pydgin package
+# TODO: cleaner way to do this?
 sys.path.append('..')
-#sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 from pydgin.sim     import Sim, init_sim
 from pydgin.storage import Memory
