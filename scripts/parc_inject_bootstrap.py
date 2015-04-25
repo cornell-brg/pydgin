@@ -1,5 +1,5 @@
 #=======================================================================
-# insert_bootstrap.py
+# parc_inject_bootstrap.py
 #=======================================================================
 # Script to take a pisa ELF binary and insert bootstrap code needed by
 # our research processor.

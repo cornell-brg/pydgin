@@ -38,15 +38,15 @@ do
   echo "FINISHED gem5 $bmark"
 
 
-  cd /work/bits0/dml257/rpython-isa-simulator/parc
-  time ./pisa-sim-nojit /work/bits0/dml257/maven-app-misc/build-maven/$bmark --ntrials $NTRIALS
+  cd /work/bits0/dml257/pydgin/scripts
+  time ./builds/pisa-sim-nojit /work/bits0/dml257/maven-app-misc/build-maven/$bmark --ntrials $NTRIALS
   echo "FINISHED nojit $bmark"
-  time ./pisa-sim-nojit /work/bits0/dml257/maven-app-misc/build-maven/$bmark --ntrials $NTRIALS
+  time ./builds/pisa-sim-nojit /work/bits0/dml257/maven-app-misc/build-maven/$bmark --ntrials $NTRIALS
   echo "FINISHED nojit $bmark"
 
-  time ./pisa-sim-jit /work/bits0/dml257/maven-app-misc/build-maven/$bmark --ntrials $NTRIALS
+  time ./builds/pisa-sim-jit /work/bits0/dml257/maven-app-misc/build-maven/$bmark --ntrials $NTRIALS
   echo "FINISHED jit $bmark"
-  time ./pisa-sim-jit /work/bits0/dml257/maven-app-misc/build-maven/$bmark --ntrials $NTRIALS
+  time ./builds/pisa-sim-jit /work/bits0/dml257/maven-app-misc/build-maven/$bmark --ntrials $NTRIALS
   echo "FINISHED jit $bmark"
 
 done
