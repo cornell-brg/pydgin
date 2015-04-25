@@ -88,9 +88,12 @@ by creating a PYDGIN_PYPY_SRC_DIR environment variable::
 
 Pydgin simulator generation also works much faster if you have the PyPy
 binary installed. You can either compile this yourself from source, or
-download a precompiled version from the PyPy homepage:
+download a precompiled version from the PyPy homepage.
 
 - http://pypy.org/download.html
+
+Note that if you download a tarball of the PyPy source instead of cloning it
+from BitBucket, it must be version 2.5 or newer.
 
 -------------------------------------------------------------------------------
 Running Pydgin Instruction Set Simulators
@@ -99,7 +102,7 @@ Running Pydgin Instruction Set Simulators
 Now that PyPy dependencies are installed, you can run Pydgin simulators
 directly with Python for debug purposes::
 
-  $ cd parc
+  $ cd arm
   $ python arm-sim.py <arm-binary>
 
 Finally, you can translate the Pydgin simulators into JIT-enabled simulator
