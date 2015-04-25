@@ -902,20 +902,21 @@ def execute_ds_halt( s, inst ):
 def execute_ds_get( s, inst ):
 
   # get the index for ds_table, dt_table
-  iterator     = s.rf[ rs( inst ) ]
-  ds_id, index = iterator_fields( iterator )
-  dstruct      = s.ds_type[ ds_id ]
+  iterator = iterator_fields( s.rf[ rs( inst ) ] )
+  dstruct  = s.ds_type[ iterator[0] ]
 
   if dstruct  == VECTOR:
     # get the base address
-    base_addr = s.ds_table[ ds_id ]
-    dt_ptr    = s.dt_table[ ds_id ]
+    base_addr = s.ds_table[ iterator[0] ]
+    dt_ptr    = s.dt_table[ iterator[0] ]
     metadata  = s.mem.read( dt_ptr, 4 )
-    dt_size   = size_( metadata )
-    # vector element location: base + ( index * sizeof( T ) )
-    mem_addr  = base_addr + ( index * dt_size )
-    # load memory location
-    s.rf[ rd(inst) ] = s.mem.read( mem_addr, dt_size )
+    dt_desc   = dt_desc_fields( metadata )
+
+    if dt_desc[2] == 0:
+      # vector element location: base + ( index * sizeof( T ) )
+      mem_addr  = base_addr + ( iterator[1] * dt_desc[1] )
+      # load memory location
+      s.rf[ rd(inst) ] = s.mem.read( mem_addr, dt_desc[1] )
 
   s.pc += 4
 
@@ -925,20 +926,22 @@ def execute_ds_get( s, inst ):
 def execute_ds_set( s, inst ):
 
   # get the index for ds_table, dt_table
-  iterator     = s.rf[ rd( inst ) ]
-  ds_id, index = iterator_fields( iterator )
-  dstruct      = s.ds_type[ ds_id ]
+  iterator = iterator_fields( s.rf[ rd( inst ) ] )
+  dstruct  = s.ds_type[ iterator[0] ]
 
   if dstruct  == VECTOR:
     # get the base address
-    base_addr = s.ds_table[ ds_id ]
-    dt_ptr    = s.dt_table[ ds_id ]
+    base_addr = s.ds_table[ iterator[0] ]
+    dt_ptr    = s.dt_table[ iterator[0] ]
     metadata  = s.mem.read( dt_ptr, 4 )
-    dt_size   = size_( metadata )
-    # vector element location: base + ( index * sizeof( T ) )
-    mem_addr  = base_addr + ( index * dt_size )
-    # store to memory location
-    s.mem.write( mem_addr, dt_size, s.rf[rt(inst)] )
+    dt_desc   = dt_desc_fields( metadata )
+
+    # primitive types
+    if dt_desc[2] == 0:
+      # vector element location: base + ( index * sizeof( T ) )
+      mem_addr  = base_addr + ( iterator[1] * dt_desc[1] )
+      # store to memory location
+      s.mem.write( mem_addr, dt_desc[1], s.rf[rt(inst)] )
 
   s.pc += 4
 

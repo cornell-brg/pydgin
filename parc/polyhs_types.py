@@ -7,7 +7,13 @@ VECTOR = 0
 LIST   = 1
 
 def iterator_fields( val ):
-   return ( val >> 24 ) & 0xf, ( val & 0xffffff )
+  ds_id     = ( val >> 24 ) & 0xff
+  iter_bits = ( val & 0xffffff )
+  return [ds_id, iter_bits]
 
-def size_( val ):
-  return ( val >> 16 ) & 0xf
+def dt_desc_fields( val ):
+  offset = ( val >> 24 ) & 0xff
+  size_  = ( val >> 16 ) & 0xff
+  type_  = ( val >> 8  ) & 0xff
+  fields = ( val & 0xff )
+  return [ offset, size_, type_, fields ]
