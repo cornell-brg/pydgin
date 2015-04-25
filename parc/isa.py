@@ -260,11 +260,13 @@ def execute_mfc0( s, inst ):
   #  s.rf[ inst.rt ] = src[ s.src_ptr ]
   #  s.src_ptr += 1
   if   inst.rd == reg_map['c0_coreid']:
-    s.rf[inst.rt] = 0
+    # return actual core id
+    s.rf[inst.rt] = s.core_id
   elif inst.rd == reg_map['c0_count']:
     s.rf[inst.rt] = s.ncycles
   elif inst.rd == reg_map['c0_numcores']:
-    s.rf[inst.rt] = 1
+    # return actual numcores
+    s.rf[inst.rt] = s.ncores
   elif inst.rd == reg_map['c0_counthi']:
     print "WARNING: counthi always returns 0..."
     s.rf[inst.rt] = 0

@@ -43,6 +43,10 @@ class Sim( object ):
 
     self.max_insts = 0
 
+    self.ncores = 1
+    self.core_switch_ival = 1
+    self.pkernel_bin = None
+
   #-----------------------------------------------------------------------
   # decode
   #-----------------------------------------------------------------------
@@ -91,6 +95,10 @@ class Sim( object ):
          bootstrap          initial stack and register state
 
     --max-insts <i> Run until the maximum number of instructions
+    --ncores <i>    Number of cores to simulate
+    --core-switch-ival <i>
+                    Switch cores at this interval
+    --pkernel <f>   Load pkernel binary
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
 
@@ -111,12 +119,18 @@ class Sim( object ):
   #-----------------------------------------------------------------------
   def run( self ):
     self = hint( self, promote=True )
-    s = self.state
+
+    #s = self.state
 
     max_insts = self.max_insts
     jitdriver = self.jitdriver
 
-    while s.running:
+    core_idx = 0
+    tick_ctr = 0
+    s = self.states[ core_idx ]
+
+    # use proc 0 to determine if should be running
+    while self.states[0].running:
 
       jitdriver.jit_merge_point(
         pc        = s.fetch_pc(),
@@ -124,6 +138,9 @@ class Sim( object ):
         state     = s,
         sim       = self,
       )
+
+      # get the current core's state
+      s = self.states[ core_idx ]
 
       # constant-fold pc and mem
       pc  = hint( s.fetch_pc(), promote=True )
@@ -147,7 +164,8 @@ class Sim( object ):
         inst, exec_fun = self.decode( inst_bits )
 
         if s.debug.enabled( "insts" ):
-          print "%s %s %s" % (
+          print "c%s %s %s %s" % (
+                  core_idx,
                   pad_hex( inst_bits ),
                   pad( inst.str, 8 ),
                   pad( "%d" % s.ncycles, 8 ), ),
@@ -157,6 +175,10 @@ class Sim( object ):
         print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
         print "Exception message: %s" % error.msg
         break
+
+      # this is the simulator's tick counter, which is total number of
+      # ticks across different cores simulated
+      tick_ctr += 1
 
       s.ncycles += 1    # TODO: should this be done inside instruction definition?
       if s.stats_en: s.stat_ncycles += 1
@@ -171,6 +193,10 @@ class Sim( object ):
       if max_insts != 0 and s.ncycles >= max_insts:
         print "Reached the max_insts (%d), exiting." % max_insts
         break
+
+      # check if the switching interval is reached
+      if self.ncores > 1 and tick_ctr % self.core_switch_ival == 0:
+        core_idx = ( core_idx + 1 ) % self.ncores
 
       if s.fetch_pc() < old:
         jitdriver.can_enter_jit(
@@ -214,6 +240,9 @@ class Sim( object ):
                            "-d", "--debug",
                            "--max-insts",
                            "--jit",
+                           "--ncores",
+                           "--core-switch-ival",
+                           "--pkernel",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -269,6 +298,15 @@ class Sim( object ):
             # pass the jit flags to rpython.rlib.jit
             set_user_param( self.jitdriver, token )
 
+          elif prev_token == "--ncores":
+            self.ncores = int( token )
+
+          elif prev_token == "--core-switch-ival":
+            self.core_switch_ival = int( token )
+
+          elif prev_token == "--pkernel":
+            self.pkernel_bin = token
+
           prev_token = ""
 
       if filename_idx == 0:
@@ -301,7 +339,8 @@ class Sim( object ):
 
       # pass the state to debug for cycle-triggered debugging
 
-      self.debug.set_state( self.state )
+      # TODO: not sure about this, just pass states[0]
+      self.debug.set_state( self.states[0] )
 
       # Close after loading
 

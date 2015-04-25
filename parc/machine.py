@@ -9,7 +9,7 @@ from pydgin.storage import RegisterFile
 #-----------------------------------------------------------------------
 class State( object ):
   _virtualizable_ = ['pc', 'ncycles']
-  def __init__( self, memory, debug, reset_addr=0x400 ):
+  def __init__( self, memory, debug, reset_addr=0x400, core_id=0, ncores=1 ):
     self.pc       = reset_addr
 
     # TODO: to allow the register file to be virtualizable (to avoid array
@@ -39,6 +39,10 @@ class State( object ):
 
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
+
+    # multicore stuff
+    self.core_id = core_id
+    self.ncores  = ncores
 
   def fetch_pc( self ):
     return self.pc

@@ -542,8 +542,7 @@ def syscall_brk( s, arg0, arg1, arg2 ):
 def syscall_numcores( s, arg0, arg1, arg2 ):
   if s.debug.enabled( "syscalls" ):
     print "syscall_numcores()",
-  # always return 1 until multicore is implemented!
-  return 1, 0
+  return s.ncores, 0
 
 #-----------------------------------------------------------------------
 # uname

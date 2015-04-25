@@ -13,7 +13,8 @@ from pydgin.storage import Memory
 #from pydgin.misc    import load_program
 import elf
 
-from bootstrap      import syscall_init, test_init, memory_size
+from bootstrap      import syscall_init, test_init, memory_size, \
+                           pkernel_init
 from instruction    import Instruction
 from isa            import decode, reg_map
 
@@ -51,14 +52,34 @@ class ParcSim( Sim ):
 
     mem, breakpoint = load_program( exe_file )
 
+    # if there is also a pkernel specified, load it as well
+
+    reset_addr = 0x1000
+    if self.pkernel_bin is not None:
+      try:
+        pkernel = open( self.pkernel_bin, 'rb' )
+        load_program( pkernel, mem=mem )
+        # we also pick the pkernel reset vector if specified
+        reset_addr = 0xc000000
+      except IOError:
+        print "Could not open pkernel %s\nFalling back to no-pkernel mode" \
+              % self.pkernel_bin
+
     # Insert bootstrapping code into memory and initialize processor state
 
     # TODO: testbin is hardcoded false right now
     testbin = False
 
-    if testbin: self.state = test_init   ( mem, debug )
-    else:       self.state = syscall_init( mem, breakpoint, run_argv,
-                                           run_envp, self.debug )
+    #if testbin: self.state = test_init   ( mem, debug )
+    #self.states = syscall_init( mem, breakpoint, run_argv,
+    #                            run_envp, self.debug,
+    #                            ncores=self.ncores,
+    #                            reset_addr=reset_addr )
+    self.states = pkernel_init( mem, breakpoint, run_argv,
+                                run_envp, self.debug,
+                                args_start_addr=0xd000320,
+                                ncores=self.ncores,
+                                reset_addr=reset_addr )
 
   #---------------------------------------------------------------------
   # run
@@ -67,18 +88,22 @@ class ParcSim( Sim ):
 
   def run( self ):
     Sim.run( self )
-    print "Instructions Executed in Stat Region =", self.state.stat_ncycles
+    # TODO: using states[0]
+    print "Instructions Executed in Stat Region =", self.states[0].stat_ncycles
 
 #-----------------------------------------------------------------------
 # load_program
 #-----------------------------------------------------------------------
+# if mem is provided, then it adds the sections on the current mem
 # TODO: refactor this as well
 
-def load_program( fp ):
+def load_program( fp, mem=None ):
   mem_image = elf.elf_reader( fp )
 
   sections = mem_image.get_sections()
-  mem      = Memory( size=memory_size, byte_storage=False )
+
+  if mem is None:
+    mem = Memory( size=memory_size, byte_storage=False )
 
   for section in sections:
     start_addr = section.addr

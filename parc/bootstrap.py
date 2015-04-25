@@ -14,6 +14,117 @@ page_size   = 8192
 stack_base = memory_size-1   # TODO: set this correctly!
 
 #-----------------------------------------------------------------------
+# pkernel_init
+#-----------------------------------------------------------------------
+# The layout looks like following:
+#
+#           ,-------------------
+#           |         environment str data
+#           |
+#           |         envp[0]?       (NULL)
+#    args   |         argv[n] offset (NULL)
+#           |         ...
+#           |    328: argv[0] offset from __args + 4
+#           |    324: argc
+#           '-------------------
+# __args: 0x0d000320: sizeof( args )
+#
+# Example layout, for argv = ["ubmark-vvadd", "--help", "--foo"]
+#
+#           0d000354:     006f        o
+#           0d000350: 6f662d2d  o f - -
+#           0d00034c: 00706c65    p l e
+#           0d000348: 682d2d00  h - -
+#           0d000344: 64646176  d d a v
+#           0d000340: 762d6b72  v - k r
+#           0d00033c: 616d6275  a m b u
+#           0d000338:        0           envp[0]?
+#           0d000334:        0           argv[3] = NULL
+#           0d000330:       2c  =350-324 argv[2]
+#           0d00032c:       25  =349-324 argv[1]
+#           0d000328:       18  =33c-324 argv[0]
+#           0d000324:        3           argc = 3
+#           0d000320:       32  =356-324 sizeof(args) = 50
+
+
+def pkernel_init( mem, breakpoint, argv, envp, debug, args_start_addr,
+                  ncores=1, reset_addr=0x1000 ):
+
+  def str_to_mem( mem, val, addr ):
+    for i, char in enumerate(val+'\0'):
+      mem.write( addr + i, 1, ord( char ) )
+    return addr + len(val) + 1
+
+  def int_to_mem( mem, val, addr ):
+    # TODO properly handle endianess
+    for i in range( 4 ):
+      mem.write( addr+i, 1, (val >> 8*i) & 0xFF )
+    return addr + 4
+
+  # argc
+
+  argc = len( argv )
+  addr = int_to_mem( mem, argc, args_start_addr + 4 )
+
+  # argv offsets
+
+  argv_offset = ( argc + 3 ) * 4
+
+  for arg in argv:
+    addr = int_to_mem( mem, argv_offset, addr )
+    # + 1 for null character
+    argv_offset += len( arg ) + 1
+
+  # two empty null pointers
+
+  addr += 8
+
+  # copy the actual argument strings
+
+  for arg in argv:
+    addr = str_to_mem( mem, arg, addr )
+
+  # finally calculate the sizeof and write it to the very beginning
+
+  sizeof = addr - args_start_addr - 4
+
+  int_to_mem( mem, sizeof, args_start_addr )
+
+  states = [ State( mem, debug, reset_addr=reset_addr, core_id=i, ncores=ncores )
+             for i in xrange( ncores ) ]
+
+  for state in states:
+    # initialize processor state
+    #state = State( mem, debug, reset_addr=0x1000 )
+
+    # TODO: where should this go? -- also, is it ok for these to malloc
+    # the same addresses?
+    state.breakpoint = breakpoint
+
+    #print '---'
+    #print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
+    #for i, ptr in enumerate(argv_ptrs):
+    #  print 'argv[%d] = %x (%x)' % ( i, argv_ptrs[i], stack_off[-2]+4*i ),
+    #  print len( argv[i] ), argv[i]
+    #print 'argd = %s (%x)' % ( argv[0],      stack_off[-6] )
+    #print '---'
+    #print 'argv-base', hex(stack_off[-2])
+    #print 'envp-base', hex(stack_off[-3])
+    #print 'auxv-base', hex(stack_off[-4])
+    #print 'argd-base', hex(stack_off[-6])
+    #print 'envd-base', hex(stack_off[-7])
+
+    ## initialize processor registers
+    #state.rf[ reg_map['a0'] ] = argc         # argument 0 reg = argc
+    ## XXX: this is probably wrong -- each core needs its own stack?
+    #state.rf[ reg_map['a1'] ] = stack_off[6] # argument 1 reg = argv ptr addr
+    #state.rf[ reg_map['sp'] ] = stack_ptr    # stack pointer reg
+
+  return states
+
+
+
+#-----------------------------------------------------------------------
 # syscall_init
 #-----------------------------------------------------------------------
 #
@@ -24,7 +135,8 @@ stack_base = memory_size-1   # TODO: set this correctly!
 #   0x8000.0000 - Unmapped cached   (kseg0) - 512MB
 #   0x0000.0000 - 32-bit user space (kuseg) -   2GB
 #
-def syscall_init( mem, breakpoint, argv, envp, debug ):
+def syscall_init( mem, breakpoint, argv, envp, debug, ncores=1,
+                  reset_addr=0x1000 ):
 
   #---------------------------------------------------------------------
   # memory map initialization
@@ -185,31 +297,36 @@ def syscall_init( mem, breakpoint, argv, envp, debug ):
   offset = int_to_mem( mem, argc, offset )
   assert offset == stack_off[6]
 
-  # initialize processor state
-  state = State( mem, debug, reset_addr=0x1000 )
+  states = [ State( mem, debug, reset_addr=reset_addr, core_id=i, ncores=ncores )
+             for i in xrange( ncores ) ]
 
-  # TODO: where should this go?
-  state.breakpoint = breakpoint
+  for state in states:
+    # initialize processor state
+    #state = State( mem, debug, reset_addr=0x1000 )
 
-  #print '---'
-  #print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
-  #for i, ptr in enumerate(argv_ptrs):
-  #  print 'argv[%d] = %x (%x)' % ( i, argv_ptrs[i], stack_off[-2]+4*i ),
-  #  print len( argv[i] ), argv[i]
-  #print 'argd = %s (%x)' % ( argv[0],      stack_off[-6] )
-  #print '---'
-  #print 'argv-base', hex(stack_off[-2])
-  #print 'envp-base', hex(stack_off[-3])
-  #print 'auxv-base', hex(stack_off[-4])
-  #print 'argd-base', hex(stack_off[-6])
-  #print 'envd-base', hex(stack_off[-7])
+    # TODO: where should this go?
+    state.breakpoint = breakpoint
 
-  # initialize processor registers
-  state.rf[ reg_map['a0'] ] = argc         # argument 0 reg = argc
-  state.rf[ reg_map['a1'] ] = stack_off[6] # argument 1 reg = argv ptr addr
-  state.rf[ reg_map['sp'] ] = stack_ptr    # stack pointer reg
+    #print '---'
+    #print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
+    #for i, ptr in enumerate(argv_ptrs):
+    #  print 'argv[%d] = %x (%x)' % ( i, argv_ptrs[i], stack_off[-2]+4*i ),
+    #  print len( argv[i] ), argv[i]
+    #print 'argd = %s (%x)' % ( argv[0],      stack_off[-6] )
+    #print '---'
+    #print 'argv-base', hex(stack_off[-2])
+    #print 'envp-base', hex(stack_off[-3])
+    #print 'auxv-base', hex(stack_off[-4])
+    #print 'argd-base', hex(stack_off[-6])
+    #print 'envd-base', hex(stack_off[-7])
 
-  return state
+    # initialize processor registers
+    state.rf[ reg_map['a0'] ] = argc         # argument 0 reg = argc
+    # XXX: this is probably wrong -- each core needs its own stack?
+    state.rf[ reg_map['a1'] ] = stack_off[6] # argument 1 reg = argv ptr addr
+    state.rf[ reg_map['sp'] ] = stack_ptr    # stack pointer reg
+
+  return states
 
 #-----------------------------------------------------------------------
 # test bootstrap isntructions
