@@ -39,7 +39,8 @@ class State( object ):
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
 
-    # shreesha: Adding state for storing pointers to data structures
-    self.dstruct      = RegisterFile( False )
-    # shreesha: Adding state for storing data-structure types
-    self.dstruct_type = RegisterFile( False )
+    # shreesha: PolyHS state
+    self.ds_table = RegisterFile( False )
+    self.ds_type  = RegisterFile( False )
+    self.dt_table = RegisterFile( False )
+

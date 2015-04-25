@@ -7,7 +7,7 @@ from utils import trim, trim_5, signed, sext, sext_byte, \
 
 from instruction  import rd, rs, rt, fd, fs, ft, imm, jtarg, shamt
 from pydgin.misc  import create_risc_decoder
-from polyhs_types import sizeof
+from polyhs_types import *
 
 # shreesha: to implement a gcd instruction
 #from fractions import gcd
@@ -863,14 +863,14 @@ def execute_trunc_w_s( s, inst ):
 def execute_ds_alloc( s, inst ):
   # determine the next available index in s.dstruct
   index = 0
-  for x in xrange( 0, s.dstruct.num_regs ):
-    if s.dstruct[ x ] == 0:
+  for x in xrange( 0, s.ds_table.num_regs ):
+    if s.ds_table[ x ] == 0:
       index = x
       break
 
-  if index < s.dstruct.num_regs:
-    s.rf[ rt(inst) ] = index
-    s.dstruct_type[ index ] = imm( inst )
+  if index < s.ds_table.num_regs:
+    s.ds_type[ index ] = imm( inst )
+    s.rf[ rt(inst) ]   = index
   else:
     s.rf[ rt(inst) ] = -1
   s.pc += 4
@@ -879,14 +879,15 @@ def execute_ds_alloc( s, inst ):
 # ds_dealloc instruction
 #-----------------------------------------------------------------------
 def execute_ds_dealloc( s , inst ):
-  s.dstruct[ s.rf[ rs(inst) ] ] = 0
+  s.ds_table[ s.rf[ rs(inst) ] ] = 0
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # ds_init instruction
 #-----------------------------------------------------------------------
 def execute_ds_init( s, inst ):
-  s.dstruct[ s.rf[ rd(inst) ] ] = s.rf[ rs(inst) ]
+  s.ds_table[ s.rf[ rd(inst) ] ] = s.rf[ rs(inst) ]
+  s.dt_table[ s.rf[ rd(inst) ] ] = s.rf[ rt(inst) ]
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -899,38 +900,46 @@ def execute_ds_halt( s, inst ):
 # ds_get instruction
 #-----------------------------------------------------------------------
 def execute_ds_get( s, inst ):
-  # need to get the data structure type in here somehow; currently only
-  # supports vector of ints
-  index = s.rf[ rt(inst) ]
-  ds_id = s.rf[ rs(inst) ]
-  size_ = sizeof( s.dstruct_type[ ds_id ] )
 
-  # transform the index into memory address
-  base_addr = s.dstruct[ ds_id ]
-  # vector element location: base + ( index * sizeof( T ) )
-  mem_addr  = base_addr + ( index * size_ )
+  # get the index for ds_table, dt_table
+  iterator     = s.rf[ rs( inst ) ]
+  ds_id, index = iterator_fields( iterator )
+  dstruct      = s.ds_type[ ds_id ]
 
-  # load memory location
-  s.rf[ rd(inst) ] = s.mem.read( mem_addr, size_ )
+  if dstruct  == VECTOR:
+    # get the base address
+    base_addr = s.ds_table[ ds_id ]
+    dt_ptr    = s.dt_table[ ds_id ]
+    metadata  = s.mem.read( dt_ptr, 4 )
+    dt_size   = size_( metadata )
+    # vector element location: base + ( index * sizeof( T ) )
+    mem_addr  = base_addr + ( index * dt_size )
+    # load memory location
+    s.rf[ rd(inst) ] = s.mem.read( mem_addr, dt_size )
+
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # ds_set instruction
 #-----------------------------------------------------------------------
 def execute_ds_set( s, inst ):
-  # need to get the data structure type in here somehow; currently only
-  # supports vector of ints
-  index = s.rf[ rs(inst) ]
-  ds_id = s.rf[ rd(inst) ]
-  size_ = sizeof( s.dstruct_type[ ds_id ] )
 
-  # transform the index into memory address
-  base_addr = s.dstruct[ ds_id ]
-  # vector element location: base + ( index * sizeof( T ) )
-  mem_addr  = base_addr + ( index * size_ )
+  # get the index for ds_table, dt_table
+  iterator     = s.rf[ rd( inst ) ]
+  ds_id, index = iterator_fields( iterator )
+  dstruct      = s.ds_type[ ds_id ]
 
-  # store to memory location
-  s.mem.write( mem_addr, size_, s.rf[rt(inst)] )
+  if dstruct  == VECTOR:
+    # get the base address
+    base_addr = s.ds_table[ ds_id ]
+    dt_ptr    = s.dt_table[ ds_id ]
+    metadata  = s.mem.read( dt_ptr, 4 )
+    dt_size   = size_( metadata )
+    # vector element location: base + ( index * sizeof( T ) )
+    mem_addr  = base_addr + ( index * dt_size )
+    # store to memory location
+    s.mem.write( mem_addr, dt_size, s.rf[rt(inst)] )
+
   s.pc += 4
 
 #=======================================================================
