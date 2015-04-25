@@ -18,10 +18,7 @@ sys.path.append('..')
 
 from pydgin.sim     import Sim, init_sim
 from pydgin.storage import Memory
-# TODO: use load_program of pydgin.misc
-#from pydgin.misc    import load_program
-import elf
-
+from pydgin.misc    import load_program
 from bootstrap      import syscall_init, test_init, memory_size
 from instruction    import Instruction
 from isa            import decode, reg_map
@@ -58,7 +55,8 @@ class ParcSim( Sim ):
 
     # Load the program into a memory object
 
-    mem, breakpoint = load_program( exe_file )
+    mem = Memory( size=memory_size, byte_storage=False )
+    entrypoint, breakpoint = load_program( exe_file, mem  )
 
     # Insert bootstrapping code into memory and initialize processor state
 
@@ -77,26 +75,6 @@ class ParcSim( Sim ):
   def run( self ):
     Sim.run( self )
     print "Instructions Executed in Stat Region =", self.state.stat_ncycles
-
-#-----------------------------------------------------------------------
-# load_program
-#-----------------------------------------------------------------------
-# TODO: refactor this as well
-
-def load_program( fp ):
-  mem_image = elf.elf_reader( fp )
-
-  sections = mem_image.get_sections()
-  mem      = Memory( size=memory_size, byte_storage=False )
-
-  for section in sections:
-    start_addr = section.addr
-    for i, data in enumerate( section.data ):
-      mem.write( start_addr+i, 1, ord( data ) )
-
-  bss        = sections[-1]
-  breakpoint = bss.addr + len( bss.data )
-  return mem, breakpoint
 
 # this initializes similator and allows translation and python
 # interpretation
