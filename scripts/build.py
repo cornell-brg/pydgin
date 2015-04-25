@@ -4,6 +4,8 @@
 #=========================================================================
 # Builds pydgin.
 
+import os
+import shutil
 import sys
 import subprocess
 
@@ -40,28 +42,36 @@ def build_target( name, pypy_dir, build_dir ):
   print "Building {}\n  arch: {}\n  jit: {}\n  debug: {}\n" \
         .format( name, arch, jit, debug )
 
-  cmd = ( "cd ../{0}; " +
-          "pypy {1}/rpython/bin/rpython {2} {0}-sim.py {3} && " \
-          "cp {4} ../scripts/{5}/" ) \
-        .format( arch, pypy_dir,
-                 "--opt=jit" if jit   else "",
-                 "--debug"   if debug else "",
-                 name, build_dir )
+  os.chdir('../{}'.format( arch ) )
+  cmd = ( 'pypy {1}/rpython/bin/rpython {2} {0}-sim.py {3}'
+          .format( arch, pypy_dir,
+                   "--opt=jit" if jit   else "",
+                   "--debug"   if debug else "", ) )
 
-  print cmd
-  ret = subprocess.call( cmd, shell=True )
+  #print cmd
+  #ret = subprocess.call( cmd, shell=True )
 
-  if ret != 0:
-    print "{} failed building, aborting!".format( name )
-    sys.exit( ret )
+  #if ret != 0:
+  #  print "{} failed building, aborting!".format( name )
+  #  sys.exit( ret )
+
+  #shutil.copy( name, '../scripts/{}'.format( build_dir ) )
+  os.symlink( '../{}/{}'.format( build_dir, name ),
+              '../scripts/builds/{}'.format( name ) )
 
 def main():
-  if len( sys.argv ) <= 1:
-    print "Usage:\n  ./build.py <path/to/pypy/src> [targets]"
+  if sys.argv[1] == '--help':
+    print "Usage:\n  ./build.py [targets]"
     return 1
 
-  pypy_dir = sys.argv[1]
-  targets = sys.argv[2:]
+  # ensure we know where the pypy source code is
+  try:
+    pypy_dir = os.environ['PYDGIN_PYPY_SRC_DIR']
+  except KeyError as e:
+    raise ImportError( 'Please define the PYDGIN_PYPY_SRC_DIR '
+                       'environment variable!')
+
+  targets = sys.argv[1:]
 
   # all includes all_targets
   if "all" in targets:

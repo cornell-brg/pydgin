@@ -109,7 +109,8 @@ Finally, you can translate the Pydgin simulators into JIT-enabled simulator
 binaries using the RPython translation toolchain::
 
   $ cd scripts
-  $ ./build.py $PYDGIN_PYPY_SRC_DIR
+  $ ./build.py --help
+  $ ./build.py pydgin-arm-jit
 
 The translation process will take several minutes. After it's done, you'll have
 a fast simulator to run your binaries::
