@@ -48,19 +48,19 @@ def build_target( name, pypy_dir, build_dir ):
                    "--opt=jit" if jit   else "",
                    "--debug"   if debug else "", ) )
 
-  #print cmd
-  #ret = subprocess.call( cmd, shell=True )
+  print cmd
+  ret = subprocess.call( cmd, shell=True )
 
-  #if ret != 0:
-  #  print "{} failed building, aborting!".format( name )
-  #  sys.exit( ret )
+  if ret != 0:
+    print "{} failed building, aborting!".format( name )
+    sys.exit( ret )
 
-  #shutil.copy( name, '../scripts/{}'.format( build_dir ) )
+  shutil.copy( name, '../scripts/{}'.format( build_dir ) )
   os.symlink( '../{}/{}'.format( build_dir, name ),
               '../scripts/builds/{}'.format( name ) )
 
 def main():
-  if sys.argv[1] == '--help':
+  if len( sys.argv ) > 1 and sys.argv[1] == '--help':
     print "Usage:\n  ./build.py [targets]"
     return 1
 
