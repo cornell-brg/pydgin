@@ -75,8 +75,10 @@ def build_target( name, pypy_dir, build_dir ):
     sys.exit( ret )
 
   shutil.copy( name, '../scripts/{}'.format( build_dir ) )
-  os.symlink( '../{}/{}'.format( build_dir, name ),
-              '../scripts/builds/{}'.format( name ) )
+  symlink_name = '../scripts/builds/{}'.format( name )
+  if os.path.exists( symlink_name ):
+    os.remove( symlink_name )
+  os.symlink( '../{}/{}'.format( build_dir, name ), symlink_name )
 
 def main():
   if len( sys.argv ) > 1 and sys.argv[1] == '--help':
