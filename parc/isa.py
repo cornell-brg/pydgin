@@ -966,16 +966,16 @@ def execute_hint_wl( s, inst ):
 ## gcd
 ##-----------------------------------------------------------------------
 #def execute_gcd( s, inst ):
-#  s.rf[ rd(inst) ] = trim( gcd( s.rf[ rs(inst) ], s.rf[ rt(inst) ] ) )
+#  s.rf[ inst.rd ] = trim( gcd( s.rf[ inst.rs ], s.rf[ inst.rt ] ) )
 #  s.pc += 4
 
 ##-----------------------------------------------------------------------
 ## gcd -- fake vecincr accelerator
 ##-----------------------------------------------------------------------
 #def execute_gcd( s, inst ):
-#  src_base  = s.rf[ rs(inst) ]
-#  dest_base = s.rf[ rd(inst) ]
-#  len_ = s.rf[ rt(inst) ]
+#  src_base  = s.rf[ inst.rs ]
+#  dest_base = s.rf[ inst.rd ]
+#  len_ = s.rf[ inst.rt ]
 #  for off in range( len_ ):
 #    src_addr  = src_base  + ( off * 4 )
 #    dest_addr = dest_base + ( off * 4 )
@@ -995,25 +995,25 @@ def execute_ds_alloc( s, inst ):
       break
 
   if index < s.ds_table.num_regs:
-    s.ds_type[ index ] = imm( inst )
-    s.rf[ rt(inst) ]   = index
+    s.ds_type[ index ] = inst.imm
+    s.rf[ inst.rt ]   = index
   else:
-    s.rf[ rt(inst) ] = -1
+    s.rf[ inst.rt ] = -1
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # ds_dealloc instruction
 #-----------------------------------------------------------------------
 def execute_ds_dealloc( s , inst ):
-  s.ds_table[ s.rf[ rs(inst) ] ] = 0
+  s.ds_table[ s.rf[ inst.rs ] ] = 0
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # ds_init instruction
 #-----------------------------------------------------------------------
 def execute_ds_init( s, inst ):
-  s.ds_table[ s.rf[ rd(inst) ] ] = s.rf[ rs(inst) ]
-  s.dt_table[ s.rf[ rd(inst) ] ] = s.rf[ rt(inst) ]
+  s.ds_table[ s.rf[ inst.rd ] ] = s.rf[ inst.rs ]
+  s.dt_table[ s.rf[ inst.rd ] ] = s.rf[ inst.rt ]
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -1028,7 +1028,7 @@ def execute_ds_halt( s, inst ):
 def execute_ds_get( s, inst ):
 
   # get the index for ds_table, dt_table
-  iterator = iterator_fields( s.rf[ rs( inst ) ] )
+  iterator = iterator_fields( s.rf[ inst.rs ] )
   dstruct  = s.ds_type[ iterator[0] ]
 
   if dstruct  == VECTOR:
@@ -1043,7 +1043,7 @@ def execute_ds_get( s, inst ):
       # base + ( index * sizeof( T ) )
       mem_addr = base_addr + ( iterator[1] * dt_desc[1] )
       # load memory location
-      s.rf[ rd(inst) ] = s.mem.read( mem_addr, dt_desc[1] )
+      s.rf[ inst.rd ] = s.mem.read( mem_addr, dt_desc[1] )
     # USER-DEFINED TYPES
     elif dt_desc[2] == 1:
       #   1. get metadata of the field
@@ -1054,14 +1054,14 @@ def execute_ds_get( s, inst ):
       #                   + offset_of_field
       #   3. load value
       #      mem_read( mem_addr, sizeof( field )
-      field_dt_ptr   = dt_ptr + rt( inst ) * 4
+      field_dt_ptr   = dt_ptr + inst.rt * 4
       field_metadata = s.mem.read( field_dt_ptr, 4 )
       field_dt_desc  = dt_desc_fields( field_metadata )
       # base + ( index * sizeof( T ) ) + offset
       mem_addr = \
         base_addr + ( iterator[1] * dt_desc[1] ) + field_dt_desc[0]
       # load memory location
-      s.rf[ rd(inst) ] = s.mem.read( mem_addr, field_dt_desc[1] )
+      s.rf[ inst.rd ] = s.mem.read( mem_addr, field_dt_desc[1] )
 
   s.pc += 4
 
@@ -1071,7 +1071,7 @@ def execute_ds_get( s, inst ):
 def execute_ds_set( s, inst ):
 
   # get the index for ds_table, dt_table
-  iterator = iterator_fields( s.rf[ rd( inst ) ] )
+  iterator = iterator_fields( s.rf[ inst.rd ] )
   dstruct  = s.ds_type[ iterator[0] ]
 
   if dstruct  == VECTOR:
@@ -1086,7 +1086,7 @@ def execute_ds_set( s, inst ):
       # base + ( index * sizeof( T ) )
       mem_addr  = base_addr + ( iterator[1] * dt_desc[1] )
       # store to memory location
-      s.mem.write( mem_addr, dt_desc[1], s.rf[rt(inst)] )
+      s.mem.write( mem_addr, dt_desc[1], s.rf[inst.rt] )
     # USER-DEFINED TYPES
     elif dt_desc[2] == 1:
       #   1. get metadata of the field
@@ -1097,14 +1097,14 @@ def execute_ds_set( s, inst ):
       #                   + offset_of_field
       #   3. store value
       #      mem_write( mem_addr, sizeof( field )
-      field_dt_ptr   = dt_ptr + rs( inst ) * 4
+      field_dt_ptr   = dt_ptr + inst.rs * 4
       field_metadata = s.mem.read( field_dt_ptr, 4 )
       field_dt_desc  = dt_desc_fields( field_metadata )
       # base + ( index * sizeof( T ) ) + offset
       mem_addr = \
         base_addr + ( iterator[1] * dt_desc[1] ) + field_dt_desc[0]
       # store to memory location
-      s.mem.write( mem_addr, field_dt_desc[1], s.rf[rt(inst)] )
+      s.mem.write( mem_addr, field_dt_desc[1], s.rf[inst.rt] )
 
   s.pc += 4
 
