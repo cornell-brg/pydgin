@@ -148,7 +148,7 @@ class Sim( object ):
       mem = hint( s.mem, promote=True )
 
       if s.debug.enabled( "insts" ):
-        print pad( "%x" % pc, 6, " ", False ),
+        print pad( "%x" % pc, 8, " ", False ),
 
       # the print statement in memcheck conflicts with @elidable in iread.
       # So we use normal read if memcheck is enabled which includes the
