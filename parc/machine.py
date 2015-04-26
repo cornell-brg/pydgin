@@ -44,5 +44,12 @@ class State( object ):
     self.core_id = core_id
     self.ncores  = ncores
 
+    # indicates if pkernel is enabled
+    self.pkernel = False
+    # indicates exception handling address for pkernel only
+    self.except_addr = 0
+    # epc is the address to return back to that eret uses
+    self.epc = 0
+
   def fetch_pc( self ):
     return self.pc

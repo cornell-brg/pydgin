@@ -54,13 +54,16 @@ class ParcSim( Sim ):
 
     # if there is also a pkernel specified, load it as well
 
+    pkernel_enabled = False
     reset_addr = 0x1000
     if self.pkernel_bin is not None:
       try:
         pkernel = open( self.pkernel_bin, 'rb' )
         load_program( pkernel, mem=mem )
         # we also pick the pkernel reset vector if specified
+        # TODO: get this from the elf
         reset_addr = 0xc000000
+        pkernel_enabled = True
       except IOError:
         print "Could not open pkernel %s\nFalling back to no-pkernel mode" \
               % self.pkernel_bin
@@ -71,15 +74,18 @@ class ParcSim( Sim ):
     testbin = False
 
     #if testbin: self.state = test_init   ( mem, debug )
-    #self.states = syscall_init( mem, breakpoint, run_argv,
-    #                            run_envp, self.debug,
-    #                            ncores=self.ncores,
-    #                            reset_addr=reset_addr )
-    self.states = pkernel_init( mem, breakpoint, run_argv,
-                                run_envp, self.debug,
-                                args_start_addr=0xd000320,
-                                ncores=self.ncores,
-                                reset_addr=reset_addr )
+    if pkernel_enabled:
+      # TODO: get args_start_addr from elf
+      self.states = pkernel_init( mem, breakpoint, run_argv,
+                                  run_envp, self.debug,
+                                  args_start_addr=0xd000320,
+                                  ncores=self.ncores,
+                                  reset_addr=reset_addr )
+    else:
+      self.states = syscall_init( mem, breakpoint, run_argv,
+                                  run_envp, self.debug,
+                                  ncores=self.ncores,
+                                  reset_addr=reset_addr )
 
   #---------------------------------------------------------------------
   # run

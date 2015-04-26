@@ -50,6 +50,9 @@ from isa import reg_map
 import sys
 import os
 
+class NoopSyscall( Exception ):
+  pass
+
 #-----------------------------------------------------------------------
 # os state and helpers
 #-----------------------------------------------------------------------
@@ -61,37 +64,6 @@ a0 = reg_map['a0']  # arg0
 a1 = reg_map['a1']  # arg1
 a2 = reg_map['a2']  # arg2
 a3 = reg_map['a3']  # error
-
-
-#-----------------------------------------------------------------------
-# syscall number mapping
-#-----------------------------------------------------------------------
-
-import pydgin.syscalls as common
-
-syscall_funcs = {
-#   0: syscall,       # unimplemented_func
-    1: common.syscall_exit,
-    2: common.syscall_read,
-    3: common.syscall_write,
-    4: common.syscall_open,
-    5: common.syscall_close,
-    6: common.syscall_link,
-    7: common.syscall_unlink,
-    8: common.syscall_lseek,
-    9: common.syscall_fstat,
-   10: common.syscall_stat,
-   11: common.syscall_brk,
- 4000: common.syscall_numcores,
-
-#4001: sendam,
-#4002: bthread_once,
-#4003: bthread_create,
-#4004: bthread_delete,
-#4005: bthread_setspecific,
-#4006: bthread_getspecific,
-#4007: yield,
-}
 
 #-------------------------------------------------------------------------
 # do_syscall
@@ -112,12 +84,81 @@ def do_syscall( s ):
     syscall_handler = syscall_funcs[ syscall_number ]
 
     # call the syscall handler and get the return and error values
-    retval, errno = syscall_handler( s, arg0, arg1, arg2 )
+    try:
+      retval, errno = syscall_handler( s, arg0, arg1, arg2 )
 
-    if s.debug.enabled( "syscalls" ):
-      print " retval=%x errno=%x" % ( retval, errno )
+      if s.debug.enabled( "syscalls" ):
+        print " retval=%x errno=%x" % ( retval, errno )
 
-    s.rf[ v0 ] = retval
-    s.rf[ a3 ] = errno
+      s.rf[ v0 ] = retval
+      s.rf[ a3 ] = errno
+    except NoopSyscall:
+      # TODO: for the time being, using an exception to allow not writing
+      # stuff if the syscall should be a noop
+      pass
 
+#-------------------------------------------------------------------------
+# PARC-specific syscalls
+#-------------------------------------------------------------------------
 
+def syscall_parc( s, arg0, arg1, arg2 ):
+  syscall_number = s.rf[ v0 ]
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_parc[ syscall_number=%d ]( arg0=%x, arg1=%x, arg2=%x )" % \
+          ( syscall_number, arg0, arg1, arg2 )
+  # check if pkernel is enabled
+  if s.pkernel:
+    # store current pc in epc
+    s.epc = s.pc
+    # we just handle syscalls in the pkernel using the exception handler
+    # in the memory
+    # hack: using except_addr - 4 because the instruction increments this
+    s.pc  = s.except_addr - 4
+    raise NoopSyscall
+
+  else:
+    # non-pkernel currently only knows about syscall_numcores
+    if syscall_number == 4000:
+      return common.syscall_numcores( s, arg0, arg1, arg2 )
+    else:
+      print "WARNING: syscall not implemented: %d" % syscall_number
+      raise NoopSyscall
+
+#-----------------------------------------------------------------------
+# syscall number mapping
+#-----------------------------------------------------------------------
+
+import pydgin.syscalls as common
+
+syscall_funcs = {
+#   0: syscall,       # unimplemented_func
+    1: common.syscall_exit,
+    2: common.syscall_read,
+    3: common.syscall_write,
+    4: common.syscall_open,
+    5: common.syscall_close,
+    6: common.syscall_link,
+    7: common.syscall_unlink,
+    8: common.syscall_lseek,
+    9: common.syscall_fstat,
+   10: common.syscall_stat,
+   11: common.syscall_brk,
+# 4000: common.syscall_numcores,
+
+ 4000: syscall_parc,
+ 4001: syscall_parc,
+ 4002: syscall_parc,
+ 4003: syscall_parc,
+ 4004: syscall_parc,
+ 4005: syscall_parc,
+ 4006: syscall_parc,
+ 4007: syscall_parc,
+
+#4001: sendam,
+#4002: bthread_once,
+#4003: bthread_create,
+#4004: bthread_delete,
+#4005: bthread_setspecific,
+#4006: bthread_getspecific,
+#4007: yield,
+}

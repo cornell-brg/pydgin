@@ -185,7 +185,9 @@ encodings = [
   # Syscall
   #---------------------------------------------------------------------
   ['syscall',  '000000xxxxxxxxxxxxxxxxxxxx001100'],
-# ['eret',     '000000xxxxxxxxxxxxxxxxxxxx001100'],
+  ['eret',     '000000xxxxxxxxxxxxxxxxxxxx011000'],
+  # NOTE: compiler seems to generate eret with the following encoding
+  ['eret',     '01000010000000000000000000011000'],
   #---------------------------------------------------------------------
   # AMO
   #---------------------------------------------------------------------
@@ -695,6 +697,14 @@ def execute_syscall( s, inst ):
   #  print "WARNING: syscall not implemented!", syscall_number
   do_syscall( s )
   s.pc += 4
+
+#-----------------------------------------------------------------------
+# eret
+#-----------------------------------------------------------------------
+# Note that eret is only meaningful if we're running in pkernel mode
+def execute_eret( s, inst ):
+  assert s.pkernel
+  s.pc = s.epc + 4
 
 #-----------------------------------------------------------------------
 # Atomic Memory Operation instructions

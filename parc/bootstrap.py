@@ -101,6 +101,11 @@ def pkernel_init( mem, breakpoint, argv, envp, debug, args_start_addr,
     # the same addresses?
     state.breakpoint = breakpoint
 
+    # mark state that it supports pkernel
+    state.pkernel = True
+    # TODO: get this from elf
+    state.except_addr = 0x20
+
     #print '---'
     #print 'argc = %d (%x)' % ( argc,         stack_off[-1] )
     #for i, ptr in enumerate(argv_ptrs):
