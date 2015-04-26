@@ -912,11 +912,30 @@ def execute_ds_get( s, inst ):
     metadata  = s.mem.read( dt_ptr, 4 )
     dt_desc   = dt_desc_fields( metadata )
 
-    if dt_desc[2] == 0:
-      # vector element location: base + ( index * sizeof( T ) )
-      mem_addr  = base_addr + ( iterator[1] * dt_desc[1] )
+    # PRIMITIVE TYPES
+    if    dt_desc[2] == 0:
+      # base + ( index * sizeof( T ) )
+      mem_addr = base_addr + ( iterator[1] * dt_desc[1] )
       # load memory location
       s.rf[ rd(inst) ] = s.mem.read( mem_addr, dt_desc[1] )
+    # USER-DEFINED TYPES
+    elif dt_desc[2] == 1:
+      #   1. get metadata of the field
+      #       dt_ptr = dt_ptr * index
+      #       metadata_field = load from dt_ptr
+      #   2. compute mem_addr
+      #      mem_addr = base_addr + ( index * sizeof( T ) )
+      #                   + offset_of_field
+      #   3. load value
+      #      mem_read( mem_addr, sizeof( field )
+      field_dt_ptr   = dt_ptr + rt( inst ) * 4
+      field_metadata = s.mem.read( field_dt_ptr, 4 )
+      field_dt_desc  = dt_desc_fields( field_metadata )
+      # base + ( index * sizeof( T ) ) + offset
+      mem_addr = \
+        base_addr + ( iterator[1] * dt_desc[1] ) + field_dt_desc[0]
+      # load memory location
+      s.rf[ rd(inst) ] = s.mem.read( mem_addr, field_dt_desc[1] )
 
   s.pc += 4
 
@@ -936,12 +955,30 @@ def execute_ds_set( s, inst ):
     metadata  = s.mem.read( dt_ptr, 4 )
     dt_desc   = dt_desc_fields( metadata )
 
-    # primitive types
+    # PRIMITIVE TYPES
     if dt_desc[2] == 0:
-      # vector element location: base + ( index * sizeof( T ) )
+      # base + ( index * sizeof( T ) )
       mem_addr  = base_addr + ( iterator[1] * dt_desc[1] )
       # store to memory location
       s.mem.write( mem_addr, dt_desc[1], s.rf[rt(inst)] )
+    # USER-DEFINED TYPES
+    elif dt_desc[2] == 1:
+      #   1. get metadata of the field
+      #       dt_ptr = dt_ptr * index
+      #       metadata_field = load from dt_ptr
+      #   2. compute mem_addr
+      #      mem_addr = base_addr + ( index * sizeof( T ) )
+      #                   + offset_of_field
+      #   3. store value
+      #      mem_write( mem_addr, sizeof( field )
+      field_dt_ptr   = dt_ptr + rs( inst ) * 4
+      field_metadata = s.mem.read( field_dt_ptr, 4 )
+      field_dt_desc  = dt_desc_fields( field_metadata )
+      # base + ( index * sizeof( T ) ) + offset
+      mem_addr = \
+        base_addr + ( iterator[1] * dt_desc[1] ) + field_dt_desc[0]
+      # store to memory location
+      s.mem.write( mem_addr, field_dt_desc[1], s.rf[rt(inst)] )
 
   s.pc += 4
 
