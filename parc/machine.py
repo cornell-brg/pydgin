@@ -41,9 +41,9 @@ class State( object ):
     self.breakpoint = 0
 
     # shreesha: PolyHS state
-    self.ds_table = RegisterFile( False )
-    self.ds_type  = RegisterFile( False )
-    self.dt_table = RegisterFile( False )
+    self.ds_table = RegisterFile( constant_zero=False )
+    self.ds_type  = RegisterFile( constant_zero=False )
+    self.dt_table = RegisterFile( constant_zero=False )
 
   def fetch_pc( self ):
     return self.pc

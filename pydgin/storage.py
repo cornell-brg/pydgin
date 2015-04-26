@@ -14,9 +14,8 @@ class RegisterFile( object ):
     self.num_regs = num_regs
     self.regs     = [0] * self.num_regs
     self.debug    = Debug()
+    self.constant_zero = constant_zero
 
-    if constant_zero: self._setitemimpl = self._set_item_const_zero
-    else:             self._setitemimpl = self._set_item
   def __getitem__( self, idx ):
     if self.debug.enabled( "rf" ):
       print ':: RD.RF[%s] = %s' % (
@@ -24,7 +23,10 @@ class RegisterFile( object ):
                           pad_hex( self.regs[idx]) ),
     return self.regs[idx]
   def __setitem__( self, idx, value ):
-    self._setitemimpl( idx, value )
+    if self.constant_zero:
+      self._set_item_const_zero( idx, value )
+    else:
+      self._set_item( idx, value )
 
   def _set_item( self, idx, value ):
     self.regs[idx] = value
