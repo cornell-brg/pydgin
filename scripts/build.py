@@ -8,12 +8,15 @@ import os
 import shutil
 import sys
 import subprocess
+import distutils
 
 all_targets = [ "pydgin-parc-jit", "pydgin-parc-nojit-debug",
                 "pydgin-arm-jit", "pydgin-arm-nojit-debug" ]
 
 def build_target( name, pypy_dir, build_dir ):
+
   # use the name to determine the arch, jit and debug
+
   arch = None
   if "parc" in name:
     arch = "parc"
@@ -42,14 +45,30 @@ def build_target( name, pypy_dir, build_dir ):
   print "Building {}\n  arch: {}\n  jit: {}\n  debug: {}\n" \
         .format( name, arch, jit, debug )
 
+  # check for the pypy executable, if it doesn't exist warn
+
+  python_bin = distutils.spawn.find_executable('pypy')
+  if not python_bin:
+    print ('WARNING: Cannot find a pypy executable!\n'
+           '  Proceeding to translate with CPython.\n'
+           '  Note that this will be *much* slower than using pypy.\n'
+           '  Please install pypy for faster translation times!\n')
+    python_bin = 'python'
+
+  # create the translation command and execute it
+
   os.chdir('../{}'.format( arch ) )
-  cmd = ( 'pypy {1}/rpython/bin/rpython {2} {0}-sim.py {3}'
+  cmd = ( '{4} {1}/rpython/bin/rpython {2} {0}-sim.py {3}'
           .format( arch, pypy_dir,
                    "--opt=jit" if jit   else "",
-                   "--debug"   if debug else "", ) )
+                   "--debug"   if debug else "",
+                   python_bin )
+        )
 
   print cmd
   ret = subprocess.call( cmd, shell=True )
+
+  # check for success and cleanup
 
   if ret != 0:
     print "{} failed building, aborting!".format( name )
