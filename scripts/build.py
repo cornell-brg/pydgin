@@ -8,7 +8,7 @@ import os
 import shutil
 import sys
 import subprocess
-import distutils
+import distutils.spawn
 
 all_targets = [ "pydgin-parc-jit", "pydgin-parc-nojit-debug",
                 "pydgin-arm-jit", "pydgin-arm-nojit-debug" ]
