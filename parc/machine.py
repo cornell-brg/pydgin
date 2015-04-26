@@ -40,5 +40,10 @@ class State( object ):
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
 
+    # shreesha: PolyHS state
+    self.ds_table = RegisterFile( False )
+    self.ds_type  = RegisterFile( False )
+    self.dt_table = RegisterFile( False )
+
   def fetch_pc( self ):
     return self.pc

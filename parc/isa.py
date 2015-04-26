@@ -6,6 +6,7 @@ from utils import trim, trim_5, signed, sext, sext_byte, \
                   bits2float, float2bits
 
 from pydgin.misc import create_risc_decoder, FatalError
+from polyhs_types import *
 
 #=======================================================================
 # Register Definitions
@@ -236,6 +237,16 @@ encodings = [
   ['cvt_w_s',  '0100011000000000xxxxxxxxxx100100'],
   ['cvt_s_w',  '0100011010000000xxxxxxxxxx100000'],
   ['trunc_w_s','0100011000000000xxxxxxxxxx001101'],
+ # shreesha: gcd instruction
+ #['gcd',      '100111xxxxxxxxxxxxxxx00000010011'],
+  # shreesha: polyhs extensions
+ ['ds_get',   '100111xxxxxxxxxxxxxxx00000010011'],
+ ['ds_set',   '100111xxxxxxxxxxxxxxx00000010100'],
+ ['ds_init',  '100111xxxxxxxxxxxxxxx00000010101'],
+ ['ds_alloc', '00100000000xxxxxxxxxxxxxxxxxxxxx'],
+ ['ds_dealloc','100111xxxxx000000000000000010110'],
+ ['ds_halt',  '10011100000000000000000000010111'],
+
 ]
 
 #=======================================================================
@@ -949,6 +960,152 @@ def execute_stat( s, inst ):
 # hint_wl
 #-----------------------------------------------------------------------
 def execute_hint_wl( s, inst ):
+  s.pc += 4
+
+##-----------------------------------------------------------------------
+## gcd
+##-----------------------------------------------------------------------
+#def execute_gcd( s, inst ):
+#  s.rf[ rd(inst) ] = trim( gcd( s.rf[ rs(inst) ], s.rf[ rt(inst) ] ) )
+#  s.pc += 4
+
+##-----------------------------------------------------------------------
+## gcd -- fake vecincr accelerator
+##-----------------------------------------------------------------------
+#def execute_gcd( s, inst ):
+#  src_base  = s.rf[ rs(inst) ]
+#  dest_base = s.rf[ rd(inst) ]
+#  len_ = s.rf[ rt(inst) ]
+#  for off in range( len_ ):
+#    src_addr  = src_base  + ( off * 4 )
+#    dest_addr = dest_base + ( off * 4 )
+#    update    = s.mem.read( src_addr, 4 ) + 1
+#    s.mem.write( dest_addr, 4, update )
+#  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_alloc instruction
+#-----------------------------------------------------------------------
+def execute_ds_alloc( s, inst ):
+  # determine the next available index in s.dstruct
+  index = 0
+  for x in xrange( 0, s.ds_table.num_regs ):
+    if s.ds_table[ x ] == 0:
+      index = x
+      break
+
+  if index < s.ds_table.num_regs:
+    s.ds_type[ index ] = imm( inst )
+    s.rf[ rt(inst) ]   = index
+  else:
+    s.rf[ rt(inst) ] = -1
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_dealloc instruction
+#-----------------------------------------------------------------------
+def execute_ds_dealloc( s , inst ):
+  s.ds_table[ s.rf[ rs(inst) ] ] = 0
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_init instruction
+#-----------------------------------------------------------------------
+def execute_ds_init( s, inst ):
+  s.ds_table[ s.rf[ rd(inst) ] ] = s.rf[ rs(inst) ]
+  s.dt_table[ s.rf[ rd(inst) ] ] = s.rf[ rt(inst) ]
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_halt instruction
+#-----------------------------------------------------------------------
+def execute_ds_halt( s, inst ):
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_get instruction
+#-----------------------------------------------------------------------
+def execute_ds_get( s, inst ):
+
+  # get the index for ds_table, dt_table
+  iterator = iterator_fields( s.rf[ rs( inst ) ] )
+  dstruct  = s.ds_type[ iterator[0] ]
+
+  if dstruct  == VECTOR:
+    # get the base address
+    base_addr = s.ds_table[ iterator[0] ]
+    dt_ptr    = s.dt_table[ iterator[0] ]
+    metadata  = s.mem.read( dt_ptr, 4 )
+    dt_desc   = dt_desc_fields( metadata )
+
+    # PRIMITIVE TYPES
+    if    dt_desc[2] == 0:
+      # base + ( index * sizeof( T ) )
+      mem_addr = base_addr + ( iterator[1] * dt_desc[1] )
+      # load memory location
+      s.rf[ rd(inst) ] = s.mem.read( mem_addr, dt_desc[1] )
+    # USER-DEFINED TYPES
+    elif dt_desc[2] == 1:
+      #   1. get metadata of the field
+      #       dt_ptr = dt_ptr * index
+      #       metadata_field = load from dt_ptr
+      #   2. compute mem_addr
+      #      mem_addr = base_addr + ( index * sizeof( T ) )
+      #                   + offset_of_field
+      #   3. load value
+      #      mem_read( mem_addr, sizeof( field )
+      field_dt_ptr   = dt_ptr + rt( inst ) * 4
+      field_metadata = s.mem.read( field_dt_ptr, 4 )
+      field_dt_desc  = dt_desc_fields( field_metadata )
+      # base + ( index * sizeof( T ) ) + offset
+      mem_addr = \
+        base_addr + ( iterator[1] * dt_desc[1] ) + field_dt_desc[0]
+      # load memory location
+      s.rf[ rd(inst) ] = s.mem.read( mem_addr, field_dt_desc[1] )
+
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# ds_set instruction
+#-----------------------------------------------------------------------
+def execute_ds_set( s, inst ):
+
+  # get the index for ds_table, dt_table
+  iterator = iterator_fields( s.rf[ rd( inst ) ] )
+  dstruct  = s.ds_type[ iterator[0] ]
+
+  if dstruct  == VECTOR:
+    # get the base address
+    base_addr = s.ds_table[ iterator[0] ]
+    dt_ptr    = s.dt_table[ iterator[0] ]
+    metadata  = s.mem.read( dt_ptr, 4 )
+    dt_desc   = dt_desc_fields( metadata )
+
+    # PRIMITIVE TYPES
+    if dt_desc[2] == 0:
+      # base + ( index * sizeof( T ) )
+      mem_addr  = base_addr + ( iterator[1] * dt_desc[1] )
+      # store to memory location
+      s.mem.write( mem_addr, dt_desc[1], s.rf[rt(inst)] )
+    # USER-DEFINED TYPES
+    elif dt_desc[2] == 1:
+      #   1. get metadata of the field
+      #       dt_ptr = dt_ptr * index
+      #       metadata_field = load from dt_ptr
+      #   2. compute mem_addr
+      #      mem_addr = base_addr + ( index * sizeof( T ) )
+      #                   + offset_of_field
+      #   3. store value
+      #      mem_write( mem_addr, sizeof( field )
+      field_dt_ptr   = dt_ptr + rs( inst ) * 4
+      field_metadata = s.mem.read( field_dt_ptr, 4 )
+      field_dt_desc  = dt_desc_fields( field_metadata )
+      # base + ( index * sizeof( T ) ) + offset
+      mem_addr = \
+        base_addr + ( iterator[1] * dt_desc[1] ) + field_dt_desc[0]
+      # store to memory location
+      s.mem.write( mem_addr, field_dt_desc[1], s.rf[rt(inst)] )
+
   s.pc += 4
 
 #=======================================================================
