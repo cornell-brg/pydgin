@@ -75,6 +75,18 @@ class ParcSim( Sim ):
   def run( self ):
     Sim.run( self )
     print "Instructions Executed in Stat Region =", self.state.stat_ncycles
+    # we also calculate the stat instructions
+    for j in xrange( 16 ):
+      # first check if the stat was enabled
+      if self.state.stat_inst_en[ j ]:
+        # calculate the final value
+        self.state.stat_inst_ncycles[ j ] += self.state.ncycles - \
+                                        self.state.stat_inst_begin[j]
+
+      # print the stat if it's greater than 0
+      if self.state.stat_inst_ncycles[ j ] > 0:
+        print "  Stat %d = %d" % ( j, self.state.stat_inst_ncycles[ j ] )
+
 
 # this initializes similator and allows translation and python
 # interpretation

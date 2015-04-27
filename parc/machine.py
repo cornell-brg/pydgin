@@ -45,5 +45,10 @@ class State( object ):
     self.ds_type  = RegisterFile( constant_zero=False )
     self.dt_table = RegisterFile( constant_zero=False )
 
+    # stat registers
+    self.stat_inst_en      = [ False ] * 16
+    self.stat_inst_begin   = [ 0 ]     * 16
+    self.stat_inst_ncycles = [ 0 ]     * 16
+
   def fetch_pc( self ):
     return self.pc
