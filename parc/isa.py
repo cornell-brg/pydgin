@@ -955,6 +955,22 @@ def execute_subu_xi( s, inst ):
 # stat
 #-----------------------------------------------------------------------
 def execute_stat( s, inst ):
+  stat_en = inst.stat_en
+  stat_id = inst.stat_id
+  # instead of accumulating all of the stats every cycle, we mark the
+  # beginning cycle and add the difference to the accumulator when turned
+  # off (or the program has ended)
+
+  # turn on stats
+  if stat_en and not s.stat_inst_en[ stat_id ]:
+    s.stat_inst_en[ stat_id ] = True
+    s.stat_inst_begin[ stat_id ] = s.ncycles
+
+  # turn off stats -- accumulate the difference
+  elif not stat_en and s.stat_inst_en[ stat_id ]:
+    s.stat_inst_en[ stat_id ] = False
+    s.stat_inst_ncycles[ stat_id ] += s.ncycles - s.stat_inst_begin[ stat_id ]
+
   s.pc += 4
 
 #-----------------------------------------------------------------------

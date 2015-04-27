@@ -97,6 +97,17 @@ class ParcSim( Sim ):
     for i, state in enumerate( self.states ):
       print "Core %d Instructions Executed in Stat Region = %d" % \
             ( i, state.stat_ncycles )
+      # we also calculate the stat instructions
+      for j in xrange( 16 ):
+        # first check if the stat was enabled
+        if state.stat_inst_en[ j ]:
+          # calculate the final value
+          state.stat_inst_ncycles[ j ] += state.ncycles - \
+                                          state.stat_inst_begin[j]
+
+        # print the stat if it's greater than 0
+        if state.stat_inst_ncycles[ j ] > 0:
+          print "  Stat %d = %d" % ( j, state.stat_inst_ncycles[ j ] )
 
 #-----------------------------------------------------------------------
 # load_program

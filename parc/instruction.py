@@ -43,3 +43,10 @@ class Instruction( object ):
   def shamt( self ):
     return (self.bits >> 6) & 0x1F
 
+  @property
+  def stat_en( self ):
+    return (self.bits >> 20) & 0x1
+
+  @property
+  def stat_id( self ):
+    return (self.bits >> 16) & 0xF
