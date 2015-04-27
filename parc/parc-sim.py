@@ -58,7 +58,9 @@ class ParcSim( Sim ):
     reset_addr = 0x1000
     if self.pkernel_bin is not None:
       try:
-        pkernel = open( self.pkernel_bin, 'rb' )
+        pkernel_bin = self.pkernel_bin
+        assert pkernel_bin is not None
+        pkernel = open( pkernel_bin, 'rb' )
         load_program( pkernel, mem=mem )
         # we also pick the pkernel reset vector if specified
         # TODO: get this from the elf

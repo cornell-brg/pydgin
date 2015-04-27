@@ -31,8 +31,8 @@ class Sim( object ):
     self.jit_enabled = jit_enabled
 
     if jit_enabled:
-      self.jitdriver = JitDriver( greens =['pc',],
-                                  reds   = ['max_insts', 'state', 'sim',],
+      self.jitdriver = JitDriver( greens =['pc', 'core_id'],
+                                  reds   = ['tick_ctr', 'max_insts', 'state', 'sim',],
                                   virtualizables  =['state',],
                                   get_printable_location=self.get_location,
                                 )
@@ -110,9 +110,9 @@ class Sim( object ):
   # for debug printing in PYPYLOG
 
   @staticmethod
-  def get_location( pc ):
+  def get_location( pc, core_id ):
     # TODO: add the disassembly of the instruction here as well
-    return "pc: %x" % pc
+    return "pc: %x core_id: %x" % ( pc, core_id )
 
   #-----------------------------------------------------------------------
   # run
@@ -125,22 +125,24 @@ class Sim( object ):
     max_insts = self.max_insts
     jitdriver = self.jitdriver
 
-    core_idx = 0
+    core_id = 0
     tick_ctr = 0
-    s = self.states[ core_idx ]
+    s = self.states[ core_id ]
 
     # use proc 0 to determine if should be running
     while self.states[0].running:
 
       jitdriver.jit_merge_point(
         pc        = s.fetch_pc(),
+        core_id   = core_id,
+        tick_ctr  = tick_ctr,
         max_insts = max_insts,
         state     = s,
         sim       = self,
       )
 
       # get the current core's state
-      s = self.states[ core_idx ]
+      s = self.states[ core_id ]
 
       # constant-fold pc and mem
       pc  = hint( s.fetch_pc(), promote=True )
@@ -165,7 +167,7 @@ class Sim( object ):
 
         if s.debug.enabled( "insts" ):
           print "c%s %s %s %s" % (
-                  core_idx,
+                  core_id,
                   pad_hex( inst_bits ),
                   pad( inst.str, 8 ),
                   pad( "%d" % s.ncycles, 8 ), ),
@@ -196,11 +198,13 @@ class Sim( object ):
 
       # check if the switching interval is reached
       if self.ncores > 1 and tick_ctr % self.core_switch_ival == 0:
-        core_idx = ( core_idx + 1 ) % self.ncores
+        core_id = ( core_id + 1 ) % self.ncores
 
       if s.fetch_pc() < old:
         jitdriver.can_enter_jit(
           pc        = s.fetch_pc(),
+          core_id   = core_id,
+          tick_ctr  = tick_ctr,
           max_insts = max_insts,
           state     = s,
           sim       = self,
