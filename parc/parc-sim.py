@@ -94,8 +94,9 @@ class ParcSim( Sim ):
 
   def run( self ):
     Sim.run( self )
-    # TODO: using states[0]
-    print "Instructions Executed in Stat Region =", self.states[0].stat_ncycles
+    for i, state in enumerate( self.states ):
+      print "Core %d Instructions Executed in Stat Region = %d" % \
+            ( i, state.stat_ncycles )
 
 #-----------------------------------------------------------------------
 # load_program

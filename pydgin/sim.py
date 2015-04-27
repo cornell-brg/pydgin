@@ -207,7 +207,10 @@ class Sim( object ):
         )
 
     print 'DONE! Status =', s.status
-    print 'Instructions Executed =', s.ncycles
+
+    # show all stats
+    for i, state in enumerate( self.states ):
+      print 'Core %d Instructions Executed = %d' % ( i, state.ncycles )
 
   #-----------------------------------------------------------------------
   # get_entry_point
