@@ -214,6 +214,7 @@ class Sim( object ):
         )
 
     print 'DONE! Status =', s.status
+    print 'Total Ticks Simulated = %d' % tick_ctr
 
     # show all stats
     for i, state in enumerate( self.states ):
