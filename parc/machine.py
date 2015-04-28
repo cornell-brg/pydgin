@@ -8,7 +8,7 @@ from pydgin.storage import RegisterFile
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  _virtualizable_ = ['pc', 'ncycles']
+  #_virtualizable_ = ['pc', 'ncycles']
   def __init__( self, memory, debug, reset_addr=0x400, core_id=0, ncores=1 ):
     self.pc       = reset_addr
 

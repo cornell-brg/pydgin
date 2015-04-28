@@ -33,7 +33,7 @@ class Sim( object ):
     if jit_enabled:
       self.jitdriver = JitDriver( greens =['pc', 'core_id'],
                                   reds   = ['tick_ctr', 'max_insts', 'state', 'sim',],
-                                  virtualizables  =['state',],
+                                  #virtualizables  =['state',],
                                   get_printable_location=self.get_location,
                                 )
 
@@ -145,8 +145,11 @@ class Sim( object ):
       s = self.states[ core_id ]
 
       # constant-fold pc and mem
-      pc  = hint( s.fetch_pc(), promote=True )
+      # TODO: disabling pc constant folding
+      pc = s.fetch_pc()
+      #pc  = hint( s.fetch_pc(), promote=True )
       old = pc
+      # should be safe to constant fold memory
       mem = hint( s.mem, promote=True )
 
       if s.debug.enabled( "insts" ):
