@@ -11,7 +11,8 @@ sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 from pydgin.debug     import Debug, pad, pad_hex
 from pydgin.misc      import FatalError
-from rpython.rlib.jit import JitDriver, hint, set_user_param, set_param
+from rpython.rlib.jit import JitDriver, hint, set_user_param, set_param, \
+                             elidable
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
@@ -114,6 +115,10 @@ class Sim( object ):
     # TODO: add the disassembly of the instruction here as well
     return "pc: %x core_id: %x" % ( pc, core_id )
 
+  @elidable
+  def next_core_id( self, core_id ):
+    return ( core_id + 1 ) % self.ncores
+
   #-----------------------------------------------------------------------
   # run
   #-----------------------------------------------------------------------
@@ -141,13 +146,8 @@ class Sim( object ):
         sim       = self,
       )
 
-      # get the current core's state
-      s = self.states[ core_id ]
-
       # constant-fold pc and mem
-      # TODO: disabling pc constant folding
-      pc = s.fetch_pc()
-      #pc  = hint( s.fetch_pc(), promote=True )
+      pc = hint( s.fetch_pc(), promote=True )
       old = pc
       # should be safe to constant fold memory
       mem = hint( s.mem, promote=True )
@@ -200,10 +200,16 @@ class Sim( object ):
         break
 
       # check if the switching interval is reached
-      if self.ncores > 1 and tick_ctr % self.core_switch_ival == 0:
-        core_id = ( core_id + 1 ) % self.ncores
+      #if self.ncores > 1 and tick_ctr % self.core_switch_ival == 0:
+      #  core_id = ( core_id + 1 ) % self.ncores
 
       if s.fetch_pc() < old:
+        # experiment with switching core id here
+        if self.ncores > 1:
+          core_id = hint( core_id, promote=True )
+          core_id = self.next_core_id( core_id )
+          s       = self.states[ core_id ]
+
         jitdriver.can_enter_jit(
           pc        = s.fetch_pc(),
           core_id   = core_id,
