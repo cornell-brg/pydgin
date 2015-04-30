@@ -11,8 +11,8 @@ import sys
 try:
   sys.path.append( os.environ['PYDGIN_PYPY_SRC_DIR'] )
 except KeyError as e:
-  raise ImportError( 'Please define the PYDGIN_PYPY_SRC_DIR '
-                     'environment variable!')
+  print "NOTE: PYDGIN_PYPY_SRC_DIR not defined, using pure python " \
+        "implementation"
 
 from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError

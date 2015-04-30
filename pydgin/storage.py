@@ -4,7 +4,13 @@
 
 from pydgin.jit               import elidable, unroll_safe
 from debug                    import Debug, pad, pad_hex
-from rpython.rlib.rarithmetic import r_uint32, widen
+try:
+  from rpython.rlib.rarithmetic import r_uint32, widen
+except ImportError:
+  # if rpython not in path, we can use normal ints to store data
+  r_uint32 = int
+  def widen( value ):
+    return value
 
 #-----------------------------------------------------------------------
 # RegisterFile
