@@ -4,10 +4,15 @@
 # This is the common top-level simulator. ISA implementations can use
 # various hooks to configure the behavior.
 
+import os
 import sys
-# TODO: figure out a better way to set PYTHONENV
-#sys.path.append('..')
-sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
+
+# ensure we know where the pypy source code is
+try:
+  sys.path.append( os.environ['PYDGIN_PYPY_SRC_DIR'] )
+except KeyError as e:
+  raise ImportError( 'Please define the PYDGIN_PYPY_SRC_DIR '
+                     'environment variable!')
 
 from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError

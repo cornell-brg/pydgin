@@ -2,15 +2,7 @@
 # parc-sim.py
 #=========================================================================
 
-import os
 import sys
-
-# ensure we know where the pypy source code is
-try:
-  sys.path.append( os.environ['PYDGIN_PYPY_SRC_DIR'] )
-except KeyError as e:
-  raise ImportError( 'Please define the PYDGIN_PYPY_SRC_DIR '
-                     'environment variable!')
 
 # need to add parent directory to get access to pydgin package
 # TODO: cleaner way to do this?
