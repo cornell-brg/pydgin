@@ -76,7 +76,7 @@ def build_target( name, pypy_dir, build_dir ):
 
   shutil.copy( name, '../scripts/{}'.format( build_dir ) )
   symlink_name = '../scripts/builds/{}'.format( name )
-  if os.path.exists( symlink_name ):
+  if os.path.lexists( symlink_name ):
     os.remove( symlink_name )
   os.symlink( '../{}/{}'.format( build_dir, name ), symlink_name )
 
