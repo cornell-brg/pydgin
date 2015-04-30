@@ -27,7 +27,8 @@ from utils import (
 
 from instruction import *
 from pydgin.misc import create_risc_decoder, FatalError
-from rpython.rlib.jit import unroll_safe
+
+from pydgin.jit import unroll_safe
 
 #=======================================================================
 # Register Definitions

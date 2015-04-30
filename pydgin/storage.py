@@ -2,7 +2,7 @@
 # storage.py
 #=======================================================================
 
-from rpython.rlib.jit         import elidable, unroll_safe
+from pydgin.jit               import elidable, unroll_safe
 from debug                    import Debug, pad, pad_hex
 from rpython.rlib.rarithmetic import r_uint32, widen
 

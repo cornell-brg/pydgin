@@ -5,7 +5,7 @@
 import re
 import elf
 import py
-import rpython
+from jit import elidable
 
 #-----------------------------------------------------------------------
 # FatalError
@@ -83,7 +83,7 @@ def create_risc_decoder( encodings, isa_globals, debug=False ):
       decoder += '    return execute_{}\n'.format( encodings[i][0] )
 
   source = py.code.Source('''
-@rpython.rlib.jit.elidable
+@elidable
 def decode( inst ):
   {decoder_tree}
   else:

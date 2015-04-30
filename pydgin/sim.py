@@ -9,9 +9,9 @@ import sys
 #sys.path.append('..')
 sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
-from pydgin.debug     import Debug, pad, pad_hex
-from pydgin.misc      import FatalError
-from rpython.rlib.jit import JitDriver, hint, set_user_param, set_param
+from pydgin.debug import Debug, pad, pad_hex
+from pydgin.misc  import FatalError
+from pydgin.jit   import JitDriver, hint, set_user_param, set_param
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
