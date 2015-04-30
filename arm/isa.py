@@ -2,20 +2,24 @@
 # isa.py
 #=======================================================================
 
-from utils import (
-  shifter_operand,
+# common bitwise utils
+from pydgin.utils import (
   trim_32,
   trim_16,
   trim_8,
+  sext_16,
+  sext_8,
+  signed,
+)
+# arm-specific utils
+from utils import (
+  shifter_operand,
   condition_passed,
   carry_from,
   borrow_from,
   overflow_from_add,
   overflow_from_sub,
-  sign_extend_30,
-  sign_extend_half,
-  sign_extend_byte,
-  signed,
+  sext_30,
   addressing_mode_2,
   addressing_mode_3,
   addressing_mode_4,
@@ -351,7 +355,7 @@ def execute_and( s, inst ):
 #-----------------------------------------------------------------------
 def execute_b( s, inst ):
   if condition_passed( s, inst.cond ):
-    offset   = signed( sign_extend_30( inst.imm_24 ) << 2 )
+    offset   = signed( sext_30( inst.imm_24 ) << 2 )
     s.rf[PC] = trim_32( s.rf[PC] + offset )
     return
   s.rf[PC] = s.fetch_pc() + 4
@@ -362,7 +366,7 @@ def execute_b( s, inst ):
 def execute_bl( s, inst ):
   if condition_passed( s, inst.cond ):
     s.rf[LR] = trim_32( s.fetch_pc() + 4 )
-    offset   = signed( sign_extend_30( inst.imm_24 ) << 2 )
+    offset   = signed( sext_30( inst.imm_24 ) << 2 )
     s.rf[PC] = trim_32( s.rf[PC] + offset )
     return
   s.rf[PC] = s.fetch_pc() + 4
@@ -669,7 +673,7 @@ def execute_ldrsb( s, inst ):
     # if (CP15_reg1_Ubit == 0) and address[0] == 0b1:
     #   UNPREDICTABLE
 
-    s.rf[ inst.rd ] = sign_extend_byte( s.mem.read( addr, 1 ) )
+    s.rf[ inst.rd ] = sext_8( s.mem.read( addr, 1 ) )
 
   s.rf[PC] = s.fetch_pc() + 4
 
@@ -688,7 +692,7 @@ def execute_ldrsh( s, inst ):
     # if (CP15_reg1_Ubit == 0) and address[0] == 0b1:
     #   UNPREDICTABLE
 
-    s.rf[ inst.rd ] = sign_extend_half( s.mem.read( addr, 2 ) )
+    s.rf[ inst.rd ] = sext_16( s.mem.read( addr, 2 ) )
 
   s.rf[PC] = s.fetch_pc() + 4
 

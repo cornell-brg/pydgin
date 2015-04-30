@@ -3,8 +3,9 @@
 #=======================================================================
 # Collection of utility functions for ARM instruction implementations.
 
-from pydgin.misc import FatalError
-from instruction import *
+from pydgin.utils import trim_32
+from pydgin.misc  import FatalError
+from instruction  import *
 
 #=======================================================================
 # Addressing Mode 1 - Data-processing operands (page A5-2)
@@ -395,57 +396,12 @@ def arith_shift( data, shift ):
   return (fill << (32-shift)) | (data >> shift)
 
 #-----------------------------------------------------------------------
-# trim_32
-#-----------------------------------------------------------------------
-def trim_32( val ):
-  return val & 0xFFFFFFFF
-
-#-----------------------------------------------------------------------
-# trim_16
-#-----------------------------------------------------------------------
-def trim_16( val ):
-  return val & 0xFFFF
-
-#-----------------------------------------------------------------------
-# trim_8
-#-----------------------------------------------------------------------
-def trim_8( val ):
-  return val & 0xFF
-
-#-----------------------------------------------------------------------
-# signed
-#-----------------------------------------------------------------------
-def signed( value ):
-  if value & 0x80000000:
-    twos_complement = ~value + 1
-    return -trim_32( twos_complement )
-  return value
-
-#-----------------------------------------------------------------------
-# sign_extend_30
+# sext_30
 #-----------------------------------------------------------------------
 # sign extend 24-bit immediates to 30-bit values
-def sign_extend_30( value ):
+def sext_30( value ):
   if value & 0x800000:
     return 0x3F000000 | value
-  return value
-
-#-----------------------------------------------------------------------
-# sign_extend_half
-#-----------------------------------------------------------------------
-# Sign extend 16-bit immediate fields.
-def sign_extend_half( value ):
-  if value & 0x8000:
-    return 0xFFFF0000 | value
-  return value
-
-#-----------------------------------------------------------------------
-# sign_extend_byte
-#-----------------------------------------------------------------------
-# Sign extend 8-bit immediate fields.
-def sign_extend_byte( value ):
-  if value & 0x80:
-    return 0xFFFFFF00 | value
   return value
 
 #-----------------------------------------------------------------------
