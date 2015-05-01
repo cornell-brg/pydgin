@@ -8,11 +8,15 @@ import os
 import sys
 
 # ensure we know where the pypy source code is
-try:
-  sys.path.append( os.environ['PYDGIN_PYPY_SRC_DIR'] )
-except KeyError as e:
-  print "NOTE: PYDGIN_PYPY_SRC_DIR not defined, using pure python " \
-        "implementation"
+# XXX: removed the dependency to PYDGIN_PYPY_SRC_DIR because rpython
+# libraries are much slower than native python when running on an
+# interpreter. So unless the user have added rpython source to their
+# PYTHONPATH, we should use native python.
+#try:
+#  sys.path.append( os.environ['PYDGIN_PYPY_SRC_DIR'] )
+#except KeyError as e:
+#  print "NOTE: PYDGIN_PYPY_SRC_DIR not defined, using pure python " \
+#        "implementation"
 
 from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError

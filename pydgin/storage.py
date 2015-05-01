@@ -63,9 +63,15 @@ class RegisterFile( object ):
 # Memory
 #-----------------------------------------------------------------------
 def Memory( data=None, size=2**10, byte_storage=False ):
-  sparse_storage = False
+  # use sparse storage if not translated
+  try:
+    from rpython.rlib.objectmodel import we_are_translated
+    sparse_storage = not we_are_translated()
+  except ImportError:
+    sparse_storage = True
 
   if sparse_storage:
+    print "NOTE: Using sparse storage"
     if byte_storage:
       return _SparseMemory( _ByteMemory )
     else:
@@ -247,7 +253,6 @@ class _SparseMemory( object ):
     #print "adding block: %x" % block_addr
     self.block_dict[ block_addr ] = self.BlockMemory( size=self.block_size )
 
-  @unroll_safe
   @elidable
   def get_block_mem( self, block_addr ):
     #block_idx  = block_dict[ 
