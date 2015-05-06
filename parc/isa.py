@@ -237,15 +237,17 @@ encodings = [
   ['cvt_w_s',  '0100011000000000xxxxxxxxxx100100'],
   ['cvt_s_w',  '0100011010000000xxxxxxxxxx100000'],
   ['trunc_w_s','0100011000000000xxxxxxxxxx001101'],
- # shreesha: gcd instruction
- #['gcd',      '100111xxxxxxxxxxxxxxx00000010011'],
+  #---------------------------------------------------------------------
+  # Polyhs Instructions
+  #---------------------------------------------------------------------
   # shreesha: polyhs extensions
- ['ds_get',   '100111xxxxxxxxxxxxxxx00000010011'],
- ['ds_set',   '100111xxxxxxxxxxxxxxx00000010100'],
- ['ds_init',  '100111xxxxxxxxxxxxxxx00000010101'],
- ['ds_alloc', '00100000000xxxxxxxxxxxxxxxxxxxxx'],
+ ['ds_get',    '100111xxxxxxxxxxxxxxx00000010011'],
+ ['ds_set',    '100111xxxxxxxxxxxxxxx00000010100'],
+ ['ds_init',   '100111xxxxxxxxxxxxxxx00000010101'],
+ ['ds_alloc',  '00100000000xxxxxxxxxxxxxxxxxxxxx'],
  ['ds_dealloc','100111xxxxx000000000000000010110'],
- ['ds_halt',  '10011100000000000000000000010111'],
+ ['ds_halt',   '10011100000000000000000000010111'],
+  ['mtxr',     '010010xxxxxxxxxx00010xxxxx000000'],
 
 ]
 
@@ -1014,6 +1016,20 @@ def execute_ds_dealloc( s , inst ):
 def execute_ds_init( s, inst ):
   s.ds_table[ s.rf[ inst.rd ] ] = s.rf[ inst.rs ]
   s.dt_table[ s.rf[ inst.rd ] ] = s.rf[ inst.rt ]
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# mtxr instruction
+#-----------------------------------------------------------------------
+# shreesha: currently this is just assuming that only polyhs-sw code will
+# use mtxr instructions and specifically for the init function. This may
+# not be true for other cases though.
+
+def execute_mtxr( s, inst ):
+  if inst.rs == 1:
+    s.ds_table[ s.rf[ inst.fd ] ] = s.rf[ inst.rt ]
+  if inst.rs == 2:
+    s.dt_table[ s.rf[ inst.fd ] ] = s.rf[ inst.rt ]
   s.pc += 4
 
 #-----------------------------------------------------------------------
