@@ -49,6 +49,13 @@
 import sys
 import os
 
+try:
+  from rpython.rtyper.lltypesystem import lltype
+  from rpython.rtyper.lltypesystem import rffi
+  use_rpython = True
+except ImportError:
+  use_rpython = False
+
 #-----------------------------------------------------------------------
 # os state and helpers
 #-----------------------------------------------------------------------
@@ -173,6 +180,20 @@ class Stat( object ):
 # is not provided, reads until a null character.
 
 def get_str( s, ptr, nchars=0 ):
+  # more efficient string building for large strings
+  if use_rpython and nchars > 1000:
+    char_arr = lltype.malloc( rffi.CArray( lltype.Char ),
+                              nchars, flavor="raw" )
+
+    for i in xrange( nchars ):
+      char_arr[i] = chr( s.mem.read( ptr + i, 1 ) )
+
+    # convert to string, free the char array and return the string
+    str = rffi.charpsize2str( char_arr, nchars )
+    lltype.free( char_arr, flavor="raw" )
+    return str
+
+  # the following is the naive and slow implementation
   str = ""
   if nchars > 0:
     for i in xrange( nchars ):
