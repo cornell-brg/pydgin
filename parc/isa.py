@@ -2,8 +2,9 @@
 # isa.py
 #=======================================================================
 
-from utils import trim, trim_5, signed, sext, sext_byte, \
-                  bits2float, float2bits
+from        utils import trim_5
+from pydgin.utils import signed, sext_16, sext_8, trim_32, \
+                         bits2float, float2bits
 
 from pydgin.misc import create_risc_decoder, FatalError
 
@@ -306,14 +307,14 @@ def execute_mtc0( s, inst ):
 # addu
 #-----------------------------------------------------------------------
 def execute_addu( s, inst ):
-  s.rf[ inst.rd ] = trim( s.rf[ inst.rs ] + s.rf[ inst.rt ] )
+  s.rf[ inst.rd ] = trim_32( s.rf[ inst.rs ] + s.rf[ inst.rt ] )
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # subu
 #-----------------------------------------------------------------------
 def execute_subu( s, inst ):
-  s.rf[inst.rd] = trim( s.rf[inst.rs] - s.rf[inst.rt] )
+  s.rf[inst.rd] = trim_32( s.rf[inst.rs] - s.rf[inst.rt] )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -341,7 +342,7 @@ def execute_xor( s, inst ):
 # nor
 #-----------------------------------------------------------------------
 def execute_nor( s, inst ):
-  s.rf[inst.rd] = trim( ~(s.rf[inst.rs] | s.rf[inst.rt]) )
+  s.rf[inst.rd] = trim_32( ~(s.rf[inst.rs] | s.rf[inst.rt]) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -362,7 +363,7 @@ def execute_sltu( s, inst ):
 # mul
 #-----------------------------------------------------------------------
 def execute_mul( s, inst ):
-  s.rf[ inst.rd ] = trim( s.rf[ inst.rs ] * s.rf[ inst.rt ] )
+  s.rf[ inst.rd ] = trim_32( s.rf[ inst.rs ] * s.rf[ inst.rt ] )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -410,7 +411,7 @@ def execute_remu( s, inst ):
 # addiu
 #-----------------------------------------------------------------------
 def execute_addiu( s, inst ):
-  s.rf[ inst.rt ] = trim( s.rf[ inst.rs ] + sext( inst.imm ) )
+  s.rf[ inst.rt ] = trim_32( s.rf[ inst.rs ] + sext_16( inst.imm ) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -438,14 +439,14 @@ def execute_xori( s, inst ):
 # slti
 #-----------------------------------------------------------------------
 def execute_slti( s, inst ):
-  s.rf[inst.rt] = signed( s.rf[inst.rs] ) < signed( sext(inst.imm) )
+  s.rf[inst.rt] = signed( s.rf[inst.rs] ) < signed( sext_16(inst.imm) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # sltiu
 #-----------------------------------------------------------------------
 def execute_sltiu( s, inst ):
-  s.rf[inst.rt] = s.rf[inst.rs] < sext(inst.imm)
+  s.rf[inst.rt] = s.rf[inst.rs] < sext_16(inst.imm)
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -456,7 +457,7 @@ def execute_sltiu( s, inst ):
 # sll
 #-----------------------------------------------------------------------
 def execute_sll( s, inst ):
-  s.rf[inst.rd] = trim( s.rf[inst.rt] << inst.shamt )
+  s.rf[inst.rd] = trim_32( s.rf[inst.rt] << inst.shamt )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -470,14 +471,14 @@ def execute_srl( s, inst ):
 # sra
 #-----------------------------------------------------------------------
 def execute_sra( s, inst ):
-  s.rf[inst.rd] = trim( signed( s.rf[inst.rt] ) >> inst.shamt )
+  s.rf[inst.rd] = trim_32( signed( s.rf[inst.rt] ) >> inst.shamt )
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # sllv
 #-----------------------------------------------------------------------
 def execute_sllv( s, inst ):
-  s.rf[inst.rd] = trim( s.rf[inst.rt] << trim_5( s.rf[inst.rs] ) )
+  s.rf[inst.rd] = trim_32( s.rf[inst.rt] << trim_5( s.rf[inst.rs] ) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -492,7 +493,7 @@ def execute_srlv( s, inst ):
 #-----------------------------------------------------------------------
 def execute_srav( s, inst ):
   # TODO: should it really be masked like this?
-  s.rf[inst.rd] = trim( signed( s.rf[inst.rt] ) >> trim_5( s.rf[inst.rs] ) )
+  s.rf[inst.rd] = trim_32( signed( s.rf[inst.rt] ) >> trim_5( s.rf[inst.rs] ) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -542,7 +543,7 @@ def execute_lui( s, inst ):
 #-----------------------------------------------------------------------
 def execute_beq( s, inst ):
   if s.rf[inst.rs] == s.rf[inst.rt]:
-    s.pc  = s.pc + 4 + (signed(sext(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -551,7 +552,7 @@ def execute_beq( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bne( s, inst ):
   if s.rf[inst.rs] != s.rf[inst.rt]:
-    s.pc  = s.pc + 4 + (signed(sext(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -560,7 +561,7 @@ def execute_bne( s, inst ):
 #-----------------------------------------------------------------------
 def execute_blez( s, inst ):
   if signed( s.rf[inst.rs] ) <= 0:
-    s.pc  = s.pc + 4 + (signed(sext(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -569,7 +570,7 @@ def execute_blez( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bgtz( s, inst ):
   if signed( s.rf[inst.rs] ) > 0:
-    s.pc  = s.pc + 4 + (signed(sext(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -578,7 +579,7 @@ def execute_bgtz( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bltz( s, inst ):
   if signed( s.rf[inst.rs] ) < 0:
-    s.pc  = s.pc + 4 + (signed(sext(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -587,7 +588,7 @@ def execute_bltz( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bgez( s, inst ):
   if signed( s.rf[inst.rs] ) >= 0:
-    s.pc  = s.pc + 4 + (signed(sext(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -599,7 +600,7 @@ def execute_bgez( s, inst ):
 # lw
 #-----------------------------------------------------------------------
 def execute_lw( s, inst ):
-  addr = trim( s.rf[inst.rs] + sext(inst.imm) )
+  addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 4 )
   s.pc += 4
 
@@ -607,15 +608,15 @@ def execute_lw( s, inst ):
 # lh
 #-----------------------------------------------------------------------
 def execute_lh( s, inst ):
-  addr = trim( s.rf[inst.rs] + sext(inst.imm) )
-  s.rf[inst.rt] = sext( s.mem.read( addr, 2 ) )
+  addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.rf[inst.rt] = sext_16( s.mem.read( addr, 2 ) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # lhu
 #-----------------------------------------------------------------------
 def execute_lhu( s, inst ):
-  addr = trim( s.rf[inst.rs] + sext(inst.imm) )
+  addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 2 )
   s.pc += 4
 
@@ -623,15 +624,15 @@ def execute_lhu( s, inst ):
 # lb
 #-----------------------------------------------------------------------
 def execute_lb( s, inst ):
-  addr = trim( s.rf[inst.rs] + sext(inst.imm) )
-  s.rf[inst.rt] = sext_byte( s.mem.read( addr, 1 ) )
+  addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.rf[inst.rt] = sext_8( s.mem.read( addr, 1 ) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # lbu
 #-----------------------------------------------------------------------
 def execute_lbu( s, inst ):
-  addr = trim( s.rf[inst.rs] + sext(inst.imm) )
+  addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 1 )
   s.pc += 4
 
@@ -643,7 +644,7 @@ def execute_lbu( s, inst ):
 # sw
 #-----------------------------------------------------------------------
 def execute_sw( s, inst ):
-  addr = trim( s.rf[inst.rs] + sext(inst.imm) )
+  addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 4, s.rf[inst.rt] )
   s.pc += 4
 
@@ -651,7 +652,7 @@ def execute_sw( s, inst ):
 # sh
 #-----------------------------------------------------------------------
 def execute_sh( s, inst ):
-  addr = trim( s.rf[inst.rs] + sext(inst.imm) )
+  addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 2, s.rf[inst.rt] )
   s.pc += 4
 
@@ -659,7 +660,7 @@ def execute_sh( s, inst ):
 # sb
 #-----------------------------------------------------------------------
 def execute_sb( s, inst ):
-  addr = trim( s.rf[inst.rs] + sext(inst.imm) )
+  addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 1, s.rf[inst.rt] )
   s.pc += 4
 
@@ -715,7 +716,7 @@ def execute_eret( s, inst ):
 #-----------------------------------------------------------------------
 def execute_amo_add( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
-  s.mem.write( s.rf[inst.rs], 4, trim(temp + s.rf[inst.rt]) )
+  s.mem.write( s.rf[inst.rs], 4, trim_32(temp + s.rf[inst.rt]) )
   s.rf[ inst.rd ] = temp
   s.pc += 4
 
@@ -874,7 +875,7 @@ def execute_c_le_s( s, inst ):
 #-----------------------------------------------------------------------
 def execute_cvt_w_s( s, inst ):
   x = bits2float( s.rf[ inst.fs ] )
-  s.rf[ inst.fd ] = trim( int( x ) )
+  s.rf[ inst.fd ] = trim_32( int( x ) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -891,7 +892,7 @@ def execute_cvt_s_w( s, inst ):
 def execute_trunc_w_s( s, inst ):
   # TODO: check for overflow
   x = bits2float( s.rf[ inst.fs ] )
-  s.rf[ inst.fd ] = trim(int(x))  # round down
+  s.rf[ inst.fd ] = trim_32(int(x))  # round down
   s.pc += 4
 
 #-----------------------------------------------------------------------

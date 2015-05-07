@@ -3,15 +3,15 @@
 #=========================================================================
 
 import sys
-# TODO: figure out a better way to set PYTHONENV
+
+# need to add parent directory to get access to pydgin package
+# TODO: cleaner way to do this?
 sys.path.append('..')
-#sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 from pydgin.sim     import Sim, init_sim
 from pydgin.storage import Memory
-# TODO: use load_program of pydgin.misc
-#from pydgin.misc    import load_program
-import elf
+from pydgin.misc    import load_program
+from pydgin         import elf
 
 from bootstrap      import syscall_init, test_init, memory_size, \
                            pkernel_init
@@ -50,7 +50,8 @@ class ParcSim( Sim ):
 
     # Load the program into a memory object
 
-    mem, breakpoint = load_program( exe_file )
+    mem = Memory( size=memory_size, byte_storage=False )
+    entrypoint, breakpoint = load_program( exe_file, mem  )
 
     # if there is also a pkernel specified, load it as well
 
@@ -61,7 +62,7 @@ class ParcSim( Sim ):
         pkernel_bin = self.pkernel_bin
         assert pkernel_bin is not None
         pkernel = open( pkernel_bin, 'rb' )
-        load_program( pkernel, mem=mem )
+        load_program( pkernel, mem )
         # we also pick the pkernel reset vector if specified
         # TODO: get this from the elf
         reset_addr = 0xc000000
@@ -111,28 +112,6 @@ class ParcSim( Sim ):
         if state.stat_inst_ncycles[ j ] > 0:
           print "  Stat %d = %d" % ( j, state.stat_inst_ncycles[ j ] )
 
-#-----------------------------------------------------------------------
-# load_program
-#-----------------------------------------------------------------------
-# if mem is provided, then it adds the sections on the current mem
-# TODO: refactor this as well
-
-def load_program( fp, mem=None ):
-  mem_image = elf.elf_reader( fp )
-
-  sections = mem_image.get_sections()
-
-  if mem is None:
-    mem = Memory( size=memory_size, byte_storage=False )
-
-  for section in sections:
-    start_addr = section.addr
-    for i, data in enumerate( section.data ):
-      mem.write( start_addr+i, 1, ord( data ) )
-
-  bss        = sections[-1]
-  breakpoint = bss.addr + len( bss.data )
-  return mem, breakpoint
 
 # this initializes similator and allows translation and python
 # interpretation

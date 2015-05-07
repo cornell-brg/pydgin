@@ -4,14 +4,19 @@
 #=========================================================================
 # Builds pydgin.
 
+import os
+import shutil
 import sys
 import subprocess
+import distutils.spawn
 
 all_targets = [ "pydgin-parc-jit", "pydgin-parc-nojit-debug",
                 "pydgin-arm-jit", "pydgin-arm-nojit-debug" ]
 
 def build_target( name, pypy_dir, build_dir ):
+
   # use the name to determine the arch, jit and debug
+
   arch = None
   if "parc" in name:
     arch = "parc"
@@ -40,28 +45,54 @@ def build_target( name, pypy_dir, build_dir ):
   print "Building {}\n  arch: {}\n  jit: {}\n  debug: {}\n" \
         .format( name, arch, jit, debug )
 
-  cmd = ( "cd ../{0}; " +
-          "pypy {1}/rpython/bin/rpython {2} {0}-sim.py {3} && " \
-          "cp {4} ../scripts/{5}/" ) \
-        .format( arch, pypy_dir,
-                 "--opt=jit" if jit   else "",
-                 "--debug"   if debug else "",
-                 name, build_dir )
+  # check for the pypy executable, if it doesn't exist warn
+
+  python_bin = distutils.spawn.find_executable('pypy')
+  if not python_bin:
+    print ('WARNING: Cannot find a pypy executable!\n'
+           '  Proceeding to translate with CPython.\n'
+           '  Note that this will be *much* slower than using pypy.\n'
+           '  Please install pypy for faster translation times!\n')
+    python_bin = 'python'
+
+  # create the translation command and execute it
+
+  os.chdir('../{}'.format( arch ) )
+  cmd = ( '{4} {1}/rpython/bin/rpython {2} {0}-sim.py {3}'
+          .format( arch, pypy_dir,
+                   "--opt=jit" if jit   else "",
+                   "--debug"   if debug else "",
+                   python_bin )
+        )
 
   print cmd
   ret = subprocess.call( cmd, shell=True )
+
+  # check for success and cleanup
 
   if ret != 0:
     print "{} failed building, aborting!".format( name )
     sys.exit( ret )
 
+  shutil.copy( name, '../scripts/{}'.format( build_dir ) )
+  symlink_name = '../scripts/builds/{}'.format( name )
+  if os.path.lexists( symlink_name ):
+    os.remove( symlink_name )
+  os.symlink( '../{}/{}'.format( build_dir, name ), symlink_name )
+
 def main():
-  if len( sys.argv ) <= 1:
-    print "Usage:\n  ./build.py <path/to/pypy/src> [targets]"
+  if len( sys.argv ) > 1 and sys.argv[1] == '--help':
+    print "Usage:\n  ./build.py [targets]"
     return 1
 
-  pypy_dir = sys.argv[1]
-  targets = sys.argv[2:]
+  # ensure we know where the pypy source code is
+  try:
+    pypy_dir = os.environ['PYDGIN_PYPY_SRC_DIR']
+  except KeyError as e:
+    raise ImportError( 'Please define the PYDGIN_PYPY_SRC_DIR '
+                       'environment variable!')
+
+  targets = sys.argv[1:]
 
   # all includes all_targets
   if "all" in targets:

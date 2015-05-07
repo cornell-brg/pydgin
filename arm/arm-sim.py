@@ -3,9 +3,10 @@
 #=========================================================================
 
 import sys
-# TODO: figure out a better way to set PYTHONENV
+
+# need to add parent directory to get access to pydgin package
+# TODO: cleaner way to do this?
 sys.path.append('..')
-#sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
 from pydgin.sim     import Sim, init_sim
 from pydgin.storage import Memory

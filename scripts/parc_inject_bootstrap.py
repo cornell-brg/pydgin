@@ -1,5 +1,5 @@
 #=======================================================================
-# insert_bootstrap.py
+# parc_inject_bootstrap.py
 #=======================================================================
 # Script to take a pisa ELF binary and insert bootstrap code needed by
 # our research processor.
@@ -10,10 +10,12 @@
 #
 
 import sys
-import os
-sys.path.append('/Users/dmlockhart/vc/git-brg/parc/pymtl')
-import pisa.elf           as elf
-import pisa.pisa_encoding as pisa_encoding
+try:
+  import pisa.elf           as elf
+  import pisa.pisa_encoding as pisa_encoding
+except ImportError as e:
+  print 'ERROR: Please install PyMTL to run this script!'
+  sys.exit(0)
 
 # Load the elf file
 

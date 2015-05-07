@@ -18,9 +18,9 @@
 #   // result of syscall stored in $r0
 #
 
-from pydgin.misc import FatalError
-from isa         import reg_map
-from utils       import trim_32
+from pydgin.misc  import FatalError
+from isa          import reg_map
+from pydgin.utils import trim_32
 
 #-----------------------------------------------------------------------
 # os state and helpers

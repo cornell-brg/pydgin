@@ -4,15 +4,24 @@
 # This is the common top-level simulator. ISA implementations can use
 # various hooks to configure the behavior.
 
+import os
 import sys
-# TODO: figure out a better way to set PYTHONENV
-#sys.path.append('..')
-sys.path.append('/work/bits0/dml257/hg-pypy/pypy')
 
-from pydgin.debug     import Debug, pad, pad_hex
-from pydgin.misc      import FatalError
-from rpython.rlib.jit import JitDriver, hint, set_user_param, set_param, \
-                             elidable
+# ensure we know where the pypy source code is
+# XXX: removed the dependency to PYDGIN_PYPY_SRC_DIR because rpython
+# libraries are much slower than native python when running on an
+# interpreter. So unless the user have added rpython source to their
+# PYTHONPATH, we should use native python.
+#try:
+#  sys.path.append( os.environ['PYDGIN_PYPY_SRC_DIR'] )
+#except KeyError as e:
+#  print "NOTE: PYDGIN_PYPY_SRC_DIR not defined, using pure python " \
+#        "implementation"
+
+from pydgin.debug import Debug, pad, pad_hex
+from pydgin.misc  import FatalError
+from pydgin.jit   import JitDriver, hint, set_user_param, set_param, \
+                         elidable
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy

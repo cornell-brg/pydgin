@@ -22,7 +22,12 @@
 # Date   : May 20, 2014
 
 import struct
-from   rpython.rlib.rstruct.runpack import runpack
+try:
+  from   rpython.rlib.rstruct.runpack import runpack
+  unpack = runpack
+except ImportError:
+  unpack = struct.unpack
+
 from   SparseMemoryImage            import SparseMemoryImage
 
 #-------------------------------------------------------------------------
@@ -105,8 +110,7 @@ class ElfHeader (object):
   #-----------------------------------------------------------------------
 
   def from_bytes( self, data ):
-    #ehdr_list = struct.unpack( ElfHeader.FORMAT, data )
-    ehdr_list = runpack( ElfHeader.FORMAT, data )
+    ehdr_list = unpack( ElfHeader.FORMAT, data )
     self.ident     = ehdr_list[0]
     self.type      = ehdr_list[1]
     self.machine   = ehdr_list[2]
@@ -250,8 +254,7 @@ class ElfSectionHeader (object):
   #-----------------------------------------------------------------------
 
   def from_bytes( self, data ):
-    #shdr_list = struct.unpack( ElfSectionHeader.FORMAT, data )
-    shdr_list = runpack( ElfSectionHeader.FORMAT, data )
+    shdr_list = unpack( ElfSectionHeader.FORMAT, data )
     self.name      = shdr_list[0]
     self.type      = shdr_list[1]
     self.flags     = shdr_list[2]
