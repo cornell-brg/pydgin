@@ -361,10 +361,14 @@ def execute_b( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bl( s, inst ):
   if condition_passed( s, inst.cond() ):
+    # fun call trap
+    s.check_fun_call_trap(True)
     s.rf[LR] = trim_32( s.fetch_pc() + 4 )
     offset   = signed( sign_extend_30( inst.imm_24() ) << 2 )
     s.rf[PC] = trim_32( s.rf[PC] + offset )
     return
+  # fun call trap
+  s.check_fun_call_trap(False)
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
@@ -405,6 +409,8 @@ def execute_blx1( s, inst ):
 #-----------------------------------------------------------------------
 def execute_blx2( s, inst ):
   if condition_passed( s, inst.cond() ):
+    # fun call trap
+    s.check_fun_call_trap( True )
     s.rf[LR] = trim_32( s.fetch_pc() + 4 )
     s.T      = s.rf[ inst.rm() ] & 0x00000001
     s.rf[PC] = s.rf[ inst.rm() ] & 0xFFFFFFFE
@@ -413,6 +419,8 @@ def execute_blx2( s, inst ):
 
   # no pc + 4 on success
   else:
+    # fun call trap
+    s.check_fun_call_trap( False )
     s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
