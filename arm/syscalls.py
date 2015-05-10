@@ -41,6 +41,7 @@ from utils       import trim_32
 import sys
 import os
 import errno
+#import fcntl
 
 #-----------------------------------------------------------------------
 # os state and helpers
@@ -207,6 +208,9 @@ def syscall_open( s ):
 
   filename = get_str( s, filename_ptr )
 
+  if s.debug.enabled( "syscalls" ):
+    print "filename: %s flags: %s" % ( filename, hex( open_flags ) )
+
   try:
     # open vs. os.open():  http://stackoverflow.com/a/15039662
     fd    = os.open( filename, open_flags, mode )
@@ -265,6 +269,9 @@ def syscall_link( s ):
   src       = get_str( s, src_ptr )
   link_name = get_str( s, link_ptr )
 
+  if s.debug.enabled( "syscalls" ):
+    print "src: %s link_name: %s" % ( src, link_name )
+
   errno = 0
 
   try:
@@ -289,6 +296,9 @@ def syscall_unlink( s ):
   #  print "syscall_unlink( path=%x )" % path_ptr,
 
   path = get_str( s, path_ptr )
+
+  if s.debug.enabled( "syscalls" ):
+    print "filename: %s" % path
 
   errno = 0
 
@@ -390,61 +400,186 @@ def syscall_lseek( s ):
 #-------------------------------------------------------------------------
 def syscall_fstat( s ):
 
-  #fd       = s.rf[ a0 ]
-  #buf_ptr  = s.rf[ a1 ]
+  fd       = s.rf[ a0 ]
+  buf_ptr  = s.rf[ a1 ]
 
-  #if check_fd( s, fd ):
-  #  return
+  if check_fd( s, fd ):
+    return
 
-  #errno = 0
+  errno = 0
 
-  #try:
-  #  # we get a python stat object
-  #  py_stat = os.fstat( fd )
+  try:
+    # we get a python stat object
+    py_stat = os.fstat( fd )
 
-  #  # we construct a new simulated Stat object
-  #  stat = Stat()
+    # we construct a new simulated Stat object
+    stat = Stat()
 
-  #  # we convert this and copy it to the memory
-  #  stat.copy_stat_to_mem( py_stat, s.mem, buf_ptr )
+    # we convert this and copy it to the memory
+    stat.copy_stat_to_mem( py_stat, s.mem, buf_ptr )
 
-  #except OSError as e:
-  #  if s.debug.enabled( "syscalls" ):
-  #    print "OSError in syscall_fstat. errno=%d" % e.errno
-  #  errno = e.errno
+  except OSError as e:
+    if s.debug.enabled( "syscalls" ):
+      print "OSError in syscall_fstat. errno=%d" % e.errno
+    errno = e.errno
 
-  #return_from_syscall( s, 0 if errno == 0 else -1, errno )
-  return_from_syscall( s, 0, 0 )
+  return_from_syscall( s, 0 if errno == 0 else -1, errno )
+
+#-------------------------------------------------------------------------
+# fstat64
+#-------------------------------------------------------------------------
+def syscall_fstat64( s ):
+
+  fd       = s.rf[ a0 ]
+  buf_ptr  = s.rf[ a1 ]
+
+  if check_fd( s, fd ):
+    return
+
+  errno = 0
+
+  try:
+    # we get a python stat object
+    py_stat = os.fstat( fd )
+
+    # we construct a new simulated Stat object
+    stat64 = Stat64()
+
+    # we convert this and copy it to the memory
+    stat64.copy_stat_to_mem( py_stat, s.mem, buf_ptr )
+
+  except OSError as e:
+    if s.debug.enabled( "syscalls" ):
+      print "OSError in syscall_fstat. errno=%d" % e.errno
+    errno = e.errno
+
+  return_from_syscall( s, 0 if errno == 0 else -1, errno )
 
 #-------------------------------------------------------------------------
 # stat
 #-------------------------------------------------------------------------
 def syscall_stat( s ):
 
-  #path_ptr = s.rf[ a0 ]
-  #buf_ptr  = s.rf[ a1 ]
+  path_ptr = s.rf[ a0 ]
+  buf_ptr  = s.rf[ a1 ]
 
-  #path = get_str( s, path_ptr )
+  path = get_str( s, path_ptr )
 
-  #errno = 0
+  if s.debug.enabled( "syscalls" ):
+    print "filename: %s" % path
+
+  errno = 0
+
+  try:
+    # we get a python stat object
+    py_stat = os.stat( path )
+
+    # we construct a new simulated Stat object
+    stat = Stat()
+
+    # we convert this and copy it to the memory
+    stat.copy_stat_to_mem( py_stat, s.mem, buf_ptr )
+
+  except OSError as e:
+    if s.debug.enabled( "syscalls" ):
+      print "OSError in syscall_stat. errno=%d" % e.errno
+    errno = e.errno
+
+  return_from_syscall( s, 0 if errno == 0 else -1, errno )
+
+#-------------------------------------------------------------------------
+# stat64
+#-------------------------------------------------------------------------
+def syscall_stat64( s ):
+
+  path_ptr = s.rf[ a0 ]
+  buf_ptr  = s.rf[ a1 ]
+
+  path = get_str( s, path_ptr )
+
+  if s.debug.enabled( "syscalls" ):
+    print "filename: %s" % path
+
+  errno = 0
+
+  try:
+    # we get a python stat object
+    py_stat = os.stat( path )
+
+    # we construct a new simulated Stat object
+    stat64 = Stat64()
+
+    # we convert this and copy it to the memory
+    stat64.copy_stat_to_mem( py_stat, s.mem, buf_ptr )
+
+  except OSError as e:
+    if s.debug.enabled( "syscalls" ):
+      print "OSError in syscall_stat. errno=%d" % e.errno
+    errno = e.errno
+
+  return_from_syscall( s, 0 if errno == 0 else -1, errno )
+
+#-------------------------------------------------------------------------
+# fcntl64
+#-------------------------------------------------------------------------
+def syscall_fcntl64( s ):
+
+  fd   = s.rf[ a0 ]
+  cmd  = s.rf[ a1 ]
+
+  errno = 0
+  ret = -1
 
   #try:
-  #  # we get a python stat object
-  #  py_stat = os.stat( path )
+  #  ret = fcntl.fcntl( fd, cmd )
 
-  #  # we construct a new simulated Stat object
-  #  stat = Stat()
-
-  #  # we convert this and copy it to the memory
-  #  stat.copy_stat_to_mem( py_stat, s.mem, buf_ptr )
-
-  #except OSError as e:
+  #except IOError as e:
   #  if s.debug.enabled( "syscalls" ):
-  #    print "OSError in syscall_stat. errno=%d" % e.errno
+  #    print "IOError in syscall_fcntl64. errno=%d" % e.errno
   #  errno = e.errno
 
-  #return_from_syscall( s, 0 if errno == 0 else -1, errno )
-  return_from_syscall( s, 0, 0 )
+  # TODO: this is fake!!!
+  ret = 0x8001
+
+  return_from_syscall( s, ret, errno )
+
+#-----------------------------------------------------------------------
+# mmap
+#-----------------------------------------------------------------------
+def syscall_mmap( s ):
+  # TODO: we currently use first two args only
+  req_addr = s.rf[ a0 ]
+  req_len  = s.rf[ a1 ]
+
+  # assign a new address using the mmap_boundary. TODO: we iginore the
+  # requested address
+
+  addr = s.mmap_boundary - req_len
+  s.mmap_boundary = addr
+
+  s.rf[ v0 ] = trim_32( addr )
+
+#-------------------------------------------------------------------------
+# getcwd
+#-------------------------------------------------------------------------
+def syscall_getcwd( s ):
+  ptr = s.rf[ a0 ]
+  len = s.rf[ a1 ]
+
+  errno = 0
+
+  try:
+    cwd = os.getcwd()
+    # append a null character
+    cwd = cwd + "\0"
+    #cwd = "/work/bits0/bi45/vc/hg-misc/pypy-cross/pypy/goal/\0"
+    put_str( s, ptr, cwd )
+  except OSError as e:
+    if s.debug.enabled( "syscalls" ):
+      print "OSError in syscall_stat. errno=%d" % e.errno
+    errno = e.errno
+
+  return_from_syscall( s, ptr if errno == 0 else 0, errno )
 
 #-------------------------------------------------------------------------
 # return_from_syscall
@@ -481,24 +616,20 @@ class Stat( object ):
   # and https://github.com/cornell-brg/maven-sys-xcc/blob/master/src/newlib/libc/include/sys/stat.h#L25-L51)
 
   #               sz off
-  ST_DEV      = ( 2, 0  )
-  ST_INO      = ( 2, 2  )
-  ST_MODE     = ( 4, 4  )
-  ST_NLINK    = ( 2, 8  )
-  ST_UID      = ( 2, 10 )
-  ST_GID      = ( 2, 12 )
-  ST_RDEV     = ( 2, 14 )
-  ST_SIZE     = ( 4, 16 )
-  #ST_PAD3     = ( 4, 20 )
-  ST_ATIME    = ( 4, 20 )
-  ST_SPARE1   = ( 4, 24 )
-  ST_MTIME    = ( 4, 28 )
-  ST_SPARE2   = ( 4, 32 )
-  ST_CTIME    = ( 4, 36 )
-  ST_SPARE3   = ( 4, 40 )
-  ST_BLKSIZE  = ( 4, 44 )
-  ST_BLOCKS   = ( 4, 48 )
-  ST_SPARE4   = ( 8, 52 )
+  ST_DEV      = ( 4, 0  )
+  ST_INO      = ( 4, 4  )
+  ST_MODE     = ( 2, 8  )
+  ST_NLINK    = ( 2, 10 )
+  ST_UID      = ( 2, 12 )
+  ST_GID      = ( 2, 14 )
+  ST_SIZE     = ( 4, 20 )
+  ST_ATIME    = ( 4, 32 )
+  ST_MTIME    = ( 4, 40 )
+  ST_CTIME    = ( 4, 48 )
+
+  ST_RDEV     = ( 4, 16 )
+  ST_BLKSIZE  = ( 4, 24 )
+  ST_BLOCKS   = ( 4, 28 )
 
   # Alternatively:
   # gem5 ARM:
@@ -510,7 +641,7 @@ class Stat( object ):
 
   def __init__( self ):
     # we represent this stat object as a character array
-    self.buffer = [ "\0" ] * Stat.SIZE
+    self.buffer = [ "\0" ] * self.SIZE
 
   # given the field tuple which contains the size and offset information,
   # we write the value to the buffer
@@ -529,24 +660,64 @@ class Stat( object ):
     # are os-independent according to
     # https://docs.python.org/2/library/os.html#os.stat
 
-    self.set_field( Stat.ST_MODE,       py_stat.st_mode    )
-    self.set_field( Stat.ST_INO,        py_stat.st_ino     )
-    self.set_field( Stat.ST_DEV,        py_stat.st_dev     )
-    self.set_field( Stat.ST_NLINK,      py_stat.st_nlink   )
-    self.set_field( Stat.ST_UID,        py_stat.st_uid     )
-    self.set_field( Stat.ST_GID,        py_stat.st_gid     )
-    self.set_field( Stat.ST_SIZE,       py_stat.st_size    )
+    #print "st_mode    %s" % hex( py_stat.st_mode  )
+    #print "st_ino     %s" % hex( py_stat.st_ino   )
+    #print "st_dev     %s" % hex( py_stat.st_dev   )
+    #print "st_nlink   %s" % hex( py_stat.st_nlink )
+    #print "st_uid     %s" % hex( py_stat.st_uid   )
+    #print "st_gid     %s" % hex( py_stat.st_gid   )
+    #print "st_size    %s" % hex( py_stat.st_size  )
+    #print "st_rdev    %s" % hex( py_stat.st_rdev  )
+    #print "st_blksize %s" % hex( py_stat.st_blksize )
+    #print "st_blocks  %s" % hex( py_stat.st_blocks  )
+    #print "st_atime   %s" % hex( int( py_stat.st_atime ) )
+    #print "st_mtime   %s" % hex( int( py_stat.st_mtime ) )
+    #print "st_ctime   %s" % hex( int( py_stat.st_ctime ) )
+
+    self.set_field( self.ST_MODE,       py_stat.st_mode    )
+    self.set_field( self.ST_INO,        py_stat.st_ino     )
+    self.set_field( self.ST_DEV,        py_stat.st_dev     )
+    self.set_field( self.ST_NLINK,      py_stat.st_nlink   )
+    self.set_field( self.ST_UID,        py_stat.st_uid     )
+    self.set_field( self.ST_GID,        py_stat.st_gid     )
+    self.set_field( self.ST_SIZE,       py_stat.st_size    )
+
+    self.set_field( self.ST_RDEV,       py_stat.st_rdev    )
+    self.set_field( self.ST_BLKSIZE,    py_stat.st_blksize )
+    self.set_field( self.ST_BLOCKS,     py_stat.st_blocks  )
+
     # atime, mtime, ctime are floats, so we cast them to int
-    self.set_field( Stat.ST_ATIME, int( py_stat.st_atime ) )
-    self.set_field( Stat.ST_MTIME, int( py_stat.st_mtime ) )
-    self.set_field( Stat.ST_CTIME, int( py_stat.st_ctime ) )
+    self.set_field( self.ST_ATIME, int( py_stat.st_atime ) )
+    self.set_field( self.ST_MTIME, int( py_stat.st_mtime ) )
+    self.set_field( self.ST_CTIME, int( py_stat.st_ctime ) )
 
     # now we can copy the buffer
 
     # TODO: this could be more efficient
     assert addr >= 0
-    for i in xrange( Stat.SIZE ):
+    for i in xrange( self.SIZE ):
       mem.write( addr + i, 1, ord( self.buffer[i] ) )
+
+class Stat64( Stat ):
+
+  ST_DEV      = ( 8, 0x0  )
+  ST_INO      = ( 4, 0xc  )
+  #ST_INO      = ( 8, 0x50  )
+  ST_MODE     = ( 4, 0x10 )
+  ST_NLINK    = ( 4, 0x14 )
+  ST_UID      = ( 4, 0x18 )
+  ST_GID      = ( 4, 0x1c )
+
+  ST_RDEV     = ( 8, 0x20 )
+
+  ST_SIZE     = ( 8, 0x30 )
+  ST_BLKSIZE  = ( 4, 0x38 )
+  ST_BLOCKS   = ( 4, 0x40 )
+  ST_ATIME    = ( 4, 0x48 )
+  ST_MTIME    = ( 4, 0x50 )
+  ST_CTIME    = ( 4, 0x58 )
+
+  SIZE = 0x68
 
 #-----------------------------------------------------------------------
 # syscall number mapping
@@ -570,13 +741,43 @@ syscall_funcs = {
   106: syscall_stat,
   108: syscall_fstat,
 # 122: syscall_uname,
+
+#  mmap stuff: note that 192 is in reality mmap2, but we map both mmap and
+#  mmap2 to the same implementation
+   90: syscall_mmap,
+  192: syscall_mmap,
+
+# stats64 variants are mapped to normal stat
+  195: syscall_stat64,
+  196: syscall_stat64,
+  197: syscall_fstat64,
+
+  183: syscall_getcwd,
+
+  221: syscall_fcntl64,
 }
 
 syscall_names = {k: v.func_name for (k,v) in syscall_funcs.items()}
 
 def do_syscall( s, syscall_num ):
   if syscall_num not in syscall_funcs:
-    raise FatalError( "Syscall %d not implemented!" % syscall_num )
+    # raise FatalError( "Syscall %d not implemented!" % syscall_num )
+    if syscall_num == 20:
+      print "Warning: getpid = 3000"
+      return_from_syscall( s, 3000, 0 )
+      return
+    else:
+      print ( "Warning: syscall %d not implemented! (cyc: %d pc: %s)\n" + \
+              "(%s %s %s %s)" ) % \
+            ( syscall_num, s.ncycles, hex( s.pc ), hex(s.rf[0]), hex(s.rf[1]),
+              hex(s.rf[2]), hex(s.rf[3]) )
+
+      if syscall_num == 195 or syscall_num == 183 or syscall_num == 196:
+        filename = get_str( s, s.rf[0] )
+        print "filename: %s" % filename
+
+      return_from_syscall( s, 0, 0 )
+      return
 
   if s.debug.enabled('syscalls'):
     print syscall_num, syscall_names[ syscall_num ],

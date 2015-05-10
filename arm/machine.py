@@ -55,6 +55,10 @@ class State( object ):
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
 
+    # mmap boundary
+    from bootstrap import memory_size
+    self.mmap_boundary = memory_size - 0x10000000 - 1
+
   def fetch_pc( self ):
     return self.pc
 
