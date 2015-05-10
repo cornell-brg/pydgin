@@ -1,5 +1,5 @@
 ===============================================================================
-Pydgin
+|Pydgin|
 ===============================================================================
 
 Pydgin: a (Py)thon (D)SL for (G)enerating (In)struction set simulators.
@@ -30,6 +30,18 @@ instruction-by-instruction interpretive simulation than the original Python
 implementation. Second, the generated executable provides a trace-JIT to
 dynamically compile frequently interpreted hot loops into optimized assembly.
 
+.. |Pydgin| image:: docs/pydgin_logo.png
+
+-------------------------------------------------------------------------------
+License
+-------------------------------------------------------------------------------
+
+Pydgin is offered under the terms of the Open Source Initiative BSD
+3-Clause License. More information about this license can be found here:
+
+- http://choosealicense.com/licenses/bsd-3-clause
+- http://opensource.org/licenses/BSD-3-Clause
+
 -------------------------------------------------------------------------------
 Publications
 -------------------------------------------------------------------------------
@@ -37,16 +49,17 @@ Publications
 If you end up using Pydgin in your research, please let us know!  We'd love to
 hear your feedback. Also, you can cite our paper! ::
 
-  @article{lockhart-pydgin-ispass2015,
+  @inproceedings{lockhart-pydgin-ispass2015,
     title     = {Pydgin: Generating Fast Instruction Set Simulators from
                  Simple Architecture Descriptions with Meta-Tracing JIT
                  Compilers},
     author    = {Derek Lockhart and Berkin Ilbeyi and Christopher Batten},
-    journal   = {2015 IEEE Int'l Symp. on Performance Analysis of Systems
-                 and Software (ISPASS-2015)},
+    booktitle = {2015 IEEE Int'l Symp. on Performance Analysis of Systems
+                 and Software (ISPASS)},
     month     = {Mar},
     year      = {2015},
   }
+
 
 -------------------------------------------------------------------------------
 Project Subdirectories
@@ -59,15 +72,48 @@ executing ELF binaries compiled with a cross-compiler.
 - arm:     Pydgin ISS for executing ARMv5 binaries.
 - parc:    Pydgin ISS for executing PARC binaries.
 
-The following directories contain experimental interpreters for executing
-textual files. They serve no purpose other than to learn more about the
-capabilities of the RPython translation toolchain.
-
-- parc_interp: An interpreter for the complete PARC ISA.
-- asm_toy_2:   A toy interpreter for (less) simple PARC assembly files.
-- asm_toy_1:   A toy interpreter for (very) simple PARC assembly files.
-- bf:          A simple interpreter for a toy language.
-
-
 Please see the README files in each subdirectory for more information.
+
+-------------------------------------------------------------------------------
+Installing Dependencies
+-------------------------------------------------------------------------------
+
+Pydgin depends on the libraries provided by the RPython translation toolchain
+for jit annotations and interpreter translation. Before running a Pydgin
+simulator, please install the PyPy project source code and specify its location
+by creating a PYDGIN_PYPY_SRC_DIR environment variable::
+
+  $ hg clone https://bitbucket.org/pypy/pypy $SOME_DIR
+  $ export PYDGIN_PYPY_SRC_DIR=$SOME_DIR/pypy
+
+Pydgin simulator generation also works much faster if you have the PyPy
+binary installed. You can either compile this yourself from source, or
+download a precompiled version from the PyPy homepage.
+
+- http://pypy.org/download.html
+
+Note that if you download a tarball of the PyPy source instead of cloning it
+from BitBucket, it must be version 2.5 or newer.
+
+-------------------------------------------------------------------------------
+Running Pydgin Instruction Set Simulators
+-------------------------------------------------------------------------------
+
+Now that PyPy dependencies are installed, you can run Pydgin simulators
+directly with Python for debug purposes::
+
+  $ cd arm
+  $ python arm-sim.py <arm-binary>
+
+Finally, you can translate the Pydgin simulators into JIT-enabled simulator
+binaries using the RPython translation toolchain::
+
+  $ cd scripts
+  $ ./build.py --help
+  $ ./build.py pydgin-arm-jit
+
+The translation process will take several minutes. After it's done, you'll have
+a fast simulator to run your binaries::
+
+  $ ./builds/pydgin-arm-jit <arm-binary>
 

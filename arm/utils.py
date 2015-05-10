@@ -3,8 +3,9 @@
 #=======================================================================
 # Collection of utility functions for ARM instruction implementations.
 
-from pydgin.misc import FatalError
-from instruction import *
+from pydgin.utils import trim_32
+from pydgin.misc  import FatalError
+from instruction  import *
 
 #=======================================================================
 # Addressing Mode 1 - Data-processing operands (page A5-2)
@@ -50,9 +51,9 @@ def shifter_operand( s, inst ):
 
   # 32-bit immediate
   # http://stackoverflow.com/a/2835503
-  if   inst.I() == 1:
-    rotate_imm = inst.rotate()
-    operand    = rotate_right( inst.imm_8(), rotate_imm*2 )
+  if   inst.I == 1:
+    rotate_imm = inst.rotate
+    operand    = rotate_right( inst.imm_8, rotate_imm*2 )
     if rotate_imm == 0: cout = s.C
     else:               cout = operand >> 3
     return operand, cout
@@ -80,9 +81,9 @@ ROTATE_RIGHT      = 0b11
 # shifter_operand_imm
 #-----------------------------------------------------------------------
 def shifter_operand_imm( s, inst ):
-  shift_op  = inst.shift()
-  Rm        = s.rf[ inst.rm() ]
-  shift_imm = inst.shift_amt()
+  shift_op  = inst.shift
+  Rm        = s.rf[ inst.rm ]
+  shift_imm = inst.shift_amt
   assert 0 <= shift_imm <= 31
 
   if   shift_op == LOGIC_SHIFT_LEFT:
@@ -121,9 +122,9 @@ def shifter_operand_imm( s, inst ):
 # shifter_operand_reg
 #-----------------------------------------------------------------------
 def shifter_operand_reg( s, inst ):
-  shift_op = inst.shift()
-  Rm       = s.rf[ inst.rm() ]
-  Rs       = s.rf[ inst.rs() ] & 0xFF
+  shift_op = inst.shift
+  Rm       = s.rf[ inst.rm ]
+  Rs       = s.rf[ inst.rs ] & 0xFF
 
   out = cout = 0
 
@@ -230,19 +231,19 @@ def rotate_right( data, shift ):
 def addressing_mode_2( s, inst ):
 
   # Immediate vs. Register Offset
-  if not inst.I(): index    = inst.imm_12()
+  if not inst.I: index    = inst.imm_12
   else:           index, _ = shifter_operand_imm(s, inst)
 
-  Rn          = s.rf[inst.rn()]
-  offset_addr = Rn + index if inst.U() else Rn - index
+  Rn          = s.rf[inst.rn]
+  offset_addr = Rn + index if inst.U else Rn - index
 
   # Offset Addressing/Pre-Indexed Addressing vs. Post-Indexed Addressing
-  if inst.P(): addr = offset_addr
+  if inst.P: addr = offset_addr
   else:        addr = Rn
 
   # Offset Addressing vs. Pre-/Post-Indexed Addressing
-  if not (inst.P() ^ inst.W()):
-    s.rf[inst.rn()] = trim_32( offset_addr )
+  if not (inst.P ^ inst.W):
+    s.rf[inst.rn] = trim_32( offset_addr )
 
   return trim_32( addr )
 
@@ -264,23 +265,23 @@ def addressing_mode_2( s, inst ):
 # 0 0 0 0 Register Post-indexed
 #
 def addressing_mode_3( s, inst ):
-  if inst.SH() == 0b00:
+  if inst.SH == 0b00:
     raise FatalError('Not a load/store instruction!')
 
   # Immediate vs. Register Offset
-  if inst.B(): index = (inst.imm_H() << 4) | inst.imm_L()
-  else:        index = s.rf[inst.rm()]
+  if inst.B: index = (inst.imm_H << 4) | inst.imm_L
+  else:        index = s.rf[inst.rm]
 
-  Rn          = s.rf[inst.rn()]
-  offset_addr = Rn + index if inst.U() else Rn - index
+  Rn          = s.rf[inst.rn]
+  offset_addr = Rn + index if inst.U else Rn - index
 
   # Offset Addressing/Pre-Indexed Addressing vs. Post-Indexed Addressing
-  if inst.P(): addr = offset_addr
+  if inst.P: addr = offset_addr
   else:        addr = Rn
 
   # Offset Addressing vs. Pre-/Post-Indexed Addressing
-  if not (inst.P() ^ inst.W()):
-    s.rf[inst.rn()] = trim_32( offset_addr )
+  if not (inst.P ^ inst.W):
+    s.rf[inst.rn] = trim_32( offset_addr )
 
   return trim_32( addr )
 
@@ -310,17 +311,17 @@ def addressing_mode_4( s, inst ):
   DA = 0b00
   DB = 0b10
 
-  mode   = (inst.P() << 1) | inst.U()
-  Rn     = s.rf[ inst.rn() ]
-  nbytes = 4 * popcount( inst.register_list() )
+  mode   = (inst.P << 1) | inst.U
+  Rn     = s.rf[ inst.rn ]
+  nbytes = 4 * popcount( inst.register_list )
 
   if   mode == IA: start_addr, end_addr = Rn,          Rn+nbytes-4
   elif mode == IB: start_addr, end_addr = Rn+4,        Rn+nbytes
   elif mode == DA: start_addr, end_addr = Rn-nbytes+4, Rn
   else:            start_addr, end_addr = Rn-nbytes,   Rn-4
 
-  if inst.W():
-    s.rf[ inst.rn() ] = trim_32( (Rn + nbytes) if inst.U() else (Rn - nbytes) )
+  if inst.W:
+    s.rf[ inst.rn ] = trim_32( (Rn + nbytes) if inst.U else (Rn - nbytes) )
 
   return trim_32( start_addr ), trim_32( end_addr )
 
@@ -395,57 +396,12 @@ def arith_shift( data, shift ):
   return (fill << (32-shift)) | (data >> shift)
 
 #-----------------------------------------------------------------------
-# trim_32
-#-----------------------------------------------------------------------
-def trim_32( val ):
-  return val & 0xFFFFFFFF
-
-#-----------------------------------------------------------------------
-# trim_16
-#-----------------------------------------------------------------------
-def trim_16( val ):
-  return val & 0xFFFF
-
-#-----------------------------------------------------------------------
-# trim_8
-#-----------------------------------------------------------------------
-def trim_8( val ):
-  return val & 0xFF
-
-#-----------------------------------------------------------------------
-# signed
-#-----------------------------------------------------------------------
-def signed( value ):
-  if value & 0x80000000:
-    twos_complement = ~value + 1
-    return -trim_32( twos_complement )
-  return value
-
-#-----------------------------------------------------------------------
-# sign_extend_30
+# sext_30
 #-----------------------------------------------------------------------
 # sign extend 24-bit immediates to 30-bit values
-def sign_extend_30( value ):
+def sext_30( value ):
   if value & 0x800000:
     return 0x3F000000 | value
-  return value
-
-#-----------------------------------------------------------------------
-# sign_extend_half
-#-----------------------------------------------------------------------
-# Sign extend 16-bit immediate fields.
-def sign_extend_half( value ):
-  if value & 0x8000:
-    return 0xFFFF0000 | value
-  return value
-
-#-----------------------------------------------------------------------
-# sign_extend_byte
-#-----------------------------------------------------------------------
-# Sign extend 8-bit immediate fields.
-def sign_extend_byte( value ):
-  if value & 0x80:
-    return 0xFFFFFF00 | value
   return value
 
 #-----------------------------------------------------------------------

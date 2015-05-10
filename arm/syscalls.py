@@ -2,13 +2,7 @@
 # syscalls.py
 #=======================================================================
 #
-# Implementations of emulated syscalls. Call numbers were borrowed from
-# the following files:
-#
-# - https://github.com/cornell-brg/maven-sim-isa/blob/master/common/syscfg.h
-# - https://github.com/cornell-brg/pyparc/blob/master/pkernel/pkernel/syscfg.h
-# - https://github.com/cornell-brg/maven-sys-xcc/blob/master/src/libgloss/maven/machine/syscfg.h
-# - https://github.com/cornell-brg/gem5-mcpat/blob/master/src/arch/mips/linux/process.cc
+# Syscall numbers and syscall interface.
 #
 #  Example ARM syscall:
 #
@@ -23,24 +17,12 @@
 #
 #   // result of syscall stored in $r0
 #
-# Details for newlib syscalls from the Maven cross compiler:
-#
-# - https://github.com/cornell-brg/maven-sys-xcc/blob/master/src/libgloss/maven/syscalls.c
-#
-# Other syscall emulation resources:
-#
-# - http://brg.csl.cornell.edu/wiki/Proxy%20Kernel%20vs%20Syscall%20Emulation
-# - http://wiki.osdev.org/Porting_Newlib
-# - http://wiki.osdev.org/OS_Specific_Toolchain
-# - http://www.embecosm.com/appnotes/ean9/ean9-howto-newlib-1.0.html
-#
 
 from pydgin.misc import FatalError
 from isa         import reg_map
 from utils       import trim_32
-import sys
 import os
-import errno
+import pydgin.syscalls as cmn_sysc
 #import fcntl
 
 #-----------------------------------------------------------------------
@@ -49,362 +31,22 @@ import errno
 
 # short names for registers
 
-v0 = reg_map['a1']  # return value
-a0 = reg_map['a1']  # arg0
-a1 = reg_map['a2']  # arg1
-a2 = reg_map['a3']  # arg2
+v4 = reg_map['v4']  # syscall number
+a1 = reg_map['a1']  # arg0 / return value
+a2 = reg_map['a2']  # arg1
+a3 = reg_map['a3']  # arg2
                     # error: not used in arm
-
-# solaris to linux open flag conversion
-# https://docs.python.org/2/library/os.html#open-constants
-
-flag_table = [
-  [ 0x0000, os.O_RDONLY   ], # NEWLIB_O_RDONLY
-  [ 0x0001, os.O_WRONLY   ], # NEWLIB_O_WRONLY
-  [ 0x0002, os.O_RDWR     ], # NEWLIB_O_RDWR
-  [ 0x0008, os.O_APPEND   ], # NEWLIB_O_APPEND
-  [ 0x0200, os.O_CREAT    ], # NEWLIB_O_CREAT
-  [ 0x0400, os.O_TRUNC    ], # NEWLIB_O_TRUNC
-  [ 0x0800, os.O_EXCL     ], # NEWLIB_O_EXCL
-  [ 0x2000, os.O_SYNC     ], # NEWLIB_O_SYNC
-  [ 0x4000, os.O_NDELAY   ], # NEWLIB_O_NDELAY
-  [ 0x4000, os.O_NONBLOCK ], # NEWLIB_O_NONBLOCK
-  [ 0x8000, os.O_NOCTTY   ], # NEWLIB_O_NOCTTY
- #[ 0x????, os.O_DIRECTORY],
- #[ 0x????, os.O_ASYNC    ],
- #[ 0x????, os.O_DSYNC    ],
- #[ 0x????, os.O_NOATIME  ],
- #[ 0x????, os.O_DIRECT   ],
- #[ 0x????, os.O_LARGEFILE],
- #[ 0x????, os.O_NOFOLLOW ],
- #[ 0x????, os.O_RSYNC    ],
-]
-
-file_descriptors = {
-  0: sys.stdin .fileno(),
-  1: sys.stdout.fileno(),
-  2: sys.stderr.fileno(),
-}
-
-#-------------------------------------------------------------------------
-# get_str
-#-------------------------------------------------------------------------
-# gets the python string from a pointer to the simulated memory. If nchars
-# is not provided, reads until a null character.
-
-def get_str( s, ptr, nchars=0 ):
-  str = ""
-  if nchars > 0:
-    for i in xrange( nchars ):
-      str += chr( s.mem.read( ptr + i, 1 ) )
-  else:
-    while s.mem.read( ptr, 1 ) != 0:
-      str += chr( s.mem.read( ptr, 1 ) )
-      ptr += 1
-  return str
-
-#-------------------------------------------------------------------------
-# put_str
-#-------------------------------------------------------------------------
-# puts python string to simulated memory -- note that no null character is
-# added to the end
-
-def put_str( s, ptr, str ):
-  for c in str:
-    s.mem.write( ptr, 1, ord( c ) )
-    ptr += 1
-
-#-----------------------------------------------------------------------
-# exit
-#-----------------------------------------------------------------------
-def syscall_exit( s ):
-  exit_code = s.rf[ a0 ]
-  print "num_instructions:", s.ncycles,
-  print "exit_code: %d ::" % exit_code,
-  # TODO: this is an okay way to terminate the simulator?
-  #       sys.exit(1) is not valid python
-
-  # TODO: it seems like ARM ignores the exit_code when setting the
-  #       return status value.  Is this okay?
-  s.status   = exit_code
-  s.rf[ v0 ] = exit_code
-  s.running  = False
-
-#-----------------------------------------------------------------------
-# read
-#-----------------------------------------------------------------------
-def syscall_read( s ):
-  file_ptr = s.rf[ a0 ]
-  data_ptr = s.rf[ a1 ]
-  nbytes   = s.rf[ a2 ]
-
-  if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
-    return
-
-  fd = file_descriptors[ file_ptr ]
-
-  try:
-    data        = os.read( fd, nbytes )
-    nbytes_read = len( data )
-    errno       = 0
-
-    put_str( s, data_ptr, data )
-
-  except OSError as e:
-    print "OSError in syscall_read: errno=%d" % e.errno
-    nbytes_read = -1
-    errno       = e.errno
-
-  s.rf[ v0 ] = trim_32(nbytes_read)
-
-#-----------------------------------------------------------------------
-# write
-#-----------------------------------------------------------------------
-def syscall_write( s ):
-  file_ptr = s.rf[ a0 ]
-  data_ptr = s.rf[ a1 ]
-  nbytes   = s.rf[ a2 ]
-
-  # INST NUMBER 914
-  # INST NUMBER 914
-
-  if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
-    return
-
-  fd = file_descriptors[ file_ptr ]
-
-  data = get_str( s, data_ptr, nbytes )
-
-  try:
-    nbytes_written = os.write( fd, data )
-    errno          = 0
-    # https://docs.python.org/2/library/os.html#os.fsync
-    #os.fsync( fd )  # causes 'Invalid argument' error for some reason...
-
-  except OSError as e:
-    print "OSError in syscall_write: errno=%d" % e.errno
-    nbytes_written = -1
-    errno          = e.errno
-
-  s.rf[ v0 ] = trim_32(nbytes_written)
-
-#-----------------------------------------------------------------------
-# open
-#-----------------------------------------------------------------------
-def syscall_open( s ):
-  filename_ptr = s.rf[ a0 ]
-  flags        = s.rf[ a1 ]
-  mode         = s.rf[ a2 ]
-
-  # convert flags from solaris to linux (necessary?)
-  open_flags = 0
-  for newlib, linux in flag_table:
-    if flags & newlib:
-      open_flags |= linux
-
-  # get the filename
-
-  filename = get_str( s, filename_ptr )
-
-  if s.debug.enabled( "syscalls" ):
-    print "filename: %s flags: %s" % ( filename, hex( open_flags ) )
-
-  try:
-    # open vs. os.open():  http://stackoverflow.com/a/15039662
-    fd    = os.open( filename, open_flags, mode )
-    errno = 0
-
-  except OSError as e:
-    print "OSError in syscall_open: errno=%d" % e.errno
-    fd    = -1
-    errno = e.errno
-
-  if fd > 0:
-    file_descriptors[ fd ] = trim_32(fd)
-
-  s.rf[ v0 ] = trim_32(fd)
-
-#-----------------------------------------------------------------------
-# close
-#-----------------------------------------------------------------------
-def syscall_close( s ):
-  file_ptr = s.rf[ a0 ]
-
-  if file_ptr not in file_descriptors:
-    s.rf[ v0 ] = -1   # TODO: return a bad file descriptor error (9)?
-    return
-
-  # TODO: hacky don't close the file for 0, 1, 2.
-  #       gem5 does this, but is there a better way?
-  if file_ptr <= 2:
-    s.rf[ v0 ] = 0
-    return
-
-  try:
-    os.close( file_descriptors[ file_ptr ] )
-    del file_descriptors[ file_ptr ]
-    errno = 0
-
-  except OSError as e:
-    print "OSError in syscall_close: errno=%d" % e.errno
-    errno = e.errno
-
-  s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
-
-#-------------------------------------------------------------------------
-# link
-#-------------------------------------------------------------------------
-
-def syscall_link( s ):
-
-  src_ptr  = s.rf[ a0 ]
-  link_ptr = s.rf[ a1 ]
-
-  #if s.debug.enabled( "syscalls" ):
-  #  print "syscall_link( src=%x, link=%x )" % \
-  #        ( src_ptr, link_ptr ),
-
-  src       = get_str( s, src_ptr )
-  link_name = get_str( s, link_ptr )
-
-  if s.debug.enabled( "syscalls" ):
-    print "src: %s link_name: %s" % ( src, link_name )
-
-  errno = 0
-
-  try:
-    os.link( src, link_name )
-
-  except OSError as e:
-    if s.debug.enabled( "syscalls" ):
-      print "OSError in syscall_link. errno=%d" % e.errno
-    errno = e.errno
-
-  s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
-
-#-------------------------------------------------------------------------
-# unlink
-#-------------------------------------------------------------------------
-
-def syscall_unlink( s ):
-
-  path_ptr  = s.rf[ a0 ]
-
-  #if s.debug.enabled( "syscalls" ):
-  #  print "syscall_unlink( path=%x )" % path_ptr,
-
-  path = get_str( s, path_ptr )
-
-  if s.debug.enabled( "syscalls" ):
-    print "filename: %s" % path
-
-  errno = 0
-
-  try:
-    os.unlink( path )
-
-  except OSError as e:
-    if s.debug.enabled( "syscalls" ):
-      print "OSError in syscall_unlink. errno=%d" % e.errno
-    errno = e.errno
-
-  s.rf[ v0 ] = 0 if errno == 0 else trim_32(-1)
-
-
-#-----------------------------------------------------------------------
-# brk
-#-----------------------------------------------------------------------
-# http://stackoverflow.com/questions/6988487/what-does-brk-system-call-do
-def syscall_brk( s ):
-  new_brk = s.rf[ a0 ]
-
-  if new_brk != 0:
-    s.breakpoint = new_brk
-
-  s.rf[ v0 ] = trim_32(s.breakpoint)
-
-#-----------------------------------------------------------------------
-# uname
-#-----------------------------------------------------------------------
-# TODO: Implementation copied directly from gem5 for verification
-# purposes. Fix later.
-def syscall_uname( s ):
-
-  # utsname struct is five fields, each 64 chars + 1 null char
-  field_nchars = 64 + 1
-  struct = [
-    'Linux',                             # sysname
-    'm5.eecs.umich.edu',                 # nodename
-    '3.12.2',                            # release
-    '#1 Mon Aug 18 11:32:15 EDT 2003',   # version
-    'armv7l',                            # machine
-  ]
-
-  mem_addr = s.rf[ a0 ]
-
-  for field in struct:
-    assert len(field) < field_nchars
-
-    # TODO: provide char/string block write interface to memory?
-    padding = '\0' * (field_nchars - len(field))
-    put_str( s, mem_addr, field + padding )
-    mem_addr += field_nchars
-
-  s.rf[ v0 ] = 0
-
-#-----------------------------------------------------------------------
-# ioctl
-#-----------------------------------------------------------------------
-def syscall_ioctl( s ):
-  fd  = s.rf[ a0 ]
-  req = s.rf[ a1 ]
-
-  result     = -errno.ENOTTY if fd >= 0 else -errno.EBADF
-  s.rf[ v0 ] = trim_32( result )
-
-#-----------------------------------------------------------------------
-# lseek
-#-----------------------------------------------------------------------
-def syscall_lseek( s ):
-
-  fd  = s.rf[ a0 ]
-  pos = s.rf[ a1 ]
-  how = s.rf[ a2 ]
-
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_lseek( fd=%x, pos=%x, how=%x )" % ( fd, pos, how ),
-
-  if check_fd( s, fd ):
-    return
-
-  errno = 0
-
-  try:
-    # NOTE: rpython gives some weird errors in rtyping stage if we don't
-    # explicitly cast the return value of os.lseek to int
-
-    new_pos = int( os.lseek( fd, pos, how ) )
-
-  except OSError as e:
-    if s.debug.enabled( "syscalls" ):
-      print "OSError in syscall_lseek. errno=%d" % e.errno
-    errno = e.errno
-    new_pos = -1
-
-  return_from_syscall( s, trim_32( new_pos ), errno )
 
 #-------------------------------------------------------------------------
 # fstat
 #-------------------------------------------------------------------------
-def syscall_fstat( s ):
+def syscall_fstat( s, arg0, arg1, arg2 ):
 
-  fd       = s.rf[ a0 ]
-  buf_ptr  = s.rf[ a1 ]
+  fd       = arg0
+  buf_ptr  = arg1
 
-  if check_fd( s, fd ):
-    return
+  if not cmn_sysc.is_fd_open( s, fd ):
+    return -1, cmn_sysc.BAD_FD_ERRNO
 
   errno = 0
 
@@ -423,18 +65,18 @@ def syscall_fstat( s ):
       print "OSError in syscall_fstat. errno=%d" % e.errno
     errno = e.errno
 
-  return_from_syscall( s, 0 if errno == 0 else -1, errno )
+  return 0 if errno == 0 else -1, errno
 
 #-------------------------------------------------------------------------
 # fstat64
 #-------------------------------------------------------------------------
-def syscall_fstat64( s ):
+def syscall_fstat64( s, arg0, arg1, arg2 ):
 
-  fd       = s.rf[ a0 ]
-  buf_ptr  = s.rf[ a1 ]
+  fd       = arg0
+  buf_ptr  = arg1
 
-  if check_fd( s, fd ):
-    return
+  if not cmn_sysc.is_fd_open( s, fd ):
+    return -1, cmn_sysc.BAD_FD_ERRNO
 
   errno = 0
 
@@ -453,17 +95,17 @@ def syscall_fstat64( s ):
       print "OSError in syscall_fstat. errno=%d" % e.errno
     errno = e.errno
 
-  return_from_syscall( s, 0 if errno == 0 else -1, errno )
+  return 0 if errno == 0 else -1, errno
 
 #-------------------------------------------------------------------------
 # stat
 #-------------------------------------------------------------------------
-def syscall_stat( s ):
+def syscall_stat( s, arg0, arg1, arg2 ):
 
-  path_ptr = s.rf[ a0 ]
-  buf_ptr  = s.rf[ a1 ]
+  path_ptr = arg0
+  buf_ptr  = arg1
 
-  path = get_str( s, path_ptr )
+  path = cmn_sysc.get_str( s, path_ptr )
 
   if s.debug.enabled( "syscalls" ):
     print "filename: %s" % path
@@ -485,17 +127,17 @@ def syscall_stat( s ):
       print "OSError in syscall_stat. errno=%d" % e.errno
     errno = e.errno
 
-  return_from_syscall( s, 0 if errno == 0 else -1, errno )
+  return 0 if errno == 0 else -1, errno
 
 #-------------------------------------------------------------------------
 # stat64
 #-------------------------------------------------------------------------
-def syscall_stat64( s ):
+def syscall_stat64( s, arg0, arg1, arg2 ):
 
-  path_ptr = s.rf[ a0 ]
-  buf_ptr  = s.rf[ a1 ]
+  path_ptr = arg0
+  buf_ptr  = arg1
 
-  path = get_str( s, path_ptr )
+  path = cmn_sysc.get_str( s, path_ptr )
 
   if s.debug.enabled( "syscalls" ):
     print "filename: %s" % path
@@ -517,15 +159,15 @@ def syscall_stat64( s ):
       print "OSError in syscall_stat. errno=%d" % e.errno
     errno = e.errno
 
-  return_from_syscall( s, 0 if errno == 0 else -1, errno )
+  return 0 if errno == 0 else -1, errno
 
 #-------------------------------------------------------------------------
 # fcntl64
 #-------------------------------------------------------------------------
-def syscall_fcntl64( s ):
+def syscall_fcntl64( s, arg0, arg1, arg2 ):
 
-  fd   = s.rf[ a0 ]
-  cmd  = s.rf[ a1 ]
+  fd   = arg0
+  cmd  = arg1
 
   errno = 0
   ret = -1
@@ -541,15 +183,15 @@ def syscall_fcntl64( s ):
   # TODO: this is fake!!!
   ret = 0x8001
 
-  return_from_syscall( s, ret, errno )
+  return ret, errno
 
 #-----------------------------------------------------------------------
 # mmap
 #-----------------------------------------------------------------------
-def syscall_mmap( s ):
+def syscall_mmap( s, arg0, arg1, arg2 ):
   # TODO: we currently use first two args only
-  req_addr = s.rf[ a0 ]
-  req_len  = s.rf[ a1 ]
+  req_addr = arg0
+  req_len  = arg1
 
   # assign a new address using the mmap_boundary. TODO: we iginore the
   # requested address
@@ -557,14 +199,14 @@ def syscall_mmap( s ):
   addr = s.mmap_boundary - req_len
   s.mmap_boundary = addr
 
-  s.rf[ v0 ] = trim_32( addr )
+  return trim_32( addr ), 0
 
 #-------------------------------------------------------------------------
 # getcwd
 #-------------------------------------------------------------------------
-def syscall_getcwd( s ):
-  ptr = s.rf[ a0 ]
-  len = s.rf[ a1 ]
+def syscall_getcwd( s, arg0, arg1, arg2 ):
+  ptr = arg0
+  len = arg1
 
   errno = 0
 
@@ -573,36 +215,13 @@ def syscall_getcwd( s ):
     # append a null character
     cwd = cwd + "\0"
     #cwd = "/work/bits0/bi45/vc/hg-misc/pypy-cross/pypy/goal/\0"
-    put_str( s, ptr, cwd )
+    cmn_sysc.put_str( s, ptr, cwd )
   except OSError as e:
     if s.debug.enabled( "syscalls" ):
       print "OSError in syscall_stat. errno=%d" % e.errno
     errno = e.errno
 
-  return_from_syscall( s, ptr if errno == 0 else 0, errno )
-
-#-------------------------------------------------------------------------
-# return_from_syscall
-#-------------------------------------------------------------------------
-# copies the return value and the errno to proper registers
-def return_from_syscall( s, retval, errno ):
-  s.rf[ v0 ] = trim_32( retval )
-
-#-------------------------------------------------------------------------
-# check_fd
-#-------------------------------------------------------------------------
-# checks if the fd is in the open file descriptors, returns True on
-# failure
-def check_fd( s, fd ):
-  if fd not in file_descriptors:
-    if s.debug.enabled( "syscalls" ):
-      print ( "Could not find fd=%d in open file_descriptors,"
-              " returning errno=9" ) % fd
-    # we return a bad file descriptor error (9)
-    return_from_syscall( s, -1, 9 )
-    return True
-
-  return False
+  return ptr if errno == 0 else 0, errno
 
 #-------------------------------------------------------------------------
 # Stat
@@ -722,32 +341,35 @@ class Stat64( Stat ):
 #-----------------------------------------------------------------------
 # syscall number mapping
 #-----------------------------------------------------------------------
+
 syscall_funcs = {
 #      NEWLIB
 #   0: syscall,       # unimplemented_func
-    1: syscall_exit,
-    3: syscall_read,
-    4: syscall_write,
-    5: syscall_open,
-    6: syscall_close,
-    9: syscall_link,
-   10: syscall_unlink,
+    1: cmn_sysc.syscall_exit,
+    3: cmn_sysc.syscall_read,
+    4: cmn_sysc.syscall_write,
+    5: cmn_sysc.syscall_open,
+    6: cmn_sysc.syscall_close,
+    9: cmn_sysc.syscall_link,
+   10: cmn_sysc.syscall_unlink,
 
 #      UCLIBC/GLIBS
 #      see: https://github.com/qemu/qemu/blob/master/linux-user/arm/syscall_nr.h
-   19: syscall_lseek,
-   45: syscall_brk,
-   54: syscall_ioctl,
+   19: cmn_sysc.syscall_lseek,
+   45: cmn_sysc.syscall_brk,
+   54: cmn_sysc.syscall_ioctl,
+# using local defs for stat and fstat
   106: syscall_stat,
   108: syscall_fstat,
-# 122: syscall_uname,
+# 106: cmn_sysc.syscall_stat,
+# 108: cmn_sysc.syscall_fstat,
+# 122: cmn_sysc.syscall_uname,
 
 #  mmap stuff: note that 192 is in reality mmap2, but we map both mmap and
 #  mmap2 to the same implementation
    90: syscall_mmap,
   192: syscall_mmap,
 
-# stats64 variants are mapped to normal stat
   195: syscall_stat64,
   196: syscall_stat64,
   197: syscall_fstat64,
@@ -757,34 +379,46 @@ syscall_funcs = {
   221: syscall_fcntl64,
 }
 
-syscall_names = {k: v.func_name for (k,v) in syscall_funcs.items()}
+#-------------------------------------------------------------------------
+# do_syscall
+#-------------------------------------------------------------------------
+# Handle syscall -- use architecture-specific calling convention to
+# extract the syscall arguments, get the syscall handling function, do the
+# syscall, and return the result back into the architectural state.
+def do_syscall( s ):
+  syscall_number = s.rf[ v4 ]
+  arg0 = s.rf[ a1 ]
+  arg1 = s.rf[ a2 ]
+  arg2 = s.rf[ a3 ]
 
-def do_syscall( s, syscall_num ):
-  if syscall_num not in syscall_funcs:
-    # raise FatalError( "Syscall %d not implemented!" % syscall_num )
-    if syscall_num == 20:
+  if syscall_number not in syscall_funcs:
+    if syscall_number == 20:
+      # fake getpid impl
       print "Warning: getpid = 3000"
-      return_from_syscall( s, 3000, 0 )
-      return
+      s.rf[ a1 ] = 3000
     else:
       print ( "Warning: syscall %d not implemented! (cyc: %d pc: %s)\n" + \
               "(%s %s %s %s)" ) % \
-            ( syscall_num, s.ncycles, hex( s.pc ), hex(s.rf[0]), hex(s.rf[1]),
+            ( syscall_number, s.ncycles, hex( s.pc ), hex(s.rf[0]), hex(s.rf[1]),
               hex(s.rf[2]), hex(s.rf[3]) )
 
-      if syscall_num == 195 or syscall_num == 183 or syscall_num == 196:
-        filename = get_str( s, s.rf[0] )
+      if syscall_number == 195 or syscall_number == 183 or syscall_number == 196:
+        filename = cmn_sysc.get_str( s, s.rf[0] )
         print "filename: %s" % filename
 
-      return_from_syscall( s, 0, 0 )
-      return
+      # returning success
+      s.rf[ a1 ] = 0
 
-  if s.debug.enabled('syscalls'):
-    print syscall_num, syscall_names[ syscall_num ],
-    print '%s %s %s %s' % (hex(s.rf[0]), hex(s.rf[1]), hex(s.rf[2]), hex(s.rf[3])),
-  syscall_funcs[ syscall_num ]( s )
-  if s.debug.enabled('syscalls'):
-    if s.debug.enabled('insts'):
-      print ' = ', hex(s.rf[ a0 ]),
-    else:
-      print ' = ', hex(s.rf[ a0 ])
+  else:
+    syscall_handler = syscall_funcs[ syscall_number ]
+
+    # call the syscall handler and get the return and error values
+    retval, errno = syscall_handler( s, arg0, arg1, arg2 )
+
+    if s.debug.enabled( "syscalls" ):
+      print " retval=%x errno=%x" % ( retval, errno )
+
+    s.rf[ a1 ] = trim_32( retval )
+    # TODO: arm seems to ignore the errno?
+    #s.rf[ a3 ] = errno
+

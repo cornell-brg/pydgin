@@ -2,7 +2,7 @@
 # Debug
 #=======================================================================
 
-from rpython.rlib.jit import elidable, unroll_safe
+from jit import elidable, unroll_safe
 
 #-----------------------------------------------------------------------
 # Debug

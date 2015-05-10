@@ -4,8 +4,17 @@
 
 import re
 import elf
-import py
-import rpython
+from jit import elidable
+
+try:
+  import py
+  Source = py.code.Source
+except ImportError:
+  class Source:
+    def __init__( self, src ):
+      self.src = src
+    def compile( self ):
+      return self.src
 
 #-----------------------------------------------------------------------
 # FatalError
@@ -82,13 +91,14 @@ def create_risc_decoder( encodings, isa_globals, debug=False ):
     else:
       decoder += '    return execute_{}\n'.format( encodings[i][0] )
 
-  source = py.code.Source('''
-@rpython.rlib.jit.elidable
+  source = Source('''
+@elidable
 def decode( inst ):
   {decoder_tree}
   else:
     raise FatalError('Invalid instruction 0x%x!' % inst )
   '''.format( decoder_tree = decoder ))
+
   #print source
   environment = dict(globals().items() + isa_globals.items())
   exec source.compile() in environment
