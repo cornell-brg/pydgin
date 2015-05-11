@@ -9,7 +9,7 @@ from pydgin.debug   import Debug, pad, pad_hex
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  _virtualizable_ = ['pc', 'ncycles']
+  _virtualizable_ = ['pc', 'ncycles', 'N', 'Z', 'C', 'V', 'status']
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
     self.rf       = ArmRegisterFile( self, num_regs=16 )
