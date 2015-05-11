@@ -264,7 +264,11 @@ def get_regs_from_output( output_str ):
   # line contains the condition code flags.
 
   for line in output_str.split('\n'):
-    if 0 < collect_regs <= 5:
+
+    if not line or 'retval' in line:
+      continue
+
+    elif 0 < collect_regs <= 5:
       print line
       if collect_regs == 5: parse_flags( line )
       else:                 parse_regs ( line )
@@ -272,6 +276,7 @@ def get_regs_from_output( output_str ):
 
     elif 'syscall_exit' in line:
       collect_regs += 1
+
 
   # Return a dictionary containing the values of the register file and
   # condition flags. Registers are keyed by their register number (int),
