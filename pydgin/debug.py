@@ -2,6 +2,8 @@
 # Debug
 #=======================================================================
 
+from pydgin.jit import elidable_promote
+
 #-----------------------------------------------------------------------
 # Debug
 #-----------------------------------------------------------------------
@@ -28,9 +30,11 @@ class Debug( object ):
   #---------------------------------------------------------------------
   # Returns true if debugging is turned on in translation and the
   # particular flag is turned on in command line.
+  @elidable_promote()
   def enabled( self, flag ):
-    return Debug.global_enabled and ( flag in self.enabled_flags ) and \
-        ( self.state is None or self.start_after <= self.state.ncycles )
+    return Debug.global_enabled and ( flag in self.enabled_flags )
+    # TODO: disabled start_after
+    #  and ( self.state is None or self.start_after <= self.state.ncycles )
 
   #---------------------------------------------------------------------
   # set_state
