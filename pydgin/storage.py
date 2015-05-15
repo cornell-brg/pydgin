@@ -16,15 +16,16 @@ except ImportError:
 # RegisterFile
 #-----------------------------------------------------------------------
 class RegisterFile( object ):
-  def __init__( self, constant_zero=True, num_regs=32 ):
+  _immutable_fields_ = [ 'state', '_setitemimpl' ]
+  def __init__( self, state, constant_zero=True, num_regs=32 ):
     self.num_regs = num_regs
     self.regs     = [0] * self.num_regs
-    self.debug    = Debug()
+    self.state    = state
 
     if constant_zero: self._setitemimpl = self._set_item_const_zero
     else:             self._setitemimpl = self._set_item
   def __getitem__( self, idx ):
-    if self.debug.enabled( "rf" ):
+    if self.state.debug.enabled( "rf" ):
       print ':: RD.RF[%s] = %s' % (
                           pad( "%d" % idx, 2 ),
                           pad_hex( self.regs[idx]) ),
@@ -34,14 +35,14 @@ class RegisterFile( object ):
 
   def _set_item( self, idx, value ):
     self.regs[idx] = value
-    if self.debug.enabled( "rf" ):
+    if self.state.debug.enabled( "rf" ):
       print ':: WR.RF[%s] = %s' % (
                         pad( "%d" % idx, 2 ),
                         pad_hex( self.regs[idx] ) ),
   def _set_item_const_zero( self, idx, value ):
     if idx != 0:
       self.regs[idx] = value
-      if self.debug.enabled( "rf" ):
+      if self.state.debug.enabled( "rf" ):
         print ':: WR.RF[%s] = %s' % (
                           pad( "%d" % idx, 2 ),
                           pad_hex( self.regs[idx] ) ),
@@ -87,10 +88,11 @@ def Memory( data=None, size=2**10, byte_storage=False ):
 #-------------------------------------------------------------------------
 # Memory that uses ints instead of chars
 class _WordMemory( object ):
+  _immutable_fields_ = [ 'state' ]
   def __init__( self, data=None, size=2**10 ):
     self.data  = data if data else [ r_uint32(0) ] * (size >> 2)
     self.size  = (len( self.data ) << 2)
-    self.debug = Debug()
+    self.state = None
 
     # TODO: pass data_section to memory for bounds checking
     self.data_section = 0x00000000
@@ -118,9 +120,9 @@ class _WordMemory( object ):
     word = start_addr >> 2
     byte = start_addr &  0b11
 
-    if self.debug.enabled( "mem" ):
+    if self.state.debug.enabled( "mem" ):
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
-    if self.debug.enabled( "memcheck" ):
+    if self.state.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr, 'RD' )
 
     value = 0
@@ -135,7 +137,7 @@ class _WordMemory( object ):
     else:
       raise Exception('Invalid num_bytes: %d!' % num_bytes)
 
-    if self.debug.enabled( "mem" ):
+    if self.state.debug.enabled( "mem" ):
       print '%s' % pad_hex( value ),
 
     return value
@@ -155,7 +157,7 @@ class _WordMemory( object ):
     word = start_addr >> 2
     byte = start_addr &  0b11
 
-    if self.debug.enabled( "memcheck" ):
+    if self.state and self.state.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr, 'WR' )
 
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
@@ -171,7 +173,7 @@ class _WordMemory( object ):
     else:
       raise Exception('Invalid num_bytes: %d!' % num_bytes)
 
-    if self.debug.enabled( "mem" ):
+    if self.state and self.state.debug.enabled( "mem" ):
       print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
                                      pad_hex( value ) ),
     self.data[ word ] = r_uint32( value )
@@ -180,10 +182,11 @@ class _WordMemory( object ):
 # _ByteMemory
 #-----------------------------------------------------------------------
 class _ByteMemory( object ):
+  _immutable_fields_ = [ 'state' ]
   def __init__( self, data=None, size=2**10 ):
     self.data  = data if data else [' '] * size
     self.size  = len( self.data )
-    self.debug = Debug()
+    self.state = None
 
   def bounds_check( self, addr ):
     # check if the accessed data is larger than the memory size
@@ -196,15 +199,15 @@ class _ByteMemory( object ):
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
-    if self.debug.enabled( "memcheck" ):
+    if self.state.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr )
     value = 0
-    if self.debug.enabled( "mem" ):
+    if self.state.debug.enabled( "mem" ):
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
     for i in range( num_bytes-1, -1, -1 ):
       value = value << 8
       value = value | ord( self.data[ start_addr + i ] )
-    if self.debug.enabled( "mem" ):
+    if self.state.debug.enabled( "mem" ):
       print '%s' % pad_hex( value ),
     return value
 
@@ -222,9 +225,9 @@ class _ByteMemory( object ):
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
-    if self.debug.enabled( "memcheck" ):
+    if self.state and self.state.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr )
-    if self.debug.enabled( "mem" ):
+    if self.state and self.state.debug.enabled( "mem" ):
       print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
                                      pad_hex( value ) ),
     for i in range( num_bytes ):

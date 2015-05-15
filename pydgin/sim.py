@@ -33,6 +33,8 @@ def jitpolicy(driver):
 
 class Sim( object ):
 
+  _immutable_fields_ = [ 'state' ]
+
   def __init__( self, arch_name, jit_enabled=False ):
 
     self.arch_name   = arch_name
@@ -120,7 +122,7 @@ class Sim( object ):
   #-----------------------------------------------------------------------
   def run( self ):
     self = hint( self, promote=True )
-    s = self.state
+    s    = hint( self.state, promote=True )
 
     max_insts = self.max_insts
     jitdriver = self.jitdriver
@@ -135,6 +137,7 @@ class Sim( object ):
       )
 
       # constant-fold pc and mem
+      s   = hint( self.state, promote=True )
       pc  = hint( s.fetch_pc(), promote=True )
       old = pc
       mem = hint( s.mem, promote=True )

@@ -8,6 +8,7 @@ from pydgin.storage import RegisterFile
 # State
 #-----------------------------------------------------------------------
 class State( object ):
+  _immutable_fields_ = [ 'debug?', 'rf', 'mem' ]
   _virtualizable_ = ['pc', 'ncycles']
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
@@ -16,12 +17,11 @@ class State( object ):
     # lookups in the JIT), it needs to be an array as a member of the
     # State class. Couldn't figure out how to have rf a RegisterFile
     # object and still be virtualizable.
-    self.rf       = RegisterFile()
-    self.mem      = memory
+    self.rf        = RegisterFile( self )
+    self.mem       = memory
+    self.mem.state = self
 
-    self    .debug = debug
-    self.rf .debug = debug
-    self.mem.debug = debug
+    self.debug = debug
 
     # coprocessor registers
     self.status        = 0
