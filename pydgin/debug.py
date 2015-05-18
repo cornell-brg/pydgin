@@ -9,7 +9,7 @@ from pydgin.jit import elidable
 #-----------------------------------------------------------------------
 # a class that contains different debug flags
 class Debug( object ):
-  _immutable_fields_ = [ 'enabled_flags', 'start_after', 'state' ]
+  _immutable_fields_ = [ 'enabled_flags?', 'start_after', ]
 
   # NOTE: it doesn't seem possible to have conditional debug prints
   # without incurring performance losses. So, instead we are
@@ -20,28 +20,47 @@ class Debug( object ):
   global_enabled = False
 
   def __init__( self, flags = [], start_after = 0 ):
-    self.enabled_flags = flags
     self.start_after = start_after
-    # we need the state to check the number of cycles
-    self.state = None
+    # enable this only if start_after is 0 (start from the beginning)
+    self._enabled = ( start_after == 0 )
+    self._enabled_flags = flags
+    if self._enabled:
+      self.enabled_flags = flags
+    else:
+      self.enabled_flags = []
 
   #---------------------------------------------------------------------
   # enabled
   #---------------------------------------------------------------------
   # Returns true if debugging is turned on in translation and the
   # particular flag is turned on in command line.
-  @elidable
   def enabled( self, flag ):
-    return Debug.global_enabled and ( flag in self.enabled_flags )
-    # TODO: disabled start_after
-    #  and ( self.state is None or self.start_after <= self.state.ncycles )
+    return self._enabled_impl( flag, self.enabled_flags )
 
   #---------------------------------------------------------------------
-  # set_state
+  # _enabled_impl
   #---------------------------------------------------------------------
-  # set the state so that we can get the ncycles
-  def set_state( self, state ):
-    self.state = state
+  # we separate the impl from the enabled so that we can elide this with
+  # the enabled_flags as an arg
+  @elidable
+  def _enabled_impl( self, flag, enabled_flags ):
+    return Debug.global_enabled and ( flag in enabled_flags )
+
+  #---------------------------------------------------------------------
+  # check_start_after
+  #---------------------------------------------------------------------
+  # if start after specified, and if ncycles has reached this, we enable
+  # debug by setting enabled_flags. Note that enabled_flags is a quasi-
+  # immutable
+  def check_start_after( self, ncycles ):
+    # if globally disabled or already locally enabled, skip
+    if not Debug.global_enabled or self._enabled:
+      return
+    elif ncycles >= self.start_after:
+      # enable the debug
+      print "Reached %s cycles, enabling debug" % ncycles
+      self._enabled = True
+      self.enabled_flags = self._enabled_flags
 
 #-------------------------------------------------------------------------
 # pad

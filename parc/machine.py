@@ -8,8 +8,10 @@ from pydgin.storage import RegisterFile
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  _immutable_fields_ = [ 'debug?', 'rf', 'mem' ]
-  _virtualizable_ = ['pc', 'ncycles']
+  _immutable_fields_ = [ 'debug', 'rf', 'mem' ]
+  # XXX: had to disable virtualizable for quasi immutables. enabling this
+  # causes an rpython crash. most likely a bug in rpython
+  #_virtualizable_    = ['pc', 'ncycles']
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
 
@@ -21,7 +23,7 @@ class State( object ):
     self.mem       = memory
     self.mem.state = self
 
-    self.debug = debug
+    self.debug       = debug
 
     # coprocessor registers
     self.status        = 0

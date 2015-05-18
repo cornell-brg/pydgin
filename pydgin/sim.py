@@ -44,7 +44,8 @@ class Sim( object ):
     if jit_enabled:
       self.jitdriver = JitDriver( greens =['pc',],
                                   reds   = ['max_insts', 'state', 'sim',],
-                                  virtualizables  =['state',],
+                                  # XXX: disabled virtualizables
+                                  #virtualizables  =['state',],
                                   get_printable_location=self.get_location,
                                 )
 
@@ -185,6 +186,8 @@ class Sim( object ):
         break
 
       if s.fetch_pc() < old:
+        # at target loop boundary, we check if we should enable debugging
+        s.debug.check_start_after( s.ncycles )
         jitdriver.can_enter_jit(
           pc        = s.fetch_pc(),
           max_insts = max_insts,
@@ -289,7 +292,7 @@ class Sim( object ):
 
       # create a Debug object which contains the debug flags
 
-      self.debug = Debug( debug_flags, debug_starts_after )
+      debug = Debug( debug_flags, debug_starts_after )
 
       filename = argv[ filename_idx ]
 
@@ -309,11 +312,7 @@ class Sim( object ):
       # Call ISA-dependent init_state to load program, initialize memory
       # etc.
 
-      self.init_state( exe_file, run_argv, envp )
-
-      # pass the state to debug for cycle-triggered debugging
-
-      self.debug.set_state( self.state )
+      self.init_state( exe_file, run_argv, envp, debug )
 
       # Close after loading
 

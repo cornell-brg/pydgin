@@ -43,7 +43,7 @@ class ParcSim( Sim ):
   # This method is called to load the program and initialize architectural
   # state
 
-  def init_state( self, exe_file, run_argv, run_envp ):
+  def init_state( self, exe_file, run_argv, run_envp, debug ):
 
     # Load the program into a memory object
 
@@ -57,7 +57,7 @@ class ParcSim( Sim ):
 
     if testbin: self.state = test_init   ( mem, debug )
     else:       self.state = syscall_init( mem, breakpoint, run_argv,
-                                           run_envp, self.debug )
+                                           run_envp, debug )
 
   #---------------------------------------------------------------------
   # run
