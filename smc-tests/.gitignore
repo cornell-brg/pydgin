@@ -1,0 +1,4 @@
+*.pypylog
+*.dump
+smc-test-native
+smc-test-parc
