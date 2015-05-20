@@ -83,6 +83,15 @@ def Memory( data=None, size=2**10, byte_storage=False ):
       return _WordMemory( data, size )
 
 #-----------------------------------------------------------------------
+# Version
+#-----------------------------------------------------------------------
+class Version( object ):
+  pass
+
+class InstVersion( Version ):
+  pass
+
+#-----------------------------------------------------------------------
 # Page
 #-----------------------------------------------------------------------
 # Represent a page of memory for the purpose of tracking code that
@@ -92,16 +101,21 @@ class Page( object ):
   _immutable_fields_ = [ 'version?' ]
 
   def __init__( self ):
-    self.version = 0
+    self.version = Version()
 
-  def increment_version( self ):
-    self.version += 1
+  def mark_data( self ):
+    assert isinstance( self.version, InstVersion )
+    self.version = Version()
+
+  def mark_inst( self ):
+    assert not isinstance( self.version, InstVersion )
+    self.version = InstVersion()
 
   def is_data( self ):
-    return not (self.version & 1)
+    return not isinstance( self.version, InstVersion )
 
   def is_inst( self ):
-    return self.version & 1
+    return isinstance( self.version, InstVersion )
 
 
 #-------------------------------------------------------------------------
@@ -195,11 +209,6 @@ class _WordMemory( object ):
       return new_page
     return page
 
-  # utility function to increment the version of the page corresponding to
-  # this address
-  def increment_page( self, addr ):
-    self.get_page( addr ).increment_version()
-
   # this is instruction read, which is otherwise identical to read. The
   # only difference is the elidable annotation, which we assume the
   # instructions are not modified (no side effects, assumes the addresses
@@ -214,10 +223,10 @@ class _WordMemory( object ):
   # version. by marking the version quasi-immutable, we can invalidate the
   # compiled jit when the version changes
   @elidable
-  def _iread_impl( self, start_addr, num_bytes, _version ):
-    # the least significant bit of version indicates instruction page
-    if _version & 1 == 0:
-      self.increment_page( start_addr )
+  def _iread_impl( self, start_addr, num_bytes, version ):
+    # if not an inst version, mark it
+    if not isinstance( version, InstVersion ):
+      self.get_page( start_addr ).mark_inst()
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
     return widen( self.data[ start_addr >> 2 ] )
 
@@ -252,7 +261,7 @@ class _WordMemory( object ):
     page = self.get_page_noelide( start_addr )
     if page.is_inst():
       print "marking inst page a data page"
-      page.increment_version()
+      page.mark_data()
     self.data[ word ] = r_uint32( value )
 
 #-----------------------------------------------------------------------
