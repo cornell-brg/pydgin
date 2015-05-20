@@ -82,11 +82,34 @@ def Memory( data=None, size=2**10, byte_storage=False ):
     else:
       return _WordMemory( data, size )
 
+#-----------------------------------------------------------------------
+# Page
+#-----------------------------------------------------------------------
+# Represent a page of memory for the purpose of tracking code that
+# modifies the instruction segment. Does nothing interesting except
+# includes the quasi-immutable version.
+class Page( object ):
+  _immutable_fields_ = [ 'version?' ]
+
+  def __init__( self ):
+    self.version = 0
+
+  def increment_version( self ):
+    self.version += 1
+
+  def is_data( self ):
+    return not (self.version & 1)
+
+  def is_inst( self ):
+    return self.version & 1
+
+
 #-------------------------------------------------------------------------
 # _WordMemory
 #-------------------------------------------------------------------------
 # Memory that uses ints instead of chars
 class _WordMemory( object ):
+  _immutable_fields_ = [ 'page_shamt', 'num_pages', 'pages[*]' ]
   def __init__( self, data=None, size=2**10 ):
     self.data  = data if data else [ r_uint32(0) ] * (size >> 2)
     self.size  = (len( self.data ) << 2)
@@ -94,6 +117,14 @@ class _WordMemory( object ):
 
     # TODO: pass data_section to memory for bounds checking
     self.data_section = 0x00000000
+
+    # XXX: no idea if this is a good value
+    self.page_shamt = 8
+    self.num_pages = ( 0xffffffff >> self.page_shamt ) + 1
+    # Initializing all of the pages at initialization seems to be a big
+    # bottleneck. Instead, initializing a none array, and constructing
+    # Page objects as necessary
+    self.pages = [ None for i in xrange( self.num_pages ) ]
 
   def bounds_check( self, addr, x ):
     # check if the accessed data is larger than the memory size
@@ -140,12 +171,53 @@ class _WordMemory( object ):
 
     return value
 
+  # returns the page for this address
+  @elidable
+  def get_page( self, addr ):
+    page_idx = addr >> self.page_shamt
+    page = self.pages[ page_idx ]
+    # initialize page if not initialized
+    if page is None:
+      new_page = Page()
+      self.pages[ page_idx ] = new_page
+      return new_page
+    return page
+
+  # same as above, but not elidable to ensure it doesn't turn into a
+  # function call in the jit header
+  def get_page_noelide( self, addr ):
+    page_idx = addr >> self.page_shamt
+    page = self.pages[ page_idx ]
+    # initialize page if not initialized
+    if page is None:
+      new_page = Page()
+      self.pages[ page_idx ] = new_page
+      return new_page
+    return page
+
+  # utility function to increment the version of the page corresponding to
+  # this address
+  def increment_page( self, addr ):
+    self.get_page( addr ).increment_version()
+
   # this is instruction read, which is otherwise identical to read. The
   # only difference is the elidable annotation, which we assume the
   # instructions are not modified (no side effects, assumes the addresses
   # correspond to the same instructions)
-  @elidable
+  # note that modified iread a little, and this is not elidable anymore.
+  # instead, it calls elidale _iread_impl
   def iread( self, start_addr, num_bytes ):
+    return self._iread_impl( start_addr, num_bytes,
+                             self.get_page( start_addr ).version )
+
+  # this is the actual elidable implementation that also includes the
+  # version. by marking the version quasi-immutable, we can invalidate the
+  # compiled jit when the version changes
+  @elidable
+  def _iread_impl( self, start_addr, num_bytes, _version ):
+    # the least significant bit of version indicates instruction page
+    if _version & 1 == 0:
+      self.increment_page( start_addr )
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
     return widen( self.data[ start_addr >> 2 ] )
 
@@ -174,6 +246,13 @@ class _WordMemory( object ):
     if self.debug.enabled( "mem" ):
       print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
                                      pad_hex( value ) ),
+
+    # check if the page version is odd (indicates instruction page),
+    # change version
+    page = self.get_page_noelide( start_addr )
+    if page.is_inst():
+      print "marking inst page a data page"
+      page.increment_version()
     self.data[ word ] = r_uint32( value )
 
 #-----------------------------------------------------------------------
