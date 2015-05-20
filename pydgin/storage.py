@@ -109,7 +109,7 @@ class Page( object ):
 #-------------------------------------------------------------------------
 # Memory that uses ints instead of chars
 class _WordMemory( object ):
-  _immutable_fields_ = [ 'page_shamt', 'num_pages', 'pages[*]' ]
+  _immutable_fields_ = [ 'page_shamt', 'num_pages' ]
   def __init__( self, data=None, size=2**10 ):
     self.data  = data if data else [ r_uint32(0) ] * (size >> 2)
     self.size  = (len( self.data ) << 2)
