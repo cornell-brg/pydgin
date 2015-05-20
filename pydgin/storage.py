@@ -121,10 +121,7 @@ class _WordMemory( object ):
     # XXX: no idea if this is a good value
     self.page_shamt = 8
     self.num_pages = ( 0xffffffff >> self.page_shamt ) + 1
-    # Initializing all of the pages at initialization seems to be a big
-    # bottleneck. Instead, initializing a none array, and constructing
-    # Page objects as necessary
-    self.pages = [ None for i in xrange( self.num_pages ) ]
+    self.pages = [ Page() for i in xrange( self.num_pages ) ]
 
   def bounds_check( self, addr, x ):
     # check if the accessed data is larger than the memory size
@@ -175,25 +172,13 @@ class _WordMemory( object ):
   @elidable
   def get_page( self, addr ):
     page_idx = addr >> self.page_shamt
-    page = self.pages[ page_idx ]
-    # initialize page if not initialized
-    if page is None:
-      new_page = Page()
-      self.pages[ page_idx ] = new_page
-      return new_page
-    return page
+    return self.pages[ page_idx ]
 
   # same as above, but not elidable to ensure it doesn't turn into a
   # function call in the jit header
   def get_page_noelide( self, addr ):
     page_idx = addr >> self.page_shamt
-    page = self.pages[ page_idx ]
-    # initialize page if not initialized
-    if page is None:
-      new_page = Page()
-      self.pages[ page_idx ] = new_page
-      return new_page
-    return page
+    return self.pages[ page_idx ]
 
   # utility function to increment the version of the page corresponding to
   # this address
