@@ -17,6 +17,7 @@ from utils import (
   condition_passed,
   carry_from,
   borrow_from,
+  not_borrow_from,
   overflow_from_add,
   overflow_from_sub,
   sext_30,
@@ -496,7 +497,7 @@ def execute_cmp( s, inst ):
 
     s.N = (result >> 31)&1
     s.Z = trim_32( result ) == 0
-    s.C = not borrow_from( result )
+    s.C = not_borrow_from( result )
     s.V = overflow_from_sub( a, b, result )
 
     if inst.rd == 15:
@@ -890,7 +891,7 @@ def execute_rsb( s, inst ):
       if inst.rd == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
-      s.C = not borrow_from( result )
+      s.C = not_borrow_from( result )
       s.V = overflow_from_sub( b, a, result )
 
     if inst.rd == 15:
@@ -910,7 +911,7 @@ def execute_rsc( s, inst ):
       if inst.rd == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
-      s.C = not borrow_from( result )
+      s.C = not_borrow_from( result )
       s.V = overflow_from_sub( b, a, result )
 
     if inst.rd == 15:
@@ -930,7 +931,7 @@ def execute_sbc( s, inst ):
       if inst.rd == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
-      s.C = not borrow_from( result )
+      s.C = not_borrow_from( result )
       s.V = overflow_from_sub( a, b, result )
 
     if inst.rd == 15:
@@ -1111,7 +1112,7 @@ def execute_sub( s, inst ):
       if inst.rd == 15: raise FatalError('Writing SPSR not implemented!')
       s.N = (result >> 31)&1
       s.Z = trim_32( result ) == 0
-      s.C = not borrow_from( result )
+      s.C = not_borrow_from( result )
       s.V = overflow_from_sub( a, b, result )
 
     if inst.rd == 15:

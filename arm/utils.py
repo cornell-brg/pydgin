@@ -181,6 +181,17 @@ def borrow_from( result ):
   return result < 0
 
 #-----------------------------------------------------------------------
+# not_borrow_from
+#-----------------------------------------------------------------------
+# NOT BorrowFrom (ref: ARM DDI 0100I - Glossary-3) (more efficient than
+# "not borrow_from"
+#
+#  if result >= 0
+#
+def not_borrow_from( result ):
+  return result >= 0
+
+#-----------------------------------------------------------------------
 # overflow_from_add
 #-----------------------------------------------------------------------
 # OverflowFrom - Add (ref: ARM DDI 0100I - Glossary-11)
@@ -189,7 +200,7 @@ def borrow_from( result ):
 #    and operand_a[31] != result[31]
 #
 def overflow_from_add( a, b, result ):
-  return (a >> 31 == b >> 31) and (a >> 31 != (result>>31)&1)
+  return (a >> 31 == b >> 31) & (a >> 31 != (result>>31)&1)
 
 #-----------------------------------------------------------------------
 # overflow_from_sub
@@ -200,7 +211,7 @@ def overflow_from_add( a, b, result ):
 #    and operand_a[31] != result[31]
 #
 def overflow_from_sub( a, b, result ):
-  return (a >> 31 != b >> 31) and (a >> 31 != (result>>31)&1)
+  return (a >> 31 != b >> 31) & (a >> 31 != (result>>31)&1)
 
 #-----------------------------------------------------------------------
 # rotate_right
