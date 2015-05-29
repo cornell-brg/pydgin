@@ -53,6 +53,7 @@ class ArmSim( Sim ):
     if self.state.trig_state == 0 and bits == 0xe2811000:
       self.state.trig_state = 1
     elif self.state.trig_state == 1:
+      no_hook = False
       # increment hit count hook
       if bits == 0xe2822000:
         #print "trigger! pc: %s" % hex( self.state.pc )
@@ -71,6 +72,12 @@ class ArmSim( Sim ):
         self.state.finish_trigger()
       elif bits == 0xe2888000:
         self.state.fun_call_trigger()
+      else:
+        no_hook = True
+
+      # discount the hook instructions
+      if not no_hook:
+        self.state.ncycles -= 2
 
       self.state.trig_state = 0
 
