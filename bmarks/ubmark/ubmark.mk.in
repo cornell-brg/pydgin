@@ -20,6 +20,7 @@ ubmark_install_prog_srcs = \
   ubmark-cmplx-mult.cc \
   ubmark-masked-filter.cc \
   ubmark-bin-search.cc \
+  ubmark-gcd.cc \
 
 # Explicit LLVM bitcode files
 
