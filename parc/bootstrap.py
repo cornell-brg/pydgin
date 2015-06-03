@@ -245,7 +245,7 @@ def test_init( mem, debug ):
 
   # instantiate architectural state with memory and reset address
 
-  state = State( mem, debug, reset_addr=0x0400 )
+  state = State( mem, debug, reset_addr=0x808000 )
 
   return state
 

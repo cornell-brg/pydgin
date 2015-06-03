@@ -65,7 +65,7 @@ class Sim( object ):
   #-----------------------------------------------------------------------
   # This needs to be implemented in the child class
 
-  def init_state( self, exe_file, run_argv ):
+  def init_state( self, exe_file, exe_name, run_argv, testbin ):
     raise NotImplementedError()
 
   #-----------------------------------------------------------------------
@@ -306,7 +306,7 @@ class Sim( object ):
       # Call ISA-dependent init_state to load program, initialize memory
       # etc.
 
-      self.init_state( exe_file, run_argv, envp )
+      self.init_state( exe_file, filename, run_argv, envp, testbin )
 
       # pass the state to debug for cycle-triggered debugging
 

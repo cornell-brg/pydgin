@@ -38,6 +38,12 @@ class State( object ):
     self.src_ptr  = 0
     self.sink_ptr = 0
 
+    # indicate if this is running a self-checking test
+    self.testbin  = False
+
+    # executable name
+    self.exe_name = ""
+
     # syscall stuff... TODO: should this be here?
     self.breakpoint = r_uint( 0 )
 
