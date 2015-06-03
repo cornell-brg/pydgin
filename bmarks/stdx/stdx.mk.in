@@ -1,0 +1,80 @@
+#=========================================================================
+# Modular C++ Build System Subproject Makefile Fragment
+#=========================================================================
+# Please read the documenation in 'mcppbs-uguide.txt' for more details
+# on how the Modular C++ Build System works.
+
+stdx_intdeps  = @stdx_intdeps@
+stdx_cppflags = @stdx_cppflags@
+stdx_ldflags  = @stdx_ldflags@
+stdx_libs     = @stdx_libs@
+
+stdx_hdrs = \
+  stdx-ReflectionUtils.h \
+  stdx-DebugUtils.h \
+  stdx-StaticAssert.h \
+  stdx-Exception.h \
+  stdx-MiscUtils.h \
+  stdx-MathUtils.h \
+  stdx-Enum.h \
+  stdx-ImplPtr.h \
+  stdx-PreprocessorUtils.h \
+  stdx-StringUtils.h \
+  stdx-Delegate.h \
+  stdx-ContainerUtils.h \
+  stdx-FstreamUtils.h \
+  stdx-PairUtils.h \
+  stdx-InputRange.h \
+  stdx-HashMap.h \
+  stdx-BoundedQueue.h \
+  stdx-Timer.h \
+
+stdx_inls = \
+  stdx-ReflectionUtils.inl \
+  stdx-DebugUtils.inl \
+  stdx-StaticAssert.inl \
+  stdx-Exception.inl \
+  stdx-MiscUtils.inl \
+  stdx-MathUtils.inl \
+  stdx-Enum.inl \
+  stdx-ImplPtr.inl \
+  stdx-PreprocessorUtils.inl \
+  stdx-StringUtils.inl \
+  stdx-Delegate.inl \
+  stdx-ContainerUtils.inl \
+  stdx-InputRange.inl \
+  stdx-HashMap.inl \
+  stdx-BoundedQueue.inl \
+  stdx-Timer.inl \
+
+stdx_srcs = \
+  stdx-Exception.cc \
+  stdx-MathUtils.cc \
+  stdx-StringUtils.cc \
+  stdx-FstreamUtils.cc \
+  stdx-Timer.cc \
+
+stdx_test_srcs = \
+  stdx-ReflectionUtils.t.cc \
+  stdx-StaticAssert.t.cc \
+  stdx-Exception.t.cc \
+  stdx-MiscUtils.t.cc \
+  stdx-MathUtils.t.cc \
+  stdx-Enum.t.cc \
+  stdx-ImplPtr.t.cc \
+  stdx-PreprocessorUtils.t.cc \
+  stdx-StringUtils.t.cc \
+  stdx-Delegate.t.cc \
+  stdx-ContainerUtils.t.cc \
+  stdx-PairUtils.t.cc \
+  stdx-InputRange.t.cc \
+  stdx-HashMap.t.cc \
+  stdx-BoundedQueue.t.cc \
+  stdx-Timer.t.cc \
+
+# Currently the bit containers to not work on 64b machines
+#  stdx-BitContainer.h \
+#  stdx-BitContainer.inl \
+#  stdx-BitContainer.cc \
+#  stdx-BitContainer.t.cc \
+

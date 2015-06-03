@@ -1,0 +1,35 @@
+#=========================================================================
+# Modular C++ Build System Subproject Makefile Fragment
+#=========================================================================
+# Please read the documenation in 'mcppbs-uguide.txt' for more details
+# on how the Modular C++ Build System works.
+
+utst_intdeps  = @utst_intdeps@
+utst_cppflags = @utst_cppflags@
+utst_ldflags  = @utst_ldflags@
+utst_libs     = @utst_libs@
+
+utst_hdrs = \
+  utst-TestLog.h \
+  utst-Checks.h \
+  utst-ITestCase.h \
+  utst-ITestCase_BasicImpl.h \
+  utst-TestSuite.h \
+  utst-CommandLineTestDriver.h \
+  utst-AutoUtils.h \
+  utst.h \
+
+utst_inls = \
+  utst-Checks.inl \
+  utst-ITestCase_BasicImpl.inl \
+  utst-AutoUtils.inl \
+
+utst_srcs = \
+  utst-TestLog.cc \
+  utst-TestSuite.cc \
+  utst-CommandLineTestDriver.cc \
+  utst-AutoUtils.cc \
+
+utst_test_srcs = \
+  utst.t.cc \
+

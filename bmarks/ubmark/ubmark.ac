@@ -1,0 +1,82 @@
+#=========================================================================
+# Modular C++ Build System Subproject Autoconf Fragment
+#=========================================================================
+# Please read the documenation in 'mcppbs-uguide.txt' for more details
+# on how the Modular C++ Build System works.
+
+MCPPBS_SUBPROJECT([ubmark],[stdx,pinfo])
+
+#-------------------------------------------------------------------------
+# Host dependent configuration
+#-------------------------------------------------------------------------
+# Check to see if we are compiling for pisa tloops and if so then check for
+# the PISA LLVM toolchain (clang++)
+
+# Add command line option for compiling without clang as long as a
+# different subprject has not already added this command line option.
+
+AS_IF([ test "${added_without_clang_option}" != "yes" ],[
+  AC_ARG_WITH(clang,
+    AS_HELP_STRING([--without-clang],
+      [Do not use clang++ cross-compiler]),
+      [with_clang="no"],[with_clang="yes"])
+  added_without_clang_option="yes"
+])
+
+AC_SUBST([ubmark_clang])
+
+case ${host} in
+
+  mipsmaven*-*-*)
+
+    AC_CHECK_PROGS([ubmark_clang],[clang++],[no])
+    AS_IF([ test "${ubmark_clang}" = "no" ],[
+      AC_MSG_WARN([Cannot find clang++])
+    ])
+
+    AC_CACHE_CHECK(
+     [whether clang++ supports pisael-brg target],
+     [ac_cv_have_clang_pisael_brg],
+    [
+      AC_LANG([C++])
+
+      # Save old value of CC and CFLAGS
+      ac_save_CXX="$CXX"
+      ac_save_CXXFLAGS="$CXXFLAGS"
+
+      # Add the extra command line parameter
+      CXX="clang++"
+      CXXFLAGS="$CXXFLAGS -target pisael-brg"
+
+      # See if we can compile with this flag
+      AC_COMPILE_IFELSE([AC_LANG_SOURCE([int a;])],
+       [ac_cv_have_clang_pisael_brg="yes"],
+       [ac_cv_have_clang_pisael_brg="no"])
+
+      # Reset CFLAGS back to its original value
+      CXX="${ac_save_CXX}"
+      CXXFLAGS="${ac_save_CXXFLAGS}"
+    ])
+
+    AS_IF([ test "${ac_cv_have_clang_pisael_brg}" = "no" ],[
+      AC_MSG_WARN([clang++ does not support pisael-brg target])
+      ubmark_clang="no"
+    ])
+
+    AS_IF([ test "${ubmark_clang}" = "no" ],[
+      AC_MSG_WARN([will use standard cross compiler instead of clang])
+    ])
+
+    AS_IF([ test "${with_clang}" = "no" ],[
+      AC_MSG_WARN([choosing to use standard cross compiler instead of clang])
+      ubmark_clang="no"
+    ])
+
+  ;;
+
+  *-*-*)
+    ubmark_clang="no"
+  ;;
+
+esac
+

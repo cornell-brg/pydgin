@@ -1,0 +1,26 @@
+#=========================================================================
+# Modular C++ Build System Subproject Package Config
+#=========================================================================
+# Please read the documenation in 'mcppbs-uguide.txt' for more details
+# on how the Modular C++ Build System works.
+
+#-------------------------------------------------------------------------
+# Generic variables 
+#-------------------------------------------------------------------------
+
+prefix=@prefix@
+include_dir=${prefix}/include/pinfo
+lib_dir=${prefix}/lib
+
+#-------------------------------------------------------------------------
+# Keywords
+#-------------------------------------------------------------------------
+
+Name        : pinfo
+Version     : @PACKAGE_VERSION@
+Description : C++ unit testing framework
+Requires    : @pinfo_pkcdeps@
+Cflags      : -I${include_dir} @CPPFLAGS@ @pinfo_extra_cppflags@
+Libs        : -L${lib_dir} @LDFLAGS@ @pinfo_extra_ldflags@ \
+              -lpinfo @pinfo_extra_libs@
+

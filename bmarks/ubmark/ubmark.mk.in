@@ -1,0 +1,91 @@
+#=========================================================================
+# Modular C++ Build System Subproject Makefile Fragment
+#=========================================================================
+# Please read the documenation in 'mcppbs-uguide.txt' for more details
+# on how the Modular C++ Build System works.
+
+ubmark_intdeps  = @ubmark_intdeps@
+ubmark_cppflags = @ubmark_cppflags@
+ubmark_ldflags  = @ubmark_ldflags@
+ubmark_libs     = @ubmark_libs@
+
+ubmark_srcs = \
+  ubmark-vvadd-scalar.cc \
+  ubmark-cmplx-mult-scalar.cc \
+
+ubmark_clang_srcs = \
+
+ubmark_install_prog_srcs = \
+  ubmark-vvadd.cc \
+  ubmark-cmplx-mult.cc \
+  ubmark-masked-filter.cc \
+  ubmark-bin-search.cc \
+
+# Explicit LLVM bitcode files
+
+ubmark_llc_srcs = \
+
+ubmark_llc_lls = \
+
+#-------------------------------------------------------------------------
+# Rules for running benchmarks with --verify option
+#-------------------------------------------------------------------------
+
+ubmark_verify_outs := $(patsubst %.cc, %.out, $(ubmark_install_prog_srcs))
+$(ubmark_verify_outs) : %.out : %
+	$(RUN) $(RUNFLAGS) ./$< --impl all --verify 2>&1 | tee $@
+
+outs += $(ubmark_verify_outs)
+junk += $(ubmark_verify_outs)
+check-ubmark : $(ubmark_verify_outs)
+
+#-------------------------------------------------------------------------
+# Rules for running benchmarks using PISA LLVM toolchain
+#-------------------------------------------------------------------------
+
+# Note: Debug option (-g) is filtered out of the CXXFLAGS as custom LLVM
+# Passes set custom debug information in the toolchain to work correctly
+# and not disabling the debug option may cause them to fail.
+#
+# Note: ADDITIONAL_FLAGS captures the include paths to other external
+# project dependencies
+# Note: added _MIPS_ARCH_MAVEN define to the clang flags because some apps
+# do conditional compiling based on this
+
+UBMARK_CLANG            = @ubmark_clang@
+UBMARK_CXXFLAGS         = $(filter-out -g, $(CXXFLAGS))
+UBMARK_ADDITIONAL_FLAGS = $(filter %/stdx, $(ubmark_cppflags))
+UBMARK_CLANG_FLAGS      = $(UBMARK_CXXFLAGS) -MMD -MP -I. $(CPPFLAGS) \
+                          $(UBMARK_ADDITIONAL_FLAGS) -target pisael-brg -D_MIPS_ARCH_MAVEN
+UBMARK_LLC_FLAGS        = -O3 -march=pisael -relocation-model=static
+
+ubmark_clang_objs   := $(patsubst %.cc, %.o, $(ubmark_clang_srcs))
+ubmark_clang_deps   := $(patsubst %.cc, %.d, $(ubmark_clang_srcs))
+ubmark_llc_asms     := $(patsubst %.ll, %.s, $(ubmark_llc_lls))
+ubmark_llc_objs     := $(patsubst %.s,  %.o, $(ubmark_llc_asms))
+
+ifneq ($(UBMARK_CLANG),no)
+
+$(ubmark_clang_objs) : %.o : %.cc
+	$(UBMARK_CLANG) $(UBMARK_CLANG_FLAGS) -c $<
+
+$(ubmark_llc_asms) : %.s : %.ll
+	llc $(UBMARK_LLC_FLAGS) $< -o $@
+
+$(ubmark_llc_objs) : %.o : %.s
+	$(CC) -O3 -c $<
+
+ubmark_objs += $(ubmark_clang_objs)
+ubmark_objs += $(ubmark_llc_objs)
+ubmark_deps += $(ubmark_clang_deps)
+ubmark_junk += \
+  $(ubmark_clang_objs) \
+  $(ubmark_clang_deps) \
+  $(ubmark_llc_asms) \
+  $(ubmark_llc_objs) \
+
+else
+ubmark_srcs += $(ubmark_clang_srcs) $(ubmark_llc_srcs)
+endif
+
+

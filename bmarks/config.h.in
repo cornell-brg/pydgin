@@ -1,0 +1,193 @@
+/* config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define if we should include subproject aes */
+#undef HAVE_AES
+
+/* Define if we should include subproject bfs */
+#undef HAVE_BFS
+
+/* Define if we should include subproject bilateral */
+#undef HAVE_BILATERAL
+
+/* Define if we should include subproject bintree */
+#undef HAVE_BINTREE
+
+/* Define if we should include subproject bksb */
+#undef HAVE_BKSB
+
+/* Define if we should include subproject MCPPBS_SPROJ */
+#undef HAVE_BTHREAD
+
+/* Define if we should include subproject conv */
+#undef HAVE_CONV
+
+/* Define if we should include subproject covariance */
+#undef HAVE_COVARIANCE
+
+/* Define if we should include subproject distance */
+#undef HAVE_DISTANCE
+
+/* Define if we should include subproject dither */
+#undef HAVE_DITHER
+
+/* Define if we should include subproject dynprog */
+#undef HAVE_DYNPROG
+
+/* Define if we should include subproject fir */
+#undef HAVE_FIR
+
+/* Define if we should include subproject heapsort */
+#undef HAVE_HEAPSORT
+
+/* Define if we should include subproject hist */
+#undef HAVE_HIST
+
+/* Define if we should include subproject huffman */
+#undef HAVE_HUFFMAN
+
+/* Define if we should include subproject imgthreshold */
+#undef HAVE_IMGTHRESHOLD
+
+/* Define if we should include subproject kmeans */
+#undef HAVE_KMEANS
+
+/* Define if we should include subproject knapsack */
+#undef HAVE_KNAPSACK
+
+/* Define if we should include subproject median */
+#undef HAVE_MEDIAN
+
+/* Define if we should include subproject mibench-adpcmdec */
+#undef HAVE_MIBENCH_ADPCMDEC
+
+/* Define if we should include subproject mriq */
+#undef HAVE_MRIQ
+
+/* Define if we should include subproject mst */
+#undef HAVE_MST
+
+/* Define if we should include subproject mstpbbs */
+#undef HAVE_MSTPBBS
+
+/* Define if we should include subproject parsec-scluster */
+#undef HAVE_PARSEC_SCLUSTER
+
+/* Define if we should include subproject pbbs-common */
+#undef HAVE_PBBS_COMMON
+
+/* Define if we should include subproject pbbs-dr */
+#undef HAVE_PBBS_DR
+
+/* Define if we should include subproject pbbs-knn */
+#undef HAVE_PBBS_KNN
+
+/* Define if we should include subproject pbbs-mm */
+#undef HAVE_PBBS_MM
+
+/* Define if we should include subproject pbbs-mst */
+#undef HAVE_PBBS_MST
+
+/* Define if we should include subproject pchase */
+#undef HAVE_PCHASE
+
+/* Define if we should include subproject MCPPBS_SPROJ */
+#undef HAVE_PINFO
+
+/* Define if we should include subproject polyhs */
+#undef HAVE_POLYHS
+
+/* Define if we should include subproject pq */
+#undef HAVE_PQ
+
+/* Define if we should include subproject quicksort */
+#undef HAVE_QUICKSORT
+
+/* Define if we should include subproject rgb2cmyk */
+#undef HAVE_RGB2CMYK
+
+/* Define if we should include subproject rpass */
+#undef HAVE_RPASS
+
+/* Define if we should include subproject rsort */
+#undef HAVE_RSORT
+
+/* Define if we should include subproject sad */
+#undef HAVE_SAD
+
+/* Define if we should include subproject saxpy */
+#undef HAVE_SAXPY
+
+/* Define if we should include subproject sfxarr */
+#undef HAVE_SFXARR
+
+/* Define if we should include subproject sgemm */
+#undef HAVE_SGEMM
+
+/* Define if we should include subproject sha */
+#undef HAVE_SHA
+
+/* Define if we should include subproject splash2-fft */
+#undef HAVE_SPLASH2_FFT
+
+/* Define if we should include subproject MCPPBS_SPROJ */
+#undef HAVE_STDX
+
+/* Define if we should include subproject stencil */
+#undef HAVE_STENCIL
+
+/* Define if we should include subproject strsearch */
+#undef HAVE_STRSEARCH
+
+/* Define if we should include subproject strsearchw */
+#undef HAVE_STRSEARCHW
+
+/* Define if we should include subproject symm */
+#undef HAVE_SYMM
+
+/* Define if we should include subproject ubmark */
+#undef HAVE_UBMARK
+
+/* Define if we should include subproject ubmark-grow */
+#undef HAVE_UBMARK_GROW
+
+/* Define if we should include subproject ubmark-mvmult */
+#undef HAVE_UBMARK_MVMULT
+
+/* Define if we should include subproject ubmark-xloops */
+#undef HAVE_UBMARK_XLOOPS
+
+/* Define if we should include subproject MCPPBS_SPROJ */
+#undef HAVE_UTST
+
+/* Define if we should include subproject viterbi */
+#undef HAVE_VITERBI
+
+/* Define if we should include subproject warshall */
+#undef HAVE_WARSHALL
+
+/* Define if we should include subproject wc */
+#undef HAVE_WC
+
+/* Define if we should include subproject MCPPBS_SPROJ */
+#undef HAVE_XL
+
+/* Define if we should include subproject xloops-common */
+#undef HAVE_XLOOPS_COMMON
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION

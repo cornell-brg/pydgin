@@ -1,0 +1,21 @@
+#=========================================================================
+# Modular C++ Build System Subproject Makefile Fragment
+#=========================================================================
+# Please read the documenation in 'mcppbs-uguide.txt' for more details
+# on how the Modular C++ Build System works.
+
+pinfo_intdeps  = @pinfo_intdeps@
+pinfo_cppflags = @pinfo_cppflags@
+pinfo_ldflags  = @pinfo_ldflags@
+pinfo_libs     = @pinfo_libs@
+
+pinfo_hdrs = \
+  pinfo-ProgramInfo.h \
+  pinfo.h \
+
+pinfo_srcs = \
+  pinfo-ProgramInfo.cc \
+
+pinfo_test_srcs = \
+  pinfo-ProgramInfo.t.cc \
+

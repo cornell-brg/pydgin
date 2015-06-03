@@ -1,0 +1,26 @@
+#=========================================================================
+# Modular C++ Build System Subproject Package Config
+#=========================================================================
+# Please read the documenation in 'mcppbs-uguide.txt' for more details
+# on how the Modular C++ Build System works.
+
+#-------------------------------------------------------------------------
+# Generic variables
+#-------------------------------------------------------------------------
+
+prefix=@prefix@
+include_dir=${prefix}/include/utst
+lib_dir=${prefix}/lib
+
+#-------------------------------------------------------------------------
+# Keywords
+#-------------------------------------------------------------------------
+
+Name        : utst
+Version     : @PACKAGE_VERSION@
+Description : C++ unit testing framework
+Requires    : @utst_pkcdeps@
+Cflags      : -I${include_dir} @CPPFLAGS@ @utst_extra_cppflags@
+Libs        : -L${lib_dir} @LDFLAGS@ @utst_extra_ldflags@ \
+              -lutst @utst_extra_libs@
+

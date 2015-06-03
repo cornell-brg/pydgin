@@ -1,0 +1,188 @@
+#=========================================================================
+# Modular C++ Build System Subproject Autoconf Fragment
+#=========================================================================
+# Please read the documenation in 'mcppbs-uguide.txt' for more details
+# on how the Modular C++ Build System works.
+
+MCPPBS_SUBPROJECT([stdx])
+
+#-------------------------------------------------------------------------
+# Check for GNU __PRETTY_FUNCTION__
+#-------------------------------------------------------------------------
+# The C99 standard specifies a __func__ magic variable which the
+# compiler sets to be the name of the current function. The GNU compiler
+# has an extension called __PRETTY_FUNCTION__ which is similar to
+# __func__ but it prints out more information (return types, namespace,
+# argument types) for C++ functions. In this check we see if
+# __PRETTY_FUNCTION__ exists.
+
+AC_CACHE_CHECK(
+ [whether compiler supports GNU __PRETTY_FUNCTION__],
+ [ac_cv_have_gnu_pretty_function],
+[
+  AC_LANG([C++])
+
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+  [[
+    /* No preamble needed */
+  ]],[[
+    const char* func_name = __PRETTY_FUNCTION__;
+  ]])],
+   [ac_cv_have_gnu_pretty_function="yes"],
+   [ac_cv_have_gnu_pretty_function="no"])
+
+])
+
+AS_IF([test "$ac_cv_have_gnu_pretty_function" = "yes"],
+[
+  AC_DEFINE([STDX_HAVE_GNU_PRETTY_FUNCTION],,
+   [Define if GNU __PRETTY_FUNCTION__ is available])
+])
+
+#-------------------------------------------------------------------------
+# Check for abi::__cxa_demangle
+#-------------------------------------------------------------------------
+# The cross-vendor C++ application binary interface specifies a
+# __cxa_demangle() function which can demangle C++ type names. In this
+# check we try calling the function to see if it is available.
+
+AC_CACHE_CHECK(
+ [whether compiler supports abi::__cxa_demangle],
+ [ac_cv_have_abi_cxa_demangle],
+[
+  AC_LANG([C++])
+
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+  [[
+    #include <typeinfo>
+    #include <cstdlib>
+    #include <cxxabi.h>
+
+    template <typename T>
+    struct Foo { };
+  ]],[[
+    Foo<int> foo;
+    int err;
+    char* output = abi::__cxa_demangle( typeid(foo).name(), 0, 0, &err );
+    free(output);
+  ]])],
+   [ac_cv_have_abi_cxa_demangle="yes"],
+   [ac_cv_have_abi_cxa_demangle="no"])
+
+])
+
+AS_IF([test "$ac_cv_have_abi_cxa_demangle" = "yes"],
+[
+  AC_DEFINE([STDX_HAVE_ABI_CXA_DEMANGLE],,
+   [Define if abi::__cxa_demangle is available])
+])
+
+#-------------------------------------------------------------------------
+# Check for tr1::unordered_map
+#-------------------------------------------------------------------------
+# The TR1 specifies a new unordered_map container (ie. a hash table).
+# Unfortunately, there is a bug in the gcc-4.0.0 implementation of this
+# container's const find methods (this is the standard compiler shiped
+# with Mac OS X 10.4). So in this check we see if we can instantiate an
+# unordered_map and we also check to see if the const bug is fixed.
+
+AC_CACHE_CHECK(
+ [whether compiler supports tr1::unordered_map],
+ [ac_cv_have_tr1_unordered_map],
+[
+  AC_LANG([C++])
+
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+  [[
+    #include <tr1/unordered_map>  
+  ]],[[
+    const std::tr1::unordered_map<int,int> map;
+    map.find(1);
+  ]])],
+   [ac_cv_have_tr1_unordered_map="yes"],
+   [ac_cv_have_tr1_unordered_map="no"])
+
+])
+
+AS_IF([test "$ac_cv_have_tr1_unordered_map" = "yes"],
+[
+  AC_DEFINE([STDX_HAVE_TR1_UNORDERED_MAP],,
+   [Define if tr1::unordered_map is available])
+])
+
+#-------------------------------------------------------------------------
+# Check for gnu variadic macro extension
+#-------------------------------------------------------------------------
+# GNU CPP has two extensions to the basic CPP support for variadic
+# macros. First it allows one to actually name the variadic argument
+# list like this:
+#
+#  #define FOO( arg0_, args_... )
+#
+# And second it can remove the comma preceeding a variadic argument use
+# when there are no variadic arguments like this:
+#
+#  #define FOO( arg0_, args_... ) foo( arg0_, ## args_ );
+#
+# In this example, if FOO is called with just one argument, then the
+# preprocessor will remove the comma before args_ in the call the
+# function foo. We use these features extensively in our preprocessor
+# utils and unfortunately there is no portable replacement. So if this
+# feature is not available the configuration has to fail for now.
+
+AC_CACHE_CHECK(
+ [whether preprocessor supports GNU variadic macro extensions],
+ [ac_cv_have_gnu_cpp_variadic_extensions],
+[
+  AC_LANG([C++])
+
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+  [[
+    int foo( int a0 ) { return a0; }
+    int foo( int a0, int a1 ) { return a1; }
+    int foo( int a0, int a1, int a2 ) { return a2; }
+    #define FOO( arg0_, args_... ) foo( arg0_, ## args_ );
+  ]],[[
+    FOO( 0 );
+    FOO( 0, 1 );
+    FOO( 0, 1, 2 );
+  ]])],
+   [ac_cv_have_gnu_cpp_variadic_extensions="yes"],
+   [ac_cv_have_gnu_cpp_variadic_extensions="no"])
+
+])
+
+AS_IF([test "$ac_cv_have_gnu_cpp_variadic_extensions" = "no"],
+[
+  AC_MSG_ERROR([The stdx subproject requires support for the GNU CPP
+  variadic macro extensions])
+])
+
+#-------------------------------------------------------------------------
+# Check for getrusage
+#-------------------------------------------------------------------------
+# We check to see if getrusage is available in <sys/resource.h>.
+
+AC_CACHE_CHECK(
+ [whether system supports getrusage],
+ [ac_cv_have_getrusage],
+[
+  AC_LANG([C++])
+
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+  [[
+    #include <sys/resource.h>
+  ]],[[
+    rusage ru;
+    getrusage( RUSAGE_SELF, &ru );
+  ]])],
+   [ac_cv_have_getrusage="yes"],
+   [ac_cv_have_getrusage="no"])
+
+])
+
+AS_IF([test "$ac_cv_have_getrusage" = "yes"],
+[
+  AC_DEFINE([STDX_HAVE_GETRUSAGE],,[Define if getrusage is available])
+])
+

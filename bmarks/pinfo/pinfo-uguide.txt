@@ -1,0 +1,298 @@
+==========================================================================
+Program Info User Guide
+==========================================================================
+# Contributors:
+#  - Krste Asanovic, ICSI/UCB/MIT, krste@mit.edu
+#  - David Johnson, ICSI/UCB, davidj@icsi.berkeley.edu
+#  - Ronny Krashinsky, MIT, ronny@mit.edu
+#
+# (c) 1993-1998 International Computer Science Institute
+# (c) 1993-1998 The Regents of the University of California
+# (c) 1998-2002 Massachusetts Institute of Technology
+
+The ProgramInfo class provides the following functionality for
+simulation programs and associated libraries:
+
+ - Allow modules to specify and extract the command line arguments
+ - Provide usage messages and report errors for invalid arguments
+ - Have a standard mechanism for reporting module version information
+ - Provide a consistent interface for error handling
+
+ Table of Contents
+  1. Overview of Program Modifications
+  2. Specifying Arguments
+  3. Extracting Arguments
+  4. Example Code
+  5. General Comments
+
+--------------------------------------------------------------------------
+1. Overview of Program Modifications
+--------------------------------------------------------------------------
+
+The following changes are typical of those required to use the
+ProgramInfo class:
+
+ - Remove all argument parsing code from 'main()', and replace it with
+   calls to the 'info' member functions for all major objects refered by
+   main. This code should be followed by calls to specify any arguments
+   required by the main routine itself. Finally, argc and argv are
+   passed to the program_info object.
+
+ - Add the 'info' static member function to all classes requiring their
+   own arguments. These specify the name of the class, declares the
+   required arguments and calls the 'info' function for any major
+   classes it uses.
+
+ - Change the constructors of major objects to extract option
+   information from the global 'ProgramInfo::instance()' object, rather
+   than from constructor parameters.
+
+ - Add functions to each major object for reporting errors and warnings
+   these are simply calls to the 'ProgramInfo::instance()' error/warning
+   routines.
+
+ - Change any output of errors/warnings to use the above routines.
+
+--------------------------------------------------------------------------
+2. Specifying Arguments
+--------------------------------------------------------------------------
+
+A quick bit of terminology first. A positional argument is one which has
+no '-'. It is typically a file name (eg. '/dev/null'). An optional
+argument is one with a name preceded by a '-' (eg. '-m 0x1234'). A flag
+is an optional argument with no value (eg. '-v').
+
+Both the main routine and the class 'info' functions need to specify
+their argument requirements. This is done by calling the
+'ProgramInfo::instance().add_arg()' routine. This takes four arguments -
+the argument name, a name for its value, a default value and a comment.
+For positional arguments, the first paramater is a single character
+string indication the position of the argument on the command line.
+Flags are specified with no value name, and compulsory arguments are
+specified by having no default value.
+
+Here is ane example of a flag.
+
+ pinfo::ProgramInfo& pi = pinfo::ProgramInfo::instance();
+ pi.add_arg( "-v", NULL, NULL, "Verbose" );
+
+An example of an optional argument with a default value of 1 - note the
+default value is always a string.
+
+ pinfo::ProgramInfo& pi = pinfo::ProgramInfo::instance();
+ pi.add_arg( "-r", "integer", "1", "Random number seed" );
+
+A example of a postional argument called "elf-file" with no default
+(ie. it must be provided on the command line)
+
+ pinfo::ProgramInfo& pi = pinfo::ProgramInfo::instance();
+ pi.add_arg( "1", "elf-file", NULL, "Name of executable file" );
+
+After specifying the above arguments, the usage message provided by
+ProgramInfo would be as follows:
+
+ Usage: test-program [<options>] <elf-file>
+ where <options> is zero or more of:
+   -help           Show this usage message
+   -V              Show program version information
+   -v              Verbose
+   -r <integer=1>  Random number seed
+
+Note the '-help' and '-V' are provided by 'ProgramInfo'. This usage
+message is output automatically by ProgramInfo when an invalid argument
+is specified or in response to '-help'.
+
+Arguments can be specified multiple times - paramaters in later calls to
+add_arg overide those in previous ones. This allows multiple modules to
+access the same argument (eg. '-v'), and is also useful for overiding
+the default values or comments of a specific arguments (typically in
+'main').
+
+It is also possible to specify argument '*'. This can be used to extract
+a specific positional argument and all arguments that follow it.
+
+--------------------------------------------------------------------------
+3. Extracting Arguments
+--------------------------------------------------------------------------
+
+The simplest way of getting an argument is to just get its string
+values.
+
+ kernel_name = program_info.get_string("-kernel");
+
+The value returned is a 'const char*' - it should not be modified.
+
+Other extractors are provided for common argument types...
+
+ static long     get_long( const char* arg );
+ static long     get_ulong( const cahr* arg );
+ static int      get_binary( const char* arg );
+ static int      get_flag( const char* arg );
+ static double   get_double( const char* arg );
+ static ostream& get_logstream( const char* arg );
+
+'get_long' returns a 'long', which can be specified in hex or octal (see
+'strtol(3)' for more details). 'get_ulong' returns an 'unsigned long',
+which can be specified in hex or octal (see 'strtoul(3)' for more
+details). 'get_binary' is for optional arguments which can only take the
+values "0" or "1" - 0 or 1 is returned. 'get_flag' returns 0 if the flag
+is not present, 1 if it is. 'get_double' returns a double precision
+floating point value.
+
+'get_logstream' returns an ostream& suitable for outputting log
+information on. A value of '-' (either as default or on the command
+line) returns a reference to 'cout', otherwise the argument value is
+used as a file name and that file is opened for output. Errors are
+handled within 'ProgramInfo' - the program exits with a non-zero return
+code if the file cannot be opened. Note that an 'ofstream' is created in
+the 'ProgramInfo' object for every non-cout logfile, and this is only
+closed when the program terminates (using 'exit' or return from 'main').
+When two or more logfile arguments have the same file name, only one
+'ofstream' is created, and 'get_logstream' returns the same 'ostream&'
+for each logfile.
+
+--------------------------------------------------------------------------
+4. Example Code
+--------------------------------------------------------------------------
+
+Below is a typical main routine.
+
+ #include "pinfo-ProgramInfo.h"
+
+ int main(int argc, char** argv)
+ {
+   long seed;           // Random number seed
+   const char *infile;  // Input file name
+   const char *outfile; // Output file name
+   int res;             // Result from testing
+
+   pinfo::ProgramInfo& pi = pinfo::ProgramInfo::instance();
+
+   pi.add_arg( "-v", NULL,       NULL, "Verbose"                 );
+   pi.add_arg( "-r", "integer",  "1",  "Random number seed"      );
+   pi.add_arg( "-o", "file",     "",   "Memory dump file"        );
+   pi.add_arg( "1",  "elf-file", NULL, "Name of executable file" );
+
+   HTIF_T0ISA::info();
+   Test_server::info();
+
+   pi.add_arg( "-m", "memsize", "0x20000" );
+   pi.parse_args(argc, argv);
+
+   seed    = pi.get_long("-r");
+   infile  = pi.get_string("1");
+   outfile = pi.get_string("-o");
+   ...
+
+Note the order of operations - add arguments, call info member
+functions, overide default values, parse arguments, access arguments.
+
+Each major object needs a static 'info' routine, which is called early
+in 'main'. Below is a typical example:
+
+ class Test_server {
+   ...
+   static void info();
+   ...
+ };
+
+ void Test_server::info()
+ {
+   pinfo::ProgramInfo& pi = pinfo::ProgramInfo::instance();
+   pi.add_module( "Test_server", VERSION );
+   pi.add_arg( "-v",      NULL,      NULL, "Verbose"                             );
+   pi.add_arg( "-log",    "logfile", "-",  "Destination for system log messages" );
+   pi.add_arg( "-dregs",  NULL,      NULL, "Dump diagnostic registers"           );
+   pi.add_arg( "-kernel", "file",    "",   "Kernel executable to load first"     );
+
+   ELF_Loader::info();
+ }
+
+Note the registration of the module name at the beginning, and the
+invocation of other info routines at the end.
+
+Arguments are usually extracted by constructors:
+
+ PK_server::PK_server( HTIF& a_t0 )
+  : t0(a_t0),
+    argmem(a_t0),
+    host_syscaller(argmem),
+    verbose(pinfo::ProgramInfo::instance().get_flag("-v")),
+    warnings(pinfo::ProgramInfo::instance().get_flag("-syscall-warn")),
+    log(pinfo::ProgramInfo::instance().get_logstream("-log")),
+    kernel_name(pinfo::ProgramInfo::instance().get_string("-kernel"))
+ {
+   ...
+ }
+
+As can be seen, to add a simple argument only two lines of code (plus an
+associated variable) are needed.
+
+Each class can specify error and warning functions as follows:
+
+ class Test_server {
+
+  private:
+
+   ostream& warning() const
+   {
+     return pinfo::ProgramInfo::instance().warning("Test_server");
+   };
+
+   ostream& error() const
+   {
+     return pinfo::ProgramInfo::instance().error("Test_server");
+   };
+
+   ...
+ };
+
+And use them like this:
+
+ error() << "could not open output file " << outfile << "\n";
+ exit(EXIT_FAILURE);
+
+The error/warning routines return an 'ostream&', so they can be used
+just like 'cerr'. Note that the user must explicitly call 'exit' after
+'error()' if required.
+
+--------------------------------------------------------------------------
+5. General Comments
+--------------------------------------------------------------------------
+
+Using this scheme, arguments should be specified and used where they are
+actually required. For example, the '-m' option (memory size) is used by
+'T0_ISA' - the class responsible for actually allocating the memory.
+
+The following names should probably be standardised.
+
+ -v                               verbose
+ -r <integer=1>                   Random number seed
+ -o <file=>                       Memory dump file
+
+Objects should send general log information (typically enabled by '-v')
+to a logfile defaulting to '-'. This may need to be redirected, for
+example when running simulated programs, where the program also sends
+its output to 'cout'.
+
+Argument names share a global name space, so some care is needed in
+selecting them. In general, the more obscure the option, the longer the
+argument name should be. Some common options are listed below.
+
+ -help                            Show this usage message
+ -V                               Show program version information
+ -v                               verbose
+ -r <integer=1>                   Random number seed
+ -o <file=>                       Memory dump file
+ -syscall-warn <bool=1>           Warnings for unknown system calls
+ -strace-file <logfile=->         File for system call trace log
+ -strace                          Trace system calls
+ -log <logfile=->                 Destination for system log messages
+ -kernel <file=kernel.scale>      Name of kernel executable
+ -core <file=scale.core>          Name of file for core dumps
+ -dregs                           Dump diagnostic registers
+ -m <memsize=0x20000>             ISA simulator memory size
+ -isa-warn <bool=1>               Warn about unusual ISA simulator events
+ -dregs                           Dump diagnostic/performance registers
+ -fastmem <bool=0>                Bypass TSIP for writes to simulation memory
+
