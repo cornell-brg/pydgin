@@ -48,11 +48,11 @@
 
 import sys
 import os
+from pydgin.utils import r_uint, intmask
 
 try:
   from rpython.rtyper.lltypesystem import lltype
   from rpython.rtyper.lltypesystem import rffi
-  from rpython.rlib.rarithmetic import r_uint, intmask
   use_rpython = True
 except ImportError:
   use_rpython = False

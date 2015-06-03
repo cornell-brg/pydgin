@@ -4,7 +4,7 @@
 
 from machine import State
 from isa     import reg_map
-from rpython.rlib.rarithmetic import r_uint
+from pydgin.utils import r_uint
 
 # Currently these constants are set to match gem5
 memory_size = 2**29

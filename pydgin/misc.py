@@ -5,18 +5,17 @@
 import re
 import elf
 from jit import elidable
+from pydgin.utils import intmask, r_uint
 
 try:
   import py
   Source = py.code.Source
-  from rpython.rlib.rarithmetic import intmask, r_uint
 except ImportError:
   class Source:
     def __init__( self, src ):
       self.src = src
     def compile( self ):
       return self.src
-  intmask = lambda x : x
 
 #-----------------------------------------------------------------------
 # FatalError

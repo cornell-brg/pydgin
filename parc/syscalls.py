@@ -49,7 +49,7 @@
 from isa import reg_map
 import sys
 import os
-from rpython.rlib.rarithmetic import intmask
+from pydgin.utils import intmask
 
 #-----------------------------------------------------------------------
 # os state and helpers

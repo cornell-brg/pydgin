@@ -3,15 +3,22 @@
 #=======================================================================
 # General-purpose bitwise operation utilities.
 
-from rpython.rlib.rarithmetic import r_uint, intmask
-from rpython.rlib.objectmodel import specialize
+try:
+  from rpython.rlib.rarithmetic import r_uint, intmask
+  from rpython.rlib.objectmodel import specialize
+except ImportError:
+  r_uint = lambda x : x
+  intmask = lambda x : x
+  class Specialize:
+    def argtype( self, fun, *args ):
+      return lambda fun : fun
+  specialize = Specialize()
 
 #-----------------------------------------------------------------------
 # sext_16
 #-----------------------------------------------------------------------
 # Sign extend 16-bit value.
 def sext_16( value ):
-  assert isinstance( value, r_uint )
   if value & 0x8000:
     return r_uint( 0xFFFF0000 ) | value
   return value
@@ -21,7 +28,6 @@ def sext_16( value ):
 #-----------------------------------------------------------------------
 # Sign extend 8-bit value
 def sext_8( value ):
-  assert isinstance( value, r_uint )
   if value & 0x80:
     return r_uint( 0xFFFFFF00 ) | value
   return value
@@ -30,7 +36,6 @@ def sext_8( value ):
 # signed
 #-----------------------------------------------------------------------
 def signed( value ):
-  assert isinstance( value, r_uint )
   if value & r_uint( 0x80000000 ):
     twos_complement = ~value + 1
     return -intmask( trim_32( twos_complement ) )
@@ -50,14 +55,12 @@ def trim_32( value ):
 # trim_16
 #-----------------------------------------------------------------------
 def trim_16( value ):
-  assert isinstance( value, r_uint )
   return value & 0xFFFF
 
 #-----------------------------------------------------------------------
 # trim_8
 #-----------------------------------------------------------------------
 def trim_8( value ):
-  assert isinstance( value, r_uint )
   return value & 0xFF
 
 try:

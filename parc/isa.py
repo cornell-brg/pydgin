@@ -4,10 +4,9 @@
 
 from        utils import trim_5
 from pydgin.utils import signed, sext_16, sext_8, trim_32, \
-                         bits2float, float2bits
+                         bits2float, float2bits, r_uint
 
 from pydgin.misc import create_risc_decoder, FatalError
-from rpython.rlib.rarithmetic import r_uint
 
 #=======================================================================
 # Register Definitions

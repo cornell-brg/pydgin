@@ -2,7 +2,7 @@
 # Debug
 #=======================================================================
 
-from rpython.rlib.objectmodel import specialize
+from pydgin.utils import specialize
 
 #-----------------------------------------------------------------------
 # Debug
