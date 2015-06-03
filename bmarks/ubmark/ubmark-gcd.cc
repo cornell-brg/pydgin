@@ -59,6 +59,32 @@ void gcd_scalar( int dest[], int src0[], int src1[], int size )
 }
 
 //------------------------------------------------------------------------
+// gcd_hw
+//------------------------------------------------------------------------
+// Inline-assembly implementation of greatest common divisor
+
+int gcd_hw( int a, int b ) {
+#ifdef _MIPS_ARCH_MAVEN
+  int result;
+  __asm__( "gcd %0, %1, %2" : "=r" (result) : "r" (a), "r" (b) );
+  return result;
+#else
+  return gcd_sw( a, b );
+#endif
+}
+
+//------------------------------------------------------------------------
+// gcd_scalar_accel
+//------------------------------------------------------------------------
+
+__attribute__ ((noinline))
+void gcd_scalar_accel( int dest[], int src0[], int src1[], int size )
+{
+  for ( int i = 0; i < size; i++ )
+    dest[i] = gcd_hw( src0[i], src1[i] );
+}
+
+//------------------------------------------------------------------------
 // dump_dataset
 //------------------------------------------------------------------------
 
@@ -137,7 +163,8 @@ struct Impl
 Impl impl_table[] =
 {
   { "scalar",       &gcd_scalar        },
-  { "",             0                    },
+  { "scalar-accel", &gcd_scalar_accel  },
+  { "",             0                  },
 };
 
 //------------------------------------------------------------------------
