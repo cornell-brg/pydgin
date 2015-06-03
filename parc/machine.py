@@ -3,7 +3,7 @@
 #=======================================================================
 
 from pydgin.storage import RegisterFile
-from rpython.rlib.rarithmetic import r_uint
+from pydgin.utils   import r_uint
 
 #-----------------------------------------------------------------------
 # State

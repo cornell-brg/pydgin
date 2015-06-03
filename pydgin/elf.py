@@ -22,13 +22,12 @@
 # Date   : May 20, 2014
 
 import struct
+from   pydgin.utils import intmask
 try:
   from   rpython.rlib.rstruct.runpack import runpack
-  from   rpython.rlib.rarithmetic     import intmask
   unpack = runpack
 except ImportError:
   unpack = struct.unpack
-  intmask = lambda x : x
 
 from   SparseMemoryImage            import SparseMemoryImage
 

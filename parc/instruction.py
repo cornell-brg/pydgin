@@ -2,7 +2,7 @@
 # instruction.py
 #=======================================================================
 
-from rpython.rlib.rarithmetic import r_uint
+from pydgin.utils import r_uint
 
 class Instruction( object ):
   def __init__( self, bits, str ):

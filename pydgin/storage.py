@@ -4,9 +4,9 @@
 
 from pydgin.jit               import elidable, unroll_safe, hint
 from debug                    import Debug, pad, pad_hex
+from pydgin.utils             import r_uint, specialize
 try:
-  from rpython.rlib.rarithmetic import r_uint32, widen, r_uint
-  from rpython.rlib.objectmodel import specialize
+  from rpython.rlib.rarithmetic import r_uint32, widen
 except ImportError:
   # if rpython not in path, we can use normal ints to store data
   r_uint32 = int
