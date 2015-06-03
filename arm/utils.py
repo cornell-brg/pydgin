@@ -55,7 +55,7 @@ def shifter_operand( s, inst ):
     rotate_imm = inst.rotate
     operand    = rotate_right( inst.imm_8, rotate_imm*2 )
     if rotate_imm == 0: cout = s.C
-    else:               cout = operand >> 3
+    else:               cout = (operand >> 31) & 1
     return operand, cout
 
   # 32-bit register shifted by 5-bit immediate
