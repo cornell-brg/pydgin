@@ -24,9 +24,11 @@
 import struct
 try:
   from   rpython.rlib.rstruct.runpack import runpack
+  from   rpython.rlib.rarithmetic     import intmask
   unpack = runpack
 except ImportError:
   unpack = struct.unpack
+  intmask = lambda x : x
 
 from   SparseMemoryImage            import SparseMemoryImage
 
@@ -432,7 +434,7 @@ def elf_reader( file_obj ):
   # string table is entry shstrndx, so we first get the data for this
   # section header.
 
-  file_obj.seek( ehdr.shoff + ehdr.shstrndx * ehdr.shentsize )
+  file_obj.seek( intmask( ehdr.shoff ) + ehdr.shstrndx * ehdr.shentsize )
   shdr_data = file_obj.read(ehdr.shentsize)
 
   # Construct a section header object for the section string table
@@ -441,8 +443,8 @@ def elf_reader( file_obj ):
 
   # Read the data for the section header table
 
-  file_obj.seek( shdr.offset )
-  shstrtab_data = file_obj.read( shdr.size )
+  file_obj.seek( intmask( shdr.offset ) )
+  shstrtab_data = file_obj.read( intmask( shdr.size ) )
 
   # Load sections
 
@@ -455,7 +457,7 @@ def elf_reader( file_obj ):
 
     # Read the data for the section header
 
-    file_obj.seek( ehdr.shoff + section_idx * ehdr.shentsize )
+    file_obj.seek( intmask( ehdr.shoff ) + section_idx * ehdr.shentsize )
     shdr_data = file_obj.read(ehdr.shentsize)
 
     # Pad the returned string in case the section header is not long
@@ -514,8 +516,8 @@ def elf_reader( file_obj ):
     # Read the section data if it exists
 
     if section_name not in ['.sbss', '.bss']:
-      file_obj.seek( shdr.offset )
-      data = file_obj.read( shdr.size )
+      file_obj.seek( intmask( shdr.offset ) )
+      data = file_obj.read( intmask( shdr.size ) )
 
     # NOTE: the .bss and .sbss sections don't actually contain any
     # data in the ELF.  These sections should be initialized to zero.

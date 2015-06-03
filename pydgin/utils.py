@@ -3,13 +3,17 @@
 #=======================================================================
 # General-purpose bitwise operation utilities.
 
+from rpython.rlib.rarithmetic import r_uint, intmask
+from rpython.rlib.objectmodel import specialize
+
 #-----------------------------------------------------------------------
 # sext_16
 #-----------------------------------------------------------------------
 # Sign extend 16-bit value.
 def sext_16( value ):
+  assert isinstance( value, r_uint )
   if value & 0x8000:
-    return 0xFFFF0000 | value
+    return r_uint( 0xFFFF0000 ) | value
   return value
 
 #-----------------------------------------------------------------------
@@ -17,37 +21,44 @@ def sext_16( value ):
 #-----------------------------------------------------------------------
 # Sign extend 8-bit value
 def sext_8( value ):
+  assert isinstance( value, r_uint )
   if value & 0x80:
-    return 0xFFFFFF00 | value
+    return r_uint( 0xFFFFFF00 ) | value
   return value
 
 #-----------------------------------------------------------------------
 # signed
 #-----------------------------------------------------------------------
 def signed( value ):
-  if value & 0x80000000:
+  assert isinstance( value, r_uint )
+  if value & r_uint( 0x80000000 ):
     twos_complement = ~value + 1
-    return -trim_32( twos_complement )
-  return value
+    return -intmask( trim_32( twos_complement ) )
+  return intmask( value )
+
 
 #-----------------------------------------------------------------------
 # trim_32
 #-----------------------------------------------------------------------
 # Trim arithmetic to 32-bit values.
+@specialize.argtype(0)
 def trim_32( value ):
-  return value & 0xFFFFFFFF
+  value = r_uint( value )
+  return value & r_uint( 0xFFFFFFFF )
 
 #-----------------------------------------------------------------------
 # trim_16
 #-----------------------------------------------------------------------
-def trim_16( val ):
-  return val & 0xFFFF
+def trim_16( value ):
+  assert isinstance( value, r_uint )
+  return value & 0xFFFF
 
 #-----------------------------------------------------------------------
 # trim_8
 #-----------------------------------------------------------------------
-def trim_8( val ):
-  return val & 0xFF
+def trim_8( value ):
+  assert isinstance( value, r_uint )
+  return value & 0xFF
 
 try:
   # use efficient rpython int/float conversion only if rpython is in path

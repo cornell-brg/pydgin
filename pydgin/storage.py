@@ -5,7 +5,8 @@
 from pydgin.jit               import elidable, unroll_safe, hint
 from debug                    import Debug, pad, pad_hex
 try:
-  from rpython.rlib.rarithmetic import r_uint32, widen
+  from rpython.rlib.rarithmetic import r_uint32, widen, r_uint
+  from rpython.rlib.objectmodel import specialize
 except ImportError:
   # if rpython not in path, we can use normal ints to store data
   r_uint32 = int
@@ -18,7 +19,7 @@ except ImportError:
 class RegisterFile( object ):
   def __init__( self, constant_zero=True, num_regs=32 ):
     self.num_regs = num_regs
-    self.regs     = [0] * self.num_regs
+    self.regs     = [ r_uint(0) ] * self.num_regs
     self.debug    = Debug()
 
     if constant_zero: self._setitemimpl = self._set_item_const_zero
@@ -29,7 +30,10 @@ class RegisterFile( object ):
                           pad( "%d" % idx, 2 ),
                           pad_hex( self.regs[idx]) ),
     return self.regs[idx]
+
+  @specialize.argtype(2)
   def __setitem__( self, idx, value ):
+    value = r_uint( value )
     self._setitemimpl( idx, value )
 
   def _set_item( self, idx, value ):
@@ -112,9 +116,11 @@ class _WordMemory( object ):
       raise Exception()
 
 
+  @specialize.argtype(1)
   @unroll_safe
   def read( self, start_addr, num_bytes ):
     assert 0 < num_bytes <= 4
+    start_addr = r_uint( start_addr )
     word = start_addr >> 2
     byte = start_addr &  0b11
 
@@ -149,9 +155,12 @@ class _WordMemory( object ):
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
     return widen( self.data[ start_addr >> 2 ] )
 
+  @specialize.argtype(1, 3)
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
     assert 0 < num_bytes <= 4
+    start_addr = r_uint( start_addr )
+    value = r_uint( value )
     word = start_addr >> 2
     byte = start_addr &  0b11
 
@@ -161,11 +170,11 @@ class _WordMemory( object ):
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
       pass # no masking needed
     elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
-      mask  = ~(0xFFFF << (byte * 8)) & 0xFFFFFFFF
+      mask  = ~(0xFFFF << (byte * 8)) & r_uint( 0xFFFFFFFF )
       value = ( widen( self.data[ word ] ) & mask ) \
               | ( (value & 0xFFFF) << (byte * 8) )
     elif num_bytes == 1:
-      mask  = ~(0xFF   << (byte * 8)) & 0xFFFFFFFF
+      mask  = ~(0xFF   << (byte * 8)) & r_uint( 0xFFFFFFFF )
       value = ( widen( self.data[ word ] ) & mask ) \
               | ( (value & 0xFF  ) << (byte * 8) )
     else:
