@@ -2,6 +2,8 @@
 # Debug
 #=======================================================================
 
+from rpython.rlib.objectmodel import specialize
+
 #-----------------------------------------------------------------------
 # Debug
 #-----------------------------------------------------------------------
@@ -52,6 +54,7 @@ def pad( str, nchars, pad_char=" ", pad_end=True ):
 # pad_hex
 #-------------------------------------------------------------------------
 # easier-to-use padding function for hex values
+@specialize.argtype(0)
 def pad_hex( hex_val, len=8 ):
   return pad( "%x" % hex_val, len, "0", False )
 
