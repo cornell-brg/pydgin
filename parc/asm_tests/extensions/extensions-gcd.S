@@ -10,24 +10,24 @@
         // Arithmetic tests
         //-----------------------------------------------------------------
 
-        TEST_RR_OP( subu.xi, 100, 24, 4 )
-        TEST_RR_OP( subu.xi,  15,  5, 5 )
-        TEST_RR_OP( subu.xi,   5, 15, 5 )
-        TEST_RR_OP( subu.xi,   7, 13, 1 )
+        TEST_RR_OP( gcd, 100, 24, 4 )
+        TEST_RR_OP( gcd,  15,  5, 5 )
+        TEST_RR_OP( gcd,   5, 15, 5 )
+        TEST_RR_OP( gcd,   7, 13, 1 )
 
         //-----------------------------------------------------------------
         // Source/Destination tests
         //-----------------------------------------------------------------
 
-        TEST_RR_SRC0_EQ_DEST( subu.xi, 100, 24, 4  )
-        TEST_RR_SRC1_EQ_DEST( subu.xi,  75, 45, 15 )
+        TEST_RR_SRC0_EQ_DEST( gcd, 100, 24, 4  )
+        TEST_RR_SRC1_EQ_DEST( gcd,  75, 45, 15 )
 
         //-----------------------------------------------------------------
         // Bypassing tests
         //-----------------------------------------------------------------
 
-        TEST_RR_DEST_BYP( 0, subu.xi, 100, 24, 4 )
-        TEST_RR_DEST_BYP( 1, subu.xi, 100, 24, 4 )
-        TEST_RR_DEST_BYP( 2, subu.xi, 100, 24, 4 )
+        TEST_RR_DEST_BYP( 0, gcd, 100, 24, 4 )
+        TEST_RR_DEST_BYP( 1, gcd, 100, 24, 4 )
+        TEST_RR_DEST_BYP( 2, gcd, 100, 24, 4 )
 
         TEST_PARC_END
