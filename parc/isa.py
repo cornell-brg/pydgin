@@ -7,6 +7,7 @@ from pydgin.utils import signed, sext_16, sext_8, trim_32, \
                          bits2float, float2bits
 
 from pydgin.misc import create_risc_decoder, FatalError
+from rpython.rlib.rarithmetic import r_uint
 
 #=======================================================================
 # Register Definitions
@@ -509,14 +510,14 @@ def execute_srav( s, inst ):
 # j
 #-----------------------------------------------------------------------
 def execute_j( s, inst ):
-  s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
+  s.pc = ((s.pc + 4) & r_uint( 0xF0000000 ) ) | (inst.jtarg << 2)
 
 #-----------------------------------------------------------------------
 # jal
 #-----------------------------------------------------------------------
 def execute_jal( s, inst ):
   s.rf[31] = s.pc + 4
-  s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
+  s.pc = ((s.pc + 4) & r_uint( 0xF0000000 ) ) | (inst.jtarg << 2)
 
 #-----------------------------------------------------------------------
 # jr
@@ -548,7 +549,7 @@ def execute_lui( s, inst ):
 #-----------------------------------------------------------------------
 def execute_beq( s, inst ):
   if s.rf[inst.rs] == s.rf[inst.rt]:
-    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -557,7 +558,7 @@ def execute_beq( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bne( s, inst ):
   if s.rf[inst.rs] != s.rf[inst.rt]:
-    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -566,7 +567,7 @@ def execute_bne( s, inst ):
 #-----------------------------------------------------------------------
 def execute_blez( s, inst ):
   if signed( s.rf[inst.rs] ) <= 0:
-    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -575,7 +576,7 @@ def execute_blez( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bgtz( s, inst ):
   if signed( s.rf[inst.rs] ) > 0:
-    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -584,7 +585,7 @@ def execute_bgtz( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bltz( s, inst ):
   if signed( s.rf[inst.rs] ) < 0:
-    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 
@@ -593,7 +594,7 @@ def execute_bltz( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bgez( s, inst ):
   if signed( s.rf[inst.rs] ) >= 0:
-    s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
+    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
 

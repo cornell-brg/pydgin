@@ -49,6 +49,7 @@
 from isa import reg_map
 import sys
 import os
+from rpython.rlib.rarithmetic import intmask
 
 #-----------------------------------------------------------------------
 # os state and helpers
@@ -101,9 +102,9 @@ syscall_funcs = {
 # syscall, and return the result back into the architectural state.
 def do_syscall( s ):
   syscall_number = s.rf[ v0 ]
-  arg0 = s.rf[ a0 ]
-  arg1 = s.rf[ a1 ]
-  arg2 = s.rf[ a2 ]
+  arg0 = intmask( s.rf[ a0 ] )
+  arg1 = intmask( s.rf[ a1 ] )
+  arg2 = intmask( s.rf[ a2 ] )
 
   if syscall_number not in syscall_funcs:
     print "WARNING: syscall not implemented: %d" % syscall_number

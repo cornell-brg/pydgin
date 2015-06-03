@@ -52,6 +52,7 @@ import os
 try:
   from rpython.rtyper.lltypesystem import lltype
   from rpython.rtyper.lltypesystem import rffi
+  from rpython.rlib.rarithmetic import r_uint, intmask
   use_rpython = True
 except ImportError:
   use_rpython = False
@@ -240,7 +241,7 @@ def syscall_exit( s, arg0, arg1, arg2 ):
   if s.debug.enabled( "syscalls" ):
     print "syscall_exit( status=%x )" % exit_code
 
-  s.status = exit_code
+  s.status = r_uint( exit_code )
   s.running = False
 
   #      ret_val    errno
@@ -553,9 +554,9 @@ def syscall_brk( s, arg0, arg1, arg2 ):
     print "syscall_brk( addr=%x )" % new_brk,
 
   if new_brk != 0:
-    s.breakpoint = new_brk
+    s.breakpoint = r_uint( new_brk )
 
-  return s.breakpoint, 0
+  return intmask( s.breakpoint ), 0
 
 #-----------------------------------------------------------------------
 # numcores

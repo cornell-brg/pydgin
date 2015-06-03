@@ -9,12 +9,14 @@ from jit import elidable
 try:
   import py
   Source = py.code.Source
+  from rpython.rlib.rarithmetic import intmask, r_uint
 except ImportError:
   class Source:
     def __init__( self, src ):
       self.src = src
     def compile( self ):
       return self.src
+  intmask = lambda x : x
 
 #-----------------------------------------------------------------------
 # FatalError
@@ -43,7 +45,7 @@ def load_program( fp, mem, alignment=0 ):
     # TODO: HACK should really have elf_reader return the entry point
     #       address in the elf header!
     if section.name == '.text':
-      entrypoint = section.addr
+      entrypoint = intmask( section.addr )
     if section.name == '.data':
       mem.data_section = section.addr
 
@@ -86,7 +88,7 @@ def create_risc_decoder( encodings, isa_globals, debug=False ):
       nbits = len( field )
       if field[0] != 'x':
         mask = (1 << nbits) - 1
-        cond = '(inst >> {}) & 0x{:X} == 0b{}'.format( bit, mask, field )
+        cond = '(inst >> {}) & r_uint(0x{:X}) == r_uint(0b{})'.format( bit, mask, field )
         conditions.append( cond )
       bit += nbits
     decoder += 'if   ' if i == 0 else '  elif '
