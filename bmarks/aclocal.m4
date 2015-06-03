@@ -157,10 +157,17 @@ AC_DEFUN([MCPPBS_PROG_RUN],
   # berkin: temporarily disabling isa sim check for arm xcc
   AS_IF([ test "${build}" != "${host}" && test "${host}" != "arm-unknown-linux-gnueabi" ],
   [
-    AC_CHECK_TOOLS([RUN],[isa-run run],[no])
-    AS_IF([ test ${RUN} = "no" ],
+    AS_IF([ test "${host}" == "mipsmavenel-ucb-elf" ],
     [
-      AC_MSG_ERROR([Cannot find simulator for target ${target_alias}])
+      AC_MSG_NOTICE([Using Pydgin PARC as the simulator])
+      RUN="PYTHONPATH=../..:$PYTHONPATH python ../../parc/parc-sim.py"
+    ],[
+      AC_MSG_NOTICE([Architecture ${host} not supported on Pydgin])
+      AC_CHECK_TOOLS([RUN],[isa-run run],[no])
+      AS_IF([ test ${RUN} = "no" ],
+      [
+        AC_MSG_ERROR([Cannot find simulator for target ${target_alias}])
+      ])
     ])
   ],[
     RUN=""
