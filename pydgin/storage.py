@@ -98,7 +98,7 @@ def Memory( data=None, size=2**10, byte_storage=False ):
 class _WordMemory( object ):
   def __init__( self, data=None, size=2**10 ):
     self.data  = data if data else [ r_uint32(0) ] * (size >> 2)
-    self.size  = (len( self.data ) << 2)
+    self.size  = r_uint(len( self.data ) << 2)
     self.debug = Debug()
 
     # TODO: pass data_section to memory for bounds checking
