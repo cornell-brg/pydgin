@@ -3,7 +3,6 @@
 #=========================================================================
 
 parcv3_srcs += \
-  parcv3-syscall.S \
   parcv3-amo-add.S \
   parcv3-amo-and.S \
   parcv3-amo-or.S \
@@ -21,6 +20,7 @@ parcv3_srcs += \
   parcv3-cvt-w-s.S \
   parcv3-cvt-s-w.S \
 
+#  parcv3-syscall.S \
 #  parcv3-gcd.S \
 #  parcv3-vecincr.S \
 #  parcv3-scan.S \

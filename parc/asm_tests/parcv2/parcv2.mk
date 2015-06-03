@@ -34,9 +34,10 @@ parcv2_srcs += \
   parcv2-j.S \
   parcv2-jalr.S \
   parcv2-mul.S \
-  parcv2-div.S \
   parcv2-divu.S \
-  parcv2-rem.S \
   parcv2-remu.S \
   parcv2-mfc0.S \
 
+# temporarily disable these
+#  parcv2-div.S \
+#  parcv2-rem.S \
