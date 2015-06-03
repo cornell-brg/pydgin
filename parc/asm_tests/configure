@@ -2904,6 +2904,12 @@ fi
 
   as_fn_append tmod_include "parcv3 "
 
+
+
+
+
+  as_fn_append tmod_include "extensions "
+
 #TMOD_INCLUDE([mt])
 
 #-------------------------------------------------------------------------

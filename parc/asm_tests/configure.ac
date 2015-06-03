@@ -67,6 +67,7 @@ TMOD_PROG_INSTALL
 TMOD_INCLUDE([parcv1])
 TMOD_INCLUDE([parcv2])
 TMOD_INCLUDE([parcv3])
+TMOD_INCLUDE([extensions])
 #TMOD_INCLUDE([mt])
 
 #-------------------------------------------------------------------------
