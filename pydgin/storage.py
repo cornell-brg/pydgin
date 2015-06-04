@@ -144,7 +144,7 @@ class _WordMemory( object ):
     if self.debug.enabled( "mem" ):
       print '%s' % pad_hex( value ),
 
-    return value
+    return r_uint( value )
 
   # this is instruction read, which is otherwise identical to read. The
   # only difference is the elidable annotation, which we assume the
