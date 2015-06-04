@@ -89,7 +89,7 @@ TESTBUILD := \
 
 # Host simulator
 
-RUN           := PYTHONPATH=../../..:$$PYTHONPATH python ../../parc-sim.py
+RUN           := PYTHONPATH=../../..:$$$$PYTHONPATH python ../../parc-sim.py
 RUNFLAGS      := --test
 
 # Installation
