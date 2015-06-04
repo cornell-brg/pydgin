@@ -110,7 +110,7 @@ class _WordMemory( object ):
       raise Exception()
 
     # Special write checks
-    if x == 'WR' and addr < self.data_section:
+    if x == 'WR' and addr < r_uint( self.data_section ):
       print ("WARNING: %s writing address below .data section!!!. "
              "addr=%s size=%s") % ( x, pad_hex( addr ), pad_hex( self.data_section ) )
       raise Exception()
@@ -153,7 +153,7 @@ class _WordMemory( object ):
   @elidable
   def iread( self, start_addr, num_bytes ):
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
-    return widen( self.data[ start_addr >> 2 ] )
+    return r_uint( widen( self.data[ start_addr >> 2 ] ) )
 
   @specialize.argtype(1, 3)
   @unroll_safe
