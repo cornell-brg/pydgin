@@ -151,10 +151,20 @@ install-exes : install-exes-$(1)
 all-$(1) : $$($(2)_exes)
 
 check-$(1) : $$($(2)_outs)
-	$(scripts_dir)/check-summary.rb $$^
+	echo ""; \
+	echo "-----------------------------------------------------------------"; \
+	echo "Test summary (failures and errors)"; \
+	echo "-----------------------------------------------------------------"; \
+	grep -i "fail\|exception\|error\|segmentation" $$^; \
+	echo
 
 vcheck-$(1) : $$($(2)_outs)
-	$(scripts_dir)/check-summary.rb -v $$^
+	echo ""; \
+	echo "-----------------------------------------------------------------"; \
+	echo "Test summary (verbose)"; \
+	echo "-----------------------------------------------------------------"; \
+	grep -i "fail\|exception\|error\|segmentation\|pass" $$^; \
+	echo
 
 install-$(1) : install-exes-$(1)
 
@@ -191,10 +201,20 @@ deps : $(deps)
 #-------------------------------------------------------------------------
 
 check : $(outs)
-	$(scripts_dir)/check-summary.rb $^
+	echo ""; \
+	echo "-----------------------------------------------------------------"; \
+	echo "Test summary (failures and errors)"; \
+	echo "-----------------------------------------------------------------"; \
+	grep -i "fail\|exception\|error\|segmentation" $^; \
+	echo
 
 vcheck : $(outs)
-	$(scripts_dir)/check-summary.rb -v $^
+	echo ""; \
+	echo "-----------------------------------------------------------------"; \
+	echo "Test summary (verbose)"; \
+	echo "-----------------------------------------------------------------"; \
+	grep -i "fail\|exception\|error\|segmentation\|pass" $^; \
+	echo
 
 .PHONY : check
 
