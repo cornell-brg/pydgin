@@ -7,7 +7,8 @@ from isa     import reg_map
 from pydgin.utils import r_uint
 
 # Currently these constants are set to match gem5
-memory_size = 2**29
+#memory_size = 2**29
+memory_size = 2**25
 page_size   = 8192
 
 # MIPS stack starts at top of kuseg (0x7FFF.FFFF) and grows down
