@@ -89,8 +89,8 @@ TESTBUILD := \
 
 # Host simulator
 
-RUN           := @RUN@
-RUNFLAGS      := @RUNFLAGS@
+RUN           := PYTHONPATH=../../..:$$PYTHONPATH python ../../parc-sim.py
+RUNFLAGS      := --test
 
 # Installation
 
@@ -98,6 +98,11 @@ MKINSTALLDIRS := $(scripts_dir)/mk-install-dirs.sh
 INSTALL       := @INSTALL@
 INSTALL_EXE   := $(INSTALL) -m 555
 STOW          := @stow@
+
+# construct a list of all /parc/*.py and /pydgin/*.py files to create a
+# dependency
+
+PY_SRCS			  := $(shell ls ../../*.py ../../../pydgin/*.py)
 
 #-------------------------------------------------------------------------
 # Template for per test module rules
@@ -130,7 +135,7 @@ $(2)_junk += $$($(2)_exes) $$($(2)_deps)
 # Run test binaries
 
 $(2)_outs := $$(patsubst %, %.out, $$($(2)_exes))
-$$($(2)_outs) : %.out : %
+$$($(2)_outs) : %.out : % $(PY_SRCS)
 	$(RUN) $(RUNFLAGS) ./$$< 2>&1 | tee $$@
 
 $(2)_junk += $$($(2)_outs)

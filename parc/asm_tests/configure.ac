@@ -59,9 +59,6 @@ TMOD_INIT
 # Check for install script and the stow proram.
 TMOD_PROG_INSTALL
 
-# Check for an isa simulator.
-TMOD_PROG_RUN
-
 #-------------------------------------------------------------------------
 # TMOD includes
 #-------------------------------------------------------------------------
