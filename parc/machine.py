@@ -29,6 +29,7 @@ class State( object ):
     self.stats_en      = 0
     self.ncycles       = 0
     self.stat_ncycles  = 0
+    self.gcd_ncycles   = 0
 
     # we need a dedicated running flag bacase status could be 0 on a
     # syscall_exit
@@ -45,7 +46,7 @@ class State( object ):
     self.exe_name = ""
 
     # syscall stuff... TODO: should this be here?
-    self.breakpoint = r_uint( 0 )
+    self.breakpoint = 0
 
   def fetch_pc( self ):
     return self.pc

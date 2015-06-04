@@ -977,6 +977,7 @@ def execute_gcd( s, inst ):
   # this is the code from fractions.gcd:
   while b:
     a, b = b, a%b
+    s.gcd_ncycles += 1
   s.rf[ inst.rd ] = a
   s.pc += 4
 

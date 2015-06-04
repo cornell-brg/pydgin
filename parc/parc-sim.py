@@ -67,6 +67,7 @@ class ParcSim( Sim ):
   def run( self ):
     Sim.run( self )
     print "Instructions Executed in Stat Region =", self.state.stat_ncycles
+    print "Number of cycles in GCD =", self.state.gcd_ncycles
 
 # this initializes similator and allows translation and python
 # interpretation
