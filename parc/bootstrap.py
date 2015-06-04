@@ -4,6 +4,7 @@
 
 from machine import State
 from isa     import reg_map
+from rpython.rlib.rarithmetic import r_uint
 
 # Currently these constants are set to match gem5
 memory_size = 2**29
@@ -189,7 +190,7 @@ def syscall_init( mem, breakpoint, argv, envp, debug ):
   state = State( mem, debug, reset_addr=0x1000 )
 
   # TODO: where should this go?
-  state.breakpoint = breakpoint
+  state.breakpoint = r_uint( breakpoint )
 
   #print '---'
   #print 'argc = %d (%x)' % ( argc,         stack_off[-1] )

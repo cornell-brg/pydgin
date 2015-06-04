@@ -3,6 +3,7 @@
 #=======================================================================
 
 from pydgin.storage import RegisterFile
+from rpython.rlib.rarithmetic import r_uint
 
 #-----------------------------------------------------------------------
 # State
@@ -44,7 +45,7 @@ class State( object ):
     self.exe_name = ""
 
     # syscall stuff... TODO: should this be here?
-    self.breakpoint = 0
+    self.breakpoint = r_uint( 0 )
 
   def fetch_pc( self ):
     return self.pc

@@ -2,9 +2,11 @@
 # instruction.py
 #=======================================================================
 
+from rpython.rlib.rarithmetic import r_uint
+
 class Instruction( object ):
   def __init__( self, bits, str ):
-    self.bits = bits
+    self.bits = r_uint( bits )
     self.str  = str
 
   @property
