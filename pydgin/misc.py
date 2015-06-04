@@ -48,10 +48,9 @@ def load_program( fp, mem, alignment=0 ):
       mem.data_section = section.addr
 
   assert entrypoint >= 0
-  assert sections[-1].name == '.bss'
 
-  bss        = sections[-1]
-  breakpoint = bss.addr + len( bss.data )
+  last_sec   = sections[-1]
+  breakpoint = last_sec.addr + len( last_sec.data )
 
   if alignment > 0:
     def round_up( val, alignment ):
