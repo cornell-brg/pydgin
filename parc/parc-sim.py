@@ -56,6 +56,9 @@ class ParcSim( Sim ):
     else:       self.state = syscall_init( mem, breakpoint, run_argv,
                                            run_envp, self.debug )
 
+    self.state.testbin  = testbin
+    self.state.exe_name = exe_file.name
+
   #---------------------------------------------------------------------
   # run
   #---------------------------------------------------------------------

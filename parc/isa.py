@@ -278,8 +278,17 @@ def execute_mfc0( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mtc0( s, inst ):
   if   inst.rd == reg_map['status']:
-    print 'SETTING STATUS'
-    s.status = s.rf[inst.rt]
+    if s.testbin:
+      val = s.rf[inst.rt]
+      if val == 0:
+        print "  [ passed ] %s" % s.exe_name
+      else:
+        line_num = 0x7fffffff & val
+        print "  [ FAILED ] %s (line %s)" % (s.exe_name, line_num)
+      s.running = False
+    else:
+      print 'SETTING STATUS'
+      s.status = s.rf[inst.rt]
   elif inst.rd == reg_map['statsen']:
     s.stats_en = s.rf[inst.rt]
   elif inst.rd == reg_map['c0_staten']:
