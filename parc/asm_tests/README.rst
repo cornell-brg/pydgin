@@ -21,5 +21,9 @@ at the very end::
   parcv2-div.out: [ FAILED ] ./parcv2-div (line 28)
   ...
 
+This runs the interpreted pydgin by default. To test with translated
+pydgin, you can specify the translated pydgin binary with ``RUN`` flag to
+``make``::
 
+  % make check RUN=../../pydgin-parc-jit
 
