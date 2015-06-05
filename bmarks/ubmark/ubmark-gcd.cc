@@ -64,13 +64,8 @@ void gcd_scalar( int dest[], int src0[], int src1[], int size )
 // Inline-assembly implementation of greatest common divisor
 
 int gcd_hw( int a, int b ) {
-#ifdef _MIPS_ARCH_MAVEN
-  int result;
-  __asm__( "gcd %0, %1, %2" : "=r" (result) : "r" (a), "r" (b) );
-  return result;
-#else
-  return gcd_sw( a, b );
-#endif
+  // TASK: implement inline assembly for gcd
+  return 0;
 }
 
 //------------------------------------------------------------------------

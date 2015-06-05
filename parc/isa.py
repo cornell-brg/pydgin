@@ -240,7 +240,8 @@ encodings = [
   #---------------------------------------------------------------------
   # Extensions
   #---------------------------------------------------------------------
-  ['gcd',      '100111xxxxxxxxxxxxxxxxxxxx010001'],
+  # TASK: uncomment and pick the correct encoding
+  # ['gcd',      '11111111111111111111111111111111'],
 ]
 
 #=======================================================================
@@ -973,12 +974,7 @@ def execute_hint_wl( s, inst ):
 # gcd
 #-----------------------------------------------------------------------
 def execute_gcd( s, inst ):
-  a, b = s.rf[ inst.rs ], s.rf[ inst.rt ]
-  # this is the code from fractions.gcd:
-  while b:
-    a, b = b, a%b
-    s.gcd_ncycles += 1
-  s.rf[ inst.rd ] = a
+  # TASK: implement gcd here
   s.pc += 4
 
 #=======================================================================

@@ -6,28 +6,21 @@
 
         TEST_PARC_BEGIN
 
-        //-----------------------------------------------------------------
-        // Arithmetic tests
-        //-----------------------------------------------------------------
+        // test gcd( 24, 100 ) == 4
+        li    $1, 24
+        li    $2, 100
+        gcd   $3, $2, $1
+        li    $4, 4
+        TEST_CHECK_EQ( $3, $4 )
 
-        TEST_RR_OP( gcd, 100, 24, 4 )
-        TEST_RR_OP( gcd,  15,  5, 5 )
-        TEST_RR_OP( gcd,   5, 15, 5 )
-        TEST_RR_OP( gcd,   7, 13, 1 )
+        // TASK: fix the bug in the test below
+        // test gcd( 8, 4 ) == 2
+        li    $1, 8
+        li    $2, 4
+        gcd   $3, $2, $1
+        li    $4, 2
+        TEST_CHECK_EQ( $3, $4 )
 
-        //-----------------------------------------------------------------
-        // Source/Destination tests
-        //-----------------------------------------------------------------
-
-        TEST_RR_SRC0_EQ_DEST( gcd, 100, 24, 4  )
-        TEST_RR_SRC1_EQ_DEST( gcd,  75, 45, 15 )
-
-        //-----------------------------------------------------------------
-        // Bypassing tests
-        //-----------------------------------------------------------------
-
-        TEST_RR_DEST_BYP( 0, gcd, 100, 24, 4 )
-        TEST_RR_DEST_BYP( 1, gcd, 100, 24, 4 )
-        TEST_RR_DEST_BYP( 2, gcd, 100, 24, 4 )
+        // TASK: add a new test below
 
         TEST_PARC_END
