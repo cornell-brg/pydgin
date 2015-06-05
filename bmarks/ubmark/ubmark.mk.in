@@ -17,7 +17,6 @@ ubmark_clang_srcs = \
 
 ubmark_install_prog_srcs = \
   ubmark-vvadd.cc \
-  ubmark-cmplx-mult.cc \
   ubmark-masked-filter.cc \
   ubmark-bin-search.cc \
   ubmark-gcd.cc \
