@@ -8,7 +8,7 @@ from pydgin.storage import RegisterFile
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  _virtualizable_ = ['pc', 'ncycles']
+  _virtualizable_ = ['pc', 'num_insts']
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
 
@@ -26,8 +26,8 @@ class State( object ):
     # coprocessor registers
     self.status        = 0
     self.stats_en      = 0
-    self.ncycles       = 0
-    self.stat_ncycles  = 0
+    self.num_insts       = 0
+    self.stat_num_insts  = 0
 
     # we need a dedicated running flag bacase status could be 0 on a
     # syscall_exit

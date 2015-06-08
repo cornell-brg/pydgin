@@ -30,12 +30,12 @@ class Debug( object ):
   # particular flag is turned on in command line.
   def enabled( self, flag ):
     return Debug.global_enabled and ( flag in self.enabled_flags ) and \
-        ( self.state is None or self.start_after <= self.state.ncycles )
+        ( self.state is None or self.start_after <= self.state.num_insts )
 
   #---------------------------------------------------------------------
   # set_state
   #---------------------------------------------------------------------
-  # set the state so that we can get the ncycles
+  # set the state so that we can get the num_insts
   def set_state( self, state ):
     self.state = state
 

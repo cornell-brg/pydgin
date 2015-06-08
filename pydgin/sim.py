@@ -159,7 +159,7 @@ class Sim( object ):
           print "%s %s %s" % (
                   pad_hex( inst_bits ),
                   pad( inst.str, 8 ),
-                  pad( "%d" % s.ncycles, 8 ), ),
+                  pad( "%d" % s.num_insts, 8 ), ),
 
         exec_fun( s, inst )
       except FatalError as error:
@@ -167,8 +167,8 @@ class Sim( object ):
         print "Exception message: %s" % error.msg
         break
 
-      s.ncycles += 1    # TODO: should this be done inside instruction definition?
-      if s.stats_en: s.stat_ncycles += 1
+      s.num_insts += 1    # TODO: should this be done inside instruction definition?
+      if s.stats_en: s.stat_num_insts += 1
 
       if s.debug.enabled( "insts" ):
         print
@@ -177,7 +177,7 @@ class Sim( object ):
 
       # check if we have reached the end of the maximum instructions and
       # exit if necessary
-      if max_insts != 0 and s.ncycles >= max_insts:
+      if max_insts != 0 and s.num_insts >= max_insts:
         print "Reached the max_insts (%d), exiting." % max_insts
         break
 
@@ -190,7 +190,7 @@ class Sim( object ):
         )
 
     print 'DONE! Status =', s.status
-    print 'Instructions Executed =', s.ncycles
+    print 'Instructions Executed =', s.num_insts
 
   #-----------------------------------------------------------------------
   # get_entry_point

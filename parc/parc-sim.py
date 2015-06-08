@@ -62,11 +62,11 @@ class ParcSim( Sim ):
   #---------------------------------------------------------------------
   # run
   #---------------------------------------------------------------------
-  # Override sim's run to print stat_ncycles on exit
+  # Override sim's run to print stat_num_insts on exit
 
   def run( self ):
     Sim.run( self )
-    print "Instructions Executed in Stat Region =", self.state.stat_ncycles
+    print "Instructions Executed in Stat Region =", self.state.stat_num_insts
 
 # this initializes similator and allows translation and python
 # interpretation

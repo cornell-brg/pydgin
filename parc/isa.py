@@ -263,7 +263,7 @@ def execute_mfc0( s, inst ):
   if   inst.rd == reg_map['c0_coreid']:
     s.rf[inst.rt] = 0
   elif inst.rd == reg_map['c0_count']:
-    s.rf[inst.rt] = s.ncycles
+    s.rf[inst.rt] = s.num_insts
   elif inst.rd == reg_map['c0_numcores']:
     s.rf[inst.rt] = 1
   elif inst.rd == reg_map['c0_counthi']:
