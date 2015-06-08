@@ -972,13 +972,20 @@ def execute_hint_wl( s, inst ):
 #-----------------------------------------------------------------------
 # gcd
 #-----------------------------------------------------------------------
+def gcd( a, b ):
+  ncycles = 0
+  while True:
+    ncycles += 1
+    if a < b:
+      a,b = b,a
+    elif b != 0:
+      a = a - b
+    else:
+      return a, ncycles
+
 def execute_gcd( s, inst ):
-  a, b = s.rf[ inst.rs ], s.rf[ inst.rt ]
-  # this is the code from fractions.gcd:
-  while b:
-    a, b = b, a%b
-    s.gcd_ncycles += 1
-  s.rf[ inst.rd ] = a
+  s.rf[ inst.rd ], ncycles = gcd( s.rf[ inst.rs ], s.rf[ inst.rt ] )
+  s.gcd_ncycles += ncycles
   s.pc += 4
 
 #=======================================================================
