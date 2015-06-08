@@ -9,7 +9,7 @@ from pydgin.debug   import Debug, pad, pad_hex
 # State
 #-----------------------------------------------------------------------
 class State( object ):
-  _virtualizable_ = ['pc', 'ncycles', 'N', 'Z', 'C', 'V']
+  _virtualizable_ = ['pc', 'num_insts', 'N', 'Z', 'C', 'V']
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
     self.rf       = ArmRegisterFile( self, num_regs=16 )
@@ -44,10 +44,10 @@ class State( object ):
 
     # other registers
     self.status        = 0
-    self.ncycles       = 0
+    self.num_insts       = 0
     # unused
     self.stats_en      = 0
-    self.stat_ncycles  = 0
+    self.stat_num_insts  = 0
 
     # marks if should be running, syscall_exit sets it false
     self.running       = True
