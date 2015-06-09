@@ -102,146 +102,146 @@ reg_map = {
 #=======================================================================
 
 encodings = [
-  ['nop',      '00000000000000000000000000000000'],
+  ['nop',      '000000_00000_00000_00000_00000_000000'],
   #---------------------------------------------------------------------
   # Coprocessor
   #---------------------------------------------------------------------
-  ['mfc0',     '01000000000xxxxxxxxxx00000000000'],
-  ['mtc0',     '01000000100xxxxxxxxxx00000000000'],
-  #['mtc2',    '01001000100xxxxxxxxxx00000000000'],
+  ['mfc0',     '010000_00000_xxxxx_xxxxx_00000_000000'],
+  ['mtc0',     '010000_00100_xxxxx_xxxxx_00000_000000'],
+  #['mtc2',    '010010_00100_xxxxx_xxxxx_00000_000000'],
   #---------------------------------------------------------------------
   # Arithmetic
   #---------------------------------------------------------------------
-  ['addu',     '000000xxxxxxxxxxxxxxx00000100001'],
-  ['subu',     '000000xxxxxxxxxxxxxxx00000100011'],
-  ['and',      '000000xxxxxxxxxxxxxxx00000100100'],
-  ['or',       '000000xxxxxxxxxxxxxxx00000100101'],
-  ['xor',      '000000xxxxxxxxxxxxxxx00000100110'],
-  ['nor',      '000000xxxxxxxxxxxxxxx00000100111'],
-  ['slt',      '000000xxxxxxxxxxxxxxx00000101010'],
-  ['sltu',     '000000xxxxxxxxxxxxxxx00000101011'],
+  ['addu',     '000000_xxxxx_xxxxx_xxxxx_00000_100001'],
+  ['subu',     '000000_xxxxx_xxxxx_xxxxx_00000_100011'],
+  ['and',      '000000_xxxxx_xxxxx_xxxxx_00000_100100'],
+  ['or',       '000000_xxxxx_xxxxx_xxxxx_00000_100101'],
+  ['xor',      '000000_xxxxx_xxxxx_xxxxx_00000_100110'],
+  ['nor',      '000000_xxxxx_xxxxx_xxxxx_00000_100111'],
+  ['slt',      '000000_xxxxx_xxxxx_xxxxx_00000_101010'],
+  ['sltu',     '000000_xxxxx_xxxxx_xxxxx_00000_101011'],
   #---------------------------------------------------------------------
   # Arithmetic Immediate
   #---------------------------------------------------------------------
-  ['addiu',    '001001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['andi',     '001100xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['ori',      '001101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['xori',     '001110xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['slti',     '001010xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['sltiu',    '001011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['lui',      '00111100000xxxxxxxxxxxxxxxxxxxxx'],
+  ['addiu',    '001001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['andi',     '001100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['ori',      '001101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['xori',     '001110_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['slti',     '001010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['sltiu',    '001011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lui',      '001111_00000_xxxxx_xxxxx_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Shift
   #---------------------------------------------------------------------
-  ['sll',      '00000000000xxxxxxxxxxxxxxx000000'],
-  ['srl',      '00000000000xxxxxxxxxxxxxxx000010'],
-  ['sra',      '00000000000xxxxxxxxxxxxxxx000011'],
-  ['sllv',     '000000xxxxxxxxxxxxxxx00000000100'],
-  ['srlv',     '000000xxxxxxxxxxxxxxx00000000110'],
-  ['srav',     '000000xxxxxxxxxxxxxxx00000000111'],
+  ['sll',      '000000_00000_xxxxx_xxxxx_xxxxx_000000'],
+  ['srl',      '000000_00000_xxxxx_xxxxx_xxxxx_000010'],
+  ['sra',      '000000_00000_xxxxx_xxxxx_xxxxx_000011'],
+  ['sllv',     '000000_xxxxx_xxxxx_xxxxx_00000_000100'],
+  ['srlv',     '000000_xxxxx_xxxxx_xxxxx_00000_000110'],
+  ['srav',     '000000_xxxxx_xxxxx_xxxxx_00000_000111'],
   #---------------------------------------------------------------------
   # Mul/Div/Rem
   #---------------------------------------------------------------------
-  ['mul',      '011100xxxxxxxxxxxxxxx00000000010'],
-  ['div',      '100111xxxxxxxxxxxxxxx00000000101'],
-  ['divu',     '100111xxxxxxxxxxxxxxx00000000111'],
-  ['rem',      '100111xxxxxxxxxxxxxxx00000000110'],
-  ['remu',     '100111xxxxxxxxxxxxxxx00000001000'],
+  ['mul',      '011100_xxxxx_xxxxx_xxxxx_00000_000010'],
+  ['div',      '100111_xxxxx_xxxxx_xxxxx_00000_000101'],
+  ['divu',     '100111_xxxxx_xxxxx_xxxxx_00000_000111'],
+  ['rem',      '100111_xxxxx_xxxxx_xxxxx_00000_000110'],
+  ['remu',     '100111_xxxxx_xxxxx_xxxxx_00000_001000'],
   #---------------------------------------------------------------------
   # Loads
   #---------------------------------------------------------------------
-  ['lw',       '100011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['lh',       '100001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['lhu',      '100101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['lb',       '100000xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['lbu',      '100100xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['lw',       '100011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lh',       '100001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lhu',      '100101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lb',       '100000_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lbu',      '100100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Stores
   #---------------------------------------------------------------------
-  ['sw',       '101011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['sh',       '101001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['sb',       '101000xxxxxxxxxxxxxxxxxxxxxxxxxx'],
+  ['sw',       '101011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['sh',       '101001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['sb',       '101000_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Jumps
   #---------------------------------------------------------------------
-  ['j',        '000010xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['jal',      '000011xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['jr',       '000000xxxxx000000000000000001000'],
-  ['jalr',     '000000xxxxx00000xxxxx00000001001'],
+  ['j',        '000010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['jal',      '000011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['jr',       '000000_xxxxx_00000_00000_00000_001000'],
+  ['jalr',     '000000_xxxxx_00000_xxxxx_00000_001001'],
   #---------------------------------------------------------------------
   # Branches
   #---------------------------------------------------------------------
-  ['beq',      '000100xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['bne',      '000101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['blez',     '000110xxxxx00000xxxxxxxxxxxxxxxx'],
-  ['bgtz',     '000111xxxxx00000xxxxxxxxxxxxxxxx'],
-  ['bltz',     '000001xxxxx00000xxxxxxxxxxxxxxxx'],
-  ['bgez',     '000001xxxxx00001xxxxxxxxxxxxxxxx'],
+  ['beq',      '000100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['bne',      '000101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['blez',     '000110_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
+  ['bgtz',     '000111_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
+  ['bltz',     '000001_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
+  ['bgez',     '000001_xxxxx_00001_xxxxx_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Conditional
   #---------------------------------------------------------------------
-  ['movn',     '000000xxxxxxxxxxxxxxx00000001011'],
-  ['movz',     '000000xxxxxxxxxxxxxxx00000001010'],
+  ['movn',     '000000_xxxxx_xxxxx_xxxxx_00000_001011'],
+  ['movz',     '000000_xxxxx_xxxxx_xxxxx_00000_001010'],
   #---------------------------------------------------------------------
   # Syscall
   #---------------------------------------------------------------------
-  ['syscall',  '000000xxxxxxxxxxxxxxxxxxxx001100'],
-# ['eret',     '000000xxxxxxxxxxxxxxxxxxxx001100'],
+  ['syscall',  '000000_xxxxx_xxxxx_xxxxx_xxxxx_001100'],
+# ['eret',     '000000_xxxxx_xxxxx_xxxxx_xxxxx_001100'],
   #---------------------------------------------------------------------
   # AMO
   #---------------------------------------------------------------------
-  ['amo_add',  '100111xxxxxxxxxxxxxxx00000000010'],
-  ['amo_and',  '100111xxxxxxxxxxxxxxx00000000011'],
-  ['amo_or',   '100111xxxxxxxxxxxxxxx00000000100'],
-  ['amo_xchg', '100111xxxxxxxxxxxxxxx00000001101'],
-  ['amo_min',  '100111xxxxxxxxxxxxxxx00000001110'],
+  ['amo_add',  '100111_xxxxx_xxxxx_xxxxx_00000_000010'],
+  ['amo_and',  '100111_xxxxx_xxxxx_xxxxx_00000_000011'],
+  ['amo_or',   '100111_xxxxx_xxxxx_xxxxx_00000_000100'],
+  ['amo_xchg', '100111_xxxxx_xxxxx_xxxxx_00000_001101'],
+  ['amo_min',  '100111_xxxxx_xxxxx_xxxxx_00000_001110'],
   #---------------------------------------------------------------------
   # Data-Parallel
   #---------------------------------------------------------------------
-  ['syncl',    '10011100000000000000000000000001'],
-  ['xloop',    '110100xxxxx00000xxxxxxxxxxxxxxxx'],
-  ['stop',     '10011100000000000000000000000000'],
-  ['utidx',    '1001110000000000xxxxx00000001001'],
-  ['mtuts',    '01001000000xxxxxxxxxx00000001000'],
-  ['mfuts',    '010010xxxxxxxxxxxxxxx00000001001'],
+  ['syncl',    '100111_00000_00000_00000_00000_000001'],
+  ['xloop',    '110100_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
+  ['stop',     '100111_00000_00000_00000_00000_000000'],
+  ['utidx',    '100111_00000_00000_xxxxx_00000_001001'],
+  ['mtuts',    '010010_00000_xxxxx_xxxxx_00000_001000'],
+  ['mfuts',    '010010_xxxxx_xxxxx_xxxxx_00000_001001'],
   #---------------------------------------------------------------------
   # XLOOPS
   #---------------------------------------------------------------------
-  ['xloop_uc', '110001xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['xloop_or', '110010xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['xloop_om', '111101xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['xloop_orm','111010xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['addiu_xi', '110110xxxxxxxxxxxxxxxxxxxxxxxxxx'],
-  ['addu_xi',  '100111xxxxxxxxxxxxxxxxxxxx010000'],
-  #['subu_xi',  '100111xxxxxxxxxxxxxxxxxxxx010001'],
+  ['xloop_uc', '110001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['xloop_or', '110010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['xloop_om', '111101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['xloop_orm','111010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['addiu_xi', '110110_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['addu_xi',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010000'],
+  #['subu_xi',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010001'],
   #---------------------------------------------------------------------
   # Misc
   #---------------------------------------------------------------------
-  ['stat',     '10011100000xxxxx0000000000001111'],
-  ['hint_wl',  '100111xxxxxxxxxxxxxxxxxxxx010010'],
+  ['stat',     '100111_00000_xxxxx_00000_00000_001111'],
+  ['hint_wl',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010010'],
   #---------------------------------------------------------------------
   # Floating Point
   #---------------------------------------------------------------------
-  ['add_s',    '010001xxxxxxxxxxxxxxxxxxxx000000'],
-  ['sub_s',    '010001xxxxxxxxxxxxxxxxxxxx000001'],
-  ['mul_s',    '010001xxxxxxxxxxxxxxxxxxxx000010'],
-  ['div_s',    '010001xxxxxxxxxxxxxxxxxxxx000011'],
-  ['c_eq_s',   '01000110000xxxxxxxxxxxxxxx110010'],
-  ['c_lt_s',   '01000110000xxxxxxxxxxxxxxx111100'],
-  ['c_le_s',   '01000110000xxxxxxxxxxxxxxx111110'],
-# ['c_f_s',    '01000110000xxxxxxxxxxxxxxx110000'],
-# ['c_un_s',   '01000110000xxxxxxxxxxxxxxx110001'],
-# ['c_ngl_s',  '01000110000xxxxxxxxxxxxxxx111011'],
-# ['c_nge_s'   '01000110000xxxxxxxxxxxxxxx111101'],
-# ['c_ngt_s',  '01000110000xxxxxxxxxxxxxxx111111'],
-  ['cvt_w_s',  '0100011000000000xxxxxxxxxx100100'],
-  ['cvt_s_w',  '0100011010000000xxxxxxxxxx100000'],
-  ['trunc_w_s','0100011000000000xxxxxxxxxx001101'],
+  ['add_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000000'],
+  ['sub_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000001'],
+  ['mul_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000010'],
+  ['div_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000011'],
+  ['c_eq_s',   '010001_10000_xxxxx_xxxxx_xxxxx_110010'],
+  ['c_lt_s',   '010001_10000_xxxxx_xxxxx_xxxxx_111100'],
+  ['c_le_s',   '010001_10000_xxxxx_xxxxx_xxxxx_111110'],
+# ['c_f_s',    '010001_10000_xxxxx_xxxxx_xxxxx_110000'],
+# ['c_un_s',   '010001_10000_xxxxx_xxxxx_xxxxx_110001'],
+# ['c_ngl_s',  '010001_10000_xxxxx_xxxxx_xxxxx_111011'],
+# ['c_nge_s'   '010001_10000_xxxxx_xxxxx_xxxxx_111101'],
+# ['c_ngt_s',  '010001_10000_xxxxx_xxxxx_xxxxx_111111'],
+  ['cvt_w_s',  '010001_10000_00000_xxxxx_xxxxx_100100'],
+  ['cvt_s_w',  '010001_10100_00000_xxxxx_xxxxx_100000'],
+  ['trunc_w_s','010001_10000_00000_xxxxx_xxxxx_001101'],
   #---------------------------------------------------------------------
   # Extensions
   #---------------------------------------------------------------------
   # TASK: uncomment and pick the correct encoding
-  # ['gcd',      '11111111111111111111111111111111'],
+  ['gcd',      '111111_11111_11111_11111_11111_111111'],
 ]
 
 #=======================================================================
@@ -268,7 +268,7 @@ def execute_mfc0( s, inst ):
   if   inst.rd == reg_map['c0_coreid']:
     s.rf[inst.rt] = 0
   elif inst.rd == reg_map['c0_count']:
-    s.rf[inst.rt] = s.ncycles
+    s.rf[inst.rt] = s.num_insts
   elif inst.rd == reg_map['c0_numcores']:
     s.rf[inst.rt] = 1
   elif inst.rd == reg_map['c0_counthi']:

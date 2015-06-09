@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #=========================================================================
 # parc-sim.py
 #=========================================================================
@@ -62,13 +63,15 @@ class ParcSim( Sim ):
   #---------------------------------------------------------------------
   # run
   #---------------------------------------------------------------------
-  # Override sim's run to print stat_ncycles on exit
+  # Override sim's run to print stat_num_insts on exit
 
   def run( self ):
     Sim.run( self )
-    print "Instructions Executed in Stat Region =", self.state.stat_ncycles
+    print "Instructions Executed in Stat Region =", self.state.stat_num_insts
     # TASK: uncomment
     #print "Number of cycles in GCD =", self.state.gcd_ncycles
+    #print "Total number of cycles (assuming non-GCD CPI=1) =", \
+    #          ( self.state.gcd_ncycles + self.state.num_insts )
 
 # this initializes similator and allows translation and python
 # interpretation

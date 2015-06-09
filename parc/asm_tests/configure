@@ -2890,26 +2890,12 @@ fi
 
 
 
-  as_fn_append tmod_include "parcv1 "
+  as_fn_append tmod_include "parc "
 
-
-
-
-
-  as_fn_append tmod_include "parcv2 "
-
-
-
-
-
-  as_fn_append tmod_include "parcv3 "
-
-
-
-
-
-  as_fn_append tmod_include "extensions "
-
+#TMOD_INCLUDE([parcv1])
+#TMOD_INCLUDE([parcv2])
+#TMOD_INCLUDE([parcv3])
+#TMOD_INCLUDE([extensions])
 #TMOD_INCLUDE([mt])
 
 #-------------------------------------------------------------------------
