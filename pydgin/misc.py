@@ -64,6 +64,12 @@ def load_program( fp, mem, alignment=0 ):
 #-----------------------------------------------------------------------
 def create_risc_decoder( encodings, isa_globals, debug=False ):
 
+  # removes all characters other than '0', '1', and 'x'
+  def remove_ignored_chars( enc ):
+    return [ enc[0], re.sub( '[^01x]', '', enc[1] ) ]
+
+  encodings = map( remove_ignored_chars, encodings )
+
   inst_nbits = len( encodings[0][1] )
 
   def split_encodings( enc ):
