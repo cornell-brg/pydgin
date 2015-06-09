@@ -102,141 +102,141 @@ reg_map = {
 #=======================================================================
 
 encodings = [
-  ['nop',      '000000' '00000' '00000' '00000' '00000' '000000'],
+  ['nop',      '000000_00000_00000_00000_00000_000000'],
   #---------------------------------------------------------------------
   # Coprocessor
   #---------------------------------------------------------------------
-  ['mfc0',     '010000' '00000' 'xxxxx' 'xxxxx' '00000' '000000'],
-  ['mtc0',     '010000' '00100' 'xxxxx' 'xxxxx' '00000' '000000'],
-  #['mtc2',    '010010' '00100' 'xxxxx' 'xxxxx' '00000' '000000'],
+  ['mfc0',     '010000_00000_xxxxx_xxxxx_00000_000000'],
+  ['mtc0',     '010000_00100_xxxxx_xxxxx_00000_000000'],
+  #['mtc2',    '010010_00100_xxxxx_xxxxx_00000_000000'],
   #---------------------------------------------------------------------
   # Arithmetic
   #---------------------------------------------------------------------
-  ['addu',     '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '100001'],
-  ['subu',     '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '100011'],
-  ['and',      '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '100100'],
-  ['or',       '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '100101'],
-  ['xor',      '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '100110'],
-  ['nor',      '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '100111'],
-  ['slt',      '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '101010'],
-  ['sltu',     '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '101011'],
+  ['addu',     '000000_xxxxx_xxxxx_xxxxx_00000_100001'],
+  ['subu',     '000000_xxxxx_xxxxx_xxxxx_00000_100011'],
+  ['and',      '000000_xxxxx_xxxxx_xxxxx_00000_100100'],
+  ['or',       '000000_xxxxx_xxxxx_xxxxx_00000_100101'],
+  ['xor',      '000000_xxxxx_xxxxx_xxxxx_00000_100110'],
+  ['nor',      '000000_xxxxx_xxxxx_xxxxx_00000_100111'],
+  ['slt',      '000000_xxxxx_xxxxx_xxxxx_00000_101010'],
+  ['sltu',     '000000_xxxxx_xxxxx_xxxxx_00000_101011'],
   #---------------------------------------------------------------------
   # Arithmetic Immediate
   #---------------------------------------------------------------------
-  ['addiu',    '001001' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['andi',     '001100' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['ori',      '001101' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['xori',     '001110' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['slti',     '001010' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['sltiu',    '001011' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['lui',      '001111' '00000' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
+  ['addiu',    '001001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['andi',     '001100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['ori',      '001101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['xori',     '001110_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['slti',     '001010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['sltiu',    '001011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lui',      '001111_00000_xxxxx_xxxxx_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Shift
   #---------------------------------------------------------------------
-  ['sll',      '000000' '00000' 'xxxxx' 'xxxxx' 'xxxxx' '000000'],
-  ['srl',      '000000' '00000' 'xxxxx' 'xxxxx' 'xxxxx' '000010'],
-  ['sra',      '000000' '00000' 'xxxxx' 'xxxxx' 'xxxxx' '000011'],
-  ['sllv',     '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '000100'],
-  ['srlv',     '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '000110'],
-  ['srav',     '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '000111'],
+  ['sll',      '000000_00000_xxxxx_xxxxx_xxxxx_000000'],
+  ['srl',      '000000_00000_xxxxx_xxxxx_xxxxx_000010'],
+  ['sra',      '000000_00000_xxxxx_xxxxx_xxxxx_000011'],
+  ['sllv',     '000000_xxxxx_xxxxx_xxxxx_00000_000100'],
+  ['srlv',     '000000_xxxxx_xxxxx_xxxxx_00000_000110'],
+  ['srav',     '000000_xxxxx_xxxxx_xxxxx_00000_000111'],
   #---------------------------------------------------------------------
   # Mul/Div/Rem
   #---------------------------------------------------------------------
-  ['mul',      '011100' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '000010'],
-  ['div',      '100111' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '000101'],
-  ['divu',     '100111' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '000111'],
-  ['rem',      '100111' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '000110'],
-  ['remu',     '100111' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '001000'],
+  ['mul',      '011100_xxxxx_xxxxx_xxxxx_00000_000010'],
+  ['div',      '100111_xxxxx_xxxxx_xxxxx_00000_000101'],
+  ['divu',     '100111_xxxxx_xxxxx_xxxxx_00000_000111'],
+  ['rem',      '100111_xxxxx_xxxxx_xxxxx_00000_000110'],
+  ['remu',     '100111_xxxxx_xxxxx_xxxxx_00000_001000'],
   #---------------------------------------------------------------------
   # Loads
   #---------------------------------------------------------------------
-  ['lw',       '100011' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['lh',       '100001' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['lhu',      '100101' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['lb',       '100000' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['lbu',      '100100' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
+  ['lw',       '100011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lh',       '100001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lhu',      '100101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lb',       '100000_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lbu',      '100100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Stores
   #---------------------------------------------------------------------
-  ['sw',       '101011' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['sh',       '101001' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['sb',       '101000' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
+  ['sw',       '101011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['sh',       '101001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['sb',       '101000_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Jumps
   #---------------------------------------------------------------------
-  ['j',        '000010' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['jal',      '000011' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['jr',       '000000' 'xxxxx' '00000' '00000' '00000' '001000'],
-  ['jalr',     '000000' 'xxxxx' '00000' 'xxxxx' '00000' '001001'],
+  ['j',        '000010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['jal',      '000011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['jr',       '000000_xxxxx_00000_00000_00000_001000'],
+  ['jalr',     '000000_xxxxx_00000_xxxxx_00000_001001'],
   #---------------------------------------------------------------------
   # Branches
   #---------------------------------------------------------------------
-  ['beq',      '000100' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['bne',      '000101' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['blez',     '000110' 'xxxxx' '00000' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['bgtz',     '000111' 'xxxxx' '00000' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['bltz',     '000001' 'xxxxx' '00000' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['bgez',     '000001' 'xxxxx' '00001' 'xxxxx' 'xxxxx' 'xxxxxx'],
+  ['beq',      '000100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['bne',      '000101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['blez',     '000110_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
+  ['bgtz',     '000111_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
+  ['bltz',     '000001_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
+  ['bgez',     '000001_xxxxx_00001_xxxxx_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Conditional
   #---------------------------------------------------------------------
-  ['movn',     '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '001011'],
-  ['movz',     '000000' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '001010'],
+  ['movn',     '000000_xxxxx_xxxxx_xxxxx_00000_001011'],
+  ['movz',     '000000_xxxxx_xxxxx_xxxxx_00000_001010'],
   #---------------------------------------------------------------------
   # Syscall
   #---------------------------------------------------------------------
-  ['syscall',  '000000' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' '001100'],
-# ['eret',     '000000' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' '001100'],
+  ['syscall',  '000000_xxxxx_xxxxx_xxxxx_xxxxx_001100'],
+# ['eret',     '000000_xxxxx_xxxxx_xxxxx_xxxxx_001100'],
   #---------------------------------------------------------------------
   # AMO
   #---------------------------------------------------------------------
-  ['amo_add',  '100111' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '000010'],
-  ['amo_and',  '100111' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '000011'],
-  ['amo_or',   '100111' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '000100'],
-  ['amo_xchg', '100111' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '001101'],
-  ['amo_min',  '100111' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '001110'],
+  ['amo_add',  '100111_xxxxx_xxxxx_xxxxx_00000_000010'],
+  ['amo_and',  '100111_xxxxx_xxxxx_xxxxx_00000_000011'],
+  ['amo_or',   '100111_xxxxx_xxxxx_xxxxx_00000_000100'],
+  ['amo_xchg', '100111_xxxxx_xxxxx_xxxxx_00000_001101'],
+  ['amo_min',  '100111_xxxxx_xxxxx_xxxxx_00000_001110'],
   #---------------------------------------------------------------------
   # Data-Parallel
   #---------------------------------------------------------------------
-  ['syncl',    '100111' '00000' '00000' '00000' '00000' '000001'],
-  ['xloop',    '110100' 'xxxxx' '00000' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['stop',     '100111' '00000' '00000' '00000' '00000' '000000'],
-  ['utidx',    '100111' '00000' '00000' 'xxxxx' '00000' '001001'],
-  ['mtuts',    '010010' '00000' 'xxxxx' 'xxxxx' '00000' '001000'],
-  ['mfuts',    '010010' 'xxxxx' 'xxxxx' 'xxxxx' '00000' '001001'],
+  ['syncl',    '100111_00000_00000_00000_00000_000001'],
+  ['xloop',    '110100_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
+  ['stop',     '100111_00000_00000_00000_00000_000000'],
+  ['utidx',    '100111_00000_00000_xxxxx_00000_001001'],
+  ['mtuts',    '010010_00000_xxxxx_xxxxx_00000_001000'],
+  ['mfuts',    '010010_xxxxx_xxxxx_xxxxx_00000_001001'],
   #---------------------------------------------------------------------
   # XLOOPS
   #---------------------------------------------------------------------
-  ['xloop_uc', '110001' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['xloop_or', '110010' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['xloop_om', '111101' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['xloop_orm','111010' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['addiu_xi', '110110' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxxx'],
-  ['addu_xi',  '100111' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' '010000'],
-  ['subu_xi',  '100111' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' '010001'],
+  ['xloop_uc', '110001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['xloop_or', '110010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['xloop_om', '111101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['xloop_orm','111010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['addiu_xi', '110110_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['addu_xi',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010000'],
+  ['subu_xi',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010001'],
   #---------------------------------------------------------------------
   # Misc
   #---------------------------------------------------------------------
-  ['stat',     '100111' '00000' 'xxxxx' '00000' '00000' '001111'],
-  ['hint_wl',  '100111' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' '010010'],
+  ['stat',     '100111_00000_xxxxx_00000_00000_001111'],
+  ['hint_wl',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010010'],
   #---------------------------------------------------------------------
   # Floating Point
   #---------------------------------------------------------------------
-  ['add_s',    '010001' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' '000000'],
-  ['sub_s',    '010001' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' '000001'],
-  ['mul_s',    '010001' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' '000010'],
-  ['div_s',    '010001' 'xxxxx' 'xxxxx' 'xxxxx' 'xxxxx' '000011'],
-  ['c_eq_s',   '010001' '10000' 'xxxxx' 'xxxxx' 'xxxxx' '110010'],
-  ['c_lt_s',   '010001' '10000' 'xxxxx' 'xxxxx' 'xxxxx' '111100'],
-  ['c_le_s',   '010001' '10000' 'xxxxx' 'xxxxx' 'xxxxx' '111110'],
-# ['c_f_s',    '010001' '10000' 'xxxxx' 'xxxxx' 'xxxxx' '110000'],
-# ['c_un_s',   '010001' '10000' 'xxxxx' 'xxxxx' 'xxxxx' '110001'],
-# ['c_ngl_s',  '010001' '10000' 'xxxxx' 'xxxxx' 'xxxxx' '111011'],
-# ['c_nge_s'   '010001' '10000' 'xxxxx' 'xxxxx' 'xxxxx' '111101'],
-# ['c_ngt_s',  '010001' '10000' 'xxxxx' 'xxxxx' 'xxxxx' '111111'],
-  ['cvt_w_s',  '010001' '10000' '00000' 'xxxxx' 'xxxxx' '100100'],
-  ['cvt_s_w',  '010001' '10100' '00000' 'xxxxx' 'xxxxx' '100000'],
-  ['trunc_w_s','010001' '10000' '00000' 'xxxxx' 'xxxxx' '001101'],
+  ['add_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000000'],
+  ['sub_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000001'],
+  ['mul_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000010'],
+  ['div_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000011'],
+  ['c_eq_s',   '010001_10000_xxxxx_xxxxx_xxxxx_110010'],
+  ['c_lt_s',   '010001_10000_xxxxx_xxxxx_xxxxx_111100'],
+  ['c_le_s',   '010001_10000_xxxxx_xxxxx_xxxxx_111110'],
+# ['c_f_s',    '010001_10000_xxxxx_xxxxx_xxxxx_110000'],
+# ['c_un_s',   '010001_10000_xxxxx_xxxxx_xxxxx_110001'],
+# ['c_ngl_s',  '010001_10000_xxxxx_xxxxx_xxxxx_111011'],
+# ['c_nge_s'   '010001_10000_xxxxx_xxxxx_xxxxx_111101'],
+# ['c_ngt_s',  '010001_10000_xxxxx_xxxxx_xxxxx_111111'],
+  ['cvt_w_s',  '010001_10000_00000_xxxxx_xxxxx_100100'],
+  ['cvt_s_w',  '010001_10100_00000_xxxxx_xxxxx_100000'],
+  ['trunc_w_s','010001_10000_00000_xxxxx_xxxxx_001101'],
 ]
 
 #=======================================================================
