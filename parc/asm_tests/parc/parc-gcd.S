@@ -13,12 +13,11 @@
         li    $4, 4
         TEST_CHECK_EQ( $3, $4 )
 
-        // TASK: fix the bug in the test below
-        // test gcd( 8, 4 ) == 2
+        // test gcd( 8, 4 ) == 4
         li    $1, 8
         li    $2, 4
         gcd   $3, $2, $1
-        li    $4, 2
+        li    $4, 4
         TEST_CHECK_EQ( $3, $4 )
 
         // TASK: add a new test below
