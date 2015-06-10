@@ -974,14 +974,10 @@ def execute_hint_wl( s, inst ):
 #-----------------------------------------------------------------------
 def gcd( a, b ):
   ncycles = 0
-  while True:
+  while b:
+    a, b = b, a%b
     ncycles += 1
-    if a < b:
-      a,b = b,a
-    elif b != 0:
-      a = a - b
-    else:
-      return a, ncycles
+  return a, ncycles
 
 def execute_gcd( s, inst ):
   s.rf[ inst.rd ], ncycles = gcd( s.rf[ inst.rs ], s.rf[ inst.rt ] )
