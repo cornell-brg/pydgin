@@ -20,6 +20,4 @@
         li    $4, 4
         TEST_CHECK_EQ( $3, $4 )
 
-        // TASK: add a new test below
-
         TEST_PARC_END
