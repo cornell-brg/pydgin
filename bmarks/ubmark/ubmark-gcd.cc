@@ -64,7 +64,7 @@ void gcd_scalar( int dest[], int src0[], int src1[], int size )
 // Inline-assembly implementation of greatest common divisor
 
 int gcd_hw( int a, int b ) {
-  // TASK: implement inline assembly for gcd
+  // TASK 1.7: implement inline assembly for gcd
   return 0;
 }
 

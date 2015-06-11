@@ -31,7 +31,8 @@ class State( object ):
     self.num_insts       = 0
     self.stat_num_insts  = 0
 
-    # TASK: add a new counter for gcd cycles
+    # TASK 1.6: uncomment to add a new counter for gcd cycles
+    # self.gcd_ncycles = 0
 
     # we need a dedicated running flag bacase status could be 0 on a
     # syscall_exit

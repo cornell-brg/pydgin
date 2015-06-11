@@ -68,7 +68,7 @@ class ParcSim( Sim ):
   def run( self ):
     Sim.run( self )
     print "Instructions Executed in Stat Region =", self.state.stat_num_insts
-    # TASK: uncomment
+    # TASK 1.6: uncomment the three lines below
     #print "Number of cycles in GCD =", self.state.gcd_ncycles
     #print "Total number of cycles (assuming non-GCD CPI=1) =", \
     #          ( self.state.gcd_ncycles + self.state.num_insts )
