@@ -4,6 +4,8 @@
 #=========================================================================
 # Builds pydgin.
 
+import itertools
+import multiprocessing
 import os
 import shutil
 import sys
@@ -80,7 +82,7 @@ def build_target( name, pypy_dir, build_dir ):
     os.remove( symlink_name )
   os.symlink( '../{}/{}'.format( build_dir, name ), symlink_name )
 
-def main():
+def setup_environment():
   if len( sys.argv ) > 1 and sys.argv[1] == '--help':
     print "Usage:\n  ./build.py [targets]"
     return 1
@@ -119,8 +121,30 @@ def main():
   build_dir = "builds/pydgin-{}/bin".format( pydgin_ver )
   subprocess.call( "mkdir -p {}".format( build_dir ), shell=True )
 
-  for target in targets:
-    build_target( target, pypy_dir, build_dir )
+  return targets, pypy_dir, build_dir
+
+
+def unzip_and_apply( f_args ):
+  function, args = f_args
+  return function( *args )
+
+
+def main():
+  # get targets and environment
+  targets, pypy_dir, build_dir = setup_environment()
+
+  # pool can only accept a function with one arg
+  iters = len ( targets )
+  args = zip( targets, itertools.repeat( pypy_dir,  iters ), itertools.repeat( build_dir, iters ) )
+  f_args = zip( itertools.repeat( build_target, iters ), args )
+
+  # build targets in parallel
+  pool = multiprocessing.Pool( processes=multiprocessing.cpu_count() )
+  pool.map( unzip_and_apply, f_args )
+  pool.close()
+  pool.join()
+  print 'Parallel builds complete.'
+
 
 if __name__ == "__main__":
   main()
