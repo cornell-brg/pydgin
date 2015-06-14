@@ -47,7 +47,7 @@ decode = create_risc_decoder(encodings, globals(), debug=True)
 class ExampleState(object):
 
     def __init__(self, memory, debug):
-        self.pc        = 2  # Would be 0 but storage inserts an extra 2 bytes.
+        self.pc        = 0
         self.mem       = memory
         self.debug     = debug
         self.rf        = RegisterFile(constant_zero=False, num_regs=2)
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     print
     machine.run()
     # nop16 increments by 2, halt16 increments by 2.
-    assert machine.state.pc == 6, "Expected pc = 6, got pc = {0}".format(machine.state.pc)
+    assert machine.state.pc == 4, "Expected pc = 4, got pc = {0}".format(machine.state.pc)
     assert not machine.state.running, "Machine not HALTed."
 
     print '-----------------------------------------------------------------'
