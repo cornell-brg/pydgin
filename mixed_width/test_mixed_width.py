@@ -91,8 +91,8 @@ class ExampleMachine(Sim):
         written_so_far = 0
         for data, width in instructions:
             num_bytes = width / 8
-            written_so_far += num_bytes
             mem.write(written_so_far, num_bytes, data)
+            written_so_far += num_bytes
         print
         print 'Program in memory just after writing:'
         # We are expecting to see a nop16 and a halt16, i.e.:
