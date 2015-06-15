@@ -5,6 +5,7 @@ def signed( value, nbits ):
   if value & mask:
     twos_complement = ~value + 1
     return -trim_64( twos_complement )
+  return value
 
 def trim_64( value ):
   return value & 0xffffffffffffffff

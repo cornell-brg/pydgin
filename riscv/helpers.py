@@ -8,7 +8,7 @@ def JUMP_TARGET( s, inst ):
   return s.pc + inst.uj_imm
 
 def SHAMT( s, inst ):
-  return insn.i_imm & 0x3F
+  return inst.i_imm & 0x3F
 
-raise TRAP_ILLEGAL_INSTRUCTION( Exception ):
+class TRAP_ILLEGAL_INSTRUCTION( Exception ):
   pass

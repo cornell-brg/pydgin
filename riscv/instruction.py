@@ -28,6 +28,9 @@ class Instruction( object ):
   def xs( self, lo, len ):
     return signed(self.bits >> lo, len)
 
+  def imm_sign( self ):
+    return self.xs( 63, 1 )
+
   @property
   def i_imm(self):
     return signed( self.bits, 32 ) >> 20
@@ -41,7 +44,7 @@ class Instruction( object ):
     return (self.x(8, 4) << 1) + \
            (self.x(25,6) << 5) + \
            (self.x(7,1) << 11) + \
-           (imm_sign() << 12)
+           (self.imm_sign() << 12)
 
   @property
   def u_imm(self):
@@ -52,7 +55,7 @@ class Instruction( object ):
     return (self.x(21, 10) << 1) + \
            (self.x(20, 1) << 11) + \
            (self.x(12, 8) << 12) + \
-           (imm_sign() << 20)
+           (self.imm_sign() << 20)
 
   @property
   def rd(self):

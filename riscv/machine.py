@@ -13,6 +13,9 @@ class State( object ):
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
 
+    # TODO: don't know what this is:
+    self.xlen     = 64
+
     self.rf       = RegisterFile()
     self.mem      = memory
 
