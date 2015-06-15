@@ -328,7 +328,7 @@ def execute_and( s, inst ):
   s.pc += 4
 
 def execute_addiw( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext32( inst.i_imm + inst.rs1 )
   s.pc += 4
 
 def execute_slliw( s, inst ):
