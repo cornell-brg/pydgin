@@ -268,7 +268,7 @@ def execute_sltiu( s, inst ):
   s.pc += 4
 
 def execute_xori( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = inst.i_imm ^ inst.rs2
   s.pc += 4
 
 def execute_srli( s, inst ):
@@ -280,7 +280,7 @@ def execute_srai( s, inst ):
   s.pc += 4
 
 def execute_ori( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = inst.i_imm | inst.rs2
   s.pc += 4
 
 def execute_andi( s, inst ):
@@ -308,7 +308,7 @@ def execute_sltu( s, inst ):
   s.pc += 4
 
 def execute_xor( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = inst.rs1 ^ inst.rs2
   s.pc += 4
 
 def execute_srl( s, inst ):
@@ -320,7 +320,7 @@ def execute_sra( s, inst ):
   s.pc += 4
 
 def execute_or( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = inst.rs1 | inst.rs2
   s.pc += 4
 
 def execute_and( s, inst ):
