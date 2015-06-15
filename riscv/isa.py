@@ -376,7 +376,7 @@ def execute_sraiw( s, inst ):
   s.pc += 4
 
 def execute_addw( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] + s.rf[inst.rs2] )
   s.pc += 4
 
 def execute_subw( s, inst ):
@@ -384,15 +384,15 @@ def execute_subw( s, inst ):
   s.pc += 4
 
 def execute_sllw( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] << (s.rf[inst.rs2] & 0x1F ) )
   s.pc += 4
 
 def execute_srlw( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> (s.rf[inst.rs2] & 0x1F) )
   s.pc += 4
 
 def execute_sraw( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext32( s.rf[inst.rs1] >> (s.rf[inst.rs2] & 0x1F) )
   s.pc += 4
 
 def execute_lb( s, inst ):
