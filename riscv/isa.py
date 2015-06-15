@@ -273,11 +273,11 @@ def execute_slli( s, inst ):
   s.pc += 4
 
 def execute_slti( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sreg_t( s.rf[ inst.rs1 ] ) < sreg_t( inst.i_imm() )
   s.pc += 4
 
 def execute_sltiu( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = s.rf[ inst.rs1 ] < inst.i_imm()
   s.pc += 4
 
 def execute_xori( s, inst ):
@@ -297,7 +297,7 @@ def execute_ori( s, inst ):
   s.pc += 4
 
 def execute_andi( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = inst.i_imm & inst.rs2
   s.pc += 4
 
 def execute_add( s, inst ):
@@ -305,7 +305,7 @@ def execute_add( s, inst ):
   s.pc += 4
 
 def execute_sub( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_xlen( inst.rs1 - inst.rs2 )
   s.pc += 4
 
 def execute_sll( s, inst ):
@@ -313,11 +313,11 @@ def execute_sll( s, inst ):
   s.pc += 4
 
 def execute_slt( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sreg_t( s.rf[inst.rs1] ) < sreg_t( s.rf[inst.rs2] )
   s.pc += 4
 
 def execute_sltu( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = s.rf[ inst.rs1 ] < s.rf[inst.rs2])
   s.pc += 4
 
 def execute_xor( s, inst ):
@@ -337,7 +337,7 @@ def execute_or( s, inst ):
   s.pc += 4
 
 def execute_and( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = inst.rs1 & inst.rs2
   s.pc += 4
 
 def execute_addiw( s, inst ):
@@ -361,7 +361,7 @@ def execute_addw( s, inst ):
   s.pc += 4
 
 def execute_subw( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext32( inst.rs1 - inst.rs2 )
   s.pc += 4
 
 def execute_sllw( s, inst ):
