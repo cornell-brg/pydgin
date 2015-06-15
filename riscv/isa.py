@@ -210,747 +210,750 @@ def execute_nop( s, inst ):
 
 def execute_beq( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_bne( s, inst ):
-  raise NotImplementedError()
-  pc += 4
+  if s.rf[ insts.rs1 ] ! = s.rf[ inst.rs2 ]:
+    s.pc = BRANCH_TARGET( s, inst )
+  s.pc += 4
 
 def execute_blt( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_bge( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_bltu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_bgeu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_jalr( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_jal( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_lui( s, inst ):
-  raise NotImplementedError()
-  pc += 4
+  s.rf[ inst.rd ] = inst.u_imm
+  s.pc += 4
 
-def execute_auipc( s, inst ):
+def execute_auis.pc( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_addi( s, inst ):
-  raise NotImplementedError()
-  pc += 4
+  s.rf[ inst.rd ] = sext_xlen( inst.rs1 + inst.i_imm )
+  s.pc += 4
 
 def execute_slli( s, inst ):
-  raise NotImplementedError()
-  pc += 4
+  if SHAMT( s, inst ) > s.xlen:
+    raise TRAP_ILLEGAL_INSTRUCTION()
+  s.rf[ inst.rd ] = sext_xlen( inst.rs1 << SHAMT( s, inst ) )
+  s.pc += 4
 
 def execute_slti( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sltiu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_xori( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_srli( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_srai( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_ori( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_andi( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_add( s, inst ):
-  raise NotImplementedError()
-  pc += 4
+  s.rf[ inst.rd ] = sext_xlen( inst.rs1 + inst.rs2 )
+  s.pc += 4
 
 def execute_sub( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sll( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_slt( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sltu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_xor( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_srl( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sra( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_or( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_and( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_addiw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_slliw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_srliw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sraiw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_addw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_subw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sllw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_srlw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sraw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_lb( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_lh( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_lw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_ld( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_lbu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_lhu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_lwu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sb( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sh( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sd( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fence( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fence_i( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_mul( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_mulh( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_mulhsu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_mulhu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_div( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_divu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_rem( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_remu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_mulw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_divw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_divuw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_remw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_remuw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amoadd_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amoxor_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amoor_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amoand_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amomin_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amomax_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amominu_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amomaxu_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amoswap_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_lr_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sc_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amoadd_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amoxor_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amoor_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amoand_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amomin_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amomax_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amominu_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amomaxu_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_amoswap_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_lr_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sc_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_scall( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sbreak( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sret( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_sfence_vm( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_wfi( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_mrth( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_mrts( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_hrts( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_csrrw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_csrrs( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_csrrc( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_csrrwi( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_csrrsi( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_csrrci( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fadd_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsub_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmul_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fdiv_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsgnj_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsgnjn_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsgnjx_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmin_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmax_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsqrt_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fadd_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsub_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmul_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fdiv_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsgnj_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsgnjn_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsgnjx_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmin_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmax_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_s_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_d_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsqrt_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fle_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_flt_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_feq_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fle_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_flt_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_feq_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_w_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_wu_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_l_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_lu_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmv_x_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fclass_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_w_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_wu_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_l_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_lu_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmv_x_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fclass_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_s_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_s_wu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_s_l( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_s_lu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmv_s_x( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_d_w( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_d_wu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_d_l( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fcvt_d_lu( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmv_d_x( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_flw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fld( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsw( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fsd( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmadd_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmsub_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fnmsub_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fnmadd_s( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmadd_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fmsub_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fnmsub_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_fnmadd_d( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom0( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom0_rs1( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom0_rs1_rs2( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom0_rd( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom0_rd_rs1( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom0_rd_rs1_rs2( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom1( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom1_rs1( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom1_rs1_rs2( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom1_rd( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom1_rd_rs1( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom1_rd_rs1_rs2( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom2( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom2_rs1( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom2_rs1_rs2( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom2_rd( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom2_rd_rs1( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom2_rd_rs1_rs2( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom3( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom3_rs1( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom3_rs1_rs2( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom3_rd( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom3_rd_rs1( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 def execute_custom3_rd_rs1_rs2( s, inst ):
   raise NotImplementedError()
-  pc += 4
+  s.pc += 4
 
 ]
 
