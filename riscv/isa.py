@@ -209,7 +209,8 @@ def execute_nop( s, inst ):
   s.pc += 4
 
 def execute_beq( s, inst ):
-  raise NotImplementedError()
+  if s.rf[ insts.rs1 ] == s.rf[ inst.rs2 ]:
+    s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bne( s, inst ):
@@ -218,19 +219,23 @@ def execute_bne( s, inst ):
   s.pc += 4
 
 def execute_blt( s, inst ):
-  raise NotImplementedError()
+  if sreg_t(s.rf[ insts.rs1 ]) < sreg_t(s.rf[ inst.rs2 ]):
+    s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bge( s, inst ):
-  raise NotImplementedError()
+  if sreg_t(s.rf[ insts.rs1 ]) >= sreg_t(s.rf[ inst.rs2 ]):
+    s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bltu( s, inst ):
-  raise NotImplementedError()
+  if s.rf[ insts.rs1 ] < s.rf[ inst.rs2 ]:
+    s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bgeu( s, inst ):
-  raise NotImplementedError()
+  if s.rf[ insts.rs1 ] >= s.rf[ inst.rs2 ]:
+    s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_jalr( s, inst ):
