@@ -260,7 +260,7 @@ def execute_lui( s, inst ):
   s.pc += 4
 
 def execute_auipc( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_xlen(inst.u_imm + s.pc)
   s.pc += 4
 
 def execute_addi( s, inst ):
@@ -286,11 +286,21 @@ def execute_xori( s, inst ):
   s.pc += 4
 
 def execute_srli( s, inst ):
-  raise NotImplementedError()
+  if s.xlen == 64:
+    s.rf[ inst.rd ] = s.rf[inst.rs1] >> SHAMT( s, inst )
+  elif SHAMT( s, inst ) & 0x20:
+    raise TRAP_ILLEGAL_INSTRUCTION()
+  else:
+    s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> SHAMT( s, inst ) )
   s.pc += 4
 
 def execute_srai( s, inst ):
-  raise NotImplementedError()
+  if s.xlen == 64:
+    s.rf[ inst.rd ] = sreg_t( s.rf[inst.rs1] ) >> SHAMT( s, inst )
+  elif SHAMT( s, inst ) & 0x20:
+    raise TRAP_ILLEGAL_INSTRUCTION()
+  else:
+    s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> SHAMT( s, inst ) )
   s.pc += 4
 
 def execute_ori( s, inst ):
@@ -310,7 +320,8 @@ def execute_sub( s, inst ):
   s.pc += 4
 
 def execute_sll( s, inst ):
-  raise NotImplementedError()
+  shamt = s.rf[inst.rs2] & (s.xlen-1)
+  s.rf[ inst.rd ] = sext_xlen( s.rf[inst.rs1] << shamt )
   s.pc += 4
 
 def execute_slt( s, inst ):
@@ -326,11 +337,16 @@ def execute_xor( s, inst ):
   s.pc += 4
 
 def execute_srl( s, inst ):
-  raise NotImplementedError()
+  if s.xlen == 64:
+    s.rf[ inst.rd ] = s.rf[inst.rs1] >> (s.rf[inst.rs2] & 0x3F)
+  else
+    s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> (s.rf[inst.rs2] & 0x1F) )
   s.pc += 4
 
 def execute_sra( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_xlen(
+    sext_xlen(s.rf[inst.rs1]) >> (s.rf[inst.rs2] & (s.xlen-1))
+  )
   s.pc += 4
 
 def execute_or( s, inst ):
@@ -346,15 +362,17 @@ def execute_addiw( s, inst ):
   s.pc += 4
 
 def execute_slliw( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] << SHAMT( s, i ) )
   s.pc += 4
 
 def execute_srliw( s, inst ):
-  raise NotImplementedError()
+  # TODO, is this right?
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> SHAMT( s, i ) )
   s.pc += 4
 
 def execute_sraiw( s, inst ):
-  raise NotImplementedError()
+  # TODO, is this right?
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> SHAMT( s, i ) )
   s.pc += 4
 
 def execute_addw( s, inst ):
