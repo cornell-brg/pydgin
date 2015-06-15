@@ -2,7 +2,7 @@
 # instruction.py
 #=========================================================================
 
-from riscv.utils import signed
+from utils import signed
 
 class Instruction( object ):
   def __init__( self, bits, str ):
@@ -41,11 +41,11 @@ class Instruction( object ):
     return (self.x(8, 4) << 1) + \
            (self.x(25,6) << 5) + \
            (self.x(7,1) << 11) + \
-           (imm_sign() << 12); }
+           (imm_sign() << 12)
 
   @property
   def u_imm(self):
-    return signed( self.bits, 32 ) >> 12 << 12; }
+    return signed( self.bits, 32 ) >> 12 << 12
 
   @property
   def uj_imm(self):

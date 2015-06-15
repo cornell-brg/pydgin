@@ -11,9 +11,9 @@ sys.path.append('..')
 from pydgin.sim     import Sim, init_sim
 from pydgin.storage import Memory
 from pydgin.misc    import load_program
-from bootstrap      import syscall_init, test_init, memory_size
+from bootstrap      import test_init
 from instruction    import Instruction
-from isa            import decode, reg_map
+from isa            import decode
 
 #-------------------------------------------------------------------------
 # RiscVSim
@@ -41,6 +41,9 @@ class RiscVSim( Sim ):
 
   def init_state( self, exe_file, exe_name, run_argv, run_envp, testbin ):
 
+    # TODO: setting mem size here
+    memory_size = 2**29
+
     # Load the program into a memory object
 
     mem = Memory( size=memory_size, byte_storage=False )
@@ -48,9 +51,10 @@ class RiscVSim( Sim ):
 
     # Insert bootstrapping code into memory and initialize processor state
 
-    if testbin: self.state = test_init   ( mem, self.debug )
-    else:       self.state = syscall_init( mem, breakpoint, run_argv,
-                                           run_envp, self.debug )
+    #if testbin: self.state = test_init   ( mem, self.debug )
+    #else:       self.state = syscall_init( mem, breakpoint, run_argv,
+    #                                       run_envp, self.debug )
+    self.state = test_init( mem, self.debug )
 
     self.state.testbin  = testbin
     self.state.exe_name = exe_name
@@ -62,7 +66,6 @@ class RiscVSim( Sim ):
 
   def run( self ):
     Sim.run( self )
-    print "Instructions Executed in Stat Region =", self.state.stat_num_insts
 
 # this initializes similator and allows translation and python
 # interpretation

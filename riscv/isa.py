@@ -213,7 +213,7 @@ def execute_beq( s, inst ):
   s.pc += 4
 
 def execute_bne( s, inst ):
-  if s.rf[ insts.rs1 ] ! = s.rf[ inst.rs2 ]:
+  if s.rf[ insts.rs1 ] != s.rf[ inst.rs2 ]:
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
@@ -245,7 +245,7 @@ def execute_lui( s, inst ):
   s.rf[ inst.rd ] = inst.u_imm
   s.pc += 4
 
-def execute_auis.pc( s, inst ):
+def execute_auipc( s, inst ):
   raise NotImplementedError()
   s.pc += 4
 
@@ -955,7 +955,6 @@ def execute_custom3_rd_rs1_rs2( s, inst ):
   raise NotImplementedError()
   s.pc += 4
 
-]
 
 #=======================================================================
 # Create Decoder
