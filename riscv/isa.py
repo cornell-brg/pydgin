@@ -213,38 +213,38 @@ def execute_nop( s, inst ):
   s.pc += 4
 
 def execute_beq( s, inst ):
-  if s.rf[ inst.rs1 ] == s.rf[ inst.rs2 ]:
+  if s.rf[inst.rs1] == s.rf[inst.rs2]:
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bne( s, inst ):
-  if s.rf[ inst.rs1 ] != s.rf[ inst.rs2 ]:
+  if s.rf[inst.rs1] != s.rf[inst.rs2]:
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_blt( s, inst ):
-  if sreg_t(s.rf[ inst.rs1 ]) < sreg_t(s.rf[ inst.rs2 ]):
+  if sreg_t(s.rf[inst.rs1]) < sreg_t(s.rf[inst.rs2]):
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bge( s, inst ):
-  if sreg_t(s.rf[ inst.rs1 ]) >= sreg_t(s.rf[ inst.rs2 ]):
+  if sreg_t(s.rf[inst.rs1]) >= sreg_t(s.rf[inst.rs2]):
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bltu( s, inst ):
-  if s.rf[ inst.rs1 ] < s.rf[ inst.rs2 ]:
+  if s.rf[inst.rs1] < s.rf[inst.rs2]:
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bgeu( s, inst ):
-  if s.rf[ inst.rs1 ] >= s.rf[ inst.rs2 ]:
+  if s.rf[inst.rs1] >= s.rf[inst.rs2]:
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_jalr( s, inst ):
   tmp = sext_xlen( s.pc + 4 )
-  s.pc = (s.rf[ inst.rs1 ] + inst.i_imm) &  0xFFFFFFFE
+  s.pc = (s.rf[inst.rs1] + inst.i_imm) &  0xFFFFFFFE
   s.rf[ inst.rd ] = tmp;
   s.pc += 4
 
@@ -263,21 +263,21 @@ def execute_auipc( s, inst ):
   s.pc += 4
 
 def execute_addi( s, inst ):
-  s.rf[ inst.rd ] = sext_xlen( inst.rs1 + inst.i_imm )
+  s.rf[ inst.rd ] = sext_xlen( s.rf[inst.rs1] + inst.i_imm )
   s.pc += 4
 
 def execute_slli( s, inst ):
   if SHAMT( s, inst ) > s.xlen:
     raise TRAP_ILLEGAL_INSTRUCTION()
-  s.rf[ inst.rd ] = sext_xlen( inst.rs1 << SHAMT( s, inst ) )
+  s.rf[ inst.rd ] = sext_xlen( s.rf[inst.rs1] << SHAMT( s, inst ) )
   s.pc += 4
 
 def execute_slti( s, inst ):
-  s.rf[ inst.rd ] = sreg_t( s.rf[ inst.rs1 ] ) < sreg_t( inst.i_imm() )
+  s.rf[ inst.rd ] = sreg_t( s.rf[inst.rs1] ) < sreg_t( inst.i_imm() )
   s.pc += 4
 
 def execute_sltiu( s, inst ):
-  s.rf[ inst.rd ] = s.rf[ inst.rs1 ] < inst.i_imm()
+  s.rf[ inst.rd ] = s.rf[inst.rs1] < inst.i_imm()
   s.pc += 4
 
 def execute_xori( s, inst ):
@@ -301,11 +301,11 @@ def execute_andi( s, inst ):
   s.pc += 4
 
 def execute_add( s, inst ):
-  s.rf[ inst.rd ] = sext_xlen( inst.rs1 + inst.rs2 )
+  s.rf[ inst.rd ] = sext_xlen( s.rf[inst.rs1] + s.rf[inst.rs2])
   s.pc += 4
 
 def execute_sub( s, inst ):
-  s.rf[ inst.rd ] = sext_xlen( inst.rs1 - inst.rs2 )
+  s.rf[ inst.rd ] = sext_xlen( s.rf[inst.rs1] - s.rf[inst.rs2])
   s.pc += 4
 
 def execute_sll( s, inst ):
@@ -317,11 +317,11 @@ def execute_slt( s, inst ):
   s.pc += 4
 
 def execute_sltu( s, inst ):
-  s.rf[ inst.rd ] = s.rf[ inst.rs1 ] < s.rf[inst.rs2])
+  s.rf[ inst.rd ] = s.rf[inst.rs1] < s.rf[inst.rs2])
   s.pc += 4
 
 def execute_xor( s, inst ):
-  s.rf[ inst.rd ] = inst.rs1 ^ inst.rs2
+  s.rf[ inst.rd ] = s.rf[inst.rs1] ^ inst.rs2
   s.pc += 4
 
 def execute_srl( s, inst ):
@@ -333,15 +333,15 @@ def execute_sra( s, inst ):
   s.pc += 4
 
 def execute_or( s, inst ):
-  s.rf[ inst.rd ] = inst.rs1 | inst.rs2
+  s.rf[ inst.rd ] = s.rf[inst.rs1] | s.rf[inst.rs2]
   s.pc += 4
 
 def execute_and( s, inst ):
-  s.rf[ inst.rd ] = inst.rs1 & inst.rs2
+  s.rf[ inst.rd ] = s.rf[inst.rs1] & s.rf[inst.rs2]
   s.pc += 4
 
 def execute_addiw( s, inst ):
-  s.rf[ inst.rd ] = sext32( inst.i_imm + inst.rs1 )
+  s.rf[ inst.rd ] = sext32( inst.i_imm + s.rf[inst.rs1] )
   s.pc += 4
 
 def execute_slliw( s, inst ):
@@ -361,7 +361,7 @@ def execute_addw( s, inst ):
   s.pc += 4
 
 def execute_subw( s, inst ):
-  s.rf[ inst.rd ] = sext32( inst.rs1 - inst.rs2 )
+  s.rf[ inst.rd ] = sext32( s.rf[inst.rs1] - s.rf[inst.rs2])
   s.pc += 4
 
 def execute_sllw( s, inst ):
@@ -601,7 +601,7 @@ def execute_hrts( s, inst ):
   s.pc += 4
 
 def execute_csrrw( s, inst ):
-  result = s.rf[ inst.rs1 ]
+  result = s.rf[inst.rs1]
   if result == 1:
     raise Exception("Pass!")
   else:
