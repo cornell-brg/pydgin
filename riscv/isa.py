@@ -3,6 +3,7 @@
 #=======================================================================
 
 from pydgin.misc import create_risc_decoder, FatalError
+from utils import sext_32
 from helpers import *
 
 #=======================================================================
@@ -317,7 +318,7 @@ def execute_slt( s, inst ):
   s.pc += 4
 
 def execute_sltu( s, inst ):
-  s.rf[ inst.rd ] = s.rf[inst.rs1] < s.rf[inst.rs2])
+  s.rf[ inst.rd ] = s.rf[ inst.rs1 ] < s.rf[inst.rs2]
   s.pc += 4
 
 def execute_xor( s, inst ):
@@ -341,7 +342,7 @@ def execute_and( s, inst ):
   s.pc += 4
 
 def execute_addiw( s, inst ):
-  s.rf[ inst.rd ] = sext32( inst.i_imm + s.rf[inst.rs1] )
+  s.rf[ inst.rd ] = sext_32( inst.i_imm + s.rf[inst.rs1] )
   s.pc += 4
 
 def execute_slliw( s, inst ):
@@ -361,7 +362,7 @@ def execute_addw( s, inst ):
   s.pc += 4
 
 def execute_subw( s, inst ):
-  s.rf[ inst.rd ] = sext32( s.rf[inst.rs1] - s.rf[inst.rs2])
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] - s.rf[inst.rs2])
   s.pc += 4
 
 def execute_sllw( s, inst ):

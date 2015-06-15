@@ -10,3 +10,7 @@ def signed( value, nbits ):
 def trim_64( value ):
   return value & 0xffffffffffffffff
 
+def sext_32( value ):
+  if value & 0x80000000:
+    return 0xffffffff00000000 | value
+  return value
