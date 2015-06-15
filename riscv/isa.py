@@ -209,41 +209,45 @@ def execute_nop( s, inst ):
   s.pc += 4
 
 def execute_beq( s, inst ):
-  if s.rf[ insts.rs1 ] == s.rf[ inst.rs2 ]:
+  if s.rf[ inst.rs1 ] == s.rf[ inst.rs2 ]:
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bne( s, inst ):
-  if s.rf[ insts.rs1 ] != s.rf[ inst.rs2 ]:
+  if s.rf[ inst.rs1 ] != s.rf[ inst.rs2 ]:
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_blt( s, inst ):
-  if sreg_t(s.rf[ insts.rs1 ]) < sreg_t(s.rf[ inst.rs2 ]):
+  if sreg_t(s.rf[ inst.rs1 ]) < sreg_t(s.rf[ inst.rs2 ]):
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bge( s, inst ):
-  if sreg_t(s.rf[ insts.rs1 ]) >= sreg_t(s.rf[ inst.rs2 ]):
+  if sreg_t(s.rf[ inst.rs1 ]) >= sreg_t(s.rf[ inst.rs2 ]):
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bltu( s, inst ):
-  if s.rf[ insts.rs1 ] < s.rf[ inst.rs2 ]:
+  if s.rf[ inst.rs1 ] < s.rf[ inst.rs2 ]:
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bgeu( s, inst ):
-  if s.rf[ insts.rs1 ] >= s.rf[ inst.rs2 ]:
+  if s.rf[ inst.rs1 ] >= s.rf[ inst.rs2 ]:
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_jalr( s, inst ):
-  raise NotImplementedError()
+  tmp = sext_xlen( s.pc + 4 )
+  s.pc = (s.rf[ inst.rs1 ] + inst.i_imm) &  0xFFFFFFFE
+  s.rf[ inst.rd ] = tmp;
   s.pc += 4
 
 def execute_jal( s, inst ):
-  raise NotImplementedError()
+  tmp = sext_xlen( s.pc + 4 )
+  s.pc = JUMP_TARGET( s, inst )
+  s.rf[ inst.rd ] = tmp;
   s.pc += 4
 
 def execute_lui( s, inst ):

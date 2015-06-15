@@ -4,6 +4,9 @@ def sext_xlen( value ):
 def BRANCH_TARGET( s, inst ):
   return s.pc + inst.sb_imm
 
+def JUMP_TARGET( s, inst ):
+  return s.pc + inst.uj_imm
+
 def SHAMT( s, inst ):
   return insn.i_imm & 0x3F
 
