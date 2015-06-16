@@ -626,8 +626,8 @@ def execute_csrrw( s, inst ):
   result = s.rf[inst.rs1]
   if result & 0x1:
     status = result >> 1
-    if status: raise Exception("Fail! {}".format( result >> 1 ) )
-    else:      raise Exception("Pass!")
+    if status: raise FatalError("Fail! {}".format( result >> 1 ) )
+    else:      raise FatalError("Pass!")
   else:
     raise NotImplementedError()
   s.pc += 4
