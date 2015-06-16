@@ -388,7 +388,7 @@ def execute_srlw( s, inst ):
   s.pc += 4
 
 def execute_sraw( s, inst ):
-  s.rf[ inst.rd ] = sext32( s.rf[inst.rs1] >> (s.rf[inst.rs2] & 0x1F) )
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> (s.rf[inst.rs2] & 0x1F) )
   s.pc += 4
 
 def execute_lb( s, inst ):
