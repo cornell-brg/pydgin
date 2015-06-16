@@ -339,7 +339,7 @@ def execute_xor( s, inst ):
 def execute_srl( s, inst ):
   if s.xlen == 64:
     s.rf[ inst.rd ] = s.rf[inst.rs1] >> (s.rf[inst.rs2] & 0x3F)
-  else
+  else:
     s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> (s.rf[inst.rs2] & 0x1F) )
   s.pc += 4
 
