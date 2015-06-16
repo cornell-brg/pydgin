@@ -368,8 +368,7 @@ def execute_srliw( s, inst ):
   s.pc += 4
 
 def execute_sraiw( s, inst ):
-  # TODO, is this right?
-  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> SHAMT( s, inst ) )
+  s.rf[ inst.rd ] = signed( s.rf[inst.rs1], 32 ) >> SHAMT( s, inst )
   s.pc += 4
 
 def execute_addw( s, inst ):
