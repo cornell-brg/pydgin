@@ -400,7 +400,8 @@ def execute_lh( s, inst ):
   s.pc += 4
 
 def execute_lw( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.i_imm
+  s.rf[inst.rd] = sext_32( s.mem.read( addr, 4 ) )
   s.pc += 4
 
 def execute_ld( s, inst ):
@@ -428,7 +429,8 @@ def execute_sh( s, inst ):
   s.pc += 4
 
 def execute_sw( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.s_imm
+  s.mem.write( addr, 4, trim_32( s.rf[inst.rs2] ) )
   s.pc += 4
 
 def execute_sd( s, inst ):
