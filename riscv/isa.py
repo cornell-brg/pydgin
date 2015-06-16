@@ -342,7 +342,7 @@ def execute_srl( s, inst ):
 
 def execute_sra( s, inst ):
   s.rf[ inst.rd ] = sext_xlen(
-    sext_xlen(s.rf[inst.rs1]) >> (s.rf[inst.rs2] & (s.xlen-1))
+    signed( s.rf[inst.rs1], 64 ) >> (s.rf[inst.rs2] & (s.xlen-1))
   )
   s.pc += 4
 
