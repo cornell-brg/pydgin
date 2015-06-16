@@ -279,7 +279,7 @@ def execute_sltiu( s, inst ):
   s.pc += 4
 
 def execute_xori( s, inst ):
-  s.rf[ inst.rd ] = inst.i_imm ^ s.rf[inst.rs2]
+  s.rf[ inst.rd ] = inst.i_imm ^ s.rf[inst.rs1]
   s.pc += 4
 
 def execute_srli( s, inst ):
@@ -301,7 +301,7 @@ def execute_srai( s, inst ):
   s.pc += 4
 
 def execute_ori( s, inst ):
-  s.rf[ inst.rd ] = inst.i_imm | s.rf[inst.rs2]
+  s.rf[ inst.rd ] = inst.i_imm | s.rf[inst.rs1]
   s.pc += 4
 
 def execute_andi( s, inst ):
