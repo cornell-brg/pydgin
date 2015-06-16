@@ -3,7 +3,7 @@
 #=======================================================================
 
 from pydgin.misc import create_risc_decoder, FatalError
-from utils import sext_32, signed, sext
+from utils import sext_32, signed, sext, trim
 from pydgin.utils import trim_32
 from helpers import *
 
@@ -426,11 +426,13 @@ def execute_lwu( s, inst ):
   s.pc += 4
 
 def execute_sb( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.s_imm
+  s.mem.write( addr, 1, trim( s.rf[inst.rs2], 8 ) )
   s.pc += 4
 
 def execute_sh( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.s_imm
+  s.mem.write( addr, 2, trim( s.rf[inst.rs2], 16 ) )
   s.pc += 4
 
 def execute_sw( s, inst ):
