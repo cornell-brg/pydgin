@@ -216,44 +216,48 @@ def execute_nop( s, inst ):
 def execute_beq( s, inst ):
   if s.rf[inst.rs1] == s.rf[inst.rs2]:
     s.pc = BRANCH_TARGET( s, inst )
-  s.pc += 4
+  else:
+    s.pc += 4
 
 def execute_bne( s, inst ):
   if s.rf[inst.rs1] != s.rf[inst.rs2]:
     s.pc = BRANCH_TARGET( s, inst )
-  s.pc += 4
+  else:
+    s.pc += 4
 
 def execute_blt( s, inst ):
   if signed(s.rf[inst.rs1], 64) < signed(s.rf[inst.rs2], 64):
     s.pc = BRANCH_TARGET( s, inst )
-  s.pc += 4
+  else:
+    s.pc += 4
 
 def execute_bge( s, inst ):
   if signed(s.rf[inst.rs1], 64) >= signed(s.rf[inst.rs2], 64):
     s.pc = BRANCH_TARGET( s, inst )
-  s.pc += 4
+  else:
+    s.pc += 4
 
 def execute_bltu( s, inst ):
   if s.rf[inst.rs1] < s.rf[inst.rs2]:
     s.pc = BRANCH_TARGET( s, inst )
-  s.pc += 4
+  else:
+    s.pc += 4
 
 def execute_bgeu( s, inst ):
   if s.rf[inst.rs1] >= s.rf[inst.rs2]:
     s.pc = BRANCH_TARGET( s, inst )
-  s.pc += 4
+  else:
+    s.pc += 4
 
 def execute_jalr( s, inst ):
   tmp = sext_xlen( s.pc + 4 )
   s.pc = (s.rf[inst.rs1] + inst.i_imm) &  0xFFFFFFFE
   s.rf[ inst.rd ] = tmp;
-  s.pc += 4
 
 def execute_jal( s, inst ):
   tmp = sext_xlen( s.pc + 4 )
   s.pc = JUMP_TARGET( s, inst )
   s.rf[ inst.rd ] = tmp;
-  s.pc += 4
 
 def execute_lui( s, inst ):
   s.rf[ inst.rd ] = inst.u_imm
@@ -440,7 +444,6 @@ def execute_sd( s, inst ):
   s.pc += 4
 
 def execute_fence( s, inst ):
-  raise NotImplementedError()
   s.pc += 4
 
 def execute_fence_i( s, inst ):
@@ -622,9 +625,9 @@ def execute_hrts( s, inst ):
 def execute_csrrw( s, inst ):
   result = s.rf[inst.rs1]
   if result == 1:
-    raise Exception("Pass!")
-  else:
-    raise Exception("Fail! {}".format( result >> 1 ) )
+    status = result >> 1
+    if status: raise Exception("Fail! {}".format( result >> 1 ) )
+    else:      raise Exception("Pass!")
   s.pc += 4
 
 def execute_csrrs( s, inst ):
