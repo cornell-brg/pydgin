@@ -3,7 +3,7 @@
 #=======================================================================
 
 from pydgin.misc import create_risc_decoder, FatalError
-from utils import sext_32
+from utils import sext_32, signed
 from helpers import *
 
 #=======================================================================
@@ -224,12 +224,12 @@ def execute_bne( s, inst ):
   s.pc += 4
 
 def execute_blt( s, inst ):
-  if sreg_t(s.rf[inst.rs1]) < sreg_t(s.rf[inst.rs2]):
+  if signed(s.rf[inst.rs1], 64) < signed(s.rf[inst.rs2], 64):
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
 def execute_bge( s, inst ):
-  if sreg_t(s.rf[inst.rs1]) >= sreg_t(s.rf[inst.rs2]):
+  if signed(s.rf[inst.rs1], 64) >= signed(s.rf[inst.rs2], 64):
     s.pc = BRANCH_TARGET( s, inst )
   s.pc += 4
 
@@ -274,7 +274,7 @@ def execute_slli( s, inst ):
   s.pc += 4
 
 def execute_slti( s, inst ):
-  s.rf[ inst.rd ] = sreg_t( s.rf[inst.rs1] ) < sreg_t( inst.i_imm() )
+  s.rf[ inst.rd ] = signed( s.rf[inst.rs1], 64 ) < signed( inst.i_imm(), 64 )
   s.pc += 4
 
 def execute_sltiu( s, inst ):
@@ -296,7 +296,7 @@ def execute_srli( s, inst ):
 
 def execute_srai( s, inst ):
   if s.xlen == 64:
-    s.rf[ inst.rd ] = sreg_t( s.rf[inst.rs1] ) >> SHAMT( s, inst )
+    s.rf[ inst.rd ] = signed( s.rf[inst.rs1], 64 ) >> SHAMT( s, inst )
   elif SHAMT( s, inst ) & 0x20:
     raise TRAP_ILLEGAL_INSTRUCTION()
   else:
@@ -325,7 +325,7 @@ def execute_sll( s, inst ):
   s.pc += 4
 
 def execute_slt( s, inst ):
-  s.rf[ inst.rd ] = sreg_t( s.rf[inst.rs1] ) < sreg_t( s.rf[inst.rs2] )
+  s.rf[ inst.rd ] = signed( s.rf[inst.rs1], 64 ) < signed( s.rf[inst.rs2], 64)
   s.pc += 4
 
 def execute_sltu( s, inst ):
