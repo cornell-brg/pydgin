@@ -253,6 +253,7 @@ class _SparseMemory( object ):
           % ( self.block_size, self.addr_mask, self.block_mask )
     #blocks     = []
     self.block_dict = {}
+    self.debug = Debug()
 
   def add_block( self, block_addr ):
     #print "adding block: %x" % block_addr
@@ -276,12 +277,20 @@ class _SparseMemory( object ):
     return block_mem.iread( start_addr & self.addr_mask, num_bytes )
 
   def read( self, start_addr, num_bytes ):
+    if self.debug.enabled( "mem" ):
+      print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
     block_addr = self.block_mask & start_addr
     block_addr = hint( block_addr, promote=True )
     block_mem = self.get_block_mem( block_addr )
-    return block_mem.read( start_addr & self.addr_mask, num_bytes )
+    value = block_mem.read( start_addr & self.addr_mask, num_bytes )
+    if self.debug.enabled( "mem" ):
+      print '%s' % pad_hex( value ),
+    return value
 
   def write( self, start_addr, num_bytes, value ):
+    if self.debug.enabled( "mem" ):
+      print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
+                                     pad_hex( value ) ),
     block_addr = self.block_mask & start_addr
     block_addr = hint( block_addr, promote=True )
     block_mem = self.get_block_mem( block_addr )
