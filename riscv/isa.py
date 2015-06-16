@@ -3,7 +3,7 @@
 #=======================================================================
 
 from pydgin.misc import create_risc_decoder, FatalError
-from utils import sext_32, signed
+from utils import sext_32, signed, sext
 from pydgin.utils import trim_32
 from helpers import *
 
@@ -392,11 +392,13 @@ def execute_sraw( s, inst ):
   s.pc += 4
 
 def execute_lb( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.i_imm
+  s.rf[inst.rd] = sext( s.mem.read( addr, 1 ), 8 )
   s.pc += 4
 
 def execute_lh( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.i_imm
+  s.rf[inst.rd] = sext( s.mem.read( addr, 2 ), 16 )
   s.pc += 4
 
 def execute_lw( s, inst ):
@@ -409,15 +411,18 @@ def execute_ld( s, inst ):
   s.pc += 4
 
 def execute_lbu( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.i_imm
+  s.rf[inst.rd] = s.mem.read( addr, 1 )
   s.pc += 4
 
 def execute_lhu( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.i_imm
+  s.rf[inst.rd] = s.mem.read( addr, 2 )
   s.pc += 4
 
 def execute_lwu( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.i_imm
+  s.rf[inst.rd] = s.mem.read( addr, 4 )
   s.pc += 4
 
 def execute_sb( s, inst ):
