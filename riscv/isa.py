@@ -271,11 +271,11 @@ def execute_slli( s, inst ):
   s.pc += 4
 
 def execute_slti( s, inst ):
-  s.rf[ inst.rd ] = signed( s.rf[inst.rs1], 64 ) < signed( inst.i_imm(), 64 )
+  s.rf[ inst.rd ] = signed( s.rf[inst.rs1], 64 ) < signed( inst.i_imm, 64 )
   s.pc += 4
 
 def execute_sltiu( s, inst ):
-  s.rf[ inst.rd ] = s.rf[inst.rs1] < inst.i_imm()
+  s.rf[ inst.rd ] = s.rf[inst.rs1] < inst.i_imm
   s.pc += 4
 
 def execute_xori( s, inst ):
@@ -359,17 +359,17 @@ def execute_addiw( s, inst ):
   s.pc += 4
 
 def execute_slliw( s, inst ):
-  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] << SHAMT( s, i ) )
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] << SHAMT( s, inst ) )
   s.pc += 4
 
 def execute_srliw( s, inst ):
   # TODO, is this right?
-  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> SHAMT( s, i ) )
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> SHAMT( s, inst ) )
   s.pc += 4
 
 def execute_sraiw( s, inst ):
   # TODO, is this right?
-  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> SHAMT( s, i ) )
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> SHAMT( s, inst ) )
   s.pc += 4
 
 def execute_addw( s, inst ):
