@@ -2,7 +2,7 @@
 # instruction.py
 #=========================================================================
 
-from utils import signed, sext_32
+from utils import signed, sext_32, sext
 
 class Instruction( object ):
   def __init__( self, bits, str ):
@@ -26,15 +26,14 @@ class Instruction( object ):
     return (self.bits >> lo) & mask
 
   def xs( self, lo, len ):
-    # TODO: need sext variable
-    return signed(self.bits >> lo, len)
+    return sext(self.bits >> lo, len)
 
   def imm_sign( self ):
     return self.xs( 63, 1 )
 
   @property
   def i_imm(self):
-    return sext_32( self.bits ) >> 20
+    return self.xs( 20, 12 )
 
   @property
   def s_imm(self):
