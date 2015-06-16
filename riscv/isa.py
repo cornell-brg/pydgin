@@ -624,10 +624,12 @@ def execute_hrts( s, inst ):
 
 def execute_csrrw( s, inst ):
   result = s.rf[inst.rs1]
-  if result == 1:
+  if result & 0x1:
     status = result >> 1
     if status: raise Exception("Fail! {}".format( result >> 1 ) )
     else:      raise Exception("Pass!")
+  else:
+    raise NotImplementedError()
   s.pc += 4
 
 def execute_csrrs( s, inst ):
