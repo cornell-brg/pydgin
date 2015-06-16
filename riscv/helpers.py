@@ -1,8 +1,10 @@
+from utils import trim_64
+
 def sext_xlen( value ):
   return value
 
 def BRANCH_TARGET( s, inst ):
-  return s.pc + inst.sb_imm
+  return trim_64( s.pc + inst.sb_imm )
 
 def JUMP_TARGET( s, inst ):
   return s.pc + inst.uj_imm
