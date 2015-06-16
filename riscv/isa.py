@@ -11,7 +11,6 @@ from helpers import *
 #=======================================================================
 
 encodings = [
-  ['nop',                '000000_00000_00000_00000_00000_000000'],
   ['beq',                'xxxxxxxxxxxxxxxxx000xxxxx1100011'],
   ['bne',                'xxxxxxxxxxxxxxxxx001xxxxx1100011'],
   ['blt',                'xxxxxxxxxxxxxxxxx100xxxxx1100011'],
@@ -206,12 +205,6 @@ encodings = [
 
 def sext_xlen( val ):
   return val
-
-#-----------------------------------------------------------------------
-# nop
-#-----------------------------------------------------------------------
-def execute_nop( s, inst ):
-  s.pc += 4
 
 def execute_beq( s, inst ):
   if s.rf[inst.rs1] == s.rf[inst.rs2]:
