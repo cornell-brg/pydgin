@@ -4,6 +4,7 @@
 
 from pydgin.misc import create_risc_decoder, FatalError
 from utils import sext_32, signed
+from pydgin.utils import trim_32
 from helpers import *
 
 #=======================================================================
@@ -363,8 +364,7 @@ def execute_slliw( s, inst ):
   s.pc += 4
 
 def execute_srliw( s, inst ):
-  # TODO, is this right?
-  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> SHAMT( s, inst ) )
+  s.rf[ inst.rd ] = sext_32( trim_32( s.rf[inst.rs1] ) >> SHAMT( s, inst ) )
   s.pc += 4
 
 def execute_sraiw( s, inst ):
@@ -384,7 +384,7 @@ def execute_sllw( s, inst ):
   s.pc += 4
 
 def execute_srlw( s, inst ):
-  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] >> (s.rf[inst.rs2] & 0x1F) )
+  s.rf[ inst.rd ] = sext_32( trim_32( s.rf[inst.rs1] ) >> (s.rf[inst.rs2] & 0x1F) )
   s.pc += 4
 
 def execute_sraw( s, inst ):
