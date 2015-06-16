@@ -3,6 +3,7 @@
 #=========================================================================
 
 from pydgin.storage import RegisterFile
+from utils import trim_64
 
 #-------------------------------------------------------------------------
 # State
@@ -16,7 +17,7 @@ class State( object ):
     # TODO: don't know what this is:
     self.xlen     = 64
 
-    self.rf       = RegisterFile()
+    self.rf       = RiscVRegisterFile()
     self.mem      = memory
 
     self    .debug = debug
@@ -44,3 +45,10 @@ class State( object ):
 
   def fetch_pc( self ):
     return self.pc
+
+class RiscVRegisterFile( RegisterFile ):
+  def __init__( self ):
+    return RegisterFile.__init__( self, nbits=64 )
+
+  def __setitem__( self, idx, value ):
+    return RegisterFile.__setitem__( self, idx, trim_64( value ) )
