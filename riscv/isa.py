@@ -458,55 +458,101 @@ def execute_fence_i( s, inst ):
   s.pc += 4
 
 def execute_mul( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_xlen( s.rf[inst.rs1] * s.rf[inst.rs2])
   s.pc += 4
 
 def execute_mulh( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_xlen(
+         (signed(s.rf[inst.rs1], 64) * signed(s.rf[inst.rs2], 64)) >> 64 )
   s.pc += 4
 
 def execute_mulhsu( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_xlen(
+         (signed(s.rf[inst.rs1], 64) * s.rf[inst.rs2]) >> 64 )
   s.pc += 4
 
 def execute_mulhu( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_xlen( (s.rf[inst.rs1] * s.rf[inst.rs2]) >> 64 )
   s.pc += 4
 
 def execute_div( s, inst ):
-  raise NotImplementedError()
+  a = signed( s.rf[inst.rs1], 64 )
+  b = signed( s.rf[inst.rs2], 64 )
+  if b == 0:
+    s.rf[ inst.rd ] = -1
+  else:
+    sign = -1 if (a < 0) ^ (b < 0) else 1
+    s.rf[ inst.rd ] = sext_xlen( abs(a) / abs(b) * sign )
   s.pc += 4
 
 def execute_divu( s, inst ):
-  raise NotImplementedError()
+  a = s.rf[inst.rs1]
+  b = s.rf[inst.rs2]
+  if b == 0:
+    s.rf[ inst.rd ] = -1
+  else:
+    s.rf[ inst.rd ] = sext_xlen( a / b )
   s.pc += 4
 
 def execute_rem( s, inst ):
-  raise NotImplementedError()
+  a = signed( s.rf[inst.rs1], 64 )
+  b = signed( s.rf[inst.rs2], 64 )
+  if b == 0:
+    s.rf[ inst.rd ] = a
+  else:
+    sign = 1 if (a > 0) else -1
+    s.rf[ inst.rd ] = sext_xlen( abs(a) % abs(b) * sign )
   s.pc += 4
 
 def execute_remu( s, inst ):
-  raise NotImplementedError()
+  a = s.rf[inst.rs1]
+  b = s.rf[inst.rs2]
+  if b == 0:
+    s.rf[ inst.rd ] = a
+  else:
+    s.rf[ inst.rd ] = sext_xlen( a % b )
   s.pc += 4
 
 def execute_mulw( s, inst ):
-  raise NotImplementedError()
+  s.rf[ inst.rd ] = sext_32( s.rf[inst.rs1] * s.rf[inst.rs2])
   s.pc += 4
 
 def execute_divw( s, inst ):
-  raise NotImplementedError()
+  a = signed( s.rf[inst.rs1], 64 )
+  b = signed( s.rf[inst.rs2], 64 )
+  if b == 0:
+    s.rf[ inst.rd ] = -1
+  else:
+    sign = -1 if (a < 0) ^ (b < 0) else 1
+    s.rf[ inst.rd ] = sext_32( abs(a) / abs(b) * sign )
   s.pc += 4
 
 def execute_divuw( s, inst ):
-  raise NotImplementedError()
+  a = s.rf[inst.rs1]
+  b = s.rf[inst.rs2]
+  if b == 0:
+    s.rf[ inst.rd ] = -1
+  else:
+    s.rf[ inst.rd ] = sext_32( a / b )
   s.pc += 4
 
 def execute_remw( s, inst ):
-  raise NotImplementedError()
+  a = signed( s.rf[inst.rs1], 64 )
+  b = signed( s.rf[inst.rs2], 64 )
+  if b == 0:
+    s.rf[ inst.rd ] = a
+  else:
+    sign = 1 if (a > 0) else -1
+    s.rf[ inst.rd ] = sext_32( abs(a) % abs(b) * sign )
   s.pc += 4
 
 def execute_remuw( s, inst ):
-  raise NotImplementedError()
+  a = s.rf[inst.rs1]
+  b = s.rf[inst.rs2]
+  if b == 0:
+    s.rf[ inst.rd ] = a
+  else:
+    s.rf[ inst.rd ] = sext_32( a % b )
   s.pc += 4
 
 def execute_amoadd_w( s, inst ):
