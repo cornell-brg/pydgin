@@ -631,39 +631,93 @@ def execute_sc_w( s, inst ):
   s.pc += 4
 
 def execute_amoadd_d( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = (( s.mem.read( addr+4, 4 ) << 32 ) \
+           | s.mem.read( addr,   4 ))
+  new   = value + s.rf[inst.rs2]
+  s.mem.write( addr,   4, trim_32( new )       )
+  s.mem.write( addr+4, 4, trim_32( new >> 32 ) )
+  s.rf[inst.rd] = value
   s.pc += 4
 
 def execute_amoxor_d( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = (( s.mem.read( addr+4, 4 ) << 32 ) \
+           | s.mem.read( addr,   4 ))
+  new   = value ^ s.rf[inst.rs2]
+  s.mem.write( addr,   4, trim_32( new )       )
+  s.mem.write( addr+4, 4, trim_32( new >> 32 ) )
+  s.rf[inst.rd] = value
   s.pc += 4
 
 def execute_amoor_d( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = (( s.mem.read( addr+4, 4 ) << 32 ) \
+           | s.mem.read( addr,   4 ))
+  new   = value | s.rf[inst.rs2]
+  s.mem.write( addr,   4, trim_32( new )       )
+  s.mem.write( addr+4, 4, trim_32( new >> 32 ) )
+  s.rf[inst.rd] = value
   s.pc += 4
 
 def execute_amoand_d( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = (( s.mem.read( addr+4, 4 ) << 32 ) \
+           | s.mem.read( addr,   4 ))
+  new   = value & s.rf[inst.rs2]
+  s.mem.write( addr,   4, trim_32( new )       )
+  s.mem.write( addr+4, 4, trim_32( new >> 32 ) )
+  s.rf[inst.rd] = value
   s.pc += 4
 
 def execute_amomin_d( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = (( s.mem.read( addr+4, 4 ) << 32 ) \
+           | s.mem.read( addr,   4 ))
+  new   = min( signed(value, 64), signed(s.rf[inst.rs2], 64) )
+  s.mem.write( addr,   4, trim_32( new )       )
+  s.mem.write( addr+4, 4, trim_32( new >> 32 ) )
+  s.rf[inst.rd] = value
   s.pc += 4
 
 def execute_amomax_d( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = (( s.mem.read( addr+4, 4 ) << 32 ) \
+           | s.mem.read( addr,   4 ))
+  new   = max( signed(value, 64), signed(s.rf[inst.rs2], 64) )
+  s.mem.write( addr,   4, trim_32( new )       )
+  s.mem.write( addr+4, 4, trim_32( new >> 32 ) )
+  s.rf[inst.rd] = value
   s.pc += 4
 
 def execute_amominu_d( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = (( s.mem.read( addr+4, 4 ) << 32 ) \
+           | s.mem.read( addr,   4 ))
+  new   = min( value, s.rf[inst.rs2] )
+  s.mem.write( addr,   4, trim_32( new )       )
+  s.mem.write( addr+4, 4, trim_32( new >> 32 ) )
+  s.rf[inst.rd] = value
   s.pc += 4
 
 def execute_amomaxu_d( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = (( s.mem.read( addr+4, 4 ) << 32 ) \
+           | s.mem.read( addr,   4 ))
+  new   = max( value, s.rf[inst.rs2] )
+  s.mem.write( addr,   4, trim_32( new )       )
+  s.mem.write( addr+4, 4, trim_32( new >> 32 ) )
+  s.rf[inst.rd] = value
   s.pc += 4
 
 def execute_amoswap_d( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = (( s.mem.read( addr+4, 4 ) << 32 ) \
+           | s.mem.read( addr,   4 ))
+  new   = s.rf[inst.rs2]
+  s.mem.write( addr,   4, trim_32( new )       )
+  s.mem.write( addr+4, 4, trim_32( new >> 32 ) )
+  s.rf[inst.rd] = value
   s.pc += 4
 
 def execute_lr_d( s, inst ):
