@@ -454,7 +454,7 @@ def execute_fence( s, inst ):
   s.pc += 4
 
 def execute_fence_i( s, inst ):
-  raise NotImplementedError()
+  # TODO: MMU flush icache
   s.pc += 4
 
 def execute_mul( s, inst ):
@@ -556,39 +556,70 @@ def execute_remuw( s, inst ):
   s.pc += 4
 
 def execute_amoadd_w( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = s.mem.read( addr, 4 )
+  s.mem.write( addr, 4, trim(value + s.rf[inst.rs2], 32))
+  s.rf[inst.rd] = sext_32( value )
   s.pc += 4
 
 def execute_amoxor_w( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = s.mem.read( addr, 4 )
+  s.mem.write( addr, 4, trim(value ^ s.rf[inst.rs2], 32))
+  s.rf[inst.rd] = sext_32( value )
   s.pc += 4
 
 def execute_amoor_w( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = s.mem.read( addr, 4 )
+  s.mem.write( addr, 4, trim(value | s.rf[inst.rs2], 32))
+  s.rf[inst.rd] = sext_32( value )
   s.pc += 4
 
 def execute_amoand_w( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = s.mem.read( addr, 4 )
+  s.mem.write( addr, 4, trim(value & s.rf[inst.rs2], 32))
+  s.rf[inst.rd] = sext_32( value )
   s.pc += 4
 
 def execute_amomin_w( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = s.mem.read( addr, 4 )
+  new   = min( signed(value, 32), signed(s.rf[inst.rs2], 32) )
+  s.mem.write( addr, 4, trim(new, 32))
+  s.rf[inst.rd] = sext_32( value )
   s.pc += 4
 
 def execute_amomax_w( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = s.mem.read( addr, 4 )
+  new   = max( signed(value, 32), signed(s.rf[inst.rs2], 32) )
+  s.mem.write( addr, 4, trim(new, 32))
+  s.rf[inst.rd] = sext_32( value )
   s.pc += 4
 
 def execute_amominu_w( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = s.mem.read( addr, 4 )
+  new   = min( value, s.rf[inst.rs2] )
+  s.mem.write( addr, 4, trim(new, 32))
+  s.rf[inst.rd] = sext_32( value )
   s.pc += 4
 
 def execute_amomaxu_w( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = s.mem.read( addr, 4 )
+  new   = max( value, s.rf[inst.rs2] )
+  s.mem.write( addr, 4, trim(new, 32))
+  s.rf[inst.rd] = sext_32( value )
   s.pc += 4
 
 def execute_amoswap_w( s, inst ):
-  raise NotImplementedError()
+  addr  = s.rf[inst.rs1]
+  value = s.mem.read( addr, 4 )
+  s.mem.write( addr, 4, trim(s.rf[inst.rs2], 32))
+  s.rf[inst.rd] = sext_32( value )
   s.pc += 4
 
 def execute_lr_w( s, inst ):
