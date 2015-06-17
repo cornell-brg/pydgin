@@ -485,19 +485,11 @@ def elf_reader( file_obj, is_64bit=False ):
   file_obj.seek( intmask( ehdr.shoff ) + ehdr.shstrndx * ehdr.shentsize )
   shdr_data = file_obj.read(ehdr.shentsize)
 
-  #print "ehdr"
-  #print ehdr
-
   # Construct a section header object for the section string table
 
   shdr = ElfSectionHeader( shdr_data, is_64bit=is_64bit )
 
-  #print "shdr"
-  #print shdr
-
   # Read the data for the section header table
-  #import pdb; pdb.set_trace()
-
 
   file_obj.seek( intmask( shdr.offset ) )
   shstrtab_data = file_obj.read( intmask( shdr.size ) )
@@ -529,9 +521,6 @@ def elf_reader( file_obj, is_64bit=False ):
 
     shdr = ElfSectionHeader( shdr_data, is_64bit=is_64bit )
 
-    #print "shdr"
-    #print shdr
-
     # Find the section name
 
     #start = shstrtab_data[shdr.name:]
@@ -541,7 +530,6 @@ def elf_reader( file_obj, is_64bit=False ):
 
     #section_name = start.partition('\0')[0]
     section_name = start.split('\0', 1)[0]
-    #print "section_name", section_name
 
     # This is the list of sections that we currently want to load.
 
