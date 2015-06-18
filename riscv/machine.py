@@ -11,6 +11,7 @@ from utils import trim_64
 #-------------------------------------------------------------------------
 class State( object ):
   # TODO: add virtualizables
+  _virtualizable_ = ['pc', 'num_insts']
 
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
