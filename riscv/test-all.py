@@ -7,8 +7,11 @@ import sys
 import subprocess
 
 in_dir = "/Users/berkin/work/tmp/riscv/riscv-tests/isa/"
-if len( sys.argv ) > 1:
-  in_dir = sys.argv[1]
+interp = None
+if "--interp" in sys.argv:
+  interp = sys.argv[ sys.argv.index( "--interp" ) + 1 ]
+if "--test-dir" in sys.argv:
+  in_dir = sys.argv[ sys.argv.index( "--test-dir" ) + 1 ]
 
 print "looking for tests in", in_dir
 
@@ -22,7 +25,8 @@ num_error  = 0
 for dump in dumps:
   bin_name = dump[:-5]
   try:
-    out = subprocess.check_output( ["python", "riscv-sim.py", bin_name],
+    out = subprocess.check_output( [interp, bin_name] if interp else
+                                   ["python", "riscv-sim.py", bin_name],
                                    stderr=subprocess.STDOUT )
   except subprocess.CalledProcessError as e:
     out = e.output
@@ -30,16 +34,16 @@ for dump in dumps:
   num_tests += 1
 
   if "Pass!" in out:
-    out_str = "Passed"
+    out_str = "pass"
     num_passed += 1
   elif "Fail!" in out:
-    out_str = "Failed"
+    out_str = "FAILED"
     num_failed += 1
   else:
-    out_str = "Error"
+    out_str = "ERROR"
     num_error += 1
   test_name = bin_name[ bin_name.rfind('/')+1 : ]
-  print "Test {} \t {}".format( test_name, out_str )
+  print "Test {:<20} {}".format( test_name, out_str )
 
 print "Number of tests: {} passed: {} failed: {} error: {}" \
     .format( num_tests, num_passed, num_failed, num_error  )
