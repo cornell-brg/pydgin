@@ -2,6 +2,7 @@
 # instruction.py
 #=========================================================================
 
+from pydgin.utils import r_ulonglong
 from utils import signed, sext_32, sext, trim_64
 
 class Instruction( object ):
@@ -22,7 +23,7 @@ class Instruction( object ):
 #  uint64_t csr() { return x(20, 12)
 
   def x( self, lo, len ):
-    mask = 0xffffffffffffffff >> (64-len)
+    mask = r_ulonglong( 0xffffffffffffffff ) >> (64-len)
     return (self.bits >> lo) & mask
 
   def xs( self, lo, len ):

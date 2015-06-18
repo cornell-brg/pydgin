@@ -3,6 +3,7 @@
 #=========================================================================
 
 from pydgin.storage import RegisterFile
+from pydgin.utils import specialize
 from utils import trim_64
 
 #-------------------------------------------------------------------------
@@ -50,5 +51,6 @@ class RiscVRegisterFile( RegisterFile ):
   def __init__( self ):
     return RegisterFile.__init__( self, nbits=64 )
 
+  @specialize.argtype(2)
   def __setitem__( self, idx, value ):
     return RegisterFile.__setitem__( self, idx, trim_64( value ) )

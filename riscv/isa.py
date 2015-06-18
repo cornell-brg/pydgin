@@ -4,7 +4,7 @@
 
 from pydgin.misc import create_risc_decoder, FatalError
 from utils import sext_32, signed, sext, trim
-from pydgin.utils import trim_32
+from pydgin.utils import trim_32, specialize, intmask
 from helpers import *
 
 #=======================================================================
@@ -204,6 +204,7 @@ encodings = [
 # Instruction Definitions
 #=======================================================================
 
+@specialize.argtype(0)
 def sext_xlen( val ):
   return val
 
@@ -468,7 +469,7 @@ def execute_mulh( s, inst ):
 
 def execute_mulhsu( s, inst ):
   s.rf[ inst.rd ] = sext_xlen(
-         (signed(s.rf[inst.rs1], 64) * s.rf[inst.rs2]) >> 64 )
+         (signed(s.rf[inst.rs1], 64) * intmask(s.rf[inst.rs2])) >> 64 )
   s.pc += 4
 
 def execute_mulhu( s, inst ):
@@ -481,8 +482,8 @@ def execute_div( s, inst ):
   if b == 0:
     s.rf[ inst.rd ] = -1
   else:
-    sign = -1 if (a < 0) ^ (b < 0) else 1
-    s.rf[ inst.rd ] = sext_xlen( abs(a) / abs(b) * sign )
+    s.rf[ inst.rd ] = sext_xlen( abs(a) / abs(b) *
+                                 (-1 if (a < 0) ^ (b < 0) else 1) )
   s.pc += 4
 
 def execute_divu( s, inst ):
@@ -500,8 +501,7 @@ def execute_rem( s, inst ):
   if b == 0:
     s.rf[ inst.rd ] = a
   else:
-    sign = 1 if (a > 0) else -1
-    s.rf[ inst.rd ] = sext_xlen( abs(a) % abs(b) * sign )
+    s.rf[ inst.rd ] = sext_xlen( abs(a) % abs(b) * (1 if (a > 0) else -1) )
   s.pc += 4
 
 def execute_remu( s, inst ):
@@ -764,7 +764,7 @@ def execute_csrrw( s, inst ):
   result = s.rf[inst.rs1]
   if result & 0x1:
     status = result >> 1
-    if status: raise FatalError("Fail! {}".format( result >> 1 ) )
+    if status: raise FatalError("Fail! %s" % (result >> 1 ) )
     else:      raise FatalError("Pass!")
   else:
     raise NotImplementedError()

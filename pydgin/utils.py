@@ -4,10 +4,11 @@
 # General-purpose bitwise operation utilities.
 
 try:
-  from rpython.rlib.rarithmetic import r_uint, intmask
+  from rpython.rlib.rarithmetic import r_uint, intmask, r_ulonglong
   from rpython.rlib.objectmodel import specialize
 except ImportError:
   r_uint = lambda x : x
+  r_ulonglong = lambda x : x
   intmask = lambda x : x
   class Specialize:
     def argtype( self, fun, *args ):
