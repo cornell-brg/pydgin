@@ -9,7 +9,9 @@ def signed( value, nbits ):
     return -intmask( trim( twos_complement, nbits ) )
   return intmask( value )
 
+@specialize.argtype(0)
 def trim( value, nbits ):
+  value = r_ulonglong( value )
   mask = r_ulonglong( 0xffffffffffffffff ) >> (64 - nbits)
   return value & mask
 
