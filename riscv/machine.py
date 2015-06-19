@@ -20,10 +20,12 @@ class State( object ):
     self.xlen     = 64
 
     self.rf       = RiscVRegisterFile()
+    self.fp       = RiscVFPRegisterFile()
     self.mem      = memory
 
     self    .debug = debug
     self.rf .debug = debug
+    self.fp .debug = debug
     self.mem.debug = debug
 
     # coprocessor registers
@@ -50,8 +52,24 @@ class State( object ):
 
 class RiscVRegisterFile( RegisterFile ):
   def __init__( self ):
-    return RegisterFile.__init__( self, nbits=64 )
+    RegisterFile.__init__( self,
+      constant_zero=True,
+      num_regs=32,
+      nbits=64
+    )
 
   @specialize.argtype(2)
   def __setitem__( self, idx, value ):
     return RegisterFile.__setitem__( self, idx, trim_64( value ) )
+
+class RiscVFPRegisterFile( RegisterFile ):
+  def __init__( self ):
+    RegisterFile.__init__( self,
+      constant_zero=False,
+      num_regs=32,
+      nbits=64
+    )
+
+  @specialize.argtype(2)
+  def __setitem__( self, idx, value ):
+    return RegisterFile.__setitem__( self, idx, value )
