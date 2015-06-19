@@ -208,6 +208,25 @@ encodings = [
 def sext_xlen( val ):
   return val
 
+# TODO: move this elsewhere?
+def multhi64( a, b ):
+  # returns the high 64 bits of 64 bit multiplication
+  # using this trick to get the high bits of 64-bit multiplication:
+  # http://stackoverflow.com/questions/28868367/getting-the-high-part-of-64-bit-integer-multiplication
+  a_hi, a_lo = trim_32(a >> 32), trim_32(a)
+  b_hi, b_lo = trim_32(b >> 32), trim_32(b)
+
+  a_x_b_hi =  a_hi * b_hi
+  a_x_b_mid = a_hi * b_lo
+  b_x_a_mid = b_hi * a_lo
+  a_x_b_lo =  a_lo * b_lo
+
+  carry_bit = ( trim_32( a_x_b_mid ) + trim_32( b_x_a_mid ) +
+                (a_x_b_lo >> 32) ) >> 32
+
+  return a_x_b_hi + (a_x_b_mid >> 32) + (b_x_a_mid >> 32) + carry_bit
+
+
 def execute_beq( s, inst ):
   if s.rf[inst.rs1] == s.rf[inst.rs2]:
     s.pc = BRANCH_TARGET( s, inst )
@@ -463,17 +482,51 @@ def execute_mul( s, inst ):
   s.pc += 4
 
 def execute_mulh( s, inst ):
-  s.rf[ inst.rd ] = sext_xlen(
-         (signed(s.rf[inst.rs1], 64) * signed(s.rf[inst.rs2], 64)) >> 64 )
+  a, b = s.rf[inst.rs1], s.rf[inst.rs2]
+  a_s, b_s = signed(a, 64), signed(b, 64)
+  a, b = abs(a_s), abs(b_s)
+
+  multlo = trim_64( a * b )
+  multhi = multhi64( a, b )
+
+  # negate -- taken from
+  # http://stackoverflow.com/questions/1541426/computing-high-64-bits-of-a-64x64-int-product-in-c
+  # this requires us to do low multiplication as well, so it's probably
+  # not very efficient
+  if (a_s < 0) ^ (b_s < 0):
+    multhi = ~multhi
+    if multlo == 0:
+      multhi += 1
+
+  s.rf[ inst.rd ] = sext_xlen( multhi )
   s.pc += 4
 
 def execute_mulhsu( s, inst ):
-  s.rf[ inst.rd ] = sext_xlen(
-         (signed(s.rf[inst.rs1], 64) * intmask(s.rf[inst.rs2])) >> 64 )
+  a, b = s.rf[inst.rs1], s.rf[inst.rs2]
+  a_s = signed(a, 64)
+  a = abs(a_s)
+
+  multlo = trim_64( a * b )
+  multhi = multhi64( a, b )
+
+  # negate -- taken from
+  # http://stackoverflow.com/questions/1541426/computing-high-64-bits-of-a-64x64-int-product-in-c
+  # this requires us to do low multiplication as well, so it's probably
+  # not very efficient
+  if a_s < 0:
+    multhi = ~multhi
+    if multlo == 0:
+      multhi += 1
+
+  s.rf[ inst.rd ] = sext_xlen( multhi )
   s.pc += 4
 
 def execute_mulhu( s, inst ):
-  s.rf[ inst.rd ] = sext_xlen( (s.rf[inst.rs1] * s.rf[inst.rs2]) >> 64 )
+  a, b = s.rf[inst.rs1], s.rf[inst.rs2]
+
+  multhi = multhi64( a, b )
+
+  s.rf[ inst.rd ] = sext_xlen( multhi )
   s.pc += 4
 
 def execute_div( s, inst ):
