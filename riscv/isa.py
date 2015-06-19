@@ -6,6 +6,7 @@ from pydgin.misc import create_risc_decoder, FatalError
 from utils import sext_32, signed, sext, trim
 from pydgin.utils import trim_32, specialize, intmask
 from helpers import *
+from syscalls import do_syscall
 
 #=======================================================================
 # Instruction Encodings
@@ -782,7 +783,7 @@ def execute_sc_d( s, inst ):
   s.pc += 4
 
 def execute_scall( s, inst ):
-  raise NotImplementedError()
+  do_syscall( s )
   s.pc += 4
 
 def execute_sbreak( s, inst ):

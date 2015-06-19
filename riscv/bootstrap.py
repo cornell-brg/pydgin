@@ -12,7 +12,10 @@ def syscall_init( mem, debug ):
 
   # instantiate architectural state with memory and reset address
 
-  state = State( mem, debug, reset_addr=0x2000 )
+  # proxy kernel seems to start at 0x2000
+  #state = State( mem, debug, reset_addr=0x2000 )
+  # entry point to binaries seem to start at 0x10000
+  state = State( mem, debug, reset_addr=0x10000 )
 
   return state
 
