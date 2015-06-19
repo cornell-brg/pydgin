@@ -16,11 +16,13 @@ class State( object ):
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
 
-    # TODO: don't know what this is:
-    self.xlen     = 64
+    self.xlen     = 64   # defines the bitwidth of int registers
+    self.flen     = 64   # defines the bitwidth of fp  registers
 
     self.rf       = RiscVRegisterFile()
     self.fp       = RiscVFPRegisterFile()
+    self.csr      = 0    # Bits( XLEN )
+    self.fsr      = 0    # Bits( 32 )
     self.mem      = memory
 
     self    .debug = debug
