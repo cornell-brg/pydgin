@@ -1,6 +1,13 @@
 #!/usr/bin/env python
-# Usage:
-#  ./test-all.py <dir for tests>
+
+usage = """Usage:
+  ./test-all.py <options>
+Options:
+  --help, -h          Print this help message
+  --interp <interp>   Use the specified interpreter instead of interpreted
+                      Pydgin
+  --test-dir <dir>    Find tests in dir
+"""
 
 import glob
 import sys
@@ -8,11 +15,18 @@ import subprocess
 
 in_dir = "/Users/berkin/work/tmp/riscv/riscv-tests/isa/"
 interp = None
+if "--help" in sys.argv or "-h" in sys.argv:
+  print usage
+  sys.exit(0)
 if "--interp" in sys.argv:
   interp = sys.argv[ sys.argv.index( "--interp" ) + 1 ]
 if "--test-dir" in sys.argv:
   in_dir = sys.argv[ sys.argv.index( "--test-dir" ) + 1 ]
 
+if interp:
+  print "using interpreter:", interp
+else:
+  print "using interpreted pydgin"
 print "looking for tests in", in_dir
 
 dumps = glob.glob( in_dir + "/*.dump" )
