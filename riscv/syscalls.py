@@ -3,7 +3,7 @@
 #=========================================================================
 
 from pydgin.utils import intmask
-import pydgin.syscalls as common
+import pydgin.syscalls as cmn_sysc
 
 SYS_exit = 93
 SYS_exit_group = 94
@@ -55,51 +55,77 @@ SYS_rt_sigprocmask = 135
 SYS_ioctl = 29
 
 syscall_funcs = {
-  SYS_exit           : common.syscall_exit,
-  SYS_exit_group     : common.syscall_exit,
-  SYS_read           : common.syscall_read,
- #SYS_pread          : common.syscall_pread,
-  SYS_write          : common.syscall_write,
-  SYS_open           : common.syscall_open,
- #SYS_openat         : common.syscall_openat,
-  SYS_close          : common.syscall_close,
-  SYS_fstat          : common.syscall_fstat,
-  SYS_lseek          : common.syscall_lseek,
-  SYS_stat           : common.syscall_stat,
- #SYS_lstat          : common.syscall_lstat,
- #SYS_fstatat        : common.syscall_fstatat,
-  SYS_link           : common.syscall_link,
-  SYS_unlink         : common.syscall_unlink,
- #SYS_mkdir          : common.syscall_mkdir,
- #SYS_linkat         : common.syscall_linkat,
- #SYS_unlinkat       : common.syscall_unlinkat,
- #SYS_mkdirat        : common.syscall_mkdirat,
- #SYS_getcwd         : common.syscall_getcwd,
-  SYS_brk            : common.syscall_brk,
- #SYS_uname          : common.syscall_uname,
- #SYS_getpid         : common.syscall_getpid,
- #SYS_getuid         : common.syscall_getuid,
- #SYS_geteuid        : common.syscall_getuid,
- #SYS_getgid         : common.syscall_getuid,
- #SYS_getegid        : common.syscall_getuid,
- #SYS_mmap           : common.syscall_mmap,
- #SYS_munmap         : common.syscall_munmap,
- #SYS_mremap         : common.syscall_mremap,
- #SYS_mprotect       : common.syscall_mprotect,
- #SYS_rt_sigaction   : common.syscall_rt_sigaction,
- #SYS_time           : common.syscall_time,
- #SYS_gettimeofday   : common.syscall_gettimeofday,
- #SYS_times          : common.syscall_times,
- #SYS_writev         : common.syscall_writev,
- #SYS_access         : common.syscall_access,
- #SYS_faccessat      : common.syscall_faccessat,
- #SYS_fcntl          : common.syscall_fcntl,
- #SYS_getdents       : common.syscall_getdents,
- #SYS_dup            : common.syscall_dup,
- #SYS_readlinkat     : common.syscall_stub_nosys,
- #SYS_rt_sigprocmask : common.syscall_stub_success,
-  SYS_ioctl          : common.syscall_ioctl,
+  SYS_exit           : cmn_sysc.syscall_exit,
+  SYS_exit_group     : cmn_sysc.syscall_exit,
+  SYS_read           : cmn_sysc.syscall_read,
+ #SYS_pread          : cmn_sysc.syscall_pread,
+  SYS_write          : cmn_sysc.syscall_write,
+  SYS_open           : cmn_sysc.syscall_open,
+ #SYS_openat         : cmn_sysc.syscall_openat,
+  SYS_close          : cmn_sysc.syscall_close,
+  SYS_fstat          : cmn_sysc.syscall_fstat,
+  SYS_lseek          : cmn_sysc.syscall_lseek,
+  SYS_stat           : cmn_sysc.syscall_stat,
+ #SYS_lstat          : cmn_sysc.syscall_lstat,
+ #SYS_fstatat        : cmn_sysc.syscall_fstatat,
+  SYS_link           : cmn_sysc.syscall_link,
+  SYS_unlink         : cmn_sysc.syscall_unlink,
+ #SYS_mkdir          : cmn_sysc.syscall_mkdir,
+ #SYS_linkat         : cmn_sysc.syscall_linkat,
+ #SYS_unlinkat       : cmn_sysc.syscall_unlinkat,
+ #SYS_mkdirat        : cmn_sysc.syscall_mkdirat,
+ #SYS_getcwd         : cmn_sysc.syscall_getcwd,
+  SYS_brk            : cmn_sysc.syscall_brk,
+ #SYS_uname          : cmn_sysc.syscall_uname,
+ #SYS_getpid         : cmn_sysc.syscall_getpid,
+ #SYS_getuid         : cmn_sysc.syscall_getuid,
+ #SYS_geteuid        : cmn_sysc.syscall_getuid,
+ #SYS_getgid         : cmn_sysc.syscall_getuid,
+ #SYS_getegid        : cmn_sysc.syscall_getuid,
+ #SYS_mmap           : cmn_sysc.syscall_mmap,
+ #SYS_munmap         : cmn_sysc.syscall_munmap,
+ #SYS_mremap         : cmn_sysc.syscall_mremap,
+ #SYS_mprotect       : cmn_sysc.syscall_mprotect,
+ #SYS_rt_sigaction   : cmn_sysc.syscall_rt_sigaction,
+ #SYS_time           : cmn_sysc.syscall_time,
+ #SYS_gettimeofday   : cmn_sysc.syscall_gettimeofday,
+ #SYS_times          : cmn_sysc.syscall_times,
+ #SYS_writev         : cmn_sysc.syscall_writev,
+ #SYS_access         : cmn_sysc.syscall_access,
+ #SYS_faccessat      : cmn_sysc.syscall_faccessat,
+ #SYS_fcntl          : cmn_sysc.syscall_fcntl,
+ #SYS_getdents       : cmn_sysc.syscall_getdents,
+ #SYS_dup            : cmn_sysc.syscall_dup,
+ #SYS_readlinkat     : cmn_sysc.syscall_stub_nosys,
+ #SYS_rt_sigprocmask : cmn_sysc.syscall_stub_success,
+  SYS_ioctl          : cmn_sysc.syscall_ioctl,
 }
+
+# override stat fields.
+# XXX: we need a better way to do this
+#                             sz off
+cmn_sysc.Stat.ST_DEV      = ( 8, 0  )
+cmn_sysc.Stat.ST_INO      = ( 8, 8  )
+cmn_sysc.Stat.ST_MODE     = ( 4, 16 )
+cmn_sysc.Stat.ST_NLINK    = ( 4, 20 )
+cmn_sysc.Stat.ST_UID      = ( 4, 24 )
+cmn_sysc.Stat.ST_GID      = ( 4, 28 )
+cmn_sysc.Stat.ST_RDEV     = ( 8, 32 )
+#             pad1 (64b)
+cmn_sysc.Stat.ST_SIZE     = ( 8, 48 )
+cmn_sysc.Stat.ST_BLKSIZE  = ( 4, 56 )
+#             pad2 (32b)
+cmn_sysc.Stat.ST_BLOCKS   = ( 8, 64 )
+cmn_sysc.Stat.ST_ATIME    = ( 8, 72 )
+#             pad3 (64b)
+cmn_sysc.Stat.ST_MTIME    = ( 8, 88 )
+#             pad4 (64b)
+cmn_sysc.Stat.ST_CTIME    = ( 8, 104)
+#             pad5 (64b)
+#             unused4 (32b)
+#             unused5 (32b)
+
+cmn_sysc.Stat.SIZE = 128
 
 #-------------------------------------------------------------------------
 # do_syscall
