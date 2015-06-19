@@ -39,8 +39,8 @@ num_error  = 0
 for dump in dumps:
   bin_name = dump[:-5]
   try:
-    out = subprocess.check_output( [interp, bin_name] if interp else
-                                   ["python", "riscv-sim.py", bin_name],
+    out = subprocess.check_output( [interp, "--test", bin_name] if interp else
+                                   ["python", "riscv-sim.py", "--test", bin_name],
                                    stderr=subprocess.STDOUT )
   except subprocess.CalledProcessError as e:
     out = e.output

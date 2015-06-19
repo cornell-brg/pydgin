@@ -11,7 +11,7 @@ sys.path.append('..')
 from pydgin.sim     import Sim, init_sim
 from pydgin.storage import Memory
 from pydgin.misc    import load_program
-from bootstrap      import test_init
+from bootstrap      import test_init, syscall_init
 from instruction    import Instruction
 from isa            import decode
 
@@ -54,7 +54,10 @@ class RiscVSim( Sim ):
     #if testbin: self.state = test_init   ( mem, self.debug )
     #else:       self.state = syscall_init( mem, breakpoint, run_argv,
     #                                       run_envp, self.debug )
-    self.state = test_init( mem, self.debug )
+    if testbin:
+      self.state = test_init( mem, self.debug )
+    else:
+      self.state = syscall_init( mem, self.debug )
 
     self.state.testbin  = testbin
     self.state.exe_name = exe_name
