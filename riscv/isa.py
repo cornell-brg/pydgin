@@ -1155,7 +1155,8 @@ def execute_fsw( s, inst ):
   s.pc += 4
 
 def execute_fsd( s, inst ):
-  raise NotImplementedError()
+  # XXX: ignoring fsd for the time being
+  #raise NotImplementedError()
   s.pc += 4
 
 def execute_fmadd_s( s, inst ):
