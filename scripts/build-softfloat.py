@@ -60,6 +60,9 @@ ffi.cdef('''
     float64_t f64_sub( float64_t a, float64_t b );
     float32_t f32_mul( float32_t a, float32_t b );
     float64_t f64_mul( float64_t a, float64_t b );
+
+    uint_fast16_t f32_classify( float32_t );
+    uint_fast16_t f64_classify( float64_t );
 ''')
 ffi.compile()
 

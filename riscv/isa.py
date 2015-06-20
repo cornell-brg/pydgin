@@ -1025,7 +1025,7 @@ def execute_fmv_x_s( s, inst ):
   s.pc += 4
 
 def execute_fclass_s( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = lib.f32_classify( trim_32( s.fp[inst.rs1] ) )
   s.pc += 4
 
 def execute_fcvt_w_d( s, inst ):
@@ -1049,7 +1049,7 @@ def execute_fmv_x_d( s, inst ):
   s.pc += 4
 
 def execute_fclass_d( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = lib.f64_classify( s.fp[inst.rs1] )
   s.pc += 4
 
 def execute_fcvt_s_w( s, inst ):
@@ -1089,7 +1089,7 @@ def execute_fcvt_d_lu( s, inst ):
   s.pc += 4
 
 def execute_fmv_d_x( s, inst ):
-  raise NotImplementedError()
+  s.fp[inst.rd] = s.rf[inst.rs1]
   s.pc += 4
 
 def execute_flw( s, inst ):
