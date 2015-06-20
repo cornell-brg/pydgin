@@ -18,7 +18,15 @@ import shutil
 import subprocess
 import sys
 
+#-----------------------------------------------------------------------
+# hacky path update and error checking
+#-----------------------------------------------------------------------
+
 sys.path.append('..')
+
+if __file__ != '../scripts/build-softfloat.py':
+  raise Exception('Incorrect run directory!\n'
+    'Please run this script the build directory!\n')
 
 #-----------------------------------------------------------------------
 # compiled the shared library with gcc
@@ -47,6 +55,11 @@ ffi.cdef('''
 
     int_fast8_t softfloat_exceptionFlags;
     float32_t f32_add( float32_t a, float32_t b );
+    float64_t f64_add( float64_t a, float64_t b );
+    float32_t f32_sub( float32_t a, float32_t b );
+    float64_t f64_sub( float64_t a, float64_t b );
+    float32_t f32_mul( float32_t a, float32_t b );
+    float64_t f64_mul( float64_t a, float64_t b );
 ''')
 ffi.compile()
 
@@ -59,7 +72,7 @@ shutil.move('_abi.py', '../softfloat/_abi.py')
 from softfloat._abi import ffi
 from pydgin.utils   import bits2float, float2bits
 
-lib = ffi.dlopen('./libsoftfloat.so')
+lib = ffi.dlopen('../build/libsoftfloat.so')
 
 assert bits2float(0x3f800000) == 1.0
 
