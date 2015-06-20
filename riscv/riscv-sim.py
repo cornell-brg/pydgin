@@ -11,7 +11,7 @@ sys.path.append('..')
 from pydgin.sim     import Sim, init_sim
 from pydgin.storage import Memory
 from pydgin.misc    import load_program
-from bootstrap      import test_init, syscall_init
+from bootstrap      import test_init, syscall_init, memory_size
 from instruction    import Instruction
 from isa            import decode
 
@@ -41,9 +41,6 @@ class RiscVSim( Sim ):
 
   def init_state( self, exe_file, exe_name, run_argv, run_envp, testbin ):
 
-    # TODO: setting mem size here
-    memory_size = 2**29
-
     # Load the program into a memory object
 
     mem = Memory( size=memory_size, byte_storage=False )
@@ -57,7 +54,8 @@ class RiscVSim( Sim ):
     if testbin:
       self.state = test_init( mem, self.debug )
     else:
-      self.state = syscall_init( mem, self.debug )
+      self.state = syscall_init( mem, breakpoint, run_argv,
+                                           run_envp, self.debug )
 
     self.state.testbin  = testbin
     self.state.exe_name = exe_name
