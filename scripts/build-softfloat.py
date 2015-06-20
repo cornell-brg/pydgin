@@ -70,6 +70,19 @@ ffi.cdef('''
     bool          f64_eq( float64_t, float64_t );
     bool          f64_lt( float64_t, float64_t );
     bool          f64_le( float64_t, float64_t );
+
+    float32_t i32_to_f32( int_fast32_t );
+    float32_t i64_to_f32( int_fast64_t );
+    float32_t ui32_to_f32( uint_fast32_t );
+    float32_t ui64_to_f32( uint_fast64_t );
+
+    float64_t i32_to_f64( int_fast32_t );
+    float64_t i64_to_f64( int_fast64_t );
+    float64_t ui32_to_f64( uint_fast32_t );
+    float64_t ui64_to_f64( uint_fast64_t );
+
+    float32_t f64_to_f32( float64_t );
+    float64_t f32_to_f64( float32_t );
 ''')
 ffi.compile()
 
