@@ -2,9 +2,14 @@
 # isa.py
 #=======================================================================
 
-from pydgin.misc import create_risc_decoder, FatalError
-from utils import sext_32, signed, sext, trim
-from pydgin.utils import trim_32, specialize, intmask
+from utils        import sext_32, signed, sext, trim
+from pydgin.misc  import create_risc_decoder, FatalError
+from pydgin.utils import (
+  trim_32, specialize, intmask, bits2float, float2bits
+)
+from softfloat._abi import ffi
+lib = ffi.dlopen('../build/libsoftfloat.so')
+
 from helpers import *
 from syscalls import do_syscall
 
@@ -107,12 +112,16 @@ encodings = [
   ['mrth',               '00110000011000000000000001110011'],
   ['mrts',               '00110000010100000000000001110011'],
   ['hrts',               '00100000010100000000000001110011'],
+
+  ['fsflags',            '000000000001xxxxx001xxxxx1110011'],
+
   ['csrrw',              'xxxxxxxxxxxxxxxxx001xxxxx1110011'],
   ['csrrs',              'xxxxxxxxxxxxxxxxx010xxxxx1110011'],
   ['csrrc',              'xxxxxxxxxxxxxxxxx011xxxxx1110011'],
   ['csrrwi',             'xxxxxxxxxxxxxxxxx101xxxxx1110011'],
   ['csrrsi',             'xxxxxxxxxxxxxxxxx110xxxxx1110011'],
   ['csrrci',             'xxxxxxxxxxxxxxxxx111xxxxx1110011'],
+
   ['fadd_s',             '0000000xxxxxxxxxxxxxxxxxx1010011'],
   ['fsub_s',             '0000100xxxxxxxxxxxxxxxxxx1010011'],
   ['fmul_s',             '0001000xxxxxxxxxxxxxxxxxx1010011'],
@@ -814,6 +823,13 @@ def execute_hrts( s, inst ):
   raise NotImplementedError()
   s.pc += 4
 
+def execute_fsflags( s, inst ):
+  old = s.fcsr & 0x1F
+  new = s.rf[inst.rs1] & 0x1F
+  s.fcsr = ((s.fcsr >> 5) << 5) | new
+  s.rf[inst.rd] = old
+  s.pc += 4
+
 def execute_csrrw( s, inst ):
   result = s.rf[inst.rs1]
   if result & 0x1:
@@ -845,15 +861,31 @@ def execute_csrrci( s, inst ):
   s.pc += 4
 
 def execute_fadd_s( s, inst ):
-  raise NotImplementedError()
+  a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
+  s.fp[ inst.rd ] = sext_32( lib.f32_add( a, b ) )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
+
+  #print 'fp[{:2}] = {}, fp[{:2}] = {}'.format( inst.rs1, a, inst.rs2, b ), '---',
+  #print 'fp[{:2}] = {}, fp[{:2}] = {}'.format( inst.rs1, bits2float(a), inst.rs2, bits2float(b) )
+  #print hex(out), bits2float( out ), '{:05b}'.format( s.fcsr )
+
   s.pc += 4
 
 def execute_fsub_s( s, inst ):
-  raise NotImplementedError()
+  a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
+  s.fp[ inst.rd ] = sext_32( lib.f32_sub( a, b ) )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
+
   s.pc += 4
 
 def execute_fmul_s( s, inst ):
-  raise NotImplementedError()
+  a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
+  s.fp[ inst.rd ] = sext_32( lib.f32_mul( a, b ) )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
+
   s.pc += 4
 
 def execute_fdiv_s( s, inst ):
@@ -885,15 +917,31 @@ def execute_fsqrt_s( s, inst ):
   s.pc += 4
 
 def execute_fadd_d( s, inst ):
-  raise NotImplementedError()
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.fp[ inst.rd ] = lib.f64_add( a, b )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
+
+  #print 'fp[{:2}] = {}, fp[{:2}] = {}'.format( inst.rs1, a, inst.rs2, b ), '---',
+  #print 'fp[{:2}] = {}, fp[{:2}] = {}'.format( inst.rs1, bits2float(a), inst.rs2, bits2float(b) )
+  #print hex(out), bits2float( out ), '{:05b}'.format( s.fcsr )
+
   s.pc += 4
 
 def execute_fsub_d( s, inst ):
-  raise NotImplementedError()
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.fp[ inst.rd ] = lib.f64_sub( a, b )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
+
   s.pc += 4
 
 def execute_fmul_d( s, inst ):
-  raise NotImplementedError()
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.fp[ inst.rd ] = lib.f64_mul( a, b )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
+
   s.pc += 4
 
 def execute_fdiv_d( s, inst ):
@@ -973,7 +1021,7 @@ def execute_fcvt_lu_s( s, inst ):
   s.pc += 4
 
 def execute_fmv_x_s( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = sext_32( s.fp[inst.rs1] )
   s.pc += 4
 
 def execute_fclass_s( s, inst ):
@@ -997,7 +1045,7 @@ def execute_fcvt_lu_d( s, inst ):
   s.pc += 4
 
 def execute_fmv_x_d( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = s.fp[inst.rs1]
   s.pc += 4
 
 def execute_fclass_d( s, inst ):
@@ -1021,7 +1069,7 @@ def execute_fcvt_s_lu( s, inst ):
   s.pc += 4
 
 def execute_fmv_s_x( s, inst ):
-  raise NotImplementedError()
+  s.fp[inst.rd] = s.rf[inst.rs1]
   s.pc += 4
 
 def execute_fcvt_d_w( s, inst ):
@@ -1045,11 +1093,15 @@ def execute_fmv_d_x( s, inst ):
   s.pc += 4
 
 def execute_flw( s, inst ):
-  raise NotImplementedError()
+  addr          = s.rf[inst.rs1] + inst.i_imm
+  s.fp[inst.rd] = sext_32( s.mem.read( addr, 4 ) )
   s.pc += 4
 
 def execute_fld( s, inst ):
-  raise NotImplementedError()
+  # TODO: make memory support 64-bit ops
+  addr          = s.rf[inst.rs1] + inst.i_imm
+  s.fp[inst.rd] = ( s.mem.read( addr+4, 4 ) << 32 ) \
+                  | s.mem.read( addr, 4 )
   s.pc += 4
 
 def execute_fsw( s, inst ):
