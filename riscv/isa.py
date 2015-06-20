@@ -981,27 +981,45 @@ def execute_fsqrt_d( s, inst ):
   s.pc += 4
 
 def execute_fle_s( s, inst ):
-  raise NotImplementedError()
+  a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
+  s.rf[ inst.rd ] = lib.f32_le( a, b )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_flt_s( s, inst ):
-  raise NotImplementedError()
+  a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
+  s.rf[ inst.rd ] = lib.f32_lt( a, b )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_feq_s( s, inst ):
-  raise NotImplementedError()
+  a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
+  s.rf[ inst.rd ] = lib.f32_eq( a, b )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fle_d( s, inst ):
-  raise NotImplementedError()
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.rf[ inst.rd ] = lib.f64_le( a, b )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_flt_d( s, inst ):
-  raise NotImplementedError()
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.rf[ inst.rd ] = lib.f64_lt( a, b )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_feq_d( s, inst ):
-  raise NotImplementedError()
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.rf[ inst.rd ] = lib.f64_eq( a, b )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_w_s( s, inst ):
