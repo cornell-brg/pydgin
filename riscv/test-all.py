@@ -40,7 +40,7 @@ for dump in dumps:
   bin_name = dump[:-5]
   try:
     out = subprocess.check_output( [interp, "--test", bin_name] if interp else
-                                   ["python", "riscv-sim.py", "--test", bin_name],
+                                   ["python", "../riscv/riscv-sim.py", "--test", bin_name],
                                    stderr=subprocess.STDOUT )
   except subprocess.CalledProcessError as e:
     out = e.output
