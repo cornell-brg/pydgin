@@ -22,7 +22,7 @@ class State( object ):
     self.rf       = RiscVRegisterFile()
     self.fp       = RiscVFPRegisterFile()
     self.csr      = 0    # Bits( XLEN )
-    self.fsr      = 0    # Bits( 32 )
+    self.fcsr     = 0    # Bits( 32 )
     self.mem      = memory
 
     self    .debug = debug
