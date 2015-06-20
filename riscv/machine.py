@@ -67,7 +67,10 @@ class RiscVRegisterFile( RegisterFile ):
 class RiscVFPRegisterFile( RegisterFile ):
   def __init__( self ):
     RegisterFile.__init__( self,
-      constant_zero=False,
+      # XXX: HACK to get translated, this is a wrong implementation, but
+      # rpython complains otherwise
+      #constant_zero=False,
+      constant_zero=True,
       num_regs=32,
       nbits=64
     )
