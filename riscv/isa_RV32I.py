@@ -117,42 +117,42 @@ def execute_bgeu( s, inst ):
     s.pc += 4
 
 def execute_lb( s, inst ):
-  addr = s.rf[inst.rs1] + inst.i_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.i_imm )
   s.rf[inst.rd] = sext( s.mem.read( addr, 1 ), 8 )
   s.pc += 4
 
 def execute_lh( s, inst ):
-  addr = s.rf[inst.rs1] + inst.i_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.i_imm )
   s.rf[inst.rd] = sext( s.mem.read( addr, 2 ), 16 )
   s.pc += 4
 
 def execute_lw( s, inst ):
-  addr = s.rf[inst.rs1] + inst.i_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.i_imm )
   s.rf[inst.rd] = sext_32( s.mem.read( addr, 4 ) )
   s.pc += 4
 
 def execute_lbu( s, inst ):
-  addr = s.rf[inst.rs1] + inst.i_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.i_imm )
   s.rf[inst.rd] = s.mem.read( addr, 1 )
   s.pc += 4
 
 def execute_lhu( s, inst ):
-  addr = s.rf[inst.rs1] + inst.i_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.i_imm )
   s.rf[inst.rd] = s.mem.read( addr, 2 )
   s.pc += 4
 
 def execute_sb( s, inst ):
-  addr = s.rf[inst.rs1] + inst.s_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.s_imm )
   s.mem.write( addr, 1, trim( s.rf[inst.rs2], 8 ) )
   s.pc += 4
 
 def execute_sh( s, inst ):
-  addr = s.rf[inst.rs1] + inst.s_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.s_imm )
   s.mem.write( addr, 2, trim( s.rf[inst.rs2], 16 ) )
   s.pc += 4
 
 def execute_sw( s, inst ):
-  addr = s.rf[inst.rs1] + inst.s_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.s_imm )
   s.mem.write( addr, 4, trim_32( s.rf[inst.rs2] ) )
   s.pc += 4
 

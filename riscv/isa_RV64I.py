@@ -36,20 +36,20 @@ encodings = [
 #=======================================================================
 
 def execute_lwu( s, inst ):
-  addr = s.rf[inst.rs1] + inst.i_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.i_imm )
   s.rf[inst.rd] = s.mem.read( addr, 4 )
   s.pc += 4
 
 def execute_ld( s, inst ):
   # TODO: make memory support 64-bit ops
-  addr = s.rf[inst.rs1] + inst.i_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.i_imm )
   s.rf[inst.rd] = ( s.mem.read( addr+4, 4 ) << 32 ) \
                   | s.mem.read( addr, 4 )
   s.pc += 4
 
 def execute_sd( s, inst ):
   # TODO: make memory support 64-bit ops
-  addr = s.rf[inst.rs1] + inst.s_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.s_imm )
   s.mem.write( addr,   4, trim_32( s.rf[inst.rs2] ) )
   s.mem.write( addr+4, 4, trim_32( s.rf[inst.rs2] >> 32 ) )
   s.pc += 4
