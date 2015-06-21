@@ -135,11 +135,19 @@ def execute_fsgnjx_s( s, inst ):
   s.pc += 4
 
 def execute_fmin_s( s, inst ):
-  raise NotImplementedError()
+  a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
+  # TODO: s.fp[ inst.rd ] = lib.isNaNF32UI(b) || ...
+  s.fp[ inst.rd ] = a if lib.f32_lt_quiet(a,b) else b
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fmax_s( s, inst ):
-  raise NotImplementedError()
+  a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
+  # TODO: s.fp[ inst.rd ] = lib.isNaNF32UI(b) || ...
+  s.fp[ inst.rd ] = a if lib.f32_le_quiet(b,a) else b
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_w_s( s, inst ):

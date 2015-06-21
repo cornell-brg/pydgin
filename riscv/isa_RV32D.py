@@ -136,11 +136,19 @@ def execute_fsgnjx_d( s, inst ):
   s.pc += 4
 
 def execute_fmin_d( s, inst ):
-  raise NotImplementedError()
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  # TODO: s.fp[ inst.rd ] = lib.isNaNF64UI(b) || ...
+  s.fp[ inst.rd ] = a if lib.f64_lt_quiet(a,b) else b
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fmax_d( s, inst ):
-  raise NotImplementedError()
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  # TODO: s.fp[ inst.rd ] = lib.isNaNF64UI(b) || ...
+  s.fp[ inst.rd ] = a if lib.f64_le_quiet(b,a) else b
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_s_d( s, inst ):

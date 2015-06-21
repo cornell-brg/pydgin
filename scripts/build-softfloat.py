@@ -66,6 +66,8 @@ ffi.cdef('''
     bool          f32_eq( float32_t, float32_t );
     bool          f32_lt( float32_t, float32_t );
     bool          f32_le( float32_t, float32_t );
+    bool          f32_lt_quiet( float32_t, float32_t );
+    bool          f32_le_quiet( float32_t, float32_t );
 
     float64_t     f64_mul( float64_t, float64_t );
     float64_t     f64_add( float64_t, float64_t );
@@ -78,6 +80,8 @@ ffi.cdef('''
     bool          f64_eq( float64_t, float64_t );
     bool          f64_lt( float64_t, float64_t );
     bool          f64_le( float64_t, float64_t );
+    bool          f64_lt_quiet( float64_t, float64_t );
+    bool          f64_le_quiet( float64_t, float64_t );
 
     float32_t i32_to_f32( int_fast32_t );
     float32_t i64_to_f32( int_fast64_t );
