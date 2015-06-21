@@ -56,7 +56,8 @@ def execute_flw( s, inst ):
   s.pc += 4
 
 def execute_fsw( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.s_imm
+  s.mem.write( addr, 4, s.fp[inst.rs2] )
   s.pc += 4
 
 def execute_fmadd_s( s, inst ):

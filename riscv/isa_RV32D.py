@@ -56,8 +56,9 @@ def execute_fld( s, inst ):
   s.pc += 4
 
 def execute_fsd( s, inst ):
-  # XXX: ignoring fsd for the time being
-  #raise NotImplementedError()
+  addr = s.rf[inst.rs1] + inst.s_imm
+  s.mem.write( addr,   4, trim_32( s.fp[inst.rs2] ) )
+  s.mem.write( addr+4, 4, trim_32( s.fp[inst.rs2] >> 32 ) )
   s.pc += 4
 
 def execute_fmadd_d( s, inst ):
