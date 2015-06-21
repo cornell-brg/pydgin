@@ -8,7 +8,7 @@ from pydgin.utils import r_uint
 
 page_size   = 8192
 memory_size = 2**29
-stack_base  = 0x4000
+stack_base  = memory_size-1
 
 #-----------------------------------------------------------------------
 # syscall_init
