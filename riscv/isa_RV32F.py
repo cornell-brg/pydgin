@@ -3,7 +3,7 @@
 #=======================================================================
 'RISC-V instructions for the single-precision floating point extension.'
 
-from utils        import sext_xlen, sext_32, sext, signed, trim
+from utils        import sext_xlen, sext_32, sext, signed, trim, fp_neg
 from pydgin.utils import trim_32
 from helpers      import *
 
@@ -60,19 +60,31 @@ def execute_fsw( s, inst ):
   s.pc += 4
 
 def execute_fmadd_s( s, inst ):
-  raise NotImplementedError()
+  a, b, c = s.fp[inst.rs1], s.fp[inst.rs2], s.fp[inst.rs3]
+  s.fp[ inst.rd ] = lib.f32_mulAdd( a, b, c )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fmsub_s( s, inst ):
-  raise NotImplementedError()
+  a, b, c = s.fp[inst.rs1], s.fp[inst.rs2], s.fp[inst.rs3]
+  s.fp[ inst.rd ] = lib.f32_mulAdd( a, b, fp_neg(c,32) )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fnmsub_s( s, inst ):
-  raise NotImplementedError()
+  a, b, c = s.fp[inst.rs1], s.fp[inst.rs2], s.fp[inst.rs3]
+  s.fp[ inst.rd ] = lib.f32_mulAdd( fp_neg(a,32), b, c )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fnmadd_s( s, inst ):
-  raise NotImplementedError()
+  a, b, c = s.fp[inst.rs1], s.fp[inst.rs2], s.fp[inst.rs3]
+  s.fp[ inst.rd ] = lib.f32_mulAdd( fp_neg(a,32), b, fp_neg(c,32) )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fadd_s( s, inst ):

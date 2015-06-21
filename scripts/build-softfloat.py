@@ -61,6 +61,7 @@ ffi.cdef('''
     float32_t     f32_div( float32_t, float32_t );
     float32_t     f32_rem( float32_t, float32_t );
     float32_t     f32_sqrt( float32_t );
+    float32_t     f32_mulAdd( float32_t, float32_t, float32_t );
     uint_fast16_t f32_classify( float32_t );
     bool          f32_eq( float32_t, float32_t );
     bool          f32_lt( float32_t, float32_t );
@@ -72,6 +73,7 @@ ffi.cdef('''
     float64_t     f64_div( float64_t, float64_t );
     float64_t     f64_rem( float64_t, float64_t );
     float64_t     f64_sqrt( float64_t );
+    float64_t     f64_mulAdd( float64_t, float64_t, float64_t );
     uint_fast16_t f64_classify( float64_t );
     bool          f64_eq( float64_t, float64_t );
     bool          f64_lt( float64_t, float64_t );
