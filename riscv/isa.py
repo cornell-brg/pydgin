@@ -1089,19 +1089,27 @@ def execute_feq_d( s, inst ):
   s.pc += 4
 
 def execute_fcvt_w_s( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = sext_32(lib.f32_to_i32( s.fp[inst.rs1], inst.rm, True ))
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_wu_s( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = sext_32(lib.f32_to_ui32( s.fp[inst.rs1], inst.rm, True ))
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_l_s( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = lib.f32_to_i64( s.fp[inst.rs1], inst.rm, True )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_lu_s( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = lib.f32_to_ui64( s.fp[inst.rs1], inst.rm, True )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fmv_x_s( s, inst ):
@@ -1113,19 +1121,27 @@ def execute_fclass_s( s, inst ):
   s.pc += 4
 
 def execute_fcvt_w_d( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = sext_32(lib.f64_to_i32( s.fp[inst.rs1], inst.rm, True ))
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_wu_d( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = sext_32(lib.f64_to_ui32( s.fp[inst.rs1], inst.rm, True ))
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_l_d( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = lib.f64_to_i64( s.fp[inst.rs1], inst.rm, True )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_lu_d( s, inst ):
-  raise NotImplementedError()
+  s.rf[inst.rd] = lib.f64_to_ui64( s.fp[inst.rs1], inst.rm, True )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fmv_x_d( s, inst ):

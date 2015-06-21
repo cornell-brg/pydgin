@@ -83,6 +83,16 @@ ffi.cdef('''
 
     float32_t f64_to_f32( float64_t );
     float64_t f32_to_f64( float32_t );
+
+    uint_fast32_t f32_to_ui32( float32_t, int_fast8_t, bool );
+    uint_fast64_t f32_to_ui64( float32_t, int_fast8_t, bool );
+    int_fast32_t  f32_to_i32( float32_t, int_fast8_t, bool );
+    int_fast64_t  f32_to_i64( float32_t, int_fast8_t, bool );
+
+    uint_fast32_t f64_to_ui32( float64_t, int_fast8_t, bool );
+    uint_fast64_t f64_to_ui64( float64_t, int_fast8_t, bool );
+    int_fast32_t  f64_to_i32( float64_t, int_fast8_t, bool );
+    int_fast64_t  f64_to_i64( float64_t, int_fast8_t, bool );
 ''')
 ffi.compile()
 
