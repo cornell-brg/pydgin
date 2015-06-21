@@ -5,6 +5,7 @@
 
 from utils        import sext_xlen, sext_32, sext, signed, trim
 from pydgin.utils import trim_32
+from syscalls     import do_syscall
 from helpers      import *
 
 #=======================================================================

@@ -11,7 +11,6 @@ from pydgin.utils import (
 )
 
 from helpers import *
-from syscalls import do_syscall
 
 import isa_RV32I, isa_RV64I, isa_RV32M, isa_RV64M, isa_RV32A, isa_RV64A
 

@@ -5,6 +5,7 @@
 from pydgin.storage import RegisterFile
 from pydgin.utils import specialize
 from utils import trim_64
+from isa import ENABLE_FP
 
 #-------------------------------------------------------------------------
 # State
@@ -20,14 +21,16 @@ class State( object ):
     self.flen     = 64   # defines the bitwidth of fp  registers
 
     self.rf       = RiscVRegisterFile()
-    self.fp       = RiscVFPRegisterFile()
+    # TODO: a bit hacky...
+    if ENABLE_FP:
+      self.fp     = RiscVFPRegisterFile()
+      self.fp.debug = debug
     self.csr      = 0    # Bits( XLEN )
     self.fcsr     = 0    # Bits( 32 )
     self.mem      = memory
 
     self    .debug = debug
     self.rf .debug = debug
-    self.fp .debug = debug
     self.mem.debug = debug
 
     # coprocessor registers
