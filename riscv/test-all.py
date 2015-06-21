@@ -36,7 +36,7 @@ num_passed = 0
 num_failed = 0
 num_error  = 0
 
-for dump in dumps:
+for dump in sorted( dumps ):
   bin_name = dump[:-5]
   try:
     out = subprocess.check_output( [interp, "--test", bin_name] if interp else
