@@ -970,10 +970,14 @@ def execute_fmax_d( s, inst ):
 
 def execute_fcvt_s_d( s, inst ):
   s.fp[inst.rd] = lib.f64_to_f32( s.fp[inst.rs1] )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_d_s( s, inst ):
   s.fp[inst.rd] = lib.f32_to_f64( trim_32(s.fp[inst.rs1]) )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fsqrt_d( s, inst ):
@@ -1073,21 +1077,29 @@ def execute_fclass_d( s, inst ):
 def execute_fcvt_s_w( s, inst ):
   a = signed( s.rf[inst.rs1], 32 )
   s.fp[inst.rd] = lib.i32_to_f32( a )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_s_wu( s, inst ):
   a = trim_32(s.rf[inst.rs1])
   s.fp[inst.rd] = lib.ui32_to_f32( a )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_s_l( s, inst ):
   a = signed( s.rf[inst.rs1], 64 )
   s.fp[inst.rd] = lib.i64_to_f32( a )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_s_lu( s, inst ):
   a = s.rf[inst.rs1]
   s.fp[inst.rd] = lib.ui64_to_f32( a )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fmv_s_x( s, inst ):
@@ -1097,21 +1109,29 @@ def execute_fmv_s_x( s, inst ):
 def execute_fcvt_d_w( s, inst ):
   a = signed( s.rf[inst.rs1], 32 )
   s.fp[inst.rd] = lib.i32_to_f64( a )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_d_wu( s, inst ):
   a = trim_32(s.rf[inst.rs1])
   s.fp[inst.rd] = lib.ui32_to_f64( a )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_d_l( s, inst ):
   a = signed( s.rf[inst.rs1], 64 )
   s.fp[inst.rd] = lib.i64_to_f64( a )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fcvt_d_lu( s, inst ):
   a = s.rf[inst.rs1]
   s.fp[inst.rd] = lib.ui64_to_f64( a )
+  s.fcsr        = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fmv_d_x( s, inst ):
@@ -1120,7 +1140,7 @@ def execute_fmv_d_x( s, inst ):
 
 def execute_flw( s, inst ):
   addr          = s.rf[inst.rs1] + inst.i_imm
-  s.fp[inst.rd] = sext_32( s.mem.read( addr, 4 ) )
+  s.fp[inst.rd] = s.mem.read( addr, 4 )
   s.pc += 4
 
 def execute_fld( s, inst ):
