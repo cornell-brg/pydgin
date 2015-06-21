@@ -134,6 +134,10 @@ other_encodings = [
   ['custom3_rd',         'xxxxxxxxxxxxxxxxx100xxxxx1111011'],
   ['custom3_rd_rs1',     'xxxxxxxxxxxxxxxxx110xxxxx1111011'],
   ['custom3_rd_rs1_rs2', 'xxxxxxxxxxxxxxxxx111xxxxx1111011'],
+
+  # HACK: mapping fsd and fld ops to nop for translatable subset
+  ['nop',                'xxxxxxxxxxxxxxxxx011xxxxx0000111'],
+  ['nop',                'xxxxxxxxxxxxxxxxx011xxxxx0100111'],
 ]
 
 base_enc = ( isa_RV32I.encodings + isa_RV64I.encodings )
@@ -151,6 +155,9 @@ encodings = base_enc + extn_enc + fp_enc + other_encodings
 #=======================================================================
 # Instruction Definitions
 #=======================================================================
+
+def execute_nop( s, inst ):
+  s.pc += 4
 
 def execute_sret( s, inst ):
   raise NotImplementedError()
