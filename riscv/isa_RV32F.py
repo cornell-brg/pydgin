@@ -51,12 +51,12 @@ encodings = [
 #=======================================================================
 
 def execute_flw( s, inst ):
-  addr          = s.rf[inst.rs1] + inst.i_imm
+  addr          = trim_64( s.rf[inst.rs1] + inst.i_imm )
   s.fp[inst.rd] = s.mem.read( addr, 4 )
   s.pc += 4
 
 def execute_fsw( s, inst ):
-  addr = s.rf[inst.rs1] + inst.s_imm
+  addr = trim_64( s.rf[inst.rs1] + inst.s_imm )
   s.mem.write( addr, 4, s.fp[inst.rs2] )
   s.pc += 4
 
