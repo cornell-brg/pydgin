@@ -124,15 +124,24 @@ def execute_fsqrt_d( s, inst ):
   s.pc += 4
 
 def execute_fsgnj_d( s, inst ):
-  raise NotImplementedError()
+  sign_mask = 1 << 63
+  body_mask = sign_mask - 1
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.fp[inst.rd] = (b & sign_mask) | (a & body_mask)
   s.pc += 4
 
 def execute_fsgnjn_d( s, inst ):
-  raise NotImplementedError()
+  sign_mask = 1 << 63
+  body_mask = sign_mask - 1
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.fp[inst.rd] = (~b & sign_mask) | (a & body_mask)
   s.pc += 4
 
 def execute_fsgnjx_d( s, inst ):
-  raise NotImplementedError()
+  sign_mask = 1 << 63
+  body_mask = sign_mask - 1
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.fp[inst.rd] = (b & sign_mask) ^ a
   s.pc += 4
 
 def execute_fmin_d( s, inst ):

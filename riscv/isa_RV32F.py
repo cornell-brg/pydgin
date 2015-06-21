@@ -123,15 +123,24 @@ def execute_fsqrt_s( s, inst ):
   s.pc += 4
 
 def execute_fsgnj_s( s, inst ):
-  raise NotImplementedError()
+  sign_mask = 1 << 31
+  body_mask = sign_mask - 1
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.fp[inst.rd] = (b & sign_mask) | (a & body_mask)
   s.pc += 4
 
 def execute_fsgnjn_s( s, inst ):
-  raise NotImplementedError()
+  sign_mask = 1 << 31
+  body_mask = sign_mask - 1
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.fp[inst.rd] = (~b & sign_mask) | (a & body_mask)
   s.pc += 4
 
 def execute_fsgnjx_s( s, inst ):
-  raise NotImplementedError()
+  sign_mask = 1 << 31
+  body_mask = sign_mask - 1
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.fp[inst.rd] = (b & sign_mask) ^ a
   s.pc += 4
 
 def execute_fmin_s( s, inst ):
