@@ -98,11 +98,17 @@ def execute_fmul_d( s, inst ):
   s.pc += 4
 
 def execute_fdiv_d( s, inst ):
-  raise NotImplementedError()
+  a, b = s.fp[inst.rs1], s.fp[inst.rs2]
+  s.fp[ inst.rd ] = lib.f64_div( a, b )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fsqrt_d( s, inst ):
-  raise NotImplementedError()
+  a = s.fp[inst.rs1]
+  s.fp[ inst.rd ] = lib.f64_sqrt( a )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fsgnj_d( s, inst ):

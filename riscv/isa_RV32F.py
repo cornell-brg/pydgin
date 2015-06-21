@@ -97,11 +97,17 @@ def execute_fmul_s( s, inst ):
   s.pc += 4
 
 def execute_fdiv_s( s, inst ):
-  raise NotImplementedError()
+  a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
+  s.fp[ inst.rd ] = sext_32( lib.f32_div( a, b ) )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fsqrt_s( s, inst ):
-  raise NotImplementedError()
+  a = trim_32( s.fp[inst.rs1] )
+  s.fp[ inst.rd ] = sext_32( lib.f32_sqrt( a ) )
+  s.fcsr          = lib.softfloat_exceptionFlags
+  lib.softfloat_exceptionFlags = 0
   s.pc += 4
 
 def execute_fsgnj_s( s, inst ):

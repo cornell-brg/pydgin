@@ -55,17 +55,23 @@ ffi.cdef('''
 
     int_fast8_t softfloat_exceptionFlags;
 
-    float32_t     f32_add( float32_t a, float32_t b );
-    float32_t     f32_sub( float32_t a, float32_t b );
-    float32_t     f32_mul( float32_t a, float32_t b );
+    float32_t     f32_add( float32_t, float32_t );
+    float32_t     f32_sub( float32_t, float32_t );
+    float32_t     f32_mul( float32_t, float32_t );
+    float32_t     f32_div( float32_t, float32_t );
+    float32_t     f32_rem( float32_t, float32_t );
+    float32_t     f32_sqrt( float32_t );
     uint_fast16_t f32_classify( float32_t );
     bool          f32_eq( float32_t, float32_t );
     bool          f32_lt( float32_t, float32_t );
     bool          f32_le( float32_t, float32_t );
 
-    float64_t     f64_mul( float64_t a, float64_t b );
-    float64_t     f64_add( float64_t a, float64_t b );
-    float64_t     f64_sub( float64_t a, float64_t b );
+    float64_t     f64_mul( float64_t, float64_t );
+    float64_t     f64_add( float64_t, float64_t );
+    float64_t     f64_sub( float64_t, float64_t );
+    float64_t     f64_div( float64_t, float64_t );
+    float64_t     f64_rem( float64_t, float64_t );
+    float64_t     f64_sqrt( float64_t );
     uint_fast16_t f64_classify( float64_t );
     bool          f64_eq( float64_t, float64_t );
     bool          f64_lt( float64_t, float64_t );
