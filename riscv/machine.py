@@ -23,11 +23,14 @@ class State( object ):
     self.rf       = RiscVRegisterFile()
     # TODO: a bit hacky...
     if ENABLE_FP:
-      self.fp     = RiscVFPRegisterFile()
+      self.fp       = RiscVFPRegisterFile()
       self.fp.debug = debug
+      self.fcsr     = 0    # Bits( 32 )
     self.csr      = 0    # Bits( XLEN )
-    self.fcsr     = 0    # Bits( 32 )
     self.mem      = memory
+
+    # if ENABLE_A:
+    self.load_reservation = 0 # Bits( 64 )
 
     self    .debug = debug
     self.rf .debug = debug

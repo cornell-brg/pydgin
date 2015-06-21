@@ -32,11 +32,19 @@ encodings = [
 #=======================================================================
 
 def execute_lr_w( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1]
+  s.load_reservation = addr
+  s.rf[inst.rd] = s.mem.read( addr, 4 )
   s.pc += 4
 
 def execute_sc_w( s, inst ):
-  raise NotImplementedError()
+  addr = s.rf[inst.rs1]
+  if addr == s.load_reservation:
+    s.mem.write( addr, 4, trim_32(s.rf[inst.rs2]) )
+    s.rf[inst.rd] = 0
+  else:
+    s.rf[inst.rd] = 1
+
   s.pc += 4
 
 def execute_amoswap_w( s, inst ):
