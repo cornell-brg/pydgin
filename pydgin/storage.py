@@ -4,7 +4,7 @@
 
 from pydgin.jit               import elidable, unroll_safe, hint
 from debug                    import Debug, pad, pad_hex
-from pydgin.utils             import r_uint, specialize
+from pydgin.utils             import r_uint, specialize, r_ulonglong
 try:
   from rpython.rlib.rarithmetic import r_uint32, widen
 except ImportError:
@@ -71,7 +71,7 @@ class RegisterFile( object ):
 #-----------------------------------------------------------------------
 # Memory
 #-----------------------------------------------------------------------
-def Memory( data=None, size=2**10, byte_storage=False ):
+def Memory( data=None, size=2**10, byte_storage=False, nbits=32 ):
   # use sparse storage if not translated
   try:
     from rpython.rlib.objectmodel import we_are_translated
@@ -82,23 +82,31 @@ def Memory( data=None, size=2**10, byte_storage=False ):
   if sparse_storage:
     print "NOTE: Using sparse storage"
     if byte_storage:
-      return _SparseMemory( _ByteMemory )
+      return _SparseMemory( _ByteMemory, nbits=nbits )
     else:
-      return _SparseMemory( _WordMemory )
+      return _SparseMemory( _WordMemory, nbits=nbits )
   else:
     if byte_storage:
-      return _ByteMemory( data, size )
+      return _ByteMemory( data, size, nbits=nbits )
     else:
-      return _WordMemory( data, size )
+      return _WordMemory( data, size, nbits=nbits )
 
 #-------------------------------------------------------------------------
 # _WordMemory
 #-------------------------------------------------------------------------
 # Memory that uses ints instead of chars
 class _WordMemory( object ):
-  def __init__( self, data=None, size=2**10 ):
-    self.data  = data if data else [ r_uint32(0) ] * (size >> 2)
-    self.size  = r_uint(len( self.data ) << 2)
+  _immutable_fields_ = [ 'nbits' ]
+  def __init__( self, data=None, size=2**10, nbits=32 ):
+    # we currently only support 32-bit and 64-bit words
+    assert nbits == 32 or nbits == 64
+    self.nbits = nbits
+    if self.nbits == 32:
+      self.data  = data if data else [ r_uint32(0) ] * (size >> 2)
+      self.size  = r_uint(len( self.data ) << 2)
+    elif self.nbits == 64:
+      self.data  = data if data else [ r_ulonglong(0) ] * (size >> 3)
+      self.size  = r_ulonglong(len( self.data ) << 3)
     self.debug = Debug()
 
     # TODO: pass data_section to memory for bounds checking
@@ -124,10 +132,15 @@ class _WordMemory( object ):
   @specialize.argtype(1)
   @unroll_safe
   def read( self, start_addr, num_bytes ):
-    assert 0 < num_bytes <= 4
-    start_addr = r_uint( start_addr )
-    word = start_addr >> 2
-    byte = start_addr &  0b11
+    assert 0 < num_bytes <= 8
+    if self.nbits == 32:
+      start_addr = r_uint( start_addr )
+      word = start_addr >> 2
+      byte = start_addr &  0b11
+    else: # self.nbits == 64:
+      start_addr = r_ulonglong( start_addr )
+      word = start_addr >> 3
+      byte = start_addr &  0b111
 
     if self.debug.enabled( "mem" ):
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
@@ -135,8 +148,12 @@ class _WordMemory( object ):
       self.bounds_check( start_addr, 'RD' )
 
     value = 0
-    if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
+    if   num_bytes == 8:  # TODO: byte should only be 0 (only aligned)
+      assert self.nbits == 64
       value = widen( self.data[ word ] )
+    elif num_bytes == 4:  # TODO: byte should only be 0, 4 (only aligned)
+      mask = 0xFFFFFFFF << (byte * 8)
+      value = ( widen( self.data[ word ] ) & mask) >> (byte * 8)
     elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
       mask = 0xFFFF << (byte * 8)
       value = ( widen( self.data[ word ] ) & mask) >> (byte * 8)
@@ -158,28 +175,52 @@ class _WordMemory( object ):
   @elidable
   def iread( self, start_addr, num_bytes ):
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
-    return r_uint( widen( self.data[ start_addr >> 2 ] ) )
+    if self.nbits == 32:
+      assert num_bytes == 4
+      return r_uint( widen( self.data[ start_addr >> 2 ] ) )
+    else: # self.nbits == 64:
+      if num_bytes == 8:
+        return r_ulonglong( widen( self.data[ start_addr >> 3 ] ) )
+      else:
+        assert num_bytes == 4
+        word = r_ulonglong( widen( self.data[ start_addr >> 3 ] ) )
+        return 0xFFFFFFFF & ( word >> ( (start_addr & 0b111) * 8) )
 
   @specialize.argtype(1, 3)
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
-    assert 0 < num_bytes <= 4
-    start_addr = r_uint( start_addr )
-    value = r_uint( value )
-    word = start_addr >> 2
-    byte = start_addr &  0b11
+    assert 0 < num_bytes <= 8
+    if self.nbits == 32:
+      start_addr = r_uint( start_addr )
+      value = r_uint( value )
+      word = start_addr >> 2
+      byte = start_addr &  0b11
+      word_mask = r_uint( 0xFFFFFFFF )
+    else: # self.nbits == 64:
+      start_addr = r_ulonglong( start_addr )
+      value = r_ulonglong( value )
+      word = start_addr >> 3
+      byte = start_addr &  0b111
+      word_mask = r_ulonglong( 0xFFFFFFFFFFFFFFFF )
 
     if self.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr, 'WR' )
 
-    if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
-      pass # no masking needed
+    if   num_bytes == 8:  # TODO: byte should only be 0 (only aligned)
+      # no masking needed
+      assert self.nbits == 64
+    elif num_bytes == 4:
+      # no masking needed for nbits == 32
+      if self.nbits == 64:
+        mask  = ~(0xFFFFFFFF << (byte * 8)) & word_mask
+        value = ( widen( self.data[ word ] ) & mask ) \
+                | ( (value & 0xFFFFFFFF) << (byte * 8) )
     elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
-      mask  = ~(0xFFFF << (byte * 8)) & r_uint( 0xFFFFFFFF )
+      mask  = ~(0xFFFF << (byte * 8)) & word_mask
       value = ( widen( self.data[ word ] ) & mask ) \
               | ( (value & 0xFFFF) << (byte * 8) )
     elif num_bytes == 1:
-      mask  = ~(0xFF   << (byte * 8)) & r_uint( 0xFFFFFFFF )
+      mask  = ~(0xFF   << (byte * 8)) & word_mask
       value = ( widen( self.data[ word ] ) & mask ) \
               | ( (value & 0xFF  ) << (byte * 8) )
     else:
@@ -188,15 +229,19 @@ class _WordMemory( object ):
     if self.debug.enabled( "mem" ):
       print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
                                      pad_hex( value ) ),
-    self.data[ word ] = r_uint32( value )
+    if self.nbits == 32:
+      self.data[ word ] = r_uint32( value )
+    else: # self.nbits == 64:
+      self.data[ word ] = r_ulonglong( value )
 
 #-----------------------------------------------------------------------
 # _ByteMemory
 #-----------------------------------------------------------------------
 class _ByteMemory( object ):
-  def __init__( self, data=None, size=2**10 ):
+  def __init__( self, data=None, size=2**10, nbits=32 ):
     self.data  = data if data else [' '] * size
     self.size  = len( self.data )
+    self.nbits = nbits
     self.debug = Debug()
 
   def bounds_check( self, addr ):
@@ -253,8 +298,9 @@ class _SparseMemory( object ):
   _immutable_fields_ = [ "BlockMemory", "block_size", "addr_mask",
                          "block_mask" ]
 
-  def __init__( self, BlockMemory, block_size=2**10 ):
+  def __init__( self, BlockMemory, block_size=2**10, nbits=32 ):
     self.BlockMemory = BlockMemory
+    self.nbits      = nbits
     self.block_size = block_size
     self.addr_mask  = block_size - 1
     self.block_mask = 0xffffffff ^ self.addr_mask
@@ -266,7 +312,8 @@ class _SparseMemory( object ):
 
   def add_block( self, block_addr ):
     #print "adding block: %x" % block_addr
-    self.block_dict[ block_addr ] = self.BlockMemory( size=self.block_size )
+    self.block_dict[ block_addr ] = self.BlockMemory( size=self.block_size,
+                                                      nbits=self.nbits )
 
   @elidable
   def get_block_mem( self, block_addr ):

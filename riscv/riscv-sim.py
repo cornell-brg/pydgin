@@ -43,7 +43,7 @@ class RiscVSim( Sim ):
 
     # Load the program into a memory object
 
-    mem = Memory( size=memory_size, byte_storage=False )
+    mem = Memory( size=memory_size, byte_storage=False, nbits=64 )
     entrypoint, breakpoint = load_program( exe_file, mem  )
 
     # Insert bootstrapping code into memory and initialize processor state
