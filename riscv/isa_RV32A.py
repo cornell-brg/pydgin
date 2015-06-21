@@ -44,7 +44,6 @@ def execute_sc_w( s, inst ):
     s.rf[inst.rd] = 0
   else:
     s.rf[inst.rd] = 1
-
   s.pc += 4
 
 def execute_amoswap_w( s, inst ):
