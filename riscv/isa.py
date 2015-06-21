@@ -14,7 +14,6 @@ from helpers import *
 from syscalls import do_syscall
 
 import isa_RV32I, isa_RV64I, isa_RV32M, isa_RV64M, isa_RV32A, isa_RV64A
-import isa_RV32F, isa_RV64F, isa_RV32D, isa_RV64D
 
 # TODO: super hacky! fixme to only import encoding_* funcs!
 
@@ -25,6 +24,7 @@ from isa_RV64M import *
 from isa_RV32A import *
 from isa_RV64A import *
 if ENABLE_FP:
+  import isa_RV32F, isa_RV64F, isa_RV32D, isa_RV64D
   from isa_RV32F import *
   from isa_RV64F import *
   from isa_RV32D import *
@@ -141,9 +141,11 @@ base_enc = ( isa_RV32I.encodings + isa_RV64I.encodings )
 extn_enc = ( isa_RV32M.encodings + isa_RV64M.encodings
            + isa_RV32A.encodings + isa_RV64A.encodings )
 
-fp_enc   = ( isa_RV32F.encodings + isa_RV64F.encodings
-           + isa_RV32D.encodings + isa_RV64D.encodings )
-fp_enc   = fp_enc if ENABLE_FP else []
+if ENABLE_FP:
+  fp_enc   = ( isa_RV32F.encodings + isa_RV64F.encodings
+             + isa_RV32D.encodings + isa_RV64D.encodings )
+else:
+  fp_enc   = []
 
 encodings = base_enc + extn_enc + fp_enc + other_encodings
 
