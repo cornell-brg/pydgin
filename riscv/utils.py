@@ -1,5 +1,5 @@
 
-from pydgin.utils import intmask, r_ulonglong, specialize, trim_32
+from pydgin.utils import intmask, r_ulonglong, specialize, trim_32, r_uint
 
 def signed( value, nbits ):
   mask = 0x1 << (nbits - 1)
@@ -58,5 +58,5 @@ def multhi64( a, b ):
   return a_x_b_hi + (a_x_b_mid >> 32) + (b_x_a_mid >> 32) + carry_bit
 
 def fp_neg( value, nbits ):
-  sign_mask = 1 << (nbits - 1)
+  sign_mask = r_ulonglong( 1 << (nbits - 1) )
   return sign_mask ^ value

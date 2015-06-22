@@ -4,7 +4,7 @@
 'RISC-V instructions for the double-precision floating point extension.'
 
 from utils        import sext_xlen, sext_32, sext, signed, trim, fp_neg
-from pydgin.utils import trim_32
+from pydgin.utils import trim_32, r_ulonglong
 from helpers      import *
 
 import softfloat as sfp
@@ -125,21 +125,21 @@ def execute_fsqrt_d( s, inst ):
   s.pc += 4
 
 def execute_fsgnj_d( s, inst ):
-  sign_mask = 1 << 63
+  sign_mask = r_ulonglong( 1 << 63 )
   body_mask = sign_mask - 1
   a, b = s.fp[inst.rs1], s.fp[inst.rs2]
   s.fp[inst.rd] = (b & sign_mask) | (a & body_mask)
   s.pc += 4
 
 def execute_fsgnjn_d( s, inst ):
-  sign_mask = 1 << 63
+  sign_mask = r_ulonglong( 1 << 63 )
   body_mask = sign_mask - 1
   a, b = s.fp[inst.rs1], s.fp[inst.rs2]
   s.fp[inst.rd] = (~b & sign_mask) | (a & body_mask)
   s.pc += 4
 
 def execute_fsgnjx_d( s, inst ):
-  sign_mask = 1 << 63
+  sign_mask = r_ulonglong( 1 << 63 )
   body_mask = sign_mask - 1
   a, b = s.fp[inst.rs1], s.fp[inst.rs2]
   s.fp[inst.rd] = (b & sign_mask) ^ a

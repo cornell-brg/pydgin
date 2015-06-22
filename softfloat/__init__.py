@@ -1,6 +1,7 @@
 try:
 
   from rpython.rtyper.lltypesystem    import rffi
+  from rpython.rlib.rarithmetic       import r_ulonglong
   from rpython.translator.tool.cbuild import ExternalCompilationInfo
 
   INCL_DIR = '/Users/dmlockhart/vc/github-brg/pydgin/softfloat/softfloat-c'
@@ -13,7 +14,7 @@ try:
     libraries    = ['softfloat'],
   )
 
-  bool          = rffi.UCHAR
+  bool          = rffi.UINT
   int_fast8_t   = rffi.INT_FAST8_T
   uint_fast16_t = rffi.UINT_FAST16_T
   uint_fast32_t = rffi.UINT_FAST32_T
@@ -23,8 +24,11 @@ try:
   float32_t     = rffi.ULONG
   float64_t     = rffi.ULONGLONG
 
-  get_flags, set_flags = \
+  _get_flags, set_flags = \
     rffi.CExternVariable( int_fast8_t, 'softfloat_exceptionFlags', eci )
+
+  def get_flags():
+    return r_ulonglong( _get_flags() )
 
   def rffi_fn( name, arg_types, return_type ):
     return rffi.llexternal( name, arg_types, return_type, compilation_info=eci )
