@@ -14,6 +14,7 @@ implementation of floating point instructions in Pydgin.
 '''
 
 import cffi
+import os
 import shutil
 import subprocess
 import sys
@@ -41,6 +42,10 @@ ret = subprocess.call( compile_cmd, shell=True )
 if ret != 0:
   raise Exception('Compilation failed! Exiting.')
 
+# TODO: mega hack to work around broken RFFI!
+os.remove ( 'libsoftfloat.dylib' )
+os.symlink( 'libsoftfloat.so', 'libsoftfloat.dylib' )
+
 #-----------------------------------------------------------------------
 # generate a python wrapper module with cffi
 #-----------------------------------------------------------------------
@@ -50,8 +55,6 @@ ffi.set_source('_abi', None)
 ffi.cdef('''
     typedef uint32_t float32_t;
     typedef uint64_t float64_t;
-    typedef struct { uint64_t v; uint16_t x; } floatx80_t;
-    typedef struct { uint64_t v[ 2 ]; } float128_t;
 
     int_fast8_t softfloat_exceptionFlags;
 
