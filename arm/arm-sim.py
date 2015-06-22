@@ -34,6 +34,25 @@ class ArmSim( Sim ):
   def decode( self, bits ):
     # TODO add decode inside instruction:
     #return decode( bits )
+
+    # we check for the following sequence for trigger:
+    # add r1, r1, #0 (e2811000)
+    # add r2, r2, #0 (e2822000)
+    if self.state.trig_state == 0 and bits == 0xe2811000:
+      self.state.trig_state = 1
+    elif self.state.trig_state == 1:
+      if bits == 0xe2822000 or \
+         bits == 0xe2833000 or \
+         bits == 0xe2844000 or \
+         bits == 0xe2855000 or \
+         bits == 0xe2866000 or \
+         bits == 0xe2877000 or \
+         bits == 0xe2888000:
+        # discount the hook instructions
+        self.state.ncycles -= 2
+
+      self.state.trig_state = 0
+
     inst_str, exec_fun = decode( bits )
     return Instruction( bits, inst_str ), exec_fun
 
