@@ -7,7 +7,7 @@ from isa import reg_map
 from pydgin.utils import r_uint
 
 page_size   = 8192
-memory_size = 2**29
+memory_size = 0xc0000000 + 1
 stack_base  = memory_size-1
 
 #-----------------------------------------------------------------------
