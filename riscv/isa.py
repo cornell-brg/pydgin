@@ -2,7 +2,7 @@
 # isa.py
 #=======================================================================
 
-ENABLE_FP = False
+ENABLE_FP = True
 
 from utils        import sext_32, signed, sext, trim
 from pydgin.misc  import create_risc_decoder, FatalError
