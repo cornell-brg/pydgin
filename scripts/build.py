@@ -11,7 +11,8 @@ import subprocess
 import distutils.spawn
 
 all_targets = [ "pydgin-parc-jit", "pydgin-parc-nojit-debug",
-                "pydgin-arm-jit", "pydgin-arm-nojit-debug" ]
+                "pydgin-arm-jit", "pydgin-arm-nojit-debug",
+                "pydgin-riscv-jit", "pydgin-riscv-nojit-debug" ]
 
 def build_target( name, pypy_dir, build_dir ):
 
@@ -24,6 +25,10 @@ def build_target( name, pypy_dir, build_dir ):
     assert arch is None, "conflicting arch definitions {} and {}" \
                          .format( arch, "arm" )
     arch = "arm"
+  if "riscv" in name:
+    assert arch is None, "conflicting arch definitions {} and {}" \
+                         .format( arch, "riscv" )
+    arch = "riscv"
   assert arch is not None, "could not determine arch from name"
 
   if "jit" in name and "nojit" not in name:
