@@ -7,8 +7,7 @@ from utils        import sext_xlen, sext_32, sext, signed, trim, fp_neg
 from pydgin.utils import trim_32
 from helpers      import *
 
-from softfloat._abi import ffi
-lib = ffi.dlopen('../build/libsoftfloat.so')
+import softfloat as sfp
 
 #=======================================================================
 # Instruction Encodings
@@ -62,65 +61,65 @@ def execute_fsw( s, inst ):
 
 def execute_fmadd_s( s, inst ):
   a, b, c = s.fp[inst.rs1], s.fp[inst.rs2], s.fp[inst.rs3]
-  s.fp[ inst.rd ] = lib.f32_mulAdd( a, b, c )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[ inst.rd ] = sfp.f32_mulAdd( a, b, c )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fmsub_s( s, inst ):
   a, b, c = s.fp[inst.rs1], s.fp[inst.rs2], s.fp[inst.rs3]
-  s.fp[ inst.rd ] = lib.f32_mulAdd( a, b, fp_neg(c,32) )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[ inst.rd ] = sfp.f32_mulAdd( a, b, fp_neg(c,32) )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fnmsub_s( s, inst ):
   a, b, c = s.fp[inst.rs1], s.fp[inst.rs2], s.fp[inst.rs3]
-  s.fp[ inst.rd ] = lib.f32_mulAdd( fp_neg(a,32), b, c )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[ inst.rd ] = sfp.f32_mulAdd( fp_neg(a,32), b, c )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fnmadd_s( s, inst ):
   a, b, c = s.fp[inst.rs1], s.fp[inst.rs2], s.fp[inst.rs3]
-  s.fp[ inst.rd ] = lib.f32_mulAdd( fp_neg(a,32), b, fp_neg(c,32) )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[ inst.rd ] = sfp.f32_mulAdd( fp_neg(a,32), b, fp_neg(c,32) )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fadd_s( s, inst ):
   a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
-  s.fp[ inst.rd ] = sext_32( lib.f32_add( a, b ) )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[ inst.rd ] = sext_32( sfp.f32_add( a, b ) )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fsub_s( s, inst ):
   a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
-  s.fp[ inst.rd ] = sext_32( lib.f32_sub( a, b ) )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[ inst.rd ] = sext_32( sfp.f32_sub( a, b ) )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fmul_s( s, inst ):
   a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
-  s.fp[ inst.rd ] = sext_32( lib.f32_mul( a, b ) )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[ inst.rd ] = sext_32( sfp.f32_mul( a, b ) )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fdiv_s( s, inst ):
   a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
-  s.fp[ inst.rd ] = sext_32( lib.f32_div( a, b ) )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[ inst.rd ] = sext_32( sfp.f32_div( a, b ) )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fsqrt_s( s, inst ):
   a = trim_32( s.fp[inst.rs1] )
-  s.fp[ inst.rd ] = sext_32( lib.f32_sqrt( a ) )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[ inst.rd ] = sext_32( sfp.f32_sqrt( a ) )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fsgnj_s( s, inst ):
@@ -146,30 +145,30 @@ def execute_fsgnjx_s( s, inst ):
 
 def execute_fmin_s( s, inst ):
   a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
-  # TODO: s.fp[ inst.rd ] = lib.isNaNF32UI(b) || ...
-  s.fp[ inst.rd ] = a if lib.f32_lt_quiet(a,b) else b
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  # TODO: s.fp[ inst.rd ] = sfp.isNaNF32UI(b) || ...
+  s.fp[ inst.rd ] = a if sfp.f32_lt_quiet(a,b) else b
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fmax_s( s, inst ):
   a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
-  # TODO: s.fp[ inst.rd ] = lib.isNaNF32UI(b) || ...
-  s.fp[ inst.rd ] = a if lib.f32_le_quiet(b,a) else b
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  # TODO: s.fp[ inst.rd ] = sfp.isNaNF32UI(b) || ...
+  s.fp[ inst.rd ] = a if sfp.f32_le_quiet(b,a) else b
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fcvt_w_s( s, inst ):
-  s.rf[inst.rd] = sext_32(lib.f32_to_i32( s.fp[inst.rs1], inst.rm, True ))
-  s.fcsr        = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.rf[inst.rd] = sext_32(sfp.f32_to_i32( s.fp[inst.rs1], inst.rm, True ))
+  s.fcsr        = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fcvt_wu_s( s, inst ):
-  s.rf[inst.rd] = sext_32(lib.f32_to_ui32( s.fp[inst.rs1], inst.rm, True ))
-  s.fcsr        = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.rf[inst.rd] = sext_32(sfp.f32_to_ui32( s.fp[inst.rs1], inst.rm, True ))
+  s.fcsr        = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fmv_x_s( s, inst ):
@@ -178,41 +177,41 @@ def execute_fmv_x_s( s, inst ):
 
 def execute_feq_s( s, inst ):
   a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
-  s.rf[ inst.rd ] = lib.f32_eq( a, b )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.rf[ inst.rd ] = sfp.f32_eq( a, b )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_flt_s( s, inst ):
   a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
-  s.rf[ inst.rd ] = lib.f32_lt( a, b )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.rf[ inst.rd ] = sfp.f32_lt( a, b )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fle_s( s, inst ):
   a, b = trim_32( s.fp[inst.rs1] ), trim_32( s.fp[inst.rs2] )
-  s.rf[ inst.rd ] = lib.f32_le( a, b )
-  s.fcsr          = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.rf[ inst.rd ] = sfp.f32_le( a, b )
+  s.fcsr          = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fclass_s( s, inst ):
-  s.rf[inst.rd] = lib.f32_classify( trim_32( s.fp[inst.rs1] ) )
+  s.rf[inst.rd] = sfp.f32_classify( trim_32( s.fp[inst.rs1] ) )
   s.pc += 4
 
 def execute_fcvt_s_w( s, inst ):
   a = signed( s.rf[inst.rs1], 32 )
-  s.fp[inst.rd] = lib.i32_to_f32( a )
-  s.fcsr        = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[inst.rd] = sfp.i32_to_f32( a )
+  s.fcsr        = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fcvt_s_wu( s, inst ):
   a = trim_32(s.rf[inst.rs1])
-  s.fp[inst.rd] = lib.ui32_to_f32( a )
-  s.fcsr        = lib.softfloat_exceptionFlags
-  lib.softfloat_exceptionFlags = 0
+  s.fp[inst.rd] = sfp.ui32_to_f32( a )
+  s.fcsr        = sfp.get_flags()
+  sfp.set_flags( 0 )
   s.pc += 4
 
 def execute_fmv_s_x( s, inst ):
