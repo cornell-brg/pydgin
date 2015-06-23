@@ -43,7 +43,8 @@ if ret != 0:
   raise Exception('Compilation failed! Exiting.')
 
 # TODO: mega hack to work around broken RFFI!
-os.remove ( 'libsoftfloat.dylib' )
+if os.path.exists( 'libsoftfloat.dylib' ):
+  os.remove ( 'libsoftfloat.dylib' )
 os.symlink( 'libsoftfloat.so', 'libsoftfloat.dylib' )
 
 #-----------------------------------------------------------------------
