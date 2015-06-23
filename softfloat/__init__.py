@@ -1,11 +1,18 @@
+
 try:
 
+  import os
   from rpython.rtyper.lltypesystem    import rffi
   from rpython.rlib.rarithmetic       import r_ulonglong
   from rpython.translator.tool.cbuild import ExternalCompilationInfo
+  from os.path                        import dirname, realpath, join
 
-  INCL_DIR = '/Users/dmlockhart/vc/github-brg/pydgin/softfloat/softfloat-c'
-  LIB_DIR  = '/Users/dmlockhart/vc/github-brg/pydgin/build'
+  CUR_DIR  = dirname( realpath( __file__ ) )
+  INCL_DIR = join( CUR_DIR, 'softfloat-c' )
+  LIB_DIR  = join( dirname(CUR_DIR), 'build' )
+
+  print INCL_DIR
+  print LIB_DIR
 
   eci = ExternalCompilationInfo(
     includes     = ['softfloat.h'],
