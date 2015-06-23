@@ -4,7 +4,7 @@
 'RISC-V instructions for the single-precision floating point extension.'
 
 from utils        import sext_xlen, sext_32, sext, signed, trim, fp_neg
-from pydgin.utils import trim_32
+from pydgin.utils import trim_32, r_ulonglong
 from helpers      import *
 
 import softfloat as sfp
@@ -221,7 +221,7 @@ def execute_fmv_s_x( s, inst ):
 def execute_fsflags( s, inst ):
   old = s.fcsr & 0x1F
   new = s.rf[inst.rs1] & 0x1F
-  s.fcsr = ((s.fcsr >> 5) << 5) | new
+  s.fcsr = r_ulonglong((s.fcsr >> 5) << 5) | new
   s.rf[inst.rd] = old
   s.pc += 4
 
