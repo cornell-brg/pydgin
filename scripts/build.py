@@ -4,13 +4,18 @@
 #=========================================================================
 # Builds pydgin.
 
-import itertools
 import multiprocessing
 import os
 import shutil
 import sys
 import subprocess
 import distutils.spawn
+
+usage = """Usage:
+  ./build.py [flags] [targets]
+  Flags: -h,--help   this help message
+         -jN         parallelize for N cores (omit N for # of processors)
+"""
 
 all_targets = [ "pydgin-parc-jit", "pydgin-parc-nojit-debug",
                 "pydgin-arm-jit", "pydgin-arm-nojit-debug" ]
@@ -83,9 +88,29 @@ def build_target( name, pypy_dir, build_dir ):
   os.symlink( '../{}/{}'.format( build_dir, name ), symlink_name )
 
 def setup_environment():
-  if len( sys.argv ) > 1 and sys.argv[1] == '--help':
-    print "Usage:\n  ./build.py [targets]"
-    return 1
+  # assume if arg starts with a dash, it's a flag
+  args = sys.argv[1:]
+
+  flags   = filter( lambda x: x.startswith('-'), args )
+  targets = filter( lambda x: not x.startswith('-'), args )
+
+  # don't parallelize by default
+  num_processes = 1
+
+  for flag in flags:
+    if flag == '-h' or flag == '--help':
+      print usage
+      sys.exit( 1 )
+    elif flag.startswith( '-j' ):
+      if flag == '-j':
+        # get the cpu count
+        num_processes = multiprocessing.cpu_count()
+      else:
+        num_processes = int( flag[2:] )
+    else:
+      print "Unknown flag:", flag
+      print usage
+      sys.exit( 1 )
 
   # ensure we know where the pypy source code is
   try:
@@ -93,8 +118,6 @@ def setup_environment():
   except KeyError as e:
     raise ImportError( 'Please define the PYDGIN_PYPY_SRC_DIR '
                        'environment variable!')
-
-  targets = sys.argv[1:]
 
   # all includes all_targets
   if "all" in targets:
@@ -116,34 +139,39 @@ def setup_environment():
   print "Version: {}".format( pydgin_ver )
   print "PyPy source: {}".format( pypy_dir )
   print "Targets: {}".format( targets )
+  print "Number of processes: {}".format( num_processes )
 
   # create build dir
   build_dir = "builds/pydgin-{}/bin".format( pydgin_ver )
   subprocess.call( "mkdir -p {}".format( build_dir ), shell=True )
 
-  return targets, pypy_dir, build_dir
-
-
-def unzip_and_apply( f_args ):
-  function, args = f_args
-  return function( *args )
+  return targets, pypy_dir, build_dir, num_processes
 
 
 def main():
   # get targets and environment
-  targets, pypy_dir, build_dir = setup_environment()
+  targets, pypy_dir, build_dir, num_processes = setup_environment()
 
-  # pool can only accept a function with one arg
-  iters = len ( targets )
-  args = zip( targets, itertools.repeat( pypy_dir,  iters ), itertools.repeat( build_dir, iters ) )
-  f_args = zip( itertools.repeat( build_target, iters ), args )
+  # don't parallelize for 1 process
+  if num_processes <= 1:
+    for target in targets:
+      build_target( target, pypy_dir, build_dir )
 
-  # build targets in parallel
-  pool = multiprocessing.Pool( processes=multiprocessing.cpu_count() )
-  pool.map( unzip_and_apply, f_args )
-  pool.close()
-  pool.join()
-  print 'Parallel builds complete.'
+  else:
+    # build targets in parallel
+    pool = multiprocessing.Pool( processes=num_processes )
+    try:
+      for target in targets:
+        pool.apply_async( build_target, [target, pypy_dir, build_dir])
+
+      pool.close()
+      pool.join()
+    except KeyboardInterrupt:
+      print "Terminating workers!"
+      pool.terminate()
+      pool.join()
+
+    print 'Parallel builds complete.'
 
 
 if __name__ == "__main__":
