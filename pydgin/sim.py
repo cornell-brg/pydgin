@@ -4,7 +4,6 @@
 # This is the common top-level simulator. ISA implementations can use
 # various hooks to configure the behavior.
 
-import os
 import sys
 
 # ensure we know where the pypy source code is
@@ -33,7 +32,7 @@ def jitpolicy(driver):
 
 class Sim( object ):
 
-  def __init__( self, arch_name, jit_enabled=False ):
+  def __init__( self, arch_name, inst_sizes=None, jit_enabled=False ):
 
     self.arch_name   = arch_name
 
@@ -49,6 +48,18 @@ class Sim( object ):
       # Set the default trace limit here. Different ISAs can override this
       # value if necessary
       self.default_trace_limit = 400000
+
+    # Permitted instruction sizes in number of bytes
+    if inst_sizes is None:
+      self.inst_sizes = [ 4 ]
+    else:
+     self.inst_sizes = sorted ( map ( lambda x : x / 8, inst_sizes ) )
+
+    # If there is only one instruction size, use the faster run() method
+    if len( inst_sizes ) < 2:
+      self.run = self.run_single_width_instructions
+    else:
+      self.run = self.run_mixed_width_instructions
 
     self.max_insts = 0
 
@@ -116,9 +127,9 @@ class Sim( object ):
     return "pc: %x" % pc
 
   #-----------------------------------------------------------------------
-  # run
+  # run_single_width_instrcutions
   #-----------------------------------------------------------------------
-  def run( self ):
+  def run_single_width_instructions( self ):
     self = hint( self, promote=True )
     s = self.state
 
@@ -166,6 +177,87 @@ class Sim( object ):
         print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
         print "Exception message: %s" % error.msg
         break
+
+      s.num_insts += 1    # TODO: should this be done inside instruction definition?
+      if s.stats_en: s.stat_num_insts += 1
+
+      if s.debug.enabled( "insts" ):
+        print
+      if s.debug.enabled( "regdump" ):
+        s.rf.print_regs( per_row=4 )
+
+      # check if we have reached the end of the maximum instructions and
+      # exit if necessary
+      if max_insts != 0 and s.num_insts >= max_insts:
+        print "Reached the max_insts (%d), exiting." % max_insts
+        break
+
+      if s.fetch_pc() < old:
+        jitdriver.can_enter_jit(
+          pc        = s.fetch_pc(),
+          max_insts = max_insts,
+          state     = s,
+          sim       = self,
+        )
+
+    print 'DONE! Status =', s.status
+    print 'Instructions Executed =', s.num_insts
+
+  #-----------------------------------------------------------------------
+  # run_mixed_width_instrcutions
+  #-----------------------------------------------------------------------
+  def run_mixed_width_instructions( self ):
+    self = hint( self, promote=True )
+    s = self.state
+
+    max_insts = self.max_insts
+    jitdriver = self.jitdriver
+
+    while s.running:
+
+      jitdriver.jit_merge_point(
+        pc        = s.fetch_pc(),
+        max_insts = max_insts,
+        state     = s,
+        sim       = self,
+      )
+
+      # constant-fold pc and mem
+      pc  = hint( s.fetch_pc(), promote=True )
+      old = pc
+      mem = hint( s.mem, promote=True )
+
+      if s.debug.enabled( "insts" ):
+        print pad( "%x" % pc, 6, " ", False ),
+
+      # the print statement in memcheck conflicts with @elidable in iread.
+      # So we use normal read if memcheck is enabled which includes the
+      # memory checks
+
+      for i, num_bytes in enumerate(self.inst_sizes):
+        if s.debug.enabled( "memcheck" ):
+          inst_bits = mem.read( pc, num_bytes )
+        else:
+          # we use trace elidable iread instead of just read
+          inst_bits = mem.iread( pc, num_bytes )
+        try:
+          inst, exec_fun = self.decode( inst_bits )
+
+          if s.debug.enabled( "insts" ):
+            print "%s %s %s" % (
+                    pad_hex( inst_bits ),
+                    pad( inst.str, 8 ),
+                    pad( "%d" % s.num_insts, 8 ), ),
+
+          exec_fun( s, inst )
+          break
+        except FatalError as error:
+          if i == ( len( self.inst_sizes ) - 1 ):
+            print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
+            print "Exception message: %s" % error.msg
+            s.running = False
+            return
+          else: continue
 
       s.num_insts += 1    # TODO: should this be done inside instruction definition?
       if s.stats_en: s.stat_num_insts += 1
