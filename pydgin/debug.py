@@ -2,8 +2,6 @@
 # Debug
 #=======================================================================
 
-from jit import elidable, unroll_safe
-
 #-----------------------------------------------------------------------
 # Debug
 #-----------------------------------------------------------------------
@@ -30,18 +28,14 @@ class Debug( object ):
   #---------------------------------------------------------------------
   # Returns true if debugging is turned on in translation and the
   # particular flag is turned on in command line.
-  @elidable
   def enabled( self, flag ):
-    # TODO: because we use the start after annotation here, the elidable
-    # annotation is incorrect, which would be an issue if debugging with
-    # jitted interpreter
     return Debug.global_enabled and ( flag in self.enabled_flags ) and \
-        ( self.state is None or self.start_after <= self.state.ncycles )
+        ( self.state is None or self.start_after <= self.state.num_insts )
 
   #---------------------------------------------------------------------
   # set_state
   #---------------------------------------------------------------------
-  # set the state so that we can get the ncycles
+  # set the state so that we can get the num_insts
   def set_state( self, state ):
     self.state = state
 

@@ -46,7 +46,7 @@ class ParcSim( Sim ):
   # This method is called to load the program and initialize architectural
   # state
 
-  def init_state( self, exe_file, run_argv, run_envp ):
+  def init_state( self, exe_file, exe_name, run_argv, run_envp, testbin ):
 
     # Load the program into a memory object
 
@@ -90,27 +90,30 @@ class ParcSim( Sim ):
                                   ncores=self.ncores,
                                   reset_addr=reset_addr )
 
+    self.state.testbin  = testbin
+    self.state.exe_name = exe_name
+
   #---------------------------------------------------------------------
   # run
   #---------------------------------------------------------------------
-  # Override sim's run to print stat_ncycles on exit
+  # Override sim's run to print stat_num_insts on exit
 
   def run( self ):
     Sim.run( self )
     for i, state in enumerate( self.states ):
       print "Core %d Instructions Executed in Stat Region = %d" % \
-            ( i, state.stat_ncycles )
+            ( i, state.stat_num_insts )
       # we also calculate the stat instructions
       for j in xrange( 16 ):
         # first check if the stat was enabled
         if state.stat_inst_en[ j ]:
           # calculate the final value
-          state.stat_inst_ncycles[ j ] += state.ncycles - \
+          state.stat_inst_num_insts[ j ] += state.num_insts - \
                                           state.stat_inst_begin[j]
 
         # print the stat if it's greater than 0
-        if state.stat_inst_ncycles[ j ] > 0:
-          print "  Stat %d = %d" % ( j, state.stat_inst_ncycles[ j ] )
+        if state.stat_inst_num_insts[ j ] > 0:
+          print "  Stat %d = %d" % ( j, state.stat_inst_num_insts[ j ] )
 
 
 # this initializes similator and allows translation and python

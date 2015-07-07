@@ -70,7 +70,7 @@ class Sim( object ):
   #-----------------------------------------------------------------------
   # This needs to be implemented in the child class
 
-  def init_state( self, exe_file, run_argv ):
+  def init_state( self, exe_file, exe_name, run_argv, testbin ):
     raise NotImplementedError()
 
   #-----------------------------------------------------------------------
@@ -182,7 +182,7 @@ class Sim( object ):
                   core_id,
                   pad_hex( inst_bits ),
                   pad( inst.str, 8 ),
-                  pad( "%d" % s.ncycles, 8 ), ),
+                  pad( "%d" % s.num_insts, 8 ), ),
 
         exec_fun( s, inst )
       except FatalError as error:
@@ -194,8 +194,8 @@ class Sim( object ):
       # ticks across different cores simulated
       tick_ctr += 1
 
-      s.ncycles += 1    # TODO: should this be done inside instruction definition?
-      if s.stats_en: s.stat_ncycles += 1
+      s.num_insts += 1    # TODO: should this be done inside instruction definition?
+      if s.stats_en: s.stat_num_insts += 1
 
       if s.debug.enabled( "insts" ):
         print
@@ -204,7 +204,7 @@ class Sim( object ):
 
       # check if we have reached the end of the maximum instructions and
       # exit if necessary
-      if max_insts != 0 and s.ncycles >= max_insts:
+      if max_insts != 0 and s.num_insts >= max_insts:
         print "Reached the max_insts (%d), exiting." % max_insts
         break
 
@@ -233,7 +233,7 @@ class Sim( object ):
 
     # show all stats
     for i, state in enumerate( self.states ):
-      print 'Core %d Instructions Executed = %d' % ( i, state.ncycles )
+      print 'Core %d Instructions Executed = %d' % ( i, state.num_insts )
 
   #-----------------------------------------------------------------------
   # get_entry_point
@@ -361,7 +361,7 @@ class Sim( object ):
       # Call ISA-dependent init_state to load program, initialize memory
       # etc.
 
-      self.init_state( exe_file, run_argv, envp )
+      self.init_state( exe_file, filename, run_argv, envp, testbin )
 
       # pass the state to debug for cycle-triggered debugging
 

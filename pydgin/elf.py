@@ -479,38 +479,6 @@ def elf_reader( file_obj ):
     #section_name = start.partition('\0')[0]
     section_name = start.split('\0', 1)[0]
 
-    # This is the list of sections that we currently want to load.
-
-    valid_section_names = \
-    [
-      ".text",
-      ".data",
-      ".sdata",
-      ".xcpthandler",
-      ".init",
-      ".fini",
-      ".ctors",
-      ".dtors",
-      ".eh_frame",
-      ".jcr",
-      ".sbss",
-      ".bss",
-      ".rodata",
-      ".strtab",
-      ".symtab",
-      # Sections needed by ARM uclibc
-      ".got",
-      ".init_array",
-      ".fini_array",
-      ".ARM.extab",
-      ".ARM.exidx",
-    ]
-
-    # Check to see if section is one of ones we want to load
-
-    if section_name not in valid_section_names:
-      continue
-
     # Read the section data if it exists
 
     if section_name not in ['.sbss', '.bss']:

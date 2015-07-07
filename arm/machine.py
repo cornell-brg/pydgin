@@ -2,24 +2,22 @@
 # machine.py
 #=======================================================================
 
+from pydgin.machine import Machine
 from pydgin.storage import RegisterFile
-from pydgin.debug   import Debug, pad, pad_hex
+from pydgin.debug   import pad, pad_hex
 
 #-----------------------------------------------------------------------
 # State
 #-----------------------------------------------------------------------
-class State( object ):
-  _virtualizable_ = ['pc', 'ncycles']
+class State( Machine ):
+  _virtualizable_ = ['pc', 'num_insts', 'N', 'Z', 'C', 'V']
   def __init__( self, memory, debug, reset_addr=0x400 ):
-    self.pc       = reset_addr
-    self.rf       = ArmRegisterFile( self, num_regs=16 )
-    self.mem      = memory
-
-    self    .debug = debug
-    self.rf .debug = debug
-    self.mem.debug = debug
-
-    self.rf[ 15 ]  = reset_addr
+    Machine.__init__(self,
+                     memory,
+                     ArmRegisterFile( self, num_regs=16 ),
+                     debug,
+                     reset_addr=reset_addr )
+    self.rf[ 15 ]  = self.pc
 
     # current program status register (CPSR)
     self.N    = 0b0      # Negative condition
@@ -41,16 +39,6 @@ class State( object ):
     # 0b11011     und (undefined)
     # 0b11111     sys
     self.mode = 0b10000
-
-    # other registers
-    self.status        = 0
-    self.ncycles       = 0
-    # unused
-    self.stats_en      = 0
-    self.stat_ncycles  = 0
-
-    # marks if should be running, syscall_exit sets it false
-    self.running       = True
 
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0

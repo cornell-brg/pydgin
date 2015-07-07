@@ -185,6 +185,16 @@ file_tests = [
   [ 'umull-01.S', {3:0, 4:1,     N:0, Z:0, C:0, V:0} ],
   [ 'umull-02.S', {3:0x40000000,
                    4:0xbfffffff, N:1, Z:0, C:0, V:0} ],
+  [ 'eor-00.S',   {4:3,  5:3,
+                   6:0,  7:1,    N:0, Z:0, C:0, V:0} ],
+  [ 'eor-01.S',   {4:3,  5:3,    N:0, Z:0, C:0, V:0} ],
+  [ 'eor-02.S',   {4:3,  5:0,    N:0, Z:1, C:0, V:0} ],
+  [ 'eor-03.S',   {4:3,
+                   5:0x80000002, N:1, Z:0, C:1, V:0} ],
+  [ 'eor-04.S',   {4:3,
+                   3:0b11011,
+                   5:0x60000003, N:0, Z:0, C:0, V:0} ],
+  [ 'eor-05.S',   {4:0x0cb00000, N:0, Z:0, C:0, V:0} ],
 
 ]
 
@@ -264,7 +274,11 @@ def get_regs_from_output( output_str ):
   # line contains the condition code flags.
 
   for line in output_str.split('\n'):
-    if 0 < collect_regs <= 5:
+
+    if not line or 'retval' in line:
+      continue
+
+    elif 0 < collect_regs <= 5:
       print line
       if collect_regs == 5: parse_flags( line )
       else:                 parse_regs ( line )
@@ -272,6 +286,7 @@ def get_regs_from_output( output_str ):
 
     elif 'syscall_exit' in line:
       collect_regs += 1
+
 
   # Return a dictionary containing the values of the register file and
   # condition flags. Registers are keyed by their register number (int),

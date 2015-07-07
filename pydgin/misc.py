@@ -48,10 +48,9 @@ def load_program( fp, mem, alignment=0 ):
       mem.data_section = section.addr
 
   assert entrypoint >= 0
-  assert sections[-1].name == '.bss'
 
-  bss        = sections[-1]
-  breakpoint = bss.addr + len( bss.data )
+  last_sec   = sections[-1]
+  breakpoint = last_sec.addr + len( last_sec.data )
 
   if alignment > 0:
     def round_up( val, alignment ):
@@ -64,6 +63,12 @@ def load_program( fp, mem, alignment=0 ):
 # create_risc_decoder
 #-----------------------------------------------------------------------
 def create_risc_decoder( encodings, isa_globals, debug=False ):
+
+  # removes all characters other than '0', '1', and 'x'
+  def remove_ignored_chars( enc ):
+    return [ enc[0], re.sub( '[^01x]', '', enc[1] ) ]
+
+  encodings = map( remove_ignored_chars, encodings )
 
   inst_nbits = len( encodings[0][1] )
 
