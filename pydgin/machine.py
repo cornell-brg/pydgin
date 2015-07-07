@@ -22,7 +22,7 @@ class Machine( object ):
     self.num_insts       = 0
     self.stat_num_insts  = 0
 
-    # we need a dedicated running flag bacase status could be 0 on a
+    # we need a dedicated running flag because status could be 0 on a
     # syscall_exit
     self.running       = True
 
