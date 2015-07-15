@@ -186,7 +186,11 @@ def execute_hrts( s, inst ):
 
 def execute_csrrw( s, inst ):
   result = s.rf[inst.rs1]
-  if result & 0x1:
+  # currently only support csr == 3, which accesses fcsr
+  if inst.csr == 3:
+    s.fcsr, s.rf[inst.rd] = s.rf[inst.rs1], s.fcsr
+  # TODO: use the actual csr value of pass/fail
+  elif result & 0x1:
     status = result >> 1
     if status: raise FatalError("Fail! %s" % (result >> 1 ) )
     else:      raise FatalError("Pass!")
@@ -195,7 +199,11 @@ def execute_csrrw( s, inst ):
   s.pc += 4
 
 def execute_csrrs( s, inst ):
-  raise NotImplementedInstError()
+  # currently only support csr == 3, which accesses fcsr
+  if inst.csr == 3:
+    s.rf[inst.rd] = s.fcsr
+  else:
+    raise NotImplementedInstError()
   s.pc += 4
 
 def execute_csrrc( s, inst ):
