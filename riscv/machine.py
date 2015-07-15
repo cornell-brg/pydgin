@@ -3,7 +3,7 @@
 #=========================================================================
 
 from pydgin.storage import RegisterFile
-from pydgin.utils import specialize
+from pydgin.utils import specialize, r_ulonglong
 from utils import trim_64
 from isa import ENABLE_FP
 
@@ -25,7 +25,7 @@ class State( object ):
     if ENABLE_FP:
       self.fp       = RiscVFPRegisterFile()
       self.fp.debug = debug
-      self.fcsr     = 0    # Bits( 32 )
+      self.fcsr     = r_ulonglong( 0 )    # Bits( 32 )
     self.csr      = 0    # Bits( XLEN )
     self.mem      = memory
 
