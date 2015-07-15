@@ -79,11 +79,11 @@ def build_target( name, pypy_dir, build_dir ):
     print "{} failed building, aborting!".format( name )
     sys.exit( ret )
 
-  shutil.copy( name, '../scripts/{}'.format( build_dir ) )
-  symlink_name = '../scripts/builds/{}'.format( name )
+  shutil.copy( name, '{}'.format( build_dir ) )
+  symlink_name = '{}/../{}'.format( build_dir, name )
   if os.path.lexists( symlink_name ):
     os.remove( symlink_name )
-  os.symlink( '../{}/{}'.format( build_dir, name ), symlink_name )
+  os.symlink( '{}/{}'.format( build_dir, name ), symlink_name )
 
 def main():
   if len( sys.argv ) > 1 and sys.argv[1] == '--help':
@@ -113,7 +113,7 @@ def main():
 
   # get the version number
   pydgin_ver = subprocess.check_output(
-                               "./vcs-version.sh", shell=True ).rstrip()
+                               "../scripts/vcs-version.sh", shell=True ).rstrip()
 
   print "Building Pydgin..."
   print "Version: {}".format( pydgin_ver )
@@ -121,7 +121,8 @@ def main():
   print "Targets: {}".format( targets )
 
   # create build dir
-  build_dir = "builds/pydgin-{}/bin".format( pydgin_ver )
+  cwd = os.getcwd()
+  build_dir = "{}/builds/pydgin-{}/bin".format( cwd, pydgin_ver )
   subprocess.call( "mkdir -p {}".format( build_dir ), shell=True )
 
   for target in targets:
