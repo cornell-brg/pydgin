@@ -19,7 +19,7 @@ import sys
 #        "implementation"
 
 from pydgin.debug import Debug, pad, pad_hex
-from pydgin.misc  import FatalError
+from pydgin.misc  import FatalError, NotImplementedInstError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param
 
 def jitpolicy(driver):
@@ -162,6 +162,13 @@ class Sim( object ):
                   pad( "%d" % s.num_insts, 8 ), ),
 
         exec_fun( s, inst )
+      except NotImplementedInstError:
+        # re-decode instruction to get the instruction name
+        inst, _ = self.decode( inst_bits )
+
+        print "Instruction not implemented: %s (pc: 0x%s), aborting!" \
+              % ( inst.str, pad_hex( pc ) )
+        break
       except FatalError as error:
         print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
         print "Exception message: %s" % error.msg

@@ -5,7 +5,8 @@
 ENABLE_FP = True
 
 from utils        import sext_32, signed, sext, trim
-from pydgin.misc  import create_risc_decoder, FatalError
+from pydgin.misc  import create_risc_decoder, FatalError, \
+                         NotImplementedInstError
 from pydgin.utils import (
   trim_32, specialize, intmask, bits2float, float2bits
 )
@@ -160,27 +161,27 @@ def execute_nop( s, inst ):
   s.pc += 4
 
 def execute_sret( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_sfence_vm( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_wfi( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_mrth( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_mrts( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_hrts( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_csrrw( s, inst ):
@@ -190,123 +191,123 @@ def execute_csrrw( s, inst ):
     if status: raise FatalError("Fail! %s" % (result >> 1 ) )
     else:      raise FatalError("Pass!")
   else:
-    raise NotImplementedError()
+    raise NotImplementedInstError()
   s.pc += 4
 
 def execute_csrrs( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_csrrc( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_csrrwi( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_csrrsi( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_csrrci( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom0( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom0_rs1( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom0_rs1_rs2( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom0_rd( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom0_rd_rs1( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom0_rd_rs1_rs2( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom1( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom1_rs1( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom1_rs1_rs2( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom1_rd( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom1_rd_rs1( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom1_rd_rs1_rs2( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom2( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom2_rs1( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom2_rs1_rs2( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom2_rd( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom2_rd_rs1( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom2_rd_rs1_rs2( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom3( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom3_rs1( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom3_rs1_rs2( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom3_rd( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom3_rd_rs1( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 def execute_custom3_rd_rs1_rs2( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 

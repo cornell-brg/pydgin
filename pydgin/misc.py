@@ -28,6 +28,16 @@ class FatalError( Exception ):
     self.msg = msg
 
 #-----------------------------------------------------------------------
+# NotImplementedInstError
+#-----------------------------------------------------------------------
+# Error for not implemented instructions
+
+class NotImplementedInstError( FatalError ):
+
+  def __init__( self, msg="Instruction not implemented" ):
+    FatalError.__init__( self, msg )
+
+#-----------------------------------------------------------------------
 # load_program
 #-----------------------------------------------------------------------
 def load_program( fp, mem, alignment=0 ):

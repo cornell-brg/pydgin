@@ -5,6 +5,7 @@
 
 from utils        import sext_xlen, sext_32, sext, signed, trim
 from pydgin.utils import trim_32
+from pydgin.misc  import NotImplementedInstError
 from syscalls     import do_syscall
 from helpers      import *
 
@@ -262,7 +263,7 @@ def execute_scall( s, inst ):
   s.pc += 4
 
 def execute_sbreak( s, inst ):
-  raise NotImplementedError()
+  raise NotImplementedInstError()
   s.pc += 4
 
 
