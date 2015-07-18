@@ -50,6 +50,15 @@ class ArmSim( Sim ):
          bits == 0xe2888000:
         # discount the hook instructions
         self.state.ncycles -= 2
+      elif bits == 0xe2899000:
+        print "blackhole start"
+        self.state.ncycles -= 2
+      elif bits == 0xe28aa000:
+        print "blackhole stop leave"
+        self.state.ncycles -= 2
+      elif bits == 0xe28bb000:
+        print "blackhole stop exc"
+        self.state.ncycles -= 2
 
       self.state.trig_state = 0
 
