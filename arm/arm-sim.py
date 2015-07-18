@@ -50,16 +50,37 @@ class ArmSim( Sim ):
          bits == 0xe2888000:
         # discount the hook instructions
         self.state.ncycles -= 2
+        self.state.trig_state = 0
       elif bits == 0xe2899000:
-        print "blackhole start"
-        self.state.ncycles -= 2
-      elif bits == 0xe28aa000:
-        print "blackhole stop leave"
-        self.state.ncycles -= 2
-      elif bits == 0xe28bb000:
-        print "blackhole stop exc"
-        self.state.ncycles -= 2
+        self.state.trig_state = 109
+      else:
+        self.state.trig_state = 0
 
+    elif self.state.trig_state == 109:
+      if   bits == 0xe2822000:
+        print "blackhole start %s" % self.state.ncycles
+      elif bits == 0xe2833000:
+        print "blackhole stop leave %s" % self.state.ncycles
+      elif bits == 0xe2844000:
+        print "blackhole stop exc %s" % self.state.ncycles
+      elif bits == 0xe2855000:
+        print "gc major start %s" % self.state.ncycles
+      elif bits == 0xe2866000:
+        print "gc major stop %s" % self.state.ncycles
+      elif bits == 0xe2877000:
+        print "gc minor start %s" % self.state.ncycles
+      elif bits == 0xe2888000:
+        print "gc minor stop %s" % self.state.ncycles
+      elif bits == 0xe2899000:
+        print "tracing start %s" % self.state.ncycles
+      elif bits == 0xe28aa000:
+        print "tracing stop %s" % self.state.ncycles
+      elif bits == 0xe28bb000:
+        print "tracing start gf %s" % self.state.ncycles
+      elif bits == 0xe28cc000:
+        print "tracing stop gf %s" % self.state.ncycles
+
+      self.state.ncycles -= 3
       self.state.trig_state = 0
 
     inst_str, exec_fun = decode( bits )
