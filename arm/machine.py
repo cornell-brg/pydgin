@@ -57,6 +57,8 @@ class State( object ):
 
     # pyxcel related:
     self.trig_state = 0
+    self.event_file = open( "event_file.csv", "w" )
+    self.print_event = False
 
     # mmap boundary
     from bootstrap import memory_size
