@@ -8,9 +8,9 @@
 class Machine( object ):
   def __init__( self, memory, register_file, debug, reset_addr=0x400 ):
 
-    self.pc       = reset_addr
     self.rf       = register_file
     self.mem      = memory
+    self.pc       = reset_addr
 
     self    .debug = debug
     self.rf .debug = debug
