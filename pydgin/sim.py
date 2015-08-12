@@ -191,6 +191,7 @@ class Sim( object ):
 
     print 'DONE! Status =', s.status
     print 'Instructions Executed =', s.num_insts
+    return s.status
 
   #-----------------------------------------------------------------------
   # get_entry_point
@@ -322,7 +323,76 @@ class Sim( object ):
 
       return 0
 
-    return entry_point
+    #-------------------------------------------------------------------
+    # pydgin_simulate_elf
+    #-------------------------------------------------------------------
+    # this is the api to start the simulation from the dynamic library
+
+    from rpython.rtyper.lltypesystem import rffi
+    from rpython.rlib.entrypoint import entrypoint, RPython_StartupCode
+
+    @entrypoint( "main", [rffi.CCHARP], c_name="pydgin_simulate_elf" )
+    def pydgin_simulate_elf( ll_filename ):
+
+      # TODO: this seems the be necessary to acquire the GIL. not sure if
+      # we need it here?
+      #after = rffi.aroundstate.after
+      #if after: after()
+
+      print "pydgin_simulate_elf"
+
+      # convert low-level filename to string
+      if ll_filename:
+        filename = rffi.charp2str( ll_filename )
+      else:
+        print "ll_filename cannot be null"
+        return rffi.cast( rffi.INT, 6666 )
+
+      # ignore run argv and envp for the time being
+
+      run_argv           = []
+      envp               = []
+      debug_flags        = []
+      debug_starts_after = 0
+      testbin            = False
+
+      # create a Debug object which contains the debug flags
+
+      self.debug = Debug( debug_flags, debug_starts_after )
+
+      # Open the executable for reading
+
+      try:
+        exe_file = open( filename, 'rb' )
+
+      except IOError:
+        print "Could not open file %s" % filename
+        return rffi.cast( rffi.INT, 6666 )
+
+      # Call ISA-dependent init_state to load program, initialize memory
+      # etc.
+
+      self.init_state( exe_file, filename, run_argv, envp, testbin )
+
+      # pass the state to debug for cycle-triggered debugging
+
+      self.debug.set_state( self.state )
+
+      # Close after loading
+
+      exe_file.close()
+
+      # Execute the program
+
+      status = self.run()
+
+      #before = rffi.aroundstate.before
+      #if before: before()
+      # return the status
+      return rffi.cast( rffi.INT, status )
+
+    lib_funs = { "pydgin_simulate_elf": pydgin_simulate_elf }
+    return entry_point, lib_funs
 
   #-----------------------------------------------------------------------
   # target
@@ -352,11 +422,17 @@ class Sim( object ):
     print "Translated binary name:", exe_name
     driver.exe_name = exe_name
 
+    # allow shared compilation
+    if "--shared" in args:
+      print "Enabling shared library compilation"
+      driver.config.translation.suggest( shared=True )
+
     # NOTE: RPython has an assertion to check the type of entry_point to
     # be function (not a bound method). So we use get_entry_point which
     # generates a function type
     #return self.entry_point, None
-    return self.get_entry_point(), None
+    entry_point, _ = self.get_entry_point()
+    return entry_point, None
 
 #-------------------------------------------------------------------------
 # init_sim
