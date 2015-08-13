@@ -17,7 +17,7 @@ extern "C" {
 // this needs to be called before any of the calls below
 void rpython_startup_code();
 
-int pydgin_simulate_elf( char *filename );
+int pydgin_simulate_elf( char *filename, int argc, char **argv, char **envp );
 
 #ifdef __cplusplus
 }

@@ -328,11 +328,13 @@ class Sim( object ):
     #-------------------------------------------------------------------
     # this is the api to start the simulation from the dynamic library
 
-    from rpython.rtyper.lltypesystem import rffi
+    from rpython.rtyper.lltypesystem import rffi, lltype
     from rpython.rlib.entrypoint import entrypoint, RPython_StartupCode
 
-    @entrypoint( "main", [rffi.CCHARP], c_name="pydgin_simulate_elf" )
-    def pydgin_simulate_elf( ll_filename ):
+    @entrypoint( "main",
+                 [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.CCHARPP],
+                 c_name="pydgin_simulate_elf" )
+    def pydgin_simulate_elf( ll_filename, ll_argc, ll_argv, ll_envp ):
 
       # TODO: this seems the be necessary to acquire the GIL. not sure if
       # we need it here?
@@ -342,16 +344,34 @@ class Sim( object ):
       print "pydgin_simulate_elf"
 
       # convert low-level filename to string
+
       if ll_filename:
         filename = rffi.charp2str( ll_filename )
       else:
         print "ll_filename cannot be null"
-        return rffi.cast( rffi.INT, 6666 )
+        return rffi.cast( rffi.INT, -1 )
 
-      # ignore run argv and envp for the time being
+      # convert args
 
-      run_argv           = []
-      envp               = []
+      argc = rffi.cast( lltype.Signed, ll_argc )
+      run_argv = []
+
+      if ll_argv:
+        for i in range( argc ):
+          run_argv.append( rffi.charp2str( ll_argv[i] ) )
+
+      # convert environment variables
+
+      envp = []
+
+      if ll_envp:
+        i = 0
+        while ll_envp[i]:
+          envp.append( rffi.charp2str( ll_envp[i] ) )
+          i += 1
+
+      # don't enable any debug flags for the time being
+
       debug_flags        = []
       debug_starts_after = 0
       testbin            = False
@@ -367,7 +387,7 @@ class Sim( object ):
 
       except IOError:
         print "Could not open file %s" % filename
-        return rffi.cast( rffi.INT, 6666 )
+        return rffi.cast( rffi.INT, -1 )
 
       # Call ISA-dependent init_state to load program, initialize memory
       # etc.
