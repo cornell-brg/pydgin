@@ -333,15 +333,15 @@ class Sim( object ):
 
     @entrypoint( "main",
                  [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.CCHARPP],
-                 c_name="pydgin_simulate_elf" )
-    def pydgin_simulate_elf( ll_filename, ll_argc, ll_argv, ll_envp ):
+                 c_name="pydgin_init_elf" )
+    def pydgin_init_elf( ll_filename, ll_argc, ll_argv, ll_envp ):
 
       # TODO: this seems the be necessary to acquire the GIL. not sure if
       # we need it here?
       #after = rffi.aroundstate.after
       #if after: after()
 
-      print "pydgin_simulate_elf"
+      print "pydgin_init_elf"
 
       # convert low-level filename to string
 
@@ -402,6 +402,15 @@ class Sim( object ):
 
       exe_file.close()
 
+      # return success
+      return rffi.cast( rffi.INT, 0 )
+
+    @entrypoint( "main", [], c_name="pydgin_simulate" )
+    def pydgin_simulate():
+      # remove the max instruction limit
+
+      self.max_insts = 0
+
       # Execute the program
 
       status = self.run()
@@ -411,7 +420,30 @@ class Sim( object ):
       # return the status
       return rffi.cast( rffi.INT, status )
 
-    lib_funs = { "pydgin_simulate_elf": pydgin_simulate_elf }
+    @entrypoint( "main", [rffi.LONGLONG], c_name="pydgin_simulate_num_insts" )
+    def pydgin_simulate_num_insts( ll_num_insts ):
+
+      # get number of instructions
+
+      num_insts = rffi.cast( lltype.SignedLongLong, ll_num_insts )
+
+      self.max_insts = num_insts
+
+      print "simulate for %s instructions" % num_insts
+
+      # Execute the program
+
+      status = self.run( )
+
+      #before = rffi.aroundstate.before
+      #if before: before()
+      # return the status
+      return rffi.cast( rffi.INT, status )
+
+
+    lib_funs = { "pydgin_init_elf": pydgin_init_elf,
+                 "pydgin_simulate": pydgin_simulate,
+                 "pydgin_simulate_num_insts" : pydgin_simulate_num_insts }
     return entry_point, lib_funs
 
   #-----------------------------------------------------------------------

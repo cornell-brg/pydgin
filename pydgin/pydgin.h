@@ -17,7 +17,13 @@ extern "C" {
 // this needs to be called before any of the calls below
 void rpython_startup_code();
 
-int pydgin_simulate_elf( char *filename, int argc, char **argv, char **envp );
+int pydgin_init_elf( char *filename, int argc, char **argv, char **envp );
+
+// simulate for number of instructions
+int pydgin_simulate_num_insts( long long num_insts );
+
+// simulate until the program ends
+int pydgin_simulate();
 
 #ifdef __cplusplus
 }
