@@ -324,9 +324,9 @@ class Sim( object ):
       return 0
 
     #-------------------------------------------------------------------
-    # pydgin_simulate_elf
+    # pydgin_init_elf
     #-------------------------------------------------------------------
-    # this is the api to start the simulation from the dynamic library
+    # this is the api to initialize pydgin using the dynamic library
 
     from rpython.rtyper.lltypesystem import rffi, lltype
     from rpython.rlib.entrypoint import entrypoint, RPython_StartupCode
@@ -405,6 +405,9 @@ class Sim( object ):
       # return success
       return rffi.cast( rffi.INT, 0 )
 
+    #-------------------------------------------------------------------
+    # pydgin_simulate
+    #-------------------------------------------------------------------
     @entrypoint( "main", [], c_name="pydgin_simulate" )
     def pydgin_simulate():
       # remove the max instruction limit
@@ -420,6 +423,9 @@ class Sim( object ):
       # return the status
       return rffi.cast( rffi.INT, status )
 
+    #-------------------------------------------------------------------
+    # pydgin_simulate_num_insts
+    #-------------------------------------------------------------------
     @entrypoint( "main", [rffi.LONGLONG], c_name="pydgin_simulate_num_insts" )
     def pydgin_simulate_num_insts( ll_num_insts ):
 
@@ -440,11 +446,63 @@ class Sim( object ):
       # return the status
       return rffi.cast( rffi.INT, status )
 
+    #-------------------------------------------------------------------
+    # CArmArchState
+    #-------------------------------------------------------------------
+    # c representation of arm architectural state
+    CArmArchState = lltype.Struct( "PydginArmArchState",
+                                  ( "rf",   rffi.CFixedArray(
+                                                      rffi.INT, 16 ) ),
+                                  ( "pc",   rffi.INT ),
+                                  ( "cpsr", rffi.INT ),
+                                 )
 
-    lib_funs = { "pydgin_init_elf": pydgin_init_elf,
-                 "pydgin_simulate": pydgin_simulate,
-                 "pydgin_simulate_num_insts" : pydgin_simulate_num_insts }
-    return entry_point, lib_funs
+    #-------------------------------------------------------------------
+    # pydgin_get_arch_state
+    #-------------------------------------------------------------------
+    @entrypoint( "main", [lltype.Ptr( CArmArchState )],
+                 c_name="pydgin_get_arch_state" )
+    def pydgin_get_arch_state( ll_state ):
+      print "pydgin_get_arch_state"
+
+      ll_state.pc   = rffi.cast( rffi.INT, self.state.pc     )
+      ll_state.cpsr = rffi.cast( rffi.INT, self.state.cpsr() )
+
+      for i in range( 16 ):
+        ll_state.rf[i] = rffi.cast( rffi.INT, self.state.rf[i] )
+
+      print_c_arch_state( ll_state )
+
+    #-------------------------------------------------------------------
+    # pydgin_set_arch_state
+    #-------------------------------------------------------------------
+    @entrypoint( "main", [lltype.Ptr( CArmArchState )],
+                 c_name="pydgin_set_arch_state" )
+    def pydgin_set_arch_state( ll_state ):
+      print "pydgin_set_arch_state"
+
+      print_c_arch_state( ll_state )
+
+      self.state.pc   = rffi.cast( lltype.Signed, ll_state.pc )
+      self.state.set_cpsr( rffi.cast( lltype.Signed, ll_state.cpsr ) )
+
+      for i in range( 16 ):
+        self.state.rf[i] = rffi.cast( lltype.Signed, ll_state.rf[i] )
+
+    #-------------------------------------------------------------------
+    # print_c_arch_state
+    #-------------------------------------------------------------------
+    def print_c_arch_state( ll_state ):
+      pc = rffi.cast( lltype.Signed, ll_state.pc )
+      print "pc: %x" % pc
+      cpsr = rffi.cast( lltype.Signed, ll_state.cpsr )
+      print "cpsr: %x" % cpsr
+
+      for i in range( 16 ):
+        reg = rffi.cast( lltype.Signed, ll_state.rf[i] )
+        print "reg%d: %x" % ( i, reg )
+
+    return entry_point
 
   #-----------------------------------------------------------------------
   # target
@@ -482,8 +540,7 @@ class Sim( object ):
     # NOTE: RPython has an assertion to check the type of entry_point to
     # be function (not a bound method). So we use get_entry_point which
     # generates a function type
-    #return self.entry_point, None
-    entry_point, _ = self.get_entry_point()
+    entry_point = self.get_entry_point()
     return entry_point, None
 
 #-------------------------------------------------------------------------

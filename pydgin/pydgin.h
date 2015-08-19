@@ -8,6 +8,8 @@
 #ifndef __PYDGIN_H__
 #define __PYDGIN_H__
 
+#include <inttypes.h>
+
 // note: the extern c is necessary when using this library from the c++
 // world (otherwise it can't find the symbols during linking)
 #ifdef __cplusplus
@@ -24,6 +26,20 @@ int pydgin_simulate_num_insts( long long num_insts );
 
 // simulate until the program ends
 int pydgin_simulate();
+
+//------------------------------------------------------------------------
+// architectural access
+//------------------------------------------------------------------------
+// TODO: these might be a bit too architecture-specific; make them less so
+
+struct PydginArmArchState {
+  int32_t rf[ 16 ];
+  int32_t pc;
+  int32_t cpsr;
+};
+
+void pydgin_get_arch_state( struct PydginArmArchState *state );
+void pydgin_set_arch_state( struct PydginArmArchState *state );
 
 #ifdef __cplusplus
 }

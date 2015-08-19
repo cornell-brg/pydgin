@@ -53,6 +53,15 @@ class State( Machine ):
            ( self.V << 28 ) | \
            ( self.mode    )
 
+  # sets the program status registers
+  def set_cpsr( self, cpsr ):
+    self.N = 0x1 & ( cpsr >> 31 )
+    self.Z = 0x1 & ( cpsr >> 30 )
+    self.C = 0x1 & ( cpsr >> 29 )
+    self.V = 0x1 & ( cpsr >> 28 )
+    # TODO: do not modify mode for the time being
+    # self.mode = 0x1f & cpsr
+
 #-----------------------------------------------------------------------
 # ArmRegisterFile
 #-----------------------------------------------------------------------
