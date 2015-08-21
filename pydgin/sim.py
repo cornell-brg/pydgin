@@ -333,9 +333,11 @@ class Sim( object ):
       from rpython.rlib.entrypoint import entrypoint, RPython_StartupCode
 
       @entrypoint( "main",
-                   [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.CCHARPP],
+                   [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.CCHARPP,
+                    rffi.CCHARPP],
                    c_name="pydgin_init_elf" )
-      def pydgin_init_elf( ll_filename, ll_argc, ll_argv, ll_envp ):
+      def pydgin_init_elf( ll_filename, ll_argc, ll_argv, ll_envp,
+                           ll_debug_flags ):
 
         # TODO: this seems the be necessary to acquire the GIL. not sure if
         # we need it here?
@@ -371,9 +373,17 @@ class Sim( object ):
             envp.append( rffi.charp2str( ll_envp[i] ) )
             i += 1
 
-        # don't enable any debug flags for the time being
+        # convert debug flags
 
-        debug_flags        = []
+        debug_flags = []
+
+        if ll_debug_flags:
+          i = 0
+          while ll_debug_flags[i]:
+            debug_flags.append( rffi.charp2str( ll_debug_flags[i] ) )
+            i += 1
+
+
         debug_starts_after = 0
         testbin            = False
 
