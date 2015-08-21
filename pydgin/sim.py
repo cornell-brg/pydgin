@@ -499,7 +499,8 @@ class Sim( object ):
         self.state.pc   = rffi.cast( lltype.Signed, ll_state.pc )
         self.state.set_cpsr( rffi.cast( lltype.Signed, ll_state.cpsr ) )
 
-        for i in range( 16 ):
+        # hack: don't set r15 because it messes up the pc
+        for i in range( 15 ):
           self.state.rf[i] = rffi.cast( lltype.Signed, ll_state.rf[i] )
 
       #-----------------------------------------------------------------
