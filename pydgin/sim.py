@@ -22,6 +22,11 @@ from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param
 
+EXIT_SYSCALL      = 0
+EXCEPTION         = 1
+REACHED_MAX_INSTS = 2
+
+
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
   return JitPolicy()
@@ -125,6 +130,10 @@ class Sim( object ):
     max_insts = self.max_insts
     jitdriver = self.jitdriver
 
+    # default exit reason: syscall
+    # TODO: make this explicit in syscall handling?
+    pydgin_status = EXIT_SYSCALL
+
     while s.running:
 
       jitdriver.jit_merge_point(
@@ -165,6 +174,7 @@ class Sim( object ):
       except FatalError as error:
         print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
         print "Exception message: %s" % error.msg
+        pydgin_status = EXCEPTION
         break
 
       s.num_insts += 1    # TODO: should this be done inside instruction definition?
@@ -177,8 +187,9 @@ class Sim( object ):
 
       # check if we have reached the end of the maximum instructions and
       # exit if necessary
-      if max_insts != 0 and s.num_insts >= max_insts:
+      if max_insts != 0 and s.num_insts >= max_insts and s.running:
         print "Reached the max_insts (%d), exiting." % max_insts
+        pydgin_status = REACHED_MAX_INSTS
         break
 
       if s.fetch_pc() < old:
@@ -191,7 +202,7 @@ class Sim( object ):
 
     print 'DONE! Status =', s.status
     print 'Instructions Executed =', s.num_insts
-    return s.status
+    return pydgin_status, s.status
 
   #-----------------------------------------------------------------------
   # get_entry_point
@@ -416,29 +427,39 @@ class Sim( object ):
         # return success
         return rffi.cast( rffi.INT, 0 )
 
-      #---------------------------------------------------------------
+      #-----------------------------------------------------------------
+      # CReturn
+      #-----------------------------------------------------------------
+      # c representation of the return type
+      CReturn = lltype.Struct( "PydginReturn",
+                               ( "pydgin_status", rffi.INT ),
+                               ( "prog_status",   rffi.INT ),
+                             )
+
+      #-----------------------------------------------------------------
       # pydgin_simulate
-      #---------------------------------------------------------------
-      @entrypoint( "main", [], c_name="pydgin_simulate" )
-      def pydgin_simulate():
+      #-----------------------------------------------------------------
+      @entrypoint( "main", [lltype.Ptr( CReturn )], c_name="pydgin_simulate" )
+      def pydgin_simulate( ll_return ):
         # remove the max instruction limit
 
         self.max_insts = 0
 
         # Execute the program
 
-        status = self.run()
+        pydgin_status, prog_status = self.run()
 
-        #before = rffi.aroundstate.before
-        #if before: before()
-        # return the status
-        return rffi.cast( rffi.INT, status )
+        # set return variables
+
+        ll_return.pydgin_status = rffi.cast( rffi.INT, pydgin_status )
+        ll_return.prog_status   = rffi.cast( rffi.INT, prog_status )
 
       #-----------------------------------------------------------------
       # pydgin_simulate_num_insts
       #-----------------------------------------------------------------
-      @entrypoint( "main", [rffi.LONGLONG], c_name="pydgin_simulate_num_insts" )
-      def pydgin_simulate_num_insts( ll_num_insts ):
+      @entrypoint( "main", [rffi.LONGLONG, lltype.Ptr( CReturn )],
+                   c_name="pydgin_simulate_num_insts" )
+      def pydgin_simulate_num_insts( ll_num_insts, ll_return ):
 
         # get number of instructions
 
@@ -452,12 +473,12 @@ class Sim( object ):
 
         # Execute the program
 
-        status = self.run( )
+        pydgin_status, prog_status = self.run()
 
-        #before = rffi.aroundstate.before
-        #if before: before()
-        # return the status
-        return rffi.cast( rffi.INT, status )
+        # set return variables
+
+        ll_return.pydgin_status = rffi.cast( rffi.INT, pydgin_status )
+        ll_return.prog_status   = rffi.cast( rffi.INT, prog_status )
 
       #-----------------------------------------------------------------
       # CArmArchState

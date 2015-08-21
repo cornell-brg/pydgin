@@ -8,6 +8,10 @@
 #ifndef __PYDGIN_H__
 #define __PYDGIN_H__
 
+#define PYDGIN_EXIT_SYSCALL       0
+#define PYDGIN_EXCEPTION          1
+#define PYDGIN_REACHED_MAX_INSTS  2
+
 #include <inttypes.h>
 
 // note: the extern c is necessary when using this library from the c++
@@ -22,11 +26,18 @@ void rpython_startup_code();
 int pydgin_init_elf( char *filename, int argc, char **argv, char **envp,
                      char **debug_flags );
 
+struct PydginReturn {
+  // status of pydgin execution
+  int pydgin_status;
+  // the simulated program status if applicable
+  int prog_status;
+};
+
 // simulate for number of instructions
-int pydgin_simulate_num_insts( long long num_insts );
+void pydgin_simulate_num_insts( long long num_insts, struct PydginReturn *ret );
 
 // simulate until the program ends
-int pydgin_simulate();
+void pydgin_simulate( struct PydginReturn *ret );
 
 //------------------------------------------------------------------------
 // architectural access
