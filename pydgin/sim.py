@@ -434,7 +434,9 @@ class Sim( object ):
 
         num_insts = rffi.cast( lltype.SignedLongLong, ll_num_insts )
 
-        self.max_insts = num_insts
+        # add the requested number of instructions to the current number
+
+        self.max_insts = self.state.num_insts + num_insts
 
         print "simulate for %s instructions" % num_insts
 
