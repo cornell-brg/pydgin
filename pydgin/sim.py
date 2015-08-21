@@ -323,184 +323,188 @@ class Sim( object ):
 
       return 0
 
-    #-------------------------------------------------------------------
-    # pydgin_init_elf
-    #-------------------------------------------------------------------
-    # this is the api to initialize pydgin using the dynamic library
+    try:
+      #-----------------------------------------------------------------
+      # pydgin_init_elf
+      #-----------------------------------------------------------------
+      # this is the api to initialize pydgin using the dynamic library
 
-    from rpython.rtyper.lltypesystem import rffi, lltype
-    from rpython.rlib.entrypoint import entrypoint, RPython_StartupCode
+      from rpython.rtyper.lltypesystem import rffi, lltype
+      from rpython.rlib.entrypoint import entrypoint, RPython_StartupCode
 
-    @entrypoint( "main",
-                 [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.CCHARPP],
-                 c_name="pydgin_init_elf" )
-    def pydgin_init_elf( ll_filename, ll_argc, ll_argv, ll_envp ):
+      @entrypoint( "main",
+                   [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.CCHARPP],
+                   c_name="pydgin_init_elf" )
+      def pydgin_init_elf( ll_filename, ll_argc, ll_argv, ll_envp ):
 
-      # TODO: this seems the be necessary to acquire the GIL. not sure if
-      # we need it here?
-      #after = rffi.aroundstate.after
-      #if after: after()
+        # TODO: this seems the be necessary to acquire the GIL. not sure if
+        # we need it here?
+        #after = rffi.aroundstate.after
+        #if after: after()
 
-      print "pydgin_init_elf"
+        print "pydgin_init_elf"
 
-      # convert low-level filename to string
+        # convert low-level filename to string
 
-      if ll_filename:
-        filename = rffi.charp2str( ll_filename )
-      else:
-        print "ll_filename cannot be null"
-        return rffi.cast( rffi.INT, -1 )
+        if ll_filename:
+          filename = rffi.charp2str( ll_filename )
+        else:
+          print "ll_filename cannot be null"
+          return rffi.cast( rffi.INT, -1 )
 
-      # convert args
+        # convert args
 
-      argc = rffi.cast( lltype.Signed, ll_argc )
-      run_argv = []
+        argc = rffi.cast( lltype.Signed, ll_argc )
+        run_argv = []
 
-      if ll_argv:
-        for i in range( argc ):
-          run_argv.append( rffi.charp2str( ll_argv[i] ) )
+        if ll_argv:
+          for i in range( argc ):
+            run_argv.append( rffi.charp2str( ll_argv[i] ) )
 
-      # convert environment variables
+        # convert environment variables
 
-      envp = []
+        envp = []
 
-      if ll_envp:
-        i = 0
-        while ll_envp[i]:
-          envp.append( rffi.charp2str( ll_envp[i] ) )
-          i += 1
+        if ll_envp:
+          i = 0
+          while ll_envp[i]:
+            envp.append( rffi.charp2str( ll_envp[i] ) )
+            i += 1
 
-      # don't enable any debug flags for the time being
+        # don't enable any debug flags for the time being
 
-      debug_flags        = []
-      debug_starts_after = 0
-      testbin            = False
+        debug_flags        = []
+        debug_starts_after = 0
+        testbin            = False
 
-      # create a Debug object which contains the debug flags
+        # create a Debug object which contains the debug flags
 
-      self.debug = Debug( debug_flags, debug_starts_after )
+        self.debug = Debug( debug_flags, debug_starts_after )
 
-      # Open the executable for reading
+        # Open the executable for reading
 
-      try:
-        exe_file = open( filename, 'rb' )
+        try:
+          exe_file = open( filename, 'rb' )
 
-      except IOError:
-        print "Could not open file %s" % filename
-        return rffi.cast( rffi.INT, -1 )
+        except IOError:
+          print "Could not open file %s" % filename
+          return rffi.cast( rffi.INT, -1 )
 
-      # Call ISA-dependent init_state to load program, initialize memory
-      # etc.
+        # Call ISA-dependent init_state to load program, initialize memory
+        # etc.
 
-      self.init_state( exe_file, filename, run_argv, envp, testbin )
+        self.init_state( exe_file, filename, run_argv, envp, testbin )
 
-      # pass the state to debug for cycle-triggered debugging
+        # pass the state to debug for cycle-triggered debugging
 
-      self.debug.set_state( self.state )
+        self.debug.set_state( self.state )
 
-      # Close after loading
+        # Close after loading
 
-      exe_file.close()
+        exe_file.close()
 
-      # return success
-      return rffi.cast( rffi.INT, 0 )
+        # return success
+        return rffi.cast( rffi.INT, 0 )
 
-    #-------------------------------------------------------------------
-    # pydgin_simulate
-    #-------------------------------------------------------------------
-    @entrypoint( "main", [], c_name="pydgin_simulate" )
-    def pydgin_simulate():
-      # remove the max instruction limit
+      #---------------------------------------------------------------
+      # pydgin_simulate
+      #---------------------------------------------------------------
+      @entrypoint( "main", [], c_name="pydgin_simulate" )
+      def pydgin_simulate():
+        # remove the max instruction limit
 
-      self.max_insts = 0
+        self.max_insts = 0
 
-      # Execute the program
+        # Execute the program
 
-      status = self.run()
+        status = self.run()
 
-      #before = rffi.aroundstate.before
-      #if before: before()
-      # return the status
-      return rffi.cast( rffi.INT, status )
+        #before = rffi.aroundstate.before
+        #if before: before()
+        # return the status
+        return rffi.cast( rffi.INT, status )
 
-    #-------------------------------------------------------------------
-    # pydgin_simulate_num_insts
-    #-------------------------------------------------------------------
-    @entrypoint( "main", [rffi.LONGLONG], c_name="pydgin_simulate_num_insts" )
-    def pydgin_simulate_num_insts( ll_num_insts ):
+      #-----------------------------------------------------------------
+      # pydgin_simulate_num_insts
+      #-----------------------------------------------------------------
+      @entrypoint( "main", [rffi.LONGLONG], c_name="pydgin_simulate_num_insts" )
+      def pydgin_simulate_num_insts( ll_num_insts ):
 
-      # get number of instructions
+        # get number of instructions
 
-      num_insts = rffi.cast( lltype.SignedLongLong, ll_num_insts )
+        num_insts = rffi.cast( lltype.SignedLongLong, ll_num_insts )
 
-      self.max_insts = num_insts
+        self.max_insts = num_insts
 
-      print "simulate for %s instructions" % num_insts
+        print "simulate for %s instructions" % num_insts
 
-      # Execute the program
+        # Execute the program
 
-      status = self.run( )
+        status = self.run( )
 
-      #before = rffi.aroundstate.before
-      #if before: before()
-      # return the status
-      return rffi.cast( rffi.INT, status )
+        #before = rffi.aroundstate.before
+        #if before: before()
+        # return the status
+        return rffi.cast( rffi.INT, status )
 
-    #-------------------------------------------------------------------
-    # CArmArchState
-    #-------------------------------------------------------------------
-    # c representation of arm architectural state
-    CArmArchState = lltype.Struct( "PydginArmArchState",
-                                  ( "rf",   rffi.CFixedArray(
-                                                      rffi.INT, 16 ) ),
-                                  ( "pc",   rffi.INT ),
-                                  ( "cpsr", rffi.INT ),
-                                 )
+      #-----------------------------------------------------------------
+      # CArmArchState
+      #-----------------------------------------------------------------
+      # c representation of arm architectural state
+      CArmArchState = lltype.Struct( "PydginArmArchState",
+                                    ( "rf",   rffi.CFixedArray(
+                                                        rffi.INT, 16 ) ),
+                                    ( "pc",   rffi.INT ),
+                                    ( "cpsr", rffi.INT ),
+                                   )
 
-    #-------------------------------------------------------------------
-    # pydgin_get_arch_state
-    #-------------------------------------------------------------------
-    @entrypoint( "main", [lltype.Ptr( CArmArchState )],
-                 c_name="pydgin_get_arch_state" )
-    def pydgin_get_arch_state( ll_state ):
-      print "pydgin_get_arch_state"
+      #-----------------------------------------------------------------
+      # pydgin_get_arch_state
+      #-----------------------------------------------------------------
+      @entrypoint( "main", [lltype.Ptr( CArmArchState )],
+                   c_name="pydgin_get_arch_state" )
+      def pydgin_get_arch_state( ll_state ):
+        print "pydgin_get_arch_state"
 
-      ll_state.pc   = rffi.cast( rffi.INT, self.state.pc     )
-      ll_state.cpsr = rffi.cast( rffi.INT, self.state.cpsr() )
+        ll_state.pc   = rffi.cast( rffi.INT, self.state.pc     )
+        ll_state.cpsr = rffi.cast( rffi.INT, self.state.cpsr() )
 
-      for i in range( 16 ):
-        ll_state.rf[i] = rffi.cast( rffi.INT, self.state.rf[i] )
+        for i in range( 16 ):
+          ll_state.rf[i] = rffi.cast( rffi.INT, self.state.rf[i] )
 
-      print_c_arch_state( ll_state )
+        print_c_arch_state( ll_state )
 
-    #-------------------------------------------------------------------
-    # pydgin_set_arch_state
-    #-------------------------------------------------------------------
-    @entrypoint( "main", [lltype.Ptr( CArmArchState )],
-                 c_name="pydgin_set_arch_state" )
-    def pydgin_set_arch_state( ll_state ):
-      print "pydgin_set_arch_state"
+      #-----------------------------------------------------------------
+      # pydgin_set_arch_state
+      #-----------------------------------------------------------------
+      @entrypoint( "main", [lltype.Ptr( CArmArchState )],
+                   c_name="pydgin_set_arch_state" )
+      def pydgin_set_arch_state( ll_state ):
+        print "pydgin_set_arch_state"
 
-      print_c_arch_state( ll_state )
+        print_c_arch_state( ll_state )
 
-      self.state.pc   = rffi.cast( lltype.Signed, ll_state.pc )
-      self.state.set_cpsr( rffi.cast( lltype.Signed, ll_state.cpsr ) )
+        self.state.pc   = rffi.cast( lltype.Signed, ll_state.pc )
+        self.state.set_cpsr( rffi.cast( lltype.Signed, ll_state.cpsr ) )
 
-      for i in range( 16 ):
-        self.state.rf[i] = rffi.cast( lltype.Signed, ll_state.rf[i] )
+        for i in range( 16 ):
+          self.state.rf[i] = rffi.cast( lltype.Signed, ll_state.rf[i] )
 
-    #-------------------------------------------------------------------
-    # print_c_arch_state
-    #-------------------------------------------------------------------
-    def print_c_arch_state( ll_state ):
-      pc = rffi.cast( lltype.Signed, ll_state.pc )
-      print "pc: %x" % pc
-      cpsr = rffi.cast( lltype.Signed, ll_state.cpsr )
-      print "cpsr: %x" % cpsr
+      #-----------------------------------------------------------------
+      # print_c_arch_state
+      #-----------------------------------------------------------------
+      def print_c_arch_state( ll_state ):
+        pc = rffi.cast( lltype.Signed, ll_state.pc )
+        print "pc: %x" % pc
+        cpsr = rffi.cast( lltype.Signed, ll_state.cpsr )
+        print "cpsr: %x" % cpsr
 
-      for i in range( 16 ):
-        reg = rffi.cast( lltype.Signed, ll_state.rf[i] )
-        print "reg%d: %x" % ( i, reg )
+        for i in range( 16 ):
+          reg = rffi.cast( lltype.Signed, ll_state.rf[i] )
+          print "reg%d: %x" % ( i, reg )
+
+    except ImportError:
+      pass
 
     return entry_point
 
