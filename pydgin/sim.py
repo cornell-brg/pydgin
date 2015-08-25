@@ -21,6 +21,7 @@ import sys
 from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param
+from pydgin.storage import _PhysicalByteMemory
 
 EXIT_SYSCALL      = 0
 EXCEPTION         = 1
@@ -70,7 +71,7 @@ class Sim( object ):
   #-----------------------------------------------------------------------
   # This needs to be implemented in the child class
 
-  def init_state( self, exe_file, exe_name, run_argv, testbin ):
+  def init_state( self, exe_file, exe_name, run_argv, testbin, mem=None ):
     raise NotImplementedError()
 
   #-----------------------------------------------------------------------
@@ -345,10 +346,10 @@ class Sim( object ):
 
       @entrypoint( "main",
                    [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.CCHARPP,
-                    rffi.CCHARPP],
+                    rffi.CCHARPP, rffi.CCHARP],
                    c_name="pydgin_init_elf" )
       def pydgin_init_elf( ll_filename, ll_argc, ll_argv, ll_envp,
-                           ll_debug_flags ):
+                           ll_debug_flags, ll_pmem ):
 
         # TODO: this seems the be necessary to acquire the GIL. not sure if
         # we need it here?
@@ -411,10 +412,20 @@ class Sim( object ):
           print "Could not open file %s" % filename
           return rffi.cast( rffi.INT, -1 )
 
+        # if we are provided with a physical mem, pass this to init_state
+        # initialize memory
+
+        mem = None
+        if ll_pmem:
+          print "using physical memory provided"
+
+          # TODO: initialize this elsewhere
+          mem = _PhysicalByteMemory( ll_pmem, size=2**10 )
+
         # Call ISA-dependent init_state to load program, initialize memory
         # etc.
-
-        self.init_state( exe_file, filename, run_argv, envp, testbin )
+        self.init_state( exe_file, filename, run_argv, envp, testbin,
+                         mem=mem )
 
         # pass the state to debug for cycle-triggered debugging
 

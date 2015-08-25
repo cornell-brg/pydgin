@@ -43,11 +43,14 @@ class ArmSim( Sim ):
   # This method is called to load the program and initialize architectural
   # state
 
-  def init_state( self, exe_file, exe_name, run_argv, run_envp, testbin ):
+  def init_state( self, exe_file, exe_name, run_argv, run_envp, testbin,
+                  mem=None ):
 
     # Load the program into a memory object
 
-    mem = Memory( size=memory_size, byte_storage=False )
+    if mem is None:
+      mem = Memory( size=memory_size, byte_storage=False )
+
     entrypoint, breakpoint = load_program(
         #open( filename, 'rb' ),
         exe_file,

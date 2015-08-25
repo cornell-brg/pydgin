@@ -66,7 +66,9 @@ def Memory( data=None, size=2**10, byte_storage=False ):
   # use sparse storage if not translated
   try:
     from rpython.rlib.objectmodel import we_are_translated
-    sparse_storage = not we_are_translated()
+    #sparse_storage = not we_are_translated()
+    # hack: temporarily enable sparse mem
+    sparse_storage = True
   except ImportError:
     sparse_storage = True
 
@@ -83,10 +85,23 @@ def Memory( data=None, size=2**10, byte_storage=False ):
       return _WordMemory( data, size )
 
 #-------------------------------------------------------------------------
+# _AbstractMemory
+#-------------------------------------------------------------------------
+class _AbstractMemory( object ):
+  def read( self, start_addr, num_bytes ):
+    raise NotImplementedError()
+
+  def iread( self, start_addr, num_bytes ):
+    raise NotImplementedError()
+
+  def write( self, start_addr, num_bytes, value ):
+    raise NotImplementedError()
+
+#-------------------------------------------------------------------------
 # _WordMemory
 #-------------------------------------------------------------------------
 # Memory that uses ints instead of chars
-class _WordMemory( object ):
+class _WordMemory( _AbstractMemory ):
   def __init__( self, data=None, size=2**10 ):
     self.data  = data if data else [ r_uint32(0) ] * (size >> 2)
     self.size  = (len( self.data ) << 2)
@@ -179,7 +194,7 @@ class _WordMemory( object ):
 #-----------------------------------------------------------------------
 # _ByteMemory
 #-----------------------------------------------------------------------
-class _ByteMemory( object ):
+class _ByteMemory( _AbstractMemory ):
   def __init__( self, data=None, size=2**10 ):
     self.data  = data if data else [' '] * size
     self.size  = len( self.data )
@@ -231,11 +246,84 @@ class _ByteMemory( object ):
       self.data[ start_addr + i ] = chr(value & 0xFF)
       value = value >> 8
 
+
+#-----------------------------------------------------------------------
+# _PhysicalByteMemory
+#-----------------------------------------------------------------------
+# This is similar to normal byte memory, but the backing storage is passed
+# as a raw C character array
+class _PhysicalByteMemory( _AbstractMemory ):
+  def __init__( self, pmem, size=2**10 ):
+    self.pmem  = pmem
+    self.size  = size
+    self.debug = Debug()
+
+  def bounds_check( self, addr ):
+    # check if the accessed data is larger than the memory size
+    if addr > self.size:
+      print "WARNING: accessing larger address than memory size. " + \
+            "addr=%s size=%s" % ( pad_hex( addr ), pad_hex( self.size ) )
+    if addr == 0:
+      print "WARNING: writing null pointer!"
+      raise Exception()
+
+  # HACK HACK HACK:
+  def tlb( self, addr ):
+    if addr < 0x9000 and addr > 0x8000:
+      return 0x7fff & addr
+    elif addr > 0x10000:
+      return 0x1000 | ( 0x7fff & addr )
+    return addr
+
+  @unroll_safe
+  def read( self, start_addr, num_bytes ):
+    # ugly hack: remove stuff beyond 0x8000
+    start_addr = self.tlb( start_addr )
+    if self.debug.enabled( "memcheck" ):
+      self.bounds_check( start_addr )
+    value = 0
+    if self.debug.enabled( "mem" ):
+      print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
+    for i in range( num_bytes-1, -1, -1 ):
+      value = value << 8
+      value = value | ord( self.pmem[ start_addr + i ] )
+    if self.debug.enabled( "mem" ):
+      print '%s' % pad_hex( value ),
+    return value
+
+  # this is instruction read, which is otherwise identical to read. The
+  # only difference is the elidable annotation, which we assume the
+  # instructions are not modified (no side effects, assumes the addresses
+  # correspond to the same instructions)
+  @elidable
+  def iread( self, start_addr, num_bytes ):
+    # ugly hack: remove stuff beyond 0x8000
+    start_addr = self.tlb( start_addr )
+    value = 0
+    for i in range( num_bytes-1, -1, -1 ):
+      value = value << 8
+      value = value | ord( self.pmem[ start_addr + i ] )
+    return value
+
+  @unroll_safe
+  def write( self, start_addr, num_bytes, value ):
+    # ugly hack: remove stuff beyond 0x8000
+    start_addr = self.tlb( start_addr )
+    print "writing %x" % start_addr
+    if self.debug.enabled( "memcheck" ):
+      self.bounds_check( start_addr )
+    if self.debug.enabled( "mem" ):
+      print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
+                                     pad_hex( value ) ),
+    for i in range( num_bytes ):
+      self.pmem[ start_addr + i ] = chr(value & 0xFF)
+      value = value >> 8
+
 #-----------------------------------------------------------------------
 # _SparseMemory
 #-----------------------------------------------------------------------
 
-class _SparseMemory( object ):
+class _SparseMemory( _AbstractMemory ):
   _immutable_fields_ = [ "BlockMemory", "block_size", "addr_mask",
                          "block_mask" ]
 

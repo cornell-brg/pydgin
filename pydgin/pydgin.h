@@ -24,7 +24,7 @@ extern "C" {
 void rpython_startup_code();
 
 int pydgin_init_elf( char *filename, int argc, char **argv, char **envp,
-                     char **debug_flags );
+                     char **debug_flags, uint8_t *pmem );
 
 struct PydginReturn {
   // status of pydgin execution
