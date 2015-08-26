@@ -253,10 +253,23 @@ class _ByteMemory( _AbstractMemory ):
 # This is similar to normal byte memory, but the backing storage is passed
 # as a raw C character array
 class _PhysicalByteMemory( _AbstractMemory ):
-  def __init__( self, pmem, size=2**10 ):
+  def __init__( self, pmem, size=2**10, page_table={}, page_shamt=12 ):
     self.pmem  = pmem
     self.size  = size
     self.debug = Debug()
+
+    self.page_shamt = page_shamt
+    self.set_page_table( page_table )
+
+  def set_page_table( self, page_table ):
+    self.page_table = page_table
+    self.page_size  = 1 << self.page_shamt
+    self.page_mask  = self.page_size - 1
+    self.next_paddr = len( self.page_table ) * self.page_size
+    print "page shamt %d size %x mask %x next %x" % ( self.page_shamt,
+                                              self.page_size,
+                                              self.page_mask,
+                                              self.next_paddr )
 
   def bounds_check( self, addr ):
     # check if the accessed data is larger than the memory size
@@ -267,18 +280,32 @@ class _PhysicalByteMemory( _AbstractMemory ):
       print "WARNING: writing null pointer!"
       raise Exception()
 
-  # HACK HACK HACK:
-  def tlb( self, addr ):
-    if addr < 0x9000 and addr > 0x8000:
-      return 0x7fff & addr
-    elif addr > 0x10000:
-      return 0x1000 | ( 0x7fff & addr )
-    return addr
+  # allocate a new page
+  def allocate_page( self, vaddr_idx ):
+    self.page_table[ vaddr_idx ] = self.next_paddr
+    self.next_paddr += self.page_size
+    #print "allocate page vaddr_idx=%d paddr=%x" % (vaddr_idx,
+    #                               self.page_table[ vaddr_idx ] )
+    return self.page_table[ vaddr_idx ]
+
+  # lookup in the page table and find the physical address
+  def page_table_lookup( self, addr ):
+    # first get the virtual address index
+    vaddr_idx = addr >> self.page_shamt
+
+    if vaddr_idx in self.page_table:
+      paddr = ( addr & self.page_mask ) | self.page_table[ vaddr_idx ]
+
+    else:
+      paddr = ( addr & self.page_mask ) | self.allocate_page( vaddr_idx )
+
+    #print "page_table_lookup %x paddr %x vaddr_idx %x base_paddr %x" \
+    #      % (addr, paddr, vaddr_idx, self.page_table[ vaddr_idx ] )
+    return paddr
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
-    # ugly hack: remove stuff beyond 0x8000
-    start_addr = self.tlb( start_addr )
+    start_addr = self.page_table_lookup( start_addr )
     if self.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr )
     value = 0
@@ -297,8 +324,7 @@ class _PhysicalByteMemory( _AbstractMemory ):
   # correspond to the same instructions)
   @elidable
   def iread( self, start_addr, num_bytes ):
-    # ugly hack: remove stuff beyond 0x8000
-    start_addr = self.tlb( start_addr )
+    start_addr = self.page_table_lookup( start_addr )
     value = 0
     for i in range( num_bytes-1, -1, -1 ):
       value = value << 8
@@ -307,9 +333,7 @@ class _PhysicalByteMemory( _AbstractMemory ):
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
-    # ugly hack: remove stuff beyond 0x8000
-    start_addr = self.tlb( start_addr )
-    print "writing %x" % start_addr
+    start_addr = self.page_table_lookup( start_addr )
     if self.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr )
     if self.debug.enabled( "mem" ):

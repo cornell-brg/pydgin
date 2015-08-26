@@ -29,7 +29,9 @@ class FatalError( Exception ):
 #-----------------------------------------------------------------------
 # load_program
 #-----------------------------------------------------------------------
-def load_program( fp, mem, alignment=0 ):
+# hacky: do_no_load flag supresses loading the program (useful for
+# physical memory provided by gem5)
+def load_program( fp, mem, alignment=0, do_not_load=False ):
 
   mem_image  = elf.elf_reader( fp )
   sections   = mem_image.get_sections()
@@ -38,7 +40,8 @@ def load_program( fp, mem, alignment=0 ):
   for section in sections:
     start_addr = section.addr
     for i, data in enumerate( section.data ):
-      mem.write( start_addr+i, 1, ord( data ) )
+      if not do_not_load:
+        mem.write( start_addr+i, 1, ord( data ) )
 
     # TODO: HACK should really have elf_reader return the entry point
     #       address in the elf header!

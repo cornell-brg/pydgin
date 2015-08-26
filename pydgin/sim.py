@@ -420,7 +420,8 @@ class Sim( object ):
           print "using physical memory provided"
 
           # TODO: initialize this elsewhere
-          mem = _PhysicalByteMemory( ll_pmem, size=2**10 )
+          mem = _PhysicalByteMemory( ll_pmem, size=2**10,
+                                     page_table={} )
 
         # Call ISA-dependent init_state to load program, initialize memory
         # etc.
@@ -534,6 +535,27 @@ class Sim( object ):
         # hack: don't set r15 because it messes up the pc
         for i in range( 15 ):
           self.state.rf[i] = rffi.cast( lltype.Signed, ll_state.rf[i] )
+
+      #-----------------------------------------------------------------
+      # pydgin_set_ptable
+      #-----------------------------------------------------------------
+      @entrypoint( "main", [rffi.INTP, rffi.INT],
+                   c_name="pydgin_set_ptable" )
+      def pydgin_set_ptable( ll_ptable, ll_ptable_nentries ):
+          print "setting page table"
+          # the low-level page table is encoded to be an array of
+          # tuples, first the virtual memory page index then physical
+          # memory base address
+          ptable = {}
+          mem = self.state.mem
+          for i in range( ll_ptable_nentries ):
+            v1 = rffi.cast( lltype.Signed, ll_ptable[2*i] )
+            v2 = rffi.cast( lltype.Signed, ll_ptable[2*i+1] )
+            print "ll_ptable[%d] = %x, %x" % (i, v1, v2)
+            ptable[ v1 ] = v2
+
+          mem.set_page_table( ptable )
+
 
       #-----------------------------------------------------------------
       # print_c_arch_state

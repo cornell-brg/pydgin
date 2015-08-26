@@ -48,6 +48,8 @@ class ArmSim( Sim ):
 
     # Load the program into a memory object
 
+    # hacky: don't load prog if physical mem provided
+    physical_mem = ( mem is not None )
     if mem is None:
       mem = Memory( size=memory_size, byte_storage=False )
 
@@ -56,7 +58,9 @@ class ArmSim( Sim ):
         exe_file,
         mem,
         # TODO: GEM5 uses this alignment, remove?
-        alignment = 1<<12
+        alignment = 1<<12,
+        # hacky
+        do_not_load=physical_mem
     )
 
     self.state = syscall_init( mem, entrypoint, breakpoint,
