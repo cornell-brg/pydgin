@@ -498,9 +498,10 @@ class Sim( object ):
       # c representation of arm architectural state
       CArmArchState = lltype.Struct( "PydginArmArchState",
                                     ( "rf",   rffi.CFixedArray(
-                                                        rffi.INT, 16 ) ),
-                                    ( "pc",   rffi.INT ),
-                                    ( "cpsr", rffi.INT ),
+                                                        rffi.UINT, 16 ) ),
+                                    ( "pc",   rffi.UINT ),
+                                    ( "cpsr", rffi.UINT ),
+                                    ( "brk_point", rffi.UINT ),
                                    )
 
       #-----------------------------------------------------------------
@@ -511,11 +512,12 @@ class Sim( object ):
       def pydgin_get_arch_state( ll_state ):
         print "pydgin_get_arch_state"
 
-        ll_state.pc   = rffi.cast( rffi.INT, self.state.pc     )
-        ll_state.cpsr = rffi.cast( rffi.INT, self.state.cpsr() )
+        ll_state.pc   = rffi.cast( rffi.UINT, self.state.pc     )
+        ll_state.cpsr = rffi.cast( rffi.UINT, self.state.cpsr() )
+        ll_state.brk_point = rffi.cast( rffi.UINT, self.state.breakpoint )
 
         for i in range( 16 ):
-          ll_state.rf[i] = rffi.cast( rffi.INT, self.state.rf[i] )
+          ll_state.rf[i] = rffi.cast( rffi.UINT, self.state.rf[i] )
 
         print_c_arch_state( ll_state )
 
@@ -531,6 +533,7 @@ class Sim( object ):
 
         self.state.pc   = rffi.cast( lltype.Signed, ll_state.pc )
         self.state.set_cpsr( rffi.cast( lltype.Signed, ll_state.cpsr ) )
+        self.state.breakpoint = rffi.cast( lltype.Signed, ll_state.brk_point )
 
         # hack: don't set r15 because it messes up the pc
         for i in range( 15 ):
@@ -556,6 +559,25 @@ class Sim( object ):
 
           mem.set_page_table( ptable )
 
+      #-----------------------------------------------------------------
+      # pydgin_get_ptable
+      #-----------------------------------------------------------------
+      @entrypoint( "main", [rffi.INTP],
+                   c_name="pydgin_get_ptable" )
+      def pydgin_get_ptable( ll_ptable ):
+          print "getting page table"
+          # the low-level page table is encoded to be an array of
+          # tuples, first the virtual memory page index then physical
+          # memory base address
+          mem = self.state.mem
+          i = 0
+          for vaddr_idx, paddr_base in mem.page_table.items():
+            ll_ptable[2*i]   = rffi.cast( rffi.INT, vaddr_idx  )
+            ll_ptable[2*i+1] = rffi.cast( rffi.INT, paddr_base )
+            print "ll_ptable[%d] = %x, %x" % (i, vaddr_idx, paddr_base)
+            i += 1
+
+          return i
 
       #-----------------------------------------------------------------
       # print_c_arch_state

@@ -45,13 +45,17 @@ void pydgin_simulate( struct PydginReturn *ret );
 // TODO: these might be a bit too architecture-specific; make them less so
 
 struct PydginArmArchState {
-  int32_t rf[ 16 ];
-  int32_t pc;
-  int32_t cpsr;
+  uint32_t rf[ 16 ];
+  uint32_t pc;
+  uint32_t cpsr;
+  uint32_t brk_point;
 };
 
 void pydgin_get_arch_state( struct PydginArmArchState *state );
 void pydgin_set_arch_state( struct PydginArmArchState *state );
+
+void pydgin_set_ptable( int *ptable, int ptable_nentries );
+int pydgin_get_ptable( int *ptable );
 
 #ifdef __cplusplus
 }
