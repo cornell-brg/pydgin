@@ -289,6 +289,7 @@ class _PhysicalByteMemory( _AbstractMemory ):
     return self.page_table[ vaddr_idx ]
 
   # lookup in the page table and find the physical address
+  @elidable
   def page_table_lookup( self, addr ):
     # first get the virtual address index
     vaddr_idx = addr >> self.page_shamt
