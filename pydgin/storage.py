@@ -288,6 +288,15 @@ class _PhysicalByteMemory( _AbstractMemory ):
     #                               self.page_table[ vaddr_idx ] )
     return self.page_table[ vaddr_idx ]
 
+  # allocates pages for the address range if not already initialized
+  def init_pages( self, vaddr_begin, vaddr_end ):
+    vaddr_begin_idx = vaddr_begin >> self.page_shamt
+    vaddr_end_idx   = vaddr_end   >> self.page_shamt
+
+    for vaddr_idx in range( vaddr_begin_idx, vaddr_end_idx+1 ):
+      if vaddr_idx not in self.page_table:
+        self.allocate_page( vaddr_idx )
+
   # lookup in the page table and find the physical address
   @elidable
   def page_table_lookup( self, addr ):

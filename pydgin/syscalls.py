@@ -553,6 +553,9 @@ def syscall_brk( s, arg0, arg1, arg2 ):
     print "syscall_brk( addr=%x )" % new_brk,
 
   if new_brk != 0:
+    # initialize the pages in the range
+    old_brk = s.breakpoint
+    s.mem.init_pages( old_brk, new_brk )
     s.breakpoint = new_brk
 
   return s.breakpoint, 0
