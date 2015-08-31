@@ -549,8 +549,11 @@ class Sim( object ):
         # the low-level page table is encoded to be an array of
         # tuples, first the virtual memory page index then physical
         # memory base address
-        ptable = {}
+
+        # to implement differential page, table, first get the old one,
+        # and append the new stuff to it
         mem = self.state.mem
+        ptable = mem.page_table
         for i in range( ll_ptable_nentries ):
           v1 = rffi.cast( lltype.Signed, ll_ptable[2*i] )
           v2 = rffi.cast( lltype.Signed, ll_ptable[2*i+1] )
@@ -571,11 +574,14 @@ class Sim( object ):
         # memory base address
         mem = self.state.mem
         i = 0
-        for vaddr_idx, paddr_base in mem.page_table.items():
+        # use the differential page table and reset one transferred
+        for vaddr_idx, paddr_base in mem.diff_page_table.items():
           ll_ptable[2*i]   = rffi.cast( rffi.INT, vaddr_idx  )
           ll_ptable[2*i+1] = rffi.cast( rffi.INT, paddr_base )
           print "ll_ptable[%d] = %x, %x" % (i, vaddr_idx, paddr_base)
           i += 1
+
+        mem.diff_page_table = {}
 
         return i
 

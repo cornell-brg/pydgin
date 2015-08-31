@@ -263,6 +263,7 @@ class _PhysicalByteMemory( _AbstractMemory ):
 
   def set_page_table( self, page_table ):
     self.page_table = page_table
+    self.diff_page_table = {}
     self.page_size  = 1 << self.page_shamt
     self.page_mask  = self.page_size - 1
     self.next_paddr = len( self.page_table ) * self.page_size
@@ -283,6 +284,7 @@ class _PhysicalByteMemory( _AbstractMemory ):
   # allocate a new page
   def allocate_page( self, vaddr_idx ):
     self.page_table[ vaddr_idx ] = self.next_paddr
+    self.diff_page_table[ vaddr_idx ] = self.next_paddr
     self.next_paddr += self.page_size
     #print "allocate page vaddr_idx=%d paddr=%x" % (vaddr_idx,
     #                               self.page_table[ vaddr_idx ] )
