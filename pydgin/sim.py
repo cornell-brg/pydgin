@@ -545,19 +545,19 @@ class Sim( object ):
       @entrypoint( "main", [rffi.INTP, rffi.INT],
                    c_name="pydgin_set_ptable" )
       def pydgin_set_ptable( ll_ptable, ll_ptable_nentries ):
-          print "setting page table"
-          # the low-level page table is encoded to be an array of
-          # tuples, first the virtual memory page index then physical
-          # memory base address
-          ptable = {}
-          mem = self.state.mem
-          for i in range( ll_ptable_nentries ):
-            v1 = rffi.cast( lltype.Signed, ll_ptable[2*i] )
-            v2 = rffi.cast( lltype.Signed, ll_ptable[2*i+1] )
-            print "ll_ptable[%d] = %x, %x" % (i, v1, v2)
-            ptable[ v1 ] = v2
+        print "setting page table"
+        # the low-level page table is encoded to be an array of
+        # tuples, first the virtual memory page index then physical
+        # memory base address
+        ptable = {}
+        mem = self.state.mem
+        for i in range( ll_ptable_nentries ):
+          v1 = rffi.cast( lltype.Signed, ll_ptable[2*i] )
+          v2 = rffi.cast( lltype.Signed, ll_ptable[2*i+1] )
+          print "ll_ptable[%d] = %x, %x" % (i, v1, v2)
+          ptable[ v1 ] = v2
 
-          mem.set_page_table( ptable )
+        mem.set_page_table( ptable )
 
       #-----------------------------------------------------------------
       # pydgin_get_ptable
@@ -565,19 +565,19 @@ class Sim( object ):
       @entrypoint( "main", [rffi.INTP],
                    c_name="pydgin_get_ptable" )
       def pydgin_get_ptable( ll_ptable ):
-          print "getting page table"
-          # the low-level page table is encoded to be an array of
-          # tuples, first the virtual memory page index then physical
-          # memory base address
-          mem = self.state.mem
-          i = 0
-          for vaddr_idx, paddr_base in mem.page_table.items():
-            ll_ptable[2*i]   = rffi.cast( rffi.INT, vaddr_idx  )
-            ll_ptable[2*i+1] = rffi.cast( rffi.INT, paddr_base )
-            print "ll_ptable[%d] = %x, %x" % (i, vaddr_idx, paddr_base)
-            i += 1
+        print "getting page table"
+        # the low-level page table is encoded to be an array of
+        # tuples, first the virtual memory page index then physical
+        # memory base address
+        mem = self.state.mem
+        i = 0
+        for vaddr_idx, paddr_base in mem.page_table.items():
+          ll_ptable[2*i]   = rffi.cast( rffi.INT, vaddr_idx  )
+          ll_ptable[2*i+1] = rffi.cast( rffi.INT, paddr_base )
+          print "ll_ptable[%d] = %x, %x" % (i, vaddr_idx, paddr_base)
+          i += 1
 
-          return i
+        return i
 
       #-----------------------------------------------------------------
       # print_c_arch_state
