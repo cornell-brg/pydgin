@@ -222,11 +222,14 @@ def put_str( s, ptr, str ):
 # failure
 
 def is_fd_open( s, fd ):
+  # temporary hack: don't check if fd is in the file descriptors
   if fd not in file_descriptors:
-    if s.debug.enabled( "syscalls" ):
-      print ( "Could not find fd=%d in open file_descriptors, " % fd ) + \
-            "returning errno=9"
-    return False
+    print "could not find file descriptor", fd
+    return True
+    #if s.debug.enabled( "syscalls" ):
+    #  print ( "Could not find fd=%d in open file_descriptors, " % fd ) + \
+    #        "returning errno=9"
+    #return False
 
   return True
 
@@ -385,9 +388,11 @@ def syscall_close( s, arg0, arg1, arg2 ):
       print "OSError in syscall_close. errno=%d" % e.errno
     errno = e.errno
 
+  # hack: don't delete the fd because it might have been initialized by
+  # gem5
   # remove fd only if the previous op succeeded
-  if errno == 0:
-    del file_descriptors[fd]
+  #if errno == 0:
+  #  del file_descriptors[fd]
 
   return 0 if errno == 0 else -1, errno
 
