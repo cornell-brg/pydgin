@@ -97,6 +97,10 @@ class _AbstractMemory( object ):
   def write( self, start_addr, num_bytes, value ):
     raise NotImplementedError()
 
+  # allocates pages for the address range if not already initialized
+  def init_pages( self, vaddr_begin, vaddr_end ):
+    pass
+
 #-------------------------------------------------------------------------
 # _WordMemory
 #-------------------------------------------------------------------------
