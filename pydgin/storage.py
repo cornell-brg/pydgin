@@ -66,9 +66,7 @@ def Memory( data=None, size=2**10, byte_storage=False ):
   # use sparse storage if not translated
   try:
     from rpython.rlib.objectmodel import we_are_translated
-    #sparse_storage = not we_are_translated()
-    # hack: temporarily enable sparse mem
-    sparse_storage = True
+    sparse_storage = not we_are_translated()
   except ImportError:
     sparse_storage = True
 
