@@ -358,6 +358,141 @@ class _PhysicalByteMemory( _AbstractMemory ):
       value = value >> 8
 
 #-----------------------------------------------------------------------
+# _PhysicalWordMemory
+#-----------------------------------------------------------------------
+# This is similar to normal word memory, but the backing storage is passed
+# as a raw C int array
+class _PhysicalWordMemory( _AbstractMemory ):
+  def __init__( self, pmem, size=2**10, page_table={}, page_shamt=12 ):
+    self.pmem  = pmem
+    self.size  = size
+    self.debug = Debug()
+
+    self.page_shamt = page_shamt
+    self.set_page_table( page_table )
+
+  def set_page_table( self, page_table ):
+    self.page_table = page_table
+    self.diff_page_table = {}
+    self.page_size  = 1 << self.page_shamt
+    self.page_mask  = self.page_size - 1
+    self.next_paddr = len( self.page_table ) * self.page_size
+    print "page shamt %d size %x mask %x next %x" % ( self.page_shamt,
+                                              self.page_size,
+                                              self.page_mask,
+                                              self.next_paddr )
+
+  def bounds_check( self, addr ):
+    # check if the accessed data is larger than the memory size
+    if addr > self.size:
+      print "WARNING: accessing larger address than memory size. " + \
+            "addr=%s size=%s" % ( pad_hex( addr ), pad_hex( self.size ) )
+    if addr == 0:
+      print "WARNING: writing null pointer!"
+      raise Exception()
+
+  # allocate a new page
+  def allocate_page( self, vaddr_idx ):
+    self.page_table[ vaddr_idx ] = self.next_paddr
+    self.diff_page_table[ vaddr_idx ] = self.next_paddr
+    self.next_paddr += self.page_size
+    #print "allocate page vaddr_idx=%d paddr=%x" % (vaddr_idx,
+    #                               self.page_table[ vaddr_idx ] )
+    return self.page_table[ vaddr_idx ]
+
+  # allocates pages for the address range if not already initialized
+  def init_pages( self, vaddr_begin, vaddr_end ):
+    vaddr_begin_idx = vaddr_begin >> self.page_shamt
+    vaddr_end_idx   = vaddr_end   >> self.page_shamt
+
+    for vaddr_idx in range( vaddr_begin_idx, vaddr_end_idx+1 ):
+      if vaddr_idx not in self.page_table:
+        self.allocate_page( vaddr_idx )
+
+  # lookup in the page table and find the physical address
+  @elidable
+  def page_table_lookup( self, addr ):
+    # first get the virtual address index
+    vaddr_idx = addr >> self.page_shamt
+
+    if vaddr_idx in self.page_table:
+      paddr = ( addr & self.page_mask ) | self.page_table[ vaddr_idx ]
+
+    else:
+      paddr = ( addr & self.page_mask ) | self.allocate_page( vaddr_idx )
+
+    #print "page_table_lookup %x paddr %x vaddr_idx %x base_paddr %x" \
+    #      % (addr, paddr, vaddr_idx, self.page_table[ vaddr_idx ] )
+    return paddr
+
+  @unroll_safe
+  def read( self, start_addr, num_bytes ):
+    start_addr = self.page_table_lookup( start_addr )
+    assert 0 < num_bytes <= 4
+    word = start_addr >> 2
+    byte = start_addr &  0b11
+
+    if self.debug.enabled( "mem" ):
+      print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
+    if self.debug.enabled( "memcheck" ):
+      self.bounds_check( start_addr, 'RD' )
+
+    value = 0
+    if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
+      value = widen( self.pmem[ word ] )
+    elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
+      mask = 0xFFFF << (byte * 8)
+      value = ( widen( self.pmem[ word ] ) & mask) >> (byte * 8)
+    elif num_bytes == 1:
+      mask = 0xFF   << (byte * 8)
+      value = ( widen( self.pmem[ word ] ) & mask) >> (byte * 8)
+    else:
+      raise Exception('Invalid num_bytes: %d!' % num_bytes)
+
+    if self.debug.enabled( "mem" ):
+      print '%s' % pad_hex( value ),
+
+    return value
+
+  # this is instruction read, which is otherwise identical to read. The
+  # only difference is the elidable annotation, which we assume the
+  # instructions are not modified (no side effects, assumes the addresses
+  # correspond to the same instructions)
+  @elidable
+  def iread( self, start_addr, num_bytes ):
+    start_addr = self.page_table_lookup( start_addr )
+    assert start_addr & 0b11 == 0  # only aligned accesses allowed
+    return widen( self.pmem[ start_addr >> 2 ] )
+
+  @unroll_safe
+  def write( self, start_addr, num_bytes, value ):
+    start_addr = self.page_table_lookup( start_addr )
+    assert 0 < num_bytes <= 4
+    word = start_addr >> 2
+    byte = start_addr &  0b11
+
+    if self.debug.enabled( "memcheck" ):
+      self.bounds_check( start_addr, 'WR' )
+
+    if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
+      pass # no masking needed
+    elif num_bytes == 2:  # TODO: byte should only be 0, 1, 2, not 3
+      mask  = ~(0xFFFF << (byte * 8)) & 0xFFFFFFFF
+      value = ( widen( self.pmem[ word ] ) & mask ) \
+              | ( (value & 0xFFFF) << (byte * 8) )
+    elif num_bytes == 1:
+      mask  = ~(0xFF   << (byte * 8)) & 0xFFFFFFFF
+      value = ( widen( self.pmem[ word ] ) & mask ) \
+              | ( (value & 0xFF  ) << (byte * 8) )
+    else:
+      raise Exception('Invalid num_bytes: %d!' % num_bytes)
+
+    if self.debug.enabled( "mem" ):
+      print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
+                                     pad_hex( value ) ),
+    self.pmem[ word ] = r_uint32( value )
+
+#-----------------------------------------------------------------------
 # _SparseMemory
 #-----------------------------------------------------------------------
 

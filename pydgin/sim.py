@@ -21,7 +21,7 @@ import sys
 from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param
-from pydgin.storage import _PhysicalByteMemory
+from pydgin.storage import _PhysicalByteMemory, _PhysicalWordMemory
 
 EXIT_SYSCALL      = 0
 EXCEPTION         = 1
@@ -421,7 +421,10 @@ class Sim( object ):
           print "using physical memory provided"
 
           # TODO: initialize this elsewhere
-          mem = _PhysicalByteMemory( ll_pmem, size=2**10,
+          #mem = _PhysicalByteMemory( ll_pmem, size=2**10,
+          #                           page_table={} )
+          pmem = rffi.cast( rffi.UINTP, ll_pmem )
+          mem = _PhysicalWordMemory( pmem, size=2**10,
                                      page_table={} )
 
         if rffi.cast( lltype.Signed, ll_do_not_load ) != 0:
