@@ -44,7 +44,7 @@ class ArmSim( Sim ):
   # state
 
   def init_state( self, exe_file, exe_name, run_argv, run_envp, testbin,
-                  mem=None ):
+                  mem=None, do_not_load=False ):
 
     # Load the program into a memory object
 
@@ -60,7 +60,7 @@ class ArmSim( Sim ):
         # TODO: GEM5 uses this alignment, remove?
         alignment = 1<<12,
         # hacky
-        do_not_load=physical_mem
+        do_not_load=do_not_load
     )
 
     self.state = syscall_init( mem, entrypoint, breakpoint,
