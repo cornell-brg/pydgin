@@ -411,6 +411,22 @@ class _PhysicalWordMemory( _AbstractMemory ):
 
   # lookup in the page table and find the physical address
   @elidable
+  def page_table_lookup_elidable( self, addr ):
+    # first get the virtual address index
+    vaddr_idx = addr >> self.page_shamt
+
+    if vaddr_idx in self.page_table:
+      paddr = ( addr & self.page_mask ) | self.page_table[ vaddr_idx ]
+
+    else:
+      paddr = ( addr & self.page_mask ) | self.allocate_page( vaddr_idx )
+
+    #print "page_table_lookup %x paddr %x vaddr_idx %x base_paddr %x" \
+    #      % (addr, paddr, vaddr_idx, self.page_table[ vaddr_idx ] )
+    return paddr
+
+  # lookup in the page table and find the physical address
+  @unroll_safe
   def page_table_lookup( self, addr ):
     # first get the virtual address index
     vaddr_idx = addr >> self.page_shamt
@@ -460,7 +476,7 @@ class _PhysicalWordMemory( _AbstractMemory ):
   # correspond to the same instructions)
   @elidable
   def iread( self, start_addr, num_bytes ):
-    start_addr = self.page_table_lookup( start_addr )
+    start_addr = self.page_table_lookup_elidable( start_addr )
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
     return widen( self.pmem[ start_addr >> 2 ] )
 
