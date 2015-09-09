@@ -363,6 +363,7 @@ class _PhysicalByteMemory( _AbstractMemory ):
 # This is similar to normal word memory, but the backing storage is passed
 # as a raw C int array
 class _PhysicalWordMemory( _AbstractMemory ):
+  _immutable_fields_ = [ "page_table[*]" ]
   def __init__( self, pmem, size=2**10, page_table={}, page_shamt=12 ):
     self.pmem  = pmem
     self.size  = size
