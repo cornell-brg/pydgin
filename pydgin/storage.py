@@ -372,7 +372,16 @@ class _PhysicalWordMemory( _AbstractMemory ):
     self.set_page_table( page_table )
 
   def set_page_table( self, page_table ):
-    self.page_table = page_table
+
+    self.page_table_num_entries = 1
+    # hacky way to get exponential (** is not rpython)
+    for i in range(32 - self.page_shamt):
+      self.page_table_num_entries *= 2
+
+    print "page_table entries", self.page_table_num_entries
+    self.page_table = [ r_uint32(0xffffffff) ] * self.page_table_num_entries
+
+    #self.page_table = page_table
     self.diff_page_table = {}
     self.page_size  = 1 << self.page_shamt
     self.page_mask  = self.page_size - 1
@@ -393,12 +402,12 @@ class _PhysicalWordMemory( _AbstractMemory ):
 
   # allocate a new page
   def allocate_page( self, vaddr_idx ):
-    self.page_table[ vaddr_idx ] = self.next_paddr
+    self.page_table[ vaddr_idx ] = r_uint32( self.next_paddr )
     self.diff_page_table[ vaddr_idx ] = self.next_paddr
     self.next_paddr += self.page_size
     #print "allocate page vaddr_idx=%d paddr=%x" % (vaddr_idx,
     #                               self.page_table[ vaddr_idx ] )
-    return self.page_table[ vaddr_idx ]
+    return widen( self.page_table[ vaddr_idx ] )
 
   # allocates pages for the address range if not already initialized
   def init_pages( self, vaddr_begin, vaddr_end ):
@@ -406,24 +415,27 @@ class _PhysicalWordMemory( _AbstractMemory ):
     vaddr_end_idx   = vaddr_end   >> self.page_shamt
 
     for vaddr_idx in range( vaddr_begin_idx, vaddr_end_idx+1 ):
-      if vaddr_idx not in self.page_table:
+      #if vaddr_idx not in self.page_table:
+      #  self.allocate_page( vaddr_idx )
+      if widen( self.page_table[ vaddr_idx ] ) == 0xffffffff:
         self.allocate_page( vaddr_idx )
 
   # lookup in the page table and find the physical address
   @elidable
   def page_table_lookup_elidable( self, addr ):
+    return self.page_table_lookup( addr )
     # first get the virtual address index
-    vaddr_idx = addr >> self.page_shamt
+    #vaddr_idx = addr >> self.page_shamt
 
-    if vaddr_idx in self.page_table:
-      paddr = ( addr & self.page_mask ) | self.page_table[ vaddr_idx ]
+    #if vaddr_idx in self.page_table:
+    #  paddr = ( addr & self.page_mask ) | self.page_table[ vaddr_idx ]
 
-    else:
-      paddr = ( addr & self.page_mask ) | self.allocate_page( vaddr_idx )
+    #else:
+    #  paddr = ( addr & self.page_mask ) | self.allocate_page( vaddr_idx )
 
-    #print "page_table_lookup %x paddr %x vaddr_idx %x base_paddr %x" \
-    #      % (addr, paddr, vaddr_idx, self.page_table[ vaddr_idx ] )
-    return paddr
+    ##print "page_table_lookup %x paddr %x vaddr_idx %x base_paddr %x" \
+    ##      % (addr, paddr, vaddr_idx, self.page_table[ vaddr_idx ] )
+    #return paddr
 
   # lookup in the page table and find the physical address
   @unroll_safe
@@ -431,11 +443,17 @@ class _PhysicalWordMemory( _AbstractMemory ):
     # first get the virtual address index
     vaddr_idx = addr >> self.page_shamt
 
-    if vaddr_idx in self.page_table:
-      paddr = ( addr & self.page_mask ) | self.page_table[ vaddr_idx ]
-
+    base_addr = widen( self.page_table[ vaddr_idx ] )
+    if base_addr != 0xffffffff:
+      paddr = ( addr & self.page_mask ) | base_addr
     else:
       paddr = ( addr & self.page_mask ) | self.allocate_page( vaddr_idx )
+
+    #try:
+    #  paddr = ( addr & self.page_mask ) | self.page_table[ vaddr_idx ]
+
+    #except KeyError:
+    #  paddr = ( addr & self.page_mask ) | self.allocate_page( vaddr_idx )
 
     #print "page_table_lookup %x paddr %x vaddr_idx %x base_paddr %x" \
     #      % (addr, paddr, vaddr_idx, self.page_table[ vaddr_idx ] )

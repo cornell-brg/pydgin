@@ -569,9 +569,10 @@ class Sim( object ):
           v1 = rffi.cast( lltype.Signed, ll_ptable[2*i] )
           v2 = rffi.cast( lltype.Signed, ll_ptable[2*i+1] )
           print "ll_ptable[%d] = %x, %x" % (i, v1, v2)
-          ptable[ v1 ] = v2
-
-        mem.set_page_table( ptable )
+          # TODO: temporarily disabled
+          #ptable[ v1 ] = v2
+        # TODO: temporarily disabled
+        #mem.set_page_table( ptable )
 
       #-----------------------------------------------------------------
       # pydgin_get_ptable
