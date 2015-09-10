@@ -3,6 +3,7 @@
 #=======================================================================
 
 from pydgin.jit               import elidable, unroll_safe, hint
+from pydgin.cache             import AbstractCache, NullCache
 from debug                    import Debug, pad, pad_hex
 try:
   from rpython.rlib.rarithmetic import r_uint32, widen
@@ -86,6 +87,10 @@ def Memory( data=None, size=2**10, byte_storage=False ):
 # _AbstractMemory
 #-------------------------------------------------------------------------
 class _AbstractMemory( object ):
+  def __init__( self ):
+    self.icache = NullCache()
+    self.dcache = NullCache()
+
   def read( self, start_addr, num_bytes ):
     raise NotImplementedError()
 
@@ -94,6 +99,11 @@ class _AbstractMemory( object ):
 
   def write( self, start_addr, num_bytes, value ):
     raise NotImplementedError()
+
+  # set caches
+  def set_caches( self, icache, dcache ):
+    self.icache = icache
+    self.dcache = dcache
 
   # allocates pages for the address range if not already initialized
   def init_pages( self, vaddr_begin, vaddr_end ):
@@ -164,7 +174,7 @@ class _WordMemory( _AbstractMemory ):
   @elidable
   def iread( self, start_addr, num_bytes ):
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
-    return widen( self.data[ start_addr >> 2 ] )
+    return widen( self.data[ start_addr >> 2 ] ), start_addr
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
@@ -235,7 +245,7 @@ class _ByteMemory( _AbstractMemory ):
     for i in range( num_bytes-1, -1, -1 ):
       value = value << 8
       value = value | ord( self.data[ start_addr + i ] )
-    return value
+    return value, start_addr
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
@@ -343,7 +353,7 @@ class _PhysicalByteMemory( _AbstractMemory ):
     for i in range( num_bytes-1, -1, -1 ):
       value = value << 8
       value = value | ord( self.pmem[ start_addr + i ] )
-    return value
+    return value, start_addr
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
@@ -365,6 +375,7 @@ class _PhysicalByteMemory( _AbstractMemory ):
 class _PhysicalWordMemory( _AbstractMemory ):
   _immutable_fields_ = [ "page_table[*]" ]
   def __init__( self, pmem, size=2**10, page_table={}, page_shamt=12 ):
+    _AbstractMemory.__init__( self )
     self.pmem  = pmem
     self.size  = size
     self.debug = Debug()
@@ -463,6 +474,8 @@ class _PhysicalWordMemory( _AbstractMemory ):
   @unroll_safe
   def read( self, start_addr, num_bytes ):
     start_addr = self.page_table_lookup( start_addr )
+    self.dcache.mark_transaction( AbstractCache.READ,
+                                        start_addr, num_bytes )
     assert 0 < num_bytes <= 4
     word = start_addr >> 2
     byte = start_addr &  0b11
@@ -497,11 +510,13 @@ class _PhysicalWordMemory( _AbstractMemory ):
   def iread( self, start_addr, num_bytes ):
     start_addr = self.page_table_lookup_elidable( start_addr )
     assert start_addr & 0b11 == 0  # only aligned accesses allowed
-    return widen( self.pmem[ start_addr >> 2 ] )
+    return widen( self.pmem[ start_addr >> 2 ] ), start_addr
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
     start_addr = self.page_table_lookup( start_addr )
+    self.dcache.mark_transaction( AbstractCache.WRITE,
+                                        start_addr, num_bytes )
     assert 0 < num_bytes <= 4
     word = start_addr >> 2
     byte = start_addr &  0b11
@@ -536,6 +551,7 @@ class _SparseMemory( _AbstractMemory ):
                          "block_mask" ]
 
   def __init__( self, BlockMemory, block_size=2**10 ):
+    _AbstractMemory.__init__( self )
     self.BlockMemory = BlockMemory
     self.block_size = block_size
     self.addr_mask  = block_size - 1
@@ -572,7 +588,8 @@ class _SparseMemory( _AbstractMemory ):
     # for it
     block_end_addr = self.block_mask & end_addr
     if block_addr == block_end_addr:
-      return block_mem.iread( start_addr & self.addr_mask, num_bytes )
+      return block_mem.iread( start_addr & self.addr_mask, num_bytes )[0], \
+             start_addr
     else:
       num_bytes1 = min( self.block_size - (start_addr & self.addr_mask),
                         num_bytes )
@@ -580,15 +597,17 @@ class _SparseMemory( _AbstractMemory ):
 
       block_mem1 = block_mem
       block_mem2 = self.get_block_mem( block_end_addr )
-      value1 = block_mem1.iread( start_addr & self.addr_mask, num_bytes1 )
-      value2 = block_mem2.iread( 0, num_bytes2 )
+      value1, _ = block_mem1.iread( start_addr & self.addr_mask, num_bytes1 )
+      value2, _ = block_mem2.iread( 0, num_bytes2 )
       value = value1 | ( value2 << (num_bytes1*8) )
       #print "nb1", num_bytes1, "nb2", num_bytes2, \
       #      "ba1", hex(block_addr), "ba2", hex(block_end_addr), \
       #      "v1", hex(value1), "v2", hex(value2), "v", hex(value)
-      return value
+      return value, start_addr
 
   def read( self, start_addr, num_bytes ):
+    self.dcache.mark_transaction( AbstractCache.READ,
+                                        start_addr, num_bytes )
     if self.debug.enabled( "mem" ):
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
     block_addr = self.block_mask & start_addr
@@ -600,6 +619,7 @@ class _SparseMemory( _AbstractMemory ):
     return value
 
   def write( self, start_addr, num_bytes, value ):
+    self.dcache.mark_transaction( AbstractCache.WRITE, start_addr, num_bytes )
     if self.debug.enabled( "mem" ):
       print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
                                      pad_hex( value ) ),

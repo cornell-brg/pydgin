@@ -22,6 +22,7 @@ from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param
 from pydgin.storage import _PhysicalByteMemory, _PhysicalWordMemory
+from pydgin.cache import AbstractCache, DirectMappedCache
 
 EXIT_SYSCALL      = 0
 EXCEPTION         = 1
@@ -161,7 +162,9 @@ class Sim( object ):
         inst_bits = mem.read( pc, 4 )
       else:
         # we use trace elidable iread instead of just read
-        inst_bits = mem.iread( pc, 4 )
+        inst_bits, trans_addr = mem.iread( pc, 4 )
+        s.mem.icache.mark_transaction( AbstractCache.READ,
+                                   trans_addr, 4 )
 
       try:
         inst, exec_fun = self.decode( inst_bits )
@@ -202,6 +205,11 @@ class Sim( object ):
           sim       = self,
         )
 
+    # do a cache dump here
+    print "dcache dump"
+    s.mem.dcache.dump()
+    print "icache dump"
+    s.mem.icache.dump()
     print 'DONE! Status =', s.status
     print 'Instructions Executed =', s.num_insts
     return pydgin_status, s.status
@@ -326,6 +334,13 @@ class Sim( object ):
 
       self.debug.set_state( self.state )
 
+      # cache initialization
+
+      # 16K, 4-word/cache line
+      icache = DirectMappedCache( 16384, 16, "icache", self.debug )
+      dcache = DirectMappedCache( 16384, 16, "dcache", self.debug )
+      self.state.mem.set_caches( icache, dcache ), DirectMappedCache
+
       # Close after loading
 
       exe_file.close()
@@ -442,6 +457,13 @@ class Sim( object ):
         # pass the state to debug for cycle-triggered debugging
 
         self.debug.set_state( self.state )
+
+        # cache initialization
+
+        # 16K, 4-word/cache line
+        icache = DirectMappedCache( 16384, 16, "icache", self.debug )
+        dcache = DirectMappedCache( 16384, 16, "dcache", self.debug )
+        self.state.mem.set_caches( icache, dcache ), DirectMappedCache
 
         # Close after loading
 
