@@ -459,10 +459,17 @@ class Sim( object ):
         self.debug.set_state( self.state )
 
         # cache initialization
+        # TODO: pass the parameters through the interface
 
         # 16K, 4-word/cache line
-        icache = DirectMappedCache( 16384, 16, "icache", self.debug )
-        dcache = DirectMappedCache( 16384, 16, "dcache", self.debug )
+        icache = DirectMappedCache( 16384, 16, "icache", self.debug,
+                                    stats_en=True, dirty_en=False )
+        dcache = DirectMappedCache( 16384, 16, "dcache", self.debug,
+                                    stats_en=True, dirty_en=True )
+        #icache = DirectMappedCache( 16384, 16, "icache", self.debug,
+        #                            stats_en=False, dirty_en=False )
+        #dcache = DirectMappedCache( 16384, 16, "dcache", self.debug,
+        #                            stats_en=False, dirty_en=False )
         self.state.mem.set_caches( icache, dcache ), DirectMappedCache
 
         # Close after loading
