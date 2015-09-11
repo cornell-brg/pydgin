@@ -49,7 +49,7 @@ class DirectMappedCache( AbstractCache ):
 
     # naive implementation: use a simple tag array implemented as an array
     self.num_lines = self.size / self.line_size
-    self.tag_array = [ r_uint32( 0 ) ] * self.num_lines
+    self.tag_array = [ -1 ] * self.num_lines
 
     # calculate line_shamt: the shift amount to find the line base address
     self.line_shamt = 0
@@ -77,16 +77,16 @@ class DirectMappedCache( AbstractCache ):
 
     if self.debug.enabled( "cache" ):
       # also check if we had a hit or miss
-      hit = ( widen( self.tag_array[ line_idx ] ) == addr_sh )
+      hit = ( self.tag_array[ line_idx ] == addr_sh )
       print "%s %s %s addr = %x, line_idx = %x" \
             % ( self.name,
                 "read" if type == self.READ else "write",
                 "hit" if hit else "miss",
                 address, line_idx )
 
-    self.tag_array[ line_idx ] = r_uint32( addr_sh )
+    self.tag_array[ line_idx ] = addr_sh
 
   def dump( self ):
     for i in range( self.num_lines ):
-      print "%d %x" % ( i, widen( self.tag_array[ i ] ) )
+      print "%d %x" % ( i, self.tag_array[ i ] )
 
