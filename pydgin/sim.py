@@ -22,7 +22,7 @@ from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param
 from pydgin.storage import _PhysicalByteMemory, _PhysicalWordMemory
-from pydgin.cache import AbstractCache, DirectMappedCache
+from pydgin.cache import AbstractCache, DirectMappedCache, SetAssocCache
 
 EXIT_SYSCALL      = 0
 EXCEPTION         = 1
@@ -462,14 +462,26 @@ class Sim( object ):
         # TODO: pass the parameters through the interface
 
         # 16K, 4-word/cache line
-        icache = DirectMappedCache( 16384, 16, "icache", self.debug,
-                                    stats_en=True, dirty_en=False )
-        dcache = DirectMappedCache( 16384, 16, "dcache", self.debug,
-                                    stats_en=True, dirty_en=True )
+        #icache = DirectMappedCache( 16384, 16, "icache", self.debug,
+        #                            stats_en=True, dirty_en=False )
+        #dcache = DirectMappedCache( 16384, 16, "dcache", self.debug,
+        #                            stats_en=True, dirty_en=True )
         #icache = DirectMappedCache( 16384, 16, "icache", self.debug,
         #                            stats_en=False, dirty_en=False )
         #dcache = DirectMappedCache( 16384, 16, "dcache", self.debug,
         #                            stats_en=False, dirty_en=False )
+        #icache = SetAssocCache( 16384, 16, "icache", self.debug,
+        #                            self.state, num_ways=2,
+        #                            stats_en=True, dirty_en=False )
+        #dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
+        #                            self.state, num_ways=2,
+        #                            stats_en=True, dirty_en=True )
+        icache = SetAssocCache( 16384, 16, "icache", self.debug,
+                                    self.state, num_ways=2,
+                                    stats_en=False, dirty_en=False )
+        dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
+                                    self.state, num_ways=2,
+                                    stats_en=False, dirty_en=False )
         self.state.mem.set_caches( icache, dcache ), DirectMappedCache
 
         # Close after loading
