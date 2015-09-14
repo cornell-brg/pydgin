@@ -22,7 +22,7 @@ from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param
 from pydgin.storage import _PhysicalByteMemory, _PhysicalWordMemory
-from pydgin.cache import AbstractCache, DirectMappedCache, SetAssocCache
+from pydgin.cache import NullCache, AbstractCache, DirectMappedCache, SetAssocCache
 
 EXIT_SYSCALL      = 0
 EXCEPTION         = 1
@@ -339,7 +339,187 @@ class Sim( object ):
       # 16K, 4-word/cache line
       icache = DirectMappedCache( 16384, 16, "icache", self.debug )
       dcache = DirectMappedCache( 16384, 16, "dcache", self.debug )
-      self.state.mem.set_caches( icache, dcache ), DirectMappedCache
+      self.state.mem.set_caches( icache, dcache )
+
+      # Close after loading
+
+      exe_file.close()
+
+      # Execute the program
+
+      self.run()
+
+      return 0
+
+    #-----------------------------------------------------------------
+    # entry_point_test
+    #-----------------------------------------------------------------
+
+    from rpython.rtyper.lltypesystem import rffi, lltype
+    #from rpython.rlib.entrypoint import entrypoint, RPython_StartupCode
+
+    def entry_point_test( argv ):
+
+      # set the trace_limit parameter of the jitdriver
+      if self.jit_enabled:
+        set_param( self.jitdriver, "trace_limit", self.default_trace_limit )
+
+      filename_idx       = 0
+      debug_flags        = []
+      debug_starts_after = 0
+      testbin            = False
+      max_insts          = 0
+      envp               = []
+
+      # we're using a mini state machine to parse the args
+
+      prev_token = ""
+
+      # list of tokens that require an additional arg
+
+      tokens_with_args = [ "-h", "--help",
+                           "-e", "--env",
+                           "-d", "--debug",
+                           "--max-insts",
+                           "--jit",
+                           "--cache",
+                         ]
+
+      # go through the args one by one and parse accordingly
+      cache_config = ""
+
+      for i in xrange( 1, len( argv ) ):
+        token = argv[i]
+
+        if prev_token == "":
+
+          if token == "--help" or token == "-h":
+            print self.help_message % ( self.arch_name, argv[0] )
+            return 0
+
+          elif token == "--test":
+            testbin = True
+
+          elif token == "--debug" or token == "-d":
+            prev_token = token
+            # warn the user if debugs are not enabled for this translation
+            if not Debug.global_enabled:
+              print "WARNING: debugs are not enabled for this translation. " + \
+                    "To allow debugs, translate with --debug option."
+
+          elif token in tokens_with_args:
+            prev_token = token
+
+          elif token[:1] == "-":
+            # unknown option
+            print "Unknown argument %s" % token
+            return 1
+
+          else:
+            # this marks the start of the program name
+            filename_idx = i
+            break
+
+        else:
+          if prev_token == "--env" or prev_token == "-e":
+            envp.append( token )
+
+          elif prev_token == "--debug" or prev_token == "-d":
+            # if debug start after provided (using a colon), parse it
+            debug_tokens = token.split( ":" )
+            if len( debug_tokens ) > 1:
+              debug_starts_after = int( debug_tokens[1] )
+
+            debug_flags = debug_tokens[0].split( "," )
+
+          elif prev_token == "--max-insts":
+            self.max_insts = int( token )
+
+          elif prev_token == "--jit":
+            # pass the jit flags to rpython.rlib.jit
+            set_user_param( self.jitdriver, token )
+
+          elif prev_token == "--cache":
+            cache_config = token
+
+          prev_token = ""
+
+      if filename_idx == 0:
+        print "You must supply a filename"
+        return 1
+
+      # create a Debug object which contains the debug flags
+
+      self.debug = Debug( debug_flags, debug_starts_after )
+
+      filename = argv[ filename_idx ]
+
+      # args after program are args to the simulated program
+
+      run_argv = argv[ filename_idx : ]
+
+      # Open the executable for reading
+
+      try:
+        exe_file = open( filename, 'rb' )
+
+      except IOError:
+        print "Could not open file %s" % filename
+        return 1
+
+      # initialize test physical mem
+
+      pmem = lltype.malloc( rffi.UINTP.TO, 10000000, flavor="raw" )
+
+      mem = _PhysicalWordMemory( pmem, size=2**10,
+                                 page_table={} )
+      # Call ISA-dependent init_state to load program, initialize memory
+      # etc.
+
+      self.init_state( exe_file, filename, run_argv, envp, testbin,
+                       mem=mem, do_not_load=False )
+
+      # pass the state to debug for cycle-triggered debugging
+
+      self.debug.set_state( self.state )
+
+      # cache initialization
+
+      # 16K, 4-word/cache line
+      if cache_config == "" or cache_config == "no":
+        print "using null cache"
+        icache = NullCache()
+        dcache = NullCache()
+      elif cache_config == "dm":
+        print "using direct mapped cache"
+        icache = DirectMappedCache( 16384, 16, "icache", self.debug )
+        dcache = DirectMappedCache( 16384, 16, "dcache", self.debug )
+      elif cache_config == "dms":
+        print "using direct mapped cache with stats"
+        icache = DirectMappedCache( 16384, 16, "icache", self.debug,
+                                    stats_en=True, dirty_en=False )
+        dcache = DirectMappedCache( 16384, 16, "dcache", self.debug,
+                                    stats_en=True, dirty_en=True )
+      elif cache_config == "sa":
+        print "using set associative cache"
+        icache = SetAssocCache( 16384, 16, "icache", self.debug,
+                                    self.state, num_ways=2,
+                                    stats_en=False, dirty_en=False )
+        dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
+                                    self.state, num_ways=2,
+                                    stats_en=False, dirty_en=False )
+      elif cache_config == "sas":
+        print "using set associative cache with stats"
+        icache = SetAssocCache( 16384, 16, "icache", self.debug,
+                                    self.state, num_ways=2,
+                                    stats_en=True, dirty_en=False )
+        dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
+                                    self.state, num_ways=2,
+                                    stats_en=True, dirty_en=True )
+      else:
+        print "unrecognized cache configuration: %s" % cache_config
+        return -1
+      self.state.mem.set_caches( icache, dcache )
 
       # Close after loading
 
@@ -482,7 +662,7 @@ class Sim( object ):
         dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
                                     self.state, num_ways=2,
                                     stats_en=False, dirty_en=False )
-        self.state.mem.set_caches( icache, dcache ), DirectMappedCache
+        self.state.mem.set_caches( icache, dcache )
 
         # Close after loading
 
@@ -654,7 +834,9 @@ class Sim( object ):
     except ImportError:
       pass
 
-    return entry_point
+    # temporarily use entry point that uses physical mem for testing
+    #return entry_point
+    return entry_point_test
 
   #-----------------------------------------------------------------------
   # target
