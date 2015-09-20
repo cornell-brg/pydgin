@@ -31,8 +31,14 @@ class BasicBlockVector:
       self.bbv[i] = 0
 
   def dump( self ):
-    # TODO: match the format expected by simpoint
+    printed_t = False
     for i in range( len( self.bbv ) ):
       ctr = self.bbv[i]
       if ctr > 0:
-        print "bb%d,%d" % ( i, ctr )
+        if not printed_t:
+          print "T:%d:%d" % ( i, ctr ),
+          printed_t = True
+        else:
+          print ":%d:%d" % ( i, ctr ),
+
+    print

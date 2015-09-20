@@ -194,7 +194,6 @@ class Sim( object ):
       # check if we have reached our simpoint interval, at which point we
       # dump and reset our bbv
       if simpoint_enabled and s.num_insts >= simpoint_max_insts:
-        print "simpoint interval reached %d" % s.num_insts
 
         # set a new simpoint max insts
 
