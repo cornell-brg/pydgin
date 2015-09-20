@@ -356,9 +356,6 @@ def execute_and( s, inst ):
 # b
 #-----------------------------------------------------------------------
 def execute_b( s, inst ):
-  # simpoint: mark bb
-  if s.simpoint_enabled:
-    s.bbv.mark_bb( s.fetch_pc() )
   if condition_passed( s, inst.cond ):
     offset   = signed( sext_30( inst.imm_24 ) << 2 )
     s.rf[PC] = trim_32( s.rf[PC] + offset )
@@ -369,9 +366,6 @@ def execute_b( s, inst ):
 # bl
 #-----------------------------------------------------------------------
 def execute_bl( s, inst ):
-  # simpoint: mark bb
-  if s.simpoint_enabled:
-    s.bbv.mark_bb( s.fetch_pc() )
   if condition_passed( s, inst.cond ):
     s.rf[LR] = trim_32( s.fetch_pc() + 4 )
     offset   = signed( sext_30( inst.imm_24 ) << 2 )
@@ -416,9 +410,6 @@ def execute_blx1( s, inst ):
 # blx2
 #-----------------------------------------------------------------------
 def execute_blx2( s, inst ):
-  # simpoint: mark bb
-  if s.simpoint_enabled:
-    s.bbv.mark_bb( s.fetch_pc() )
   if condition_passed( s, inst.cond ):
     s.rf[LR] = trim_32( s.fetch_pc() + 4 )
     s.T      = s.rf[ inst.rm ] & 0x00000001
@@ -434,9 +425,6 @@ def execute_blx2( s, inst ):
 # bx
 #-----------------------------------------------------------------------
 def execute_bx( s, inst ):
-  # simpoint: mark bb
-  if s.simpoint_enabled:
-    s.bbv.mark_bb( s.fetch_pc() )
   if condition_passed( s, inst.cond ):
     s.T      = s.rf[ inst.rm ] & 0x00000001
     s.rf[PC] = s.rf[ inst.rm ] & 0xFFFFFFFE

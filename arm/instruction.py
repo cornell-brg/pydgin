@@ -2,12 +2,20 @@
 # instruction.py
 #=======================================================================
 
+from pydgin.jit import elidable_promote
+
+control_ops = [ "b", "bl", "blx2", "bx", ]
+
+@elidable_promote()
+def is_control( str ):
+  return str in control_ops
 
 class Instruction( object ):
 
   def __init__( self, bits, str ):
     self.bits = bits
     self.str  = str
+    self.is_control = is_control( str )
 
   @property
   def cond( self ):

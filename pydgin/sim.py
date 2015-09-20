@@ -172,6 +172,10 @@ class Sim( object ):
                   pad( "%d" % s.num_insts, 8 ), ),
 
         exec_fun( s, inst )
+
+        if simpoint_enabled and inst.is_control:
+          s.bbv.mark_bb( old )
+
       except FatalError as error:
         print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
         print "Exception message: %s" % error.msg
