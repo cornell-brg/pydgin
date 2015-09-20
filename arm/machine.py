@@ -11,6 +11,7 @@ from pydgin.debug   import pad, pad_hex
 #-----------------------------------------------------------------------
 class State( Machine ):
   _virtualizable_ = ['pc', 'num_insts', 'N', 'Z', 'C', 'V']
+  _immutable_fields_ = ['simpoint_enabled', 'simpoint_interval', 'bbv']
   def __init__( self, memory, debug, reset_addr=0x400 ):
     Machine.__init__(self,
                      memory,
@@ -42,6 +43,11 @@ class State( Machine ):
 
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
+
+    # simpoint related stuff
+    self.simpoint_enabled  = False
+    self.simpoint_interval = False
+    self.bbv = None
 
   def fetch_pc( self ):
     return self.pc

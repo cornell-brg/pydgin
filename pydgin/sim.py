@@ -21,6 +21,7 @@ import sys
 from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param
+from pydgin.simpoint import BasicBlockVector
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
@@ -41,7 +42,9 @@ class Sim( object ):
 
     if jit_enabled:
       self.jitdriver = JitDriver( greens =['pc',],
-                                  reds   = ['max_insts', 'state', 'sim',],
+                                  reds   = ['max_insts',
+                                  'simpoint_enabled',
+                                  'simpoint_max_insts', 'state', 'sim',],
                                   virtualizables  =['state',],
                                   get_printable_location=self.get_location,
                                 )
@@ -125,11 +128,18 @@ class Sim( object ):
     max_insts = self.max_insts
     jitdriver = self.jitdriver
 
+    # set a new simpoint max insts
+
+    simpoint_max_insts = s.num_insts + s.simpoint_interval
+    simpoint_enabled   = s.simpoint_enabled
+
     while s.running:
 
       jitdriver.jit_merge_point(
         pc        = s.fetch_pc(),
         max_insts = max_insts,
+        simpoint_enabled = simpoint_enabled,
+        simpoint_max_insts = simpoint_max_insts,
         state     = s,
         sim       = self,
       )
@@ -181,10 +191,24 @@ class Sim( object ):
         print "Reached the max_insts (%d), exiting." % max_insts
         break
 
+      # check if we have reached our simpoint interval, at which point we
+      # dump and reset our bbv
+      if simpoint_enabled and s.num_insts >= simpoint_max_insts:
+        print "simpoint interval reached %d" % s.num_insts
+
+        # set a new simpoint max insts
+
+        simpoint_max_insts = s.num_insts + s.simpoint_interval
+
+        s.bbv.dump()
+        s.bbv.reset()
+
       if s.fetch_pc() < old:
         jitdriver.can_enter_jit(
           pc        = s.fetch_pc(),
           max_insts = max_insts,
+          simpoint_enabled = simpoint_enabled,
+          simpoint_max_insts = simpoint_max_insts,
           state     = s,
           sim       = self,
         )
@@ -211,6 +235,8 @@ class Sim( object ):
       testbin            = False
       max_insts          = 0
       envp               = []
+      simpoint_enabled   = False
+      simpoint_interval  = 0
 
       # we're using a mini state machine to parse the args
 
@@ -223,6 +249,7 @@ class Sim( object ):
                            "-d", "--debug",
                            "--max-insts",
                            "--jit",
+                           "--simpoint",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -274,6 +301,10 @@ class Sim( object ):
           elif prev_token == "--max-insts":
             self.max_insts = int( token )
 
+          elif prev_token == "--simpoint":
+            simpoint_enabled = True
+            simpoint_interval = int( token )
+
           elif prev_token == "--jit":
             # pass the jit flags to rpython.rlib.jit
             set_user_param( self.jitdriver, token )
@@ -315,6 +346,14 @@ class Sim( object ):
       # Close after loading
 
       exe_file.close()
+
+      # set simpoint parameters
+
+      self.state.simpoint_enabled  = simpoint_enabled
+      self.state.simpoint_interval = simpoint_interval
+
+      if simpoint_enabled:
+        self.state.bbv = BasicBlockVector()
 
       # Execute the program
 

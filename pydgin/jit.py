@@ -10,6 +10,7 @@ try:
   JitDriver      = jit.JitDriver
   unroll_safe    = jit.unroll_safe
   elidable       = jit.elidable
+  elidable_promote       = jit.elidable_promote
   set_param      = jit.set_param
   set_user_param = jit.set_user_param
   hint           = jit.hint
@@ -30,6 +31,7 @@ except ImportError:
 
   unroll_safe = dummy_decorator
   elidable    = dummy_decorator
+  elidable_promote    = dummy_decorator
 
   def set_param( driver, name, value ):
     pass
