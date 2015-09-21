@@ -11,7 +11,6 @@ class BasicBlockInfo:
   def __init__( self, num_insts ):
     self.num_insts = num_insts
     self.ctr = 0
-
   def increment( self ):
     self.ctr += self.num_insts
 
@@ -20,7 +19,7 @@ class BasicBlockInfo:
 
 class BasicBlockVector:
 
-  def __init__( self ):
+  def __init__( self, filename="simpoint.bb" ):
     # the actual bbv which uses indexes by the bbv_map
     self.bbv = []
     # this maps pcs to bb index
@@ -28,6 +27,8 @@ class BasicBlockVector:
 
     # last num instructions is only for new basic blocks
     self.last_num_insts = 0
+
+    self.dump_file = open( filename, "w" )
 
   # increments the counter for the basic block
   def mark_bb( self, old_pc, new_pc, num_insts ):
@@ -68,14 +69,10 @@ class BasicBlockVector:
       self.bbv[i].reset()
 
   def dump( self ):
-    printed_t = False
+    self.dump_file.write( "T" )
     for i in range( len( self.bbv ) ):
       ctr = self.bbv[i].ctr
       if ctr > 0:
-        if not printed_t:
-          print "T:%d:%d" % ( i+1, ctr ),
-          printed_t = True
-        else:
-          print ":%d:%d" % ( i+1, ctr ),
+        self.dump_file.write( ":%d:%d " % ( i+1, ctr ) )
 
-    print
+    self.dump_file.write( "\n" )
