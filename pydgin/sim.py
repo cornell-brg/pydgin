@@ -44,7 +44,9 @@ class Sim( object ):
       self.jitdriver = JitDriver( greens =['pc',],
                                   reds   = ['max_insts',
                                   'simpoint_enabled',
-                                  'simpoint_max_insts', 'state', 'sim',],
+                                  'simpoint_max_insts',
+                                  'bb_first_pc',
+                                  'state', 'sim',],
                                   virtualizables  =['state',],
                                   get_printable_location=self.get_location,
                                 )
@@ -132,6 +134,7 @@ class Sim( object ):
 
     simpoint_max_insts = s.num_insts + s.simpoint_interval
     simpoint_enabled   = s.simpoint_enabled
+    bb_first_pc = s.fetch_pc()
 
     while s.running:
 
@@ -140,6 +143,7 @@ class Sim( object ):
         max_insts = max_insts,
         simpoint_enabled = simpoint_enabled,
         simpoint_max_insts = simpoint_max_insts,
+        bb_first_pc = bb_first_pc,
         state     = s,
         sim       = self,
       )
@@ -173,8 +177,32 @@ class Sim( object ):
 
         exec_fun( s, inst )
 
+        # simpoint: if control flow, mark the bb
         if simpoint_enabled and inst.is_control:
-          s.bbv.mark_bb( old )
+
+          # old pc is the last pc of the previous bb
+          s.bbv.mark_bb( bb_first_pc, old, s.num_insts )
+
+          # the new pc is the first pc of the next bb
+          new_pc = hint( s.fetch_pc(), promote=True )
+          bb_first_pc = new_pc
+
+          # check if we have reached our simpoint interval, at which point we
+          # dump and reset our bbv
+          if s.num_insts >= simpoint_max_insts:
+
+            # we calculate the interval drift, and subtract this from max
+            # insts of next interval (this is what gem5 does)
+
+            simpoint_interval_drift = s.num_insts - simpoint_max_insts
+
+            # set a new simpoint max insts
+
+            simpoint_max_insts = ( s.num_insts + s.simpoint_interval
+                                   - simpoint_interval_drift )
+
+            s.bbv.dump()
+            s.bbv.reset()
 
       except FatalError as error:
         print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
@@ -195,23 +223,13 @@ class Sim( object ):
         print "Reached the max_insts (%d), exiting." % max_insts
         break
 
-      # check if we have reached our simpoint interval, at which point we
-      # dump and reset our bbv
-      if simpoint_enabled and s.num_insts >= simpoint_max_insts:
-
-        # set a new simpoint max insts
-
-        simpoint_max_insts = s.num_insts + s.simpoint_interval
-
-        s.bbv.dump()
-        s.bbv.reset()
-
       if s.fetch_pc() < old:
         jitdriver.can_enter_jit(
           pc        = s.fetch_pc(),
           max_insts = max_insts,
           simpoint_enabled = simpoint_enabled,
           simpoint_max_insts = simpoint_max_insts,
+          bb_first_pc = bb_first_pc,
           state     = s,
           sim       = self,
         )
