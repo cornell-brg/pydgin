@@ -413,9 +413,13 @@ class _PhysicalWordMemory( _AbstractMemory ):
       raise Exception()
 
   # allocate a new page
-  def allocate_page( self, vaddr_idx ):
-    self.page_table[ vaddr_idx ] = self.next_paddr
-    self.diff_page_table[ vaddr_idx ] = self.next_paddr
+  # we can specify which paddr to map each vaddr when we want to transfer
+  # state from gem5. note that this is a bit hacky: we assume gem5 uses
+  # the same algorithm to assign pages as pydgin
+  def allocate_page( self, vaddr_idx, paddr=-1 ):
+    paddr = self.next_paddr if paddr == -1 else paddr
+    self.page_table[ vaddr_idx ] = paddr
+    self.diff_page_table[ vaddr_idx ] = paddr
     self.next_paddr += self.page_size
     #print "allocate page vaddr_idx=%d paddr=%x" % (vaddr_idx,
     #                               self.page_table[ vaddr_idx ] )

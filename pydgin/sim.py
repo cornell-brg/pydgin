@@ -782,18 +782,15 @@ class Sim( object ):
         # tuples, first the virtual memory page index then physical
         # memory base address
 
-        # to implement differential page, table, first get the old one,
-        # and append the new stuff to it
+        # to implement differential page, table, use the allocate_page
+        # method for the specific paddr
         mem = self.state.mem
-        ptable = mem.page_table
         for i in range( ll_ptable_nentries ):
           v1 = rffi.cast( lltype.Signed, ll_ptable[2*i] )
           v2 = rffi.cast( lltype.Signed, ll_ptable[2*i+1] )
           print "ll_ptable[%d] = %x, %x" % (i, v1, v2)
-          # TODO: temporarily disabled
-          #ptable[ v1 ] = v2
-        # TODO: temporarily disabled
-        #mem.set_page_table( ptable )
+          # this is hacky: we hope that next paddr will end up correctly
+          mem.allocate_page( v1, v2 )
 
       #-----------------------------------------------------------------
       # pydgin_get_ptable
