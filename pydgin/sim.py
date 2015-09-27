@@ -656,12 +656,15 @@ class Sim( object ):
         #dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
         #                            self.state, num_ways=2,
         #                            stats_en=True, dirty_en=True )
-        icache = SetAssocCache( 16384, 16, "icache", self.debug,
-                                    self.state, num_ways=2,
-                                    stats_en=False, dirty_en=False )
-        dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
-                                    self.state, num_ways=2,
-                                    stats_en=False, dirty_en=False )
+        #icache = SetAssocCache( 16384, 16, "icache", self.debug,
+        #                            self.state, num_ways=2,
+        #                            stats_en=False, dirty_en=False )
+        #dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
+        #                            self.state, num_ways=2,
+        #                            stats_en=False, dirty_en=False )
+        # for the time being, use null caches
+        icache = NullCache()
+        dcache = NullCache()
         self.state.mem.set_caches( icache, dcache )
 
         # Close after loading
