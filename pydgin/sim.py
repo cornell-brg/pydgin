@@ -547,6 +547,11 @@ class Sim( object ):
       def pydgin_init_elf( ll_filename, ll_argc, ll_argv, ll_envp,
                            ll_debug_flags, ll_pmem, ll_do_not_load ):
 
+        # set the trace_limit parameter of the jitdriver
+        if self.jit_enabled:
+          set_param( self.jitdriver, "trace_limit", self.default_trace_limit )
+
+
         # TODO: this seems the be necessary to acquire the GIL. not sure if
         # we need it here?
         #after = rffi.aroundstate.after
