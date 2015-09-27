@@ -107,6 +107,10 @@ class Sim( object ):
     --max-insts <i> Run until the maximum number of instructions
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
+    --simpoint <interval>[,<file>]
+                    Generate basic block vectors (BBV) for an interval of
+                    <interval> and output to <file>. If <file> is not
+                    provided, the default is "simpoint.bb".
 
   """
 
@@ -258,6 +262,7 @@ class Sim( object ):
       envp               = []
       simpoint_enabled   = False
       simpoint_interval  = 0
+      simpoint_file      = "simpoint.bb"
 
       # we're using a mini state machine to parse the args
 
@@ -324,7 +329,14 @@ class Sim( object ):
 
           elif prev_token == "--simpoint":
             simpoint_enabled = True
-            simpoint_interval = int( token )
+
+            # if the token contains a comma, then it's a tuple of
+            # interval,file; if not, it's just the interval (file is
+            # assumed to be simpoint.bb)
+            simpoint_tokens = token.split( "," )
+            if len( simpoint_tokens ) > 1:
+              simpoint_file = simpoint_tokens[1]
+            simpoint_interval = int( simpoint_tokens[0] )
 
           elif prev_token == "--jit":
             # pass the jit flags to rpython.rlib.jit
@@ -374,7 +386,7 @@ class Sim( object ):
       self.state.simpoint_interval = simpoint_interval
 
       if simpoint_enabled:
-        self.state.bbv = BasicBlockVector()
+        self.state.bbv = BasicBlockVector( filename=simpoint_file )
 
       # Execute the program
 
