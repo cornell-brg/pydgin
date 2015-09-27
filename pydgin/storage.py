@@ -483,7 +483,7 @@ class _PhysicalWordMemory( _AbstractMemory ):
     if self.debug.enabled( "mem" ):
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
     if self.debug.enabled( "memcheck" ):
-      self.bounds_check( start_addr, 'RD' )
+      self.bounds_check( start_addr )
 
     value = 0
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
@@ -522,7 +522,7 @@ class _PhysicalWordMemory( _AbstractMemory ):
     byte = start_addr &  0b11
 
     if self.debug.enabled( "memcheck" ):
-      self.bounds_check( start_addr, 'WR' )
+      self.bounds_check( start_addr )
 
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
       pass # no masking needed

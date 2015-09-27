@@ -208,14 +208,14 @@ class SetAssocCache( AbstractCache ):
     addr_sh = address >> self.line_shamt
     line_idx = addr_sh & self.line_idx_mask
 
-    if self.debug.enabled( "cache" ):
-      # also check if we had a hit or miss
-      hit = ( self.tag_array[ line_idx ] == addr_sh )
-      print "%s %s %s addr = %x, line_idx = %x" \
-            % ( self.name,
-                "read" if type == self.READ else "write",
-                "hit" if hit else "miss",
-                address, line_idx )
+    #if self.debug.enabled( "cache" ):
+    #  # also check if we had a hit or miss
+    #  hit = ( self.tag_array[ line_idx ] == addr_sh )
+    #  print "%s %s %s addr = %x, line_idx = %x" \
+    #        % ( self.name,
+    #            "read" if type == self.READ else "write",
+    #            "hit" if hit else "miss",
+    #            address, line_idx )
 
     hit = False
     hit_way = -1
