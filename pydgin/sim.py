@@ -791,7 +791,7 @@ class Sim( object ):
         for i in range( ll_ptable_nentries ):
           v1 = rffi.cast( lltype.Signed, ll_ptable[2*i] )
           v2 = rffi.cast( lltype.Signed, ll_ptable[2*i+1] )
-          print "ll_ptable[%d] = %x, %x" % (i, v1, v2)
+          print "g->p ll_ptable[%d] = %x, %x" % (i, v1, v2)
           # this is hacky: we hope that next paddr will end up correctly
           mem.allocate_page( v1, v2 )
 
@@ -811,7 +811,7 @@ class Sim( object ):
         for vaddr_idx, paddr_base in mem.diff_page_table.items():
           ll_ptable[2*i]   = rffi.cast( rffi.INT, vaddr_idx  )
           ll_ptable[2*i+1] = rffi.cast( rffi.INT, paddr_base )
-          print "ll_ptable[%d] = %x, %x" % (i, vaddr_idx, paddr_base)
+          print "p->g ll_ptable[%d] = %x, %x" % (i, vaddr_idx, paddr_base)
           i += 1
 
         mem.diff_page_table = {}

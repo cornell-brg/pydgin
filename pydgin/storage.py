@@ -477,6 +477,7 @@ class _PhysicalWordMemory( _AbstractMemory ):
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
+    virt_start_addr = start_addr
     start_addr = self.page_table_lookup( start_addr )
     self.dcache.mark_transaction( AbstractCache.READ,
                                         start_addr, num_bytes )
@@ -485,7 +486,8 @@ class _PhysicalWordMemory( _AbstractMemory ):
     byte = start_addr &  0b11
 
     if self.debug.enabled( "mem" ):
-      print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
+      print ':: RD.MEM[%s->%s] = ' % ( pad_hex( virt_start_addr ),
+                                       pad_hex( start_addr ) ),
     if self.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr )
 
@@ -518,6 +520,7 @@ class _PhysicalWordMemory( _AbstractMemory ):
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
+    virt_start_addr = start_addr
     start_addr = self.page_table_lookup( start_addr )
     self.dcache.mark_transaction( AbstractCache.WRITE,
                                         start_addr, num_bytes )
@@ -542,8 +545,9 @@ class _PhysicalWordMemory( _AbstractMemory ):
       raise Exception('Invalid num_bytes: %d!' % num_bytes)
 
     if self.debug.enabled( "mem" ):
-      print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
-                                     pad_hex( value ) ),
+      print ':: WR.MEM[%s->%s] = %s' % ( pad_hex( virt_start_addr ),
+                                         pad_hex( start_addr ),
+                                         pad_hex( value ) ),
     self.pmem[ word ] = r_uint32( value )
 
 #-----------------------------------------------------------------------
