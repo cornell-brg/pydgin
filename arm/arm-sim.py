@@ -14,6 +14,7 @@ from pydgin.misc    import load_program, FatalError
 from bootstrap      import syscall_init, memory_size
 from instruction    import Instruction
 from isa            import decode
+from machine        import State
 
 #-------------------------------------------------------------------------
 # ArmSim
@@ -63,8 +64,14 @@ class ArmSim( Sim ):
         do_not_load=do_not_load
     )
 
-    self.state = syscall_init( mem, entrypoint, breakpoint,
-                               run_argv, run_envp, self.debug )
+    # syscall init actually loads bunch of stuff to memory, and we can
+    # have an inconsistent page table state with gem5 because of it. so
+    # don't load
+    if do_not_load:
+      self.state = State( mem, self.debug, reset_addr=0x1000 )
+    else:
+      self.state = syscall_init( mem, entrypoint, breakpoint,
+                                 run_argv, run_envp, self.debug )
 
 
 # this initializes similator and allows translation and python
