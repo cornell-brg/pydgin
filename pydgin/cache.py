@@ -5,6 +5,7 @@
 
 from pydgin.jit import unroll_safe
 from pydgin.debug import pad_hex
+from rpython.rtyper.lltypesystem import rffi
 try:
   from rpython.rlib.rarithmetic import r_uint32, widen
 except ImportError:
@@ -371,6 +372,52 @@ class SetAssocCache( AbstractCache ):
       print "%d" % ( 2*l + 1 ),
       self.print_line( l, lru )
       print
+
+  def get_ll_line_state( self, line_idx, way, ll_line_state ):
+    # TODO: these are here temporarily
+    VALID_FLAG = 1
+    DIRTY_FLAG = 2
+
+    # get the base addr first
+    addr_sh = self.tag_array[way][line_idx]
+
+    # first get valid and dirty info -- it's invalid if addr_sh is -1
+    valid = (addr_sh != -1)
+    dirty = valid and self.dirty_en and self.dirty_array[way][line_idx]
+
+    # get the tag
+    tag = addr_sh >> (self.tag_shamt - self.line_shamt)
+
+    # now, contruct the base address, get the data from main mem
+    base_addr = addr_sh << self.line_shamt
+
+    # write these to the data structure
+    ll_line_state.tag = rffi.cast( rffi.UINT, tag )
+    flags = 0
+    flags |= VALID_FLAG if valid else 0
+    flags |= DIRTY_FLAG if dirty else 0
+    ll_line_state.flags = rffi.cast( rffi.UINT, flags )
+
+    # disable memory's caches and memory translation so that we don't
+    # pollute the cache as we read it
+    self.state.mem.raw_access = True
+
+    for i in range( self.line_size/4 ):
+      addr = base_addr + i*4
+      ll_line_state.data[i] = rffi.cast( rffi.UINT,
+                                         self.state.mem.read( addr, 4 ) )
+
+    self.state.mem.raw_access = False
+
+  def get_ll_state( self, ll_state ):
+    for l in range( self.num_lines ):
+      # find the order in which to visit the ways (most recently first)
+      assert self.num_ways == 2
+      mru = self.mru_array[ l ]
+      lru = 0 if mru else 1
+
+      self.get_ll_line_state( l, mru, ll_state[ 2*l   ] )
+      self.get_ll_line_state( l, lru, ll_state[ 2*l+1 ] )
 
 
   def stats_dump( self ):

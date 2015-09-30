@@ -840,6 +840,49 @@ class Sim( object ):
           reg = rffi.cast( lltype.Signed, ll_state.rf[i] )
           print "reg%d: %x" % ( i, reg )
 
+      #-----------------------------------------------------------------
+      # Cache params
+      #-----------------------------------------------------------------
+
+      CACHE_LINE_NWORDS = 16
+      ICACHE_ID = 0
+      DCACHE_ID = 1
+
+      #-----------------------------------------------------------------
+      # CCacheLine
+      #-----------------------------------------------------------------
+      # c representation of a cache line
+      # TODO: for now the params are hard-coded
+      CCacheLine = lltype.Struct( "PydginCacheLine",
+                                  ( "tag",   rffi.UINT ),
+                                  ( "flags", rffi.UINT ),
+                                  ( "data",  rffi.CFixedArray(
+                                                  rffi.UINT,
+                                                  CACHE_LINE_NWORDS ) ),
+                                   )
+
+      #-----------------------------------------------------------------
+      # pydgin_get_cache_state
+      #-----------------------------------------------------------------
+      @entrypoint( "main", [ rffi.CArrayPtr( CCacheLine ),
+                             rffi.INT ],
+                   c_name="pydgin_get_cache_state" )
+      def pydgin_get_cache_state( ll_state, ll_cache_id ):
+
+        print "copying cache state from pydgin"
+
+        # pick the cache to get the state
+        cache_id = rffi.cast( lltype.Signed, ll_cache_id )
+        if cache_id == ICACHE_ID:
+          cache = self.state.mem.icache
+        else:
+          cache = self.state.mem.dcache
+
+        cache.get_ll_state( ll_state )
+
+        print "done copying cache state from pydgin"
+
+
     except ImportError:
       pass
 

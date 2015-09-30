@@ -57,6 +57,26 @@ void pydgin_set_arch_state( struct PydginArmArchState *state );
 void pydgin_set_ptable( int *ptable, int ptable_nentries );
 int pydgin_get_ptable( int *ptable );
 
+//------------------------------------------------------------------------
+// microarchitectural access
+//------------------------------------------------------------------------
+
+// TODO: these are currently hard coded
+#define PYDGIN_LINE_NWORDS 16
+#define PYDGIN_ICACHE 0
+#define PYDGIN_DCACHE 1
+#define PYDGIN_VALID_FLAG 1
+#define PYDGIN_DIRTY_FLAG 2
+
+struct PydginCacheLine {
+  uint32_t tag;
+  uint32_t flags;
+  uint32_t data [ PYDGIN_LINE_NWORDS ] ;
+};
+
+void pydgin_get_cache_state( struct PydginCacheLine *state, int cache_id );
+void pydgin_set_cache_state( struct PydginCacheLine *state, int cache_id );
+
 #ifdef __cplusplus
 }
 #endif
