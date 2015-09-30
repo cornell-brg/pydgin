@@ -206,10 +206,10 @@ class Sim( object ):
         )
 
     # do a cache dump here
-    print "dcache dump"
-    s.mem.dcache.dump()
     print "icache dump"
     s.mem.icache.dump()
+    print "dcache dump"
+    s.mem.dcache.dump()
     print 'DONE! Status =', s.status
     print 'Instructions Executed =', s.num_insts
     return pydgin_status, s.status
@@ -355,7 +355,10 @@ class Sim( object ):
     # entry_point_test
     #-----------------------------------------------------------------
 
-    from rpython.rtyper.lltypesystem import rffi, lltype
+    try:
+      from rpython.rtyper.lltypesystem import rffi, lltype
+    except ImportError:
+      pass
     #from rpython.rlib.entrypoint import entrypoint, RPython_StartupCode
 
     def entry_point_test( argv ):
@@ -469,10 +472,11 @@ class Sim( object ):
 
       # initialize test physical mem
 
-      pmem = lltype.malloc( rffi.UINTP.TO, 10000000, flavor="raw" )
+      #pmem = lltype.malloc( rffi.UINTP.TO, 10000000, flavor="raw" )
 
-      mem = _PhysicalWordMemory( pmem, size=2**10,
-                                 page_table={} )
+      #mem = _PhysicalWordMemory( pmem, size=2**10,
+      #                           page_table={} )
+      mem = None
       # Call ISA-dependent init_state to load program, initialize memory
       # etc.
 
@@ -502,12 +506,12 @@ class Sim( object ):
                                     stats_en=True, dirty_en=True )
       elif cache_config == "sa":
         print "using set associative cache"
-        icache = SetAssocCache( 16384, 16, "icache", self.debug,
+        icache = SetAssocCache( 2*16384, 64, "icache", self.debug,
                                     self.state, num_ways=2,
                                     stats_en=False, dirty_en=False )
-        dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
+        dcache = SetAssocCache( 4*16384, 64, "dcache", self.debug,
                                     self.state, num_ways=2,
-                                    stats_en=False, dirty_en=False )
+                                    stats_en=False, dirty_en=True )
       elif cache_config == "sas":
         print "using set associative cache with stats"
         icache = SetAssocCache( 16384, 16, "icache", self.debug,
