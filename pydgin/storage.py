@@ -87,9 +87,11 @@ def Memory( data=None, size=2**10, byte_storage=False ):
 # _AbstractMemory
 #-------------------------------------------------------------------------
 class _AbstractMemory( object ):
+  _immutable_fields_ = [ "icache", "dcache", "raw_access" ]
   def __init__( self ):
     self.icache = NullCache()
     self.dcache = NullCache()
+    self.raw_access = False
 
   def read( self, start_addr, num_bytes ):
     raise NotImplementedError()
@@ -477,15 +479,18 @@ class _PhysicalWordMemory( _AbstractMemory ):
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
+    # raw access (no address translation, no caches)
     virt_start_addr = start_addr
-    start_addr = self.page_table_lookup( start_addr )
-    self.dcache.mark_transaction( AbstractCache.READ,
-                                        start_addr, num_bytes )
+    if not self.raw_access:
+      start_addr = self.page_table_lookup( start_addr )
+      self.dcache.mark_transaction( AbstractCache.READ,
+                                    start_addr, num_bytes )
     assert 0 < num_bytes <= 4
     word = start_addr >> 2
     byte = start_addr &  0b11
 
-    if self.debug.enabled( "mem" ):
+    # a bit hacky: don't display debug when using raw access
+    if self.debug.enabled( "mem" ) and not self.raw_access:
       print ':: RD.MEM[%s->%s] = ' % ( pad_hex( virt_start_addr ),
                                        pad_hex( start_addr ) ),
     if self.debug.enabled( "memcheck" ):
@@ -503,7 +508,7 @@ class _PhysicalWordMemory( _AbstractMemory ):
     else:
       raise Exception('Invalid num_bytes: %d!' % num_bytes)
 
-    if self.debug.enabled( "mem" ):
+    if self.debug.enabled( "mem" ) and not self.raw_access:
       print '%s' % pad_hex( value ),
 
     return value
@@ -614,7 +619,8 @@ class _SparseMemory( _AbstractMemory ):
       return value, start_addr
 
   def read( self, start_addr, num_bytes ):
-    self.dcache.mark_transaction( AbstractCache.READ,
+    if not self.raw_access:
+      self.dcache.mark_transaction( AbstractCache.READ,
                                         start_addr, num_bytes )
     if self.debug.enabled( "mem" ):
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
