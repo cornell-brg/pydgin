@@ -23,8 +23,14 @@ extern "C" {
 // this needs to be called before any of the calls below
 void rpython_startup_code();
 
+// TODO: for now, we have pre-defined cache configurations
+#define PYDGIN_NO_CACHES      0
+// this configuration matches our gem5 flow right now
+#define PYDGIN_L1I_L1D_CACHES 1
+
 int pydgin_init_elf( char *filename, int argc, char **argv, char **envp,
-                     char **debug_flags, uint8_t *pmem, int do_not_load );
+                     char **debug_flags, uint8_t *pmem, int do_not_load,
+                     int cache_cfg );
 
 struct PydginReturn {
   // status of pydgin execution
@@ -76,6 +82,7 @@ struct PydginCacheLine {
 
 void pydgin_get_cache_state( struct PydginCacheLine *state, int cache_id );
 void pydgin_set_cache_state( struct PydginCacheLine *state, int cache_id );
+void pydgin_dump_cache( int cache_id );
 
 #ifdef __cplusplus
 }

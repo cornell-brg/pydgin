@@ -205,11 +205,6 @@ class Sim( object ):
           sim       = self,
         )
 
-    # do a cache dump here
-    print "icache dump"
-    s.mem.icache.dump()
-    print "dcache dump"
-    s.mem.dcache.dump()
     print 'DONE! Status =', s.status
     print 'Instructions Executed =', s.num_insts
     return pydgin_status, s.status
@@ -546,10 +541,11 @@ class Sim( object ):
 
       @entrypoint( "main",
                    [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.CCHARPP,
-                    rffi.CCHARPP, rffi.CCHARP, rffi.INT],
+                    rffi.CCHARPP, rffi.CCHARP, rffi.INT, rffi.INT],
                    c_name="pydgin_init_elf" )
       def pydgin_init_elf( ll_filename, ll_argc, ll_argv, ll_envp,
-                           ll_debug_flags, ll_pmem, ll_do_not_load ):
+                           ll_debug_flags, ll_pmem, ll_do_not_load,
+                           ll_cache_cfg ):
 
         # set the trace_limit parameter of the jitdriver
         if self.jit_enabled:
@@ -648,7 +644,12 @@ class Sim( object ):
         self.debug.set_state( self.state )
 
         # cache initialization
-        # TODO: pass the parameters through the interface
+
+        # TODO: for now, we have pre-defined configurations
+        NO_CACHES      = 0
+        L1I_L1D_CACHES = 1
+
+        cache_cfg = rffi.cast( lltype.Signed, ll_cache_cfg )
 
         # 16K, 4-word/cache line
         #icache = DirectMappedCache( 16384, 16, "icache", self.debug,
@@ -659,21 +660,24 @@ class Sim( object ):
         #                            stats_en=False, dirty_en=False )
         #dcache = DirectMappedCache( 16384, 16, "dcache", self.debug,
         #                            stats_en=False, dirty_en=False )
-        #icache = SetAssocCache( 16384, 16, "icache", self.debug,
-        #                            self.state, num_ways=2,
-        #                            stats_en=True, dirty_en=False )
-        #dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
-        #                            self.state, num_ways=2,
-        #                            stats_en=True, dirty_en=True )
-        #icache = SetAssocCache( 16384, 16, "icache", self.debug,
-        #                            self.state, num_ways=2,
-        #                            stats_en=False, dirty_en=False )
-        #dcache = SetAssocCache( 16384, 16, "dcache", self.debug,
-        #                            self.state, num_ways=2,
-        #                            stats_en=False, dirty_en=False )
-        # for the time being, use null caches
-        icache = NullCache()
-        dcache = NullCache()
+        if cache_cfg == NO_CACHES:
+          print "configuring pydgin without caches"
+          icache = NullCache()
+          dcache = NullCache()
+        elif cache_cfg == L1I_L1D_CACHES:
+          print "configuring pydgin with 32K 2-way L1I, 64K 2-way L1D caches"
+          icache = SetAssocCache( 2*16384, 64, "icache", self.debug,
+                                      self.state, num_ways=2,
+                                      stats_en=False, dirty_en=False )
+          dcache = SetAssocCache( 4*16384, 64, "dcache", self.debug,
+                                      self.state, num_ways=2,
+                                      stats_en=False, dirty_en=True )
+        else:
+          print "unrecognized cache configuration %d, configuring without caches" \
+                % cache_cfg
+          icache = NullCache()
+          dcache = NullCache()
+
         self.state.mem.set_caches( icache, dcache )
 
         # Close after loading
@@ -862,6 +866,18 @@ class Sim( object ):
                                    )
 
       #-----------------------------------------------------------------
+      # get_cache
+      #-----------------------------------------------------------------
+      # return the requested cache using cache_id
+      def get_cache( cache_id ):
+        if cache_id == ICACHE_ID:
+          print "cache requested is icache"
+          return self.state.mem.icache
+        else:
+          print "cache requested is dcache"
+          return self.state.mem.dcache
+
+      #-----------------------------------------------------------------
       # pydgin_get_cache_state
       #-----------------------------------------------------------------
       @entrypoint( "main", [ rffi.CArrayPtr( CCacheLine ),
@@ -873,10 +889,10 @@ class Sim( object ):
 
         # pick the cache to get the state
         cache_id = rffi.cast( lltype.Signed, ll_cache_id )
-        if cache_id == ICACHE_ID:
-          cache = self.state.mem.icache
-        else:
-          cache = self.state.mem.dcache
+        cache = get_cache( cache_id )
+        if isinstance( cache, NullCache ):
+          print "null cache doesn't support state copying"
+          return
 
         cache.get_ll_state( ll_state )
 
@@ -894,16 +910,25 @@ class Sim( object ):
 
         # pick the cache to set the state
         cache_id = rffi.cast( lltype.Signed, ll_cache_id )
-        if cache_id == ICACHE_ID:
-          cache = self.state.mem.icache
-        else:
-          cache = self.state.mem.dcache
-
+        cache = get_cache( cache_id )
+        if isinstance( cache, NullCache ):
+          print "null cache doesn't support state copying"
+          return
         cache.set_ll_state( ll_state )
 
         print "done copying cache state to pydgin"
 
-        print " ====== dumping state now"
+      #-----------------------------------------------------------------
+      # pydgin_dump_cache
+      #-----------------------------------------------------------------
+      @entrypoint( "main", [ rffi.INT ],
+                   c_name="pydgin_dump_cache" )
+      def pydgin_dump_cache( ll_cache_id ):
+
+        cache_id = rffi.cast( lltype.Signed, ll_cache_id )
+        cache = get_cache( cache_id )
+
+        print " ====== dumping cache state now ====== "
         cache.dump()
 
 
