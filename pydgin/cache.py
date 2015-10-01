@@ -5,7 +5,7 @@
 
 from pydgin.jit import unroll_safe
 from pydgin.debug import pad_hex
-from rpython.rtyper.lltypesystem import rffi
+from rpython.rtyper.lltypesystem import rffi, lltype
 try:
   from rpython.rlib.rarithmetic import r_uint32, widen
 except ImportError:
@@ -419,6 +419,54 @@ class SetAssocCache( AbstractCache ):
       self.get_ll_line_state( l, mru, ll_state[ 2*l   ] )
       self.get_ll_line_state( l, lru, ll_state[ 2*l+1 ] )
 
+  def set_ll_line_state( self, line_idx, way, ll_line_state ):
+    # TODO: these are here temporarily
+    VALID_FLAG = 1
+    DIRTY_FLAG = 2
+
+    tag   = rffi.cast( lltype.Signed, ll_line_state.tag )
+    flags = rffi.cast( lltype.Signed, ll_line_state.flags )
+
+    # get valid and dirty info -- it's invalid if addr_sh is -1
+    valid = ( VALID_FLAG & flags != 0 )
+    dirty = valid and self.dirty_en and ( DIRTY_FLAG & flags != 0 )
+
+    # set the tag
+    if not valid:
+      addr_sh = -1
+    else:
+      addr_sh = tag << (self.tag_shamt - self.line_shamt) | line_idx
+
+    self.tag_array[way][line_idx] = addr_sh
+    if self.dirty_en:
+      self.dirty_array[way][line_idx] = dirty
+
+    # writing only if dirty
+    if dirty:
+      # construct the base address and write the data to memory
+
+      base_addr = addr_sh << self.line_shamt
+
+      # disable memory's caches and memory translation so that we don't
+      # pollute the cache as we write to it
+      self.state.mem.raw_access = True
+
+      for i in range( self.line_size/4 ):
+        addr = base_addr + i*4
+        self.state.mem.write( addr, 4, rffi.cast( lltype.Signed,
+                                                  ll_line_state.data[i] ) )
+
+      self.state.mem.raw_access = False
+
+  def set_ll_state( self, ll_state ):
+    for l in range( self.num_lines ):
+      # find the order in which to visit the ways (most recently first)
+      assert self.num_ways == 2
+      mru = self.mru_array[ l ]
+      lru = 0 if mru else 1
+
+      self.set_ll_line_state( l, mru, ll_state[ 2*l   ] )
+      self.set_ll_line_state( l, lru, ll_state[ 2*l+1 ] )
 
   def stats_dump( self ):
     #for i in range( self.num_lines ):

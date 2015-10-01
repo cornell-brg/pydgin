@@ -882,6 +882,30 @@ class Sim( object ):
 
         print "done copying cache state from pydgin"
 
+      #-----------------------------------------------------------------
+      # pydgin_set_cache_state
+      #-----------------------------------------------------------------
+      @entrypoint( "main", [ rffi.CArrayPtr( CCacheLine ),
+                             rffi.INT ],
+                   c_name="pydgin_set_cache_state" )
+      def pydgin_set_cache_state( ll_state, ll_cache_id ):
+
+        print "copying cache state to pydgin"
+
+        # pick the cache to set the state
+        cache_id = rffi.cast( lltype.Signed, ll_cache_id )
+        if cache_id == ICACHE_ID:
+          cache = self.state.mem.icache
+        else:
+          cache = self.state.mem.dcache
+
+        cache.set_ll_state( ll_state )
+
+        print "done copying cache state to pydgin"
+
+        print " ====== dumping state now"
+        cache.dump()
+
 
     except ImportError:
       pass
