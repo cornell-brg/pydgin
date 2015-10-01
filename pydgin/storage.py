@@ -526,9 +526,11 @@ class _PhysicalWordMemory( _AbstractMemory ):
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
     virt_start_addr = start_addr
-    start_addr = self.page_table_lookup( start_addr )
-    self.dcache.mark_transaction( AbstractCache.WRITE,
-                                        start_addr, num_bytes )
+    if not self.raw_access:
+      start_addr = self.page_table_lookup( start_addr )
+      self.dcache.mark_transaction( AbstractCache.WRITE,
+                                    start_addr, num_bytes )
+
     assert 0 < num_bytes <= 4
     word = start_addr >> 2
     byte = start_addr &  0b11
@@ -549,7 +551,7 @@ class _PhysicalWordMemory( _AbstractMemory ):
     else:
       raise Exception('Invalid num_bytes: %d!' % num_bytes)
 
-    if self.debug.enabled( "mem" ):
+    if self.debug.enabled( "mem" ) and not self.raw_access:
       print ':: WR.MEM[%s->%s] = %s' % ( pad_hex( virt_start_addr ),
                                          pad_hex( start_addr ),
                                          pad_hex( value ) ),
