@@ -8,8 +8,6 @@ from pydgin.utils import signed, sext_16, sext_8, trim_32, \
 
 from pydgin.misc import create_risc_decoder, FatalError
 
-from math import *
-
 #=======================================================================
 # Register Definitions
 #=======================================================================
@@ -313,8 +311,9 @@ def execute_mtc0( s, inst ):
   #    raise Exception('Instruction: mtc0 failed!')
   #  print 'SUCCESS: s.rf[' + str( inst.rt ) + '] == ' + str( sink[ s.sink_ptr ] )
   #  s.sink_ptr += 1
-  # else:
-    # raise FatalError('Invalid mtc0 destination: %d!' % inst.rd )
+
+  else:
+    raise FatalError('Invalid mtc0 destination: %d!' % inst.rd )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -790,8 +789,7 @@ def execute_syncl( s, inst ):
 #-----------------------------------------------------------------------
 # Not to be confused with XLOOPS instructions
 def execute_xloop( s, inst ):
-  #print 'WARNING: xloop implemented as noop!'
-  s.pfor_iters += [ s.rf[ inst.rs ] ]
+  print 'WARNING: xloop implemented as noop!'
   s.pc += 4
 
 #-----------------------------------------------------------------------

@@ -18,8 +18,6 @@ from bootstrap      import syscall_init, test_init, memory_size, \
 from instruction    import Instruction
 from isa            import decode, reg_map
 
-from math import *
-
 #-------------------------------------------------------------------------
 # ParcSim
 #-------------------------------------------------------------------------
