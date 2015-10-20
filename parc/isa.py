@@ -97,6 +97,31 @@ reg_map = {
 # return_address        : 31
 # syscall_pseudo_return :  3
 
+# Here's what I think our coprocessor registers are being used for:
+# cp0 regs
+
+# r1: assembly test
+# r2
+# r3
+# r4
+# r5
+# r6
+# r7
+# r8
+# r9
+# r10: core id
+# r11
+# r12
+# r13
+# r14
+# r15: core type
+# r16: num cores
+# r17: thread id (used to be called core id)
+# r18
+# r19
+# r20
+# r21: stats en
+
 #=======================================================================
 # Instruction Encodings
 #=======================================================================
@@ -265,6 +290,8 @@ def execute_mfc0( s, inst ):
   #  s.src_ptr += 1
   if   inst.rd == reg_map['c0_coreid']:
     # return actual core id (this is actually thread id)
+    # but on Pydgin we don't have thread swapping so they are actually the
+    # same thing
     s.rf[inst.rt] = s.core_id
   elif inst.rd == reg_map['c0_count']:
     s.rf[inst.rt] = s.num_insts
