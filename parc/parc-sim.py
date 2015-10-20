@@ -18,6 +18,8 @@ from bootstrap      import syscall_init, test_init, memory_size, \
 from instruction    import Instruction
 from isa            import decode, reg_map
 
+from math import *
+
 #-------------------------------------------------------------------------
 # ParcSim
 #-------------------------------------------------------------------------
@@ -114,7 +116,6 @@ class ParcSim( Sim ):
         # print the stat if it's greater than 0
         if state.stat_inst_num_insts[ j ] > 0:
           print "  Stat %d = %d" % ( j, state.stat_inst_num_insts[ j ] )
-
 
 # this initializes similator and allows translation and python
 # interpretation
