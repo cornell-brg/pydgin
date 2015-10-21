@@ -61,6 +61,11 @@ class Instruction( object ):
   def imm_L( self ):
     return self.bits & 0xF
 
+  # used by armv7
+  @property
+  def imm_16( self ):
+    return ( (self.bits >> 4) & 0xF000 ) | ( self.bits & 0xFFF )
+
   @property
   def register_list( self ):
     return self.bits & 0xFFFF

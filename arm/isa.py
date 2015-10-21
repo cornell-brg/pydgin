@@ -279,6 +279,11 @@ encodings = [
 # ['uxtb16',   'xxxx011011001111xxxxxx000111xxxx'], # v6
 # ['uxth',     'xxxx011011111111xxxxxx000111xxxx'], # v6
 
+# the definitions below are the limited subset of v7 to run PyPy JIT
+# region
+  ['dmb',      '1111010101111111111100000101xxxx'],
+  ['movw',     'xxxx00110000xxxxxxxxxxxxxxxxxxxx'],
+  ['movt',     'xxxx00110100xxxxxxxxxxxxxxxxxxxx'],
 ]
 
 PC = reg_map['pc']
@@ -501,6 +506,13 @@ def execute_cmp( s, inst ):
 
     if inst.rd == 15:
       return
+  s.rf[PC] = s.fetch_pc() + 4
+
+#-----------------------------------------------------------------------
+# dmb
+#-----------------------------------------------------------------------
+# memory barrier -- implemented as a nop
+def execute_dmb( s, inst ):
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
@@ -779,6 +791,32 @@ def execute_mov( s, inst ):
 
     if inst.rd == 15:
       return
+  s.rf[PC] = s.fetch_pc() + 4
+
+#-----------------------------------------------------------------------
+# movt
+#-----------------------------------------------------------------------
+def execute_movt( s, inst ):
+  if condition_passed( s, inst.cond ):
+    if inst.rd == 15:
+      raise FatalError('UNPREDICTABLE')
+
+    result = ( inst.imm_16 << 16 ) | trim_16( s.rf[ inst.rd ] )
+    s.rf[ inst.rd ] = trim_32( result )
+
+  s.rf[PC] = s.fetch_pc() + 4
+
+#-----------------------------------------------------------------------
+# movw
+#-----------------------------------------------------------------------
+def execute_movw( s, inst ):
+  if condition_passed( s, inst.cond ):
+    if inst.rd == 15:
+      raise FatalError('UNPREDICTABLE')
+
+    result = inst.imm_16
+    s.rf[ inst.rd ] = trim_32( result )
+
   s.rf[PC] = s.fetch_pc() + 4
 
 #-----------------------------------------------------------------------
