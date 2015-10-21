@@ -223,6 +223,16 @@ def syscall_getcwd( s, arg0, arg1, arg2 ):
 
   return ptr if errno == 0 else 0, errno
 
+#-----------------------------------------------------------------------
+# ignore
+#-----------------------------------------------------------------------
+# ignore the syscall without warning
+def syscall_ignore( s, arg0, arg1, arg2 ):
+
+  # return success
+
+  return 0, 0
+
 #-------------------------------------------------------------------------
 # Stat
 #-------------------------------------------------------------------------
@@ -377,6 +387,25 @@ syscall_funcs = {
   183: syscall_getcwd,
 
   221: syscall_fcntl64,
+
+
+# the remaining should be ignored for now -- used by pypy
+   33:  syscall_ignore,
+   55:  syscall_ignore,
+   78:  syscall_ignore,
+   91:  syscall_ignore,
+  122:  syscall_ignore,
+  174:  syscall_ignore,
+  175:  syscall_ignore,
+  191:  syscall_ignore,
+  199:  syscall_ignore,
+  200:  syscall_ignore,
+  201:  syscall_ignore,
+  202:  syscall_ignore,
+  217:  syscall_ignore,
+  263:  syscall_ignore,
+  472:  syscall_ignore,
+983042: syscall_ignore,
 }
 
 #-------------------------------------------------------------------------
