@@ -52,6 +52,8 @@ class Sim( object ):
 
     self.max_insts = 0
 
+    self.event_filename = ""
+
   #-----------------------------------------------------------------------
   # decode
   #-----------------------------------------------------------------------
@@ -102,6 +104,7 @@ class Sim( object ):
     --max-insts <i> Run until the maximum number of instructions
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
+    --event-file <file> Set event file
 
   """
 
@@ -223,6 +226,7 @@ class Sim( object ):
                            "-d", "--debug",
                            "--max-insts",
                            "--jit",
+                           "--event-file"
                          ]
 
       # go through the args one by one and parse accordingly
@@ -277,6 +281,9 @@ class Sim( object ):
           elif prev_token == "--jit":
             # pass the jit flags to rpython.rlib.jit
             set_user_param( self.jitdriver, token )
+
+          elif prev_token == "--event-file":
+            self.event_filename = token
 
           prev_token = ""
 

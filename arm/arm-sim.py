@@ -26,12 +26,25 @@ class ArmSim( Sim ):
     Sim.__init__( self, "ARM", jit_enabled=True )
 
 
-  def trigger_event( self, descr ):
+  # print pc only if non-zero
+  def trigger_event( self, descr, pc=0 ):
+
+    if descr not in self.state.event_ctrs:
+      self.state.event_ctrs[ descr ] = 1
+      iter = 1
+    else:
+      iter = self.state.event_ctrs[ descr ] + 1
+      self.state.event_ctrs[ descr ] = iter
+
+    # if pc provided, append to descr
+    if pc != 0:
+      descr = "%s_%x" % ( descr, pc )
     if self.state.print_event:
       print descr, self.state.ncycles
     if self.state.event_file:
       # write events to a csv file
-      self.state.event_file.write( "%s,%d,\n" % (descr, self.state.ncycles) )
+      self.state.event_file.write( "%s,%d,%d\n"
+                          % (descr, self.state.ncycles, iter) )
 
   #-----------------------------------------------------------------------
   # decode
@@ -58,9 +71,9 @@ class ArmSim( Sim ):
            bits == 0xe2888000:
 
         if bits == 0xe2822000:
-          self.trigger_event( "jit_block_%x" % self.state.pc )
+          self.trigger_event( "jit_block", self.state.pc )
         elif bits == 0xe2877000:
-          self.trigger_event( "finish_%x" % self.state.pc )
+          self.trigger_event( "finish", self.state.pc )
         #elif bits == 0xe2833000:
         #  self.trigger_event( "guard_fail_%x" % self.state.pc )
         #elif bits == 0xe2844000:
@@ -131,9 +144,15 @@ class ArmSim( Sim ):
     self.state = syscall_init( mem, entrypoint, breakpoint,
                                run_argv, run_envp, self.debug )
 
+    if self.event_filename != "":
+      self.state.event_file = open( self.event_filename, "w" )
+      # print header
+      self.state.event_file.write( "event,insts,iter\n" )
+
   def run( self ):
     Sim.run( self )
-    self.state.event_file.close()
+    if self.state.event_file:
+      self.state.event_file.close()
 
 # this initializes similator and allows translation and python
 # interpretation
