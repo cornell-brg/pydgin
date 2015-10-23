@@ -1009,12 +1009,12 @@ def execute_stat( s, inst ):
   # turn on stats
   if stat_en and not s.stat_inst_en[ stat_id ]:
     s.stat_inst_en[ stat_id ] = True
-    s.stat_inst_begin[ stat_id ] = s.ncycles
+    s.stat_inst_begin[ stat_id ] = s.num_insts
 
   # turn off stats -- accumulate the difference
   elif not stat_en and s.stat_inst_en[ stat_id ]:
     s.stat_inst_en[ stat_id ] = False
-    s.stat_inst_ncycles[ stat_id ] += s.ncycles - s.stat_inst_begin[ stat_id ]
+    s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
 
   s.pc += 4
 

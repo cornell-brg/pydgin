@@ -40,7 +40,7 @@ class State( Machine ):
     # stat registers
     self.stat_inst_en      = [ False ] * 16
     self.stat_inst_begin   = [ 0 ]     * 16
-    self.stat_inst_ncycles = [ 0 ]     * 16
+    self.stat_inst_num_insts = [ 0 ]     * 16
 
   def fetch_pc( self ):
     return self.pc

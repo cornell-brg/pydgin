@@ -90,8 +90,9 @@ class ParcSim( Sim ):
                                   ncores=self.ncores,
                                   reset_addr=reset_addr )
 
-    self.state.testbin  = testbin
-    self.state.exe_name = exe_name
+    for state in self.states:
+      state.testbin  = testbin
+      state.exe_name = exe_name
 
   #---------------------------------------------------------------------
   # run
