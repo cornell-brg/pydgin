@@ -244,6 +244,7 @@ class _SparseMemory( object ):
     self.block_size = block_size
     self.addr_mask  = block_size - 1
     self.block_mask = 0xffffffff ^ self.addr_mask
+    self.debug = Debug()
     print "sparse memory size %x addr mask %x block mask %x" \
           % ( self.block_size, self.addr_mask, self.block_mask )
     #blocks     = []
@@ -265,18 +266,47 @@ class _SparseMemory( object ):
   def iread( self, start_addr, num_bytes ):
     start_addr = hint( start_addr, promote=True )
     num_bytes  = hint( num_bytes,  promote=True )
+    end_addr   = start_addr + num_bytes - 1
 
     block_addr = self.block_mask & start_addr
     block_mem = self.get_block_mem( block_addr )
-    return block_mem.iread( start_addr & self.addr_mask, num_bytes )
+    # For mixed-width ISAs, the start_addr is not necessarily
+    # word-aligned, and can cross block memory boundaries. If there is
+    # such a case, we have two instruction reads and then form the word
+    # for it
+    block_end_addr = self.block_mask & end_addr
+    if block_addr == block_end_addr:
+      return block_mem.iread( start_addr & self.addr_mask, num_bytes )
+    else:
+      num_bytes1 = min( self.block_size - (start_addr & self.addr_mask),
+                        num_bytes )
+      num_bytes2 = num_bytes - num_bytes1
+
+      block_mem1 = block_mem
+      block_mem2 = self.get_block_mem( block_end_addr )
+      value1 = block_mem1.iread( start_addr & self.addr_mask, num_bytes1 )
+      value2 = block_mem2.iread( 0, num_bytes2 )
+      value = value1 | ( value2 << (num_bytes1*8) )
+      #print "nb1", num_bytes1, "nb2", num_bytes2, \
+      #      "ba1", hex(block_addr), "ba2", hex(block_end_addr), \
+      #      "v1", hex(value1), "v2", hex(value2), "v", hex(value)
+      return value
 
   def read( self, start_addr, num_bytes ):
+    if self.debug.enabled( "mem" ):
+      print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
     block_addr = self.block_mask & start_addr
     block_addr = hint( block_addr, promote=True )
     block_mem = self.get_block_mem( block_addr )
-    return block_mem.read( start_addr & self.addr_mask, num_bytes )
+    value = block_mem.read( start_addr & self.addr_mask, num_bytes )
+    if self.debug.enabled( "mem" ):
+      print '%s' % pad_hex( value ),
+    return value
 
   def write( self, start_addr, num_bytes, value ):
+    if self.debug.enabled( "mem" ):
+      print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
+                                     pad_hex( value ) ),
     block_addr = self.block_mask & start_addr
     block_addr = hint( block_addr, promote=True )
     block_mem = self.get_block_mem( block_addr )

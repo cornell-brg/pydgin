@@ -479,6 +479,11 @@ def elf_reader( file_obj ):
     #section_name = start.partition('\0')[0]
     section_name = start.split('\0', 1)[0]
 
+    # only sections marked as lloc should be written to memory
+
+    if not (shdr.flags & ElfSectionHeader.FLAGS_ALLOC):
+      continue
+
     # Read the section data if it exists
 
     if section_name not in ['.sbss', '.bss']:

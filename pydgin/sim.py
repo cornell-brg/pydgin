@@ -181,7 +181,7 @@ class Sim( object ):
           print "c%s %s %s %s" % (
                   core_id,
                   pad_hex( inst_bits ),
-                  pad( inst.str, 8 ),
+                  pad( inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),
 
         exec_fun( s, inst )

@@ -45,8 +45,8 @@ reg_map = {
   # currently implemented coprocessor 0 registers
 
   'status'    :  1,   # mtc0
- #'mngr2proc' :  1,   #      mfc0
- #'proc2mngr' :  2,   # mtc0
+# 'mngr2proc' :  1,   # mfc0
+# 'proc2mngr' :  2,   # mtc0
   'statsen'   : 10,   # mtc0
   'coreid'    : 17,   #      mfc0
 
@@ -288,6 +288,7 @@ def execute_mfc0( s, inst ):
   #if   inst.rd ==  1: pass
   #  s.rf[ inst.rt ] = src[ s.src_ptr ]
   #  s.src_ptr += 1
+  # return actual core id (this is actually thread id)
   if   inst.rd == reg_map['c0_coreid']:
     # return actual core id (this is actually thread id)
     # but on Pydgin we don't have thread swapping so they are actually the
