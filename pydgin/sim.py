@@ -212,12 +212,18 @@ class Sim( object ):
       #if self.ncores > 1 and tick_ctr % self.core_switch_ival == 0:
       #  core_id = ( core_id + 1 ) % self.ncores
 
-      if s.fetch_pc() < old:
+      if s.fetch_pc() <= old:
         # experiment with switching core id here
         if self.ncores > 1:
           core_id = hint( core_id, promote=True )
-          core_id = self.next_core_id( core_id )
-          s       = self.states[ core_id ]
+          # here, we try switching until we find a core that's running.
+          # this is an optimization when cores call the exit syscall and
+          # no longer need to be ticked
+          while True:
+            core_id = self.next_core_id( core_id )
+            s       = self.states[ core_id ]
+            if s.running:
+              break
 
         jitdriver.can_enter_jit(
           pc        = s.fetch_pc(),
