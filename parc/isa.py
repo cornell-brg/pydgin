@@ -217,7 +217,7 @@ encodings = [
   #-----------------------------------------------------------------------
   # XPC
   #-----------------------------------------------------------------------
-  ['pcall',    '111011_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
+  ['pcall',    '111011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   ['psync',    '111100_00000_00000_00000_00000_000000'],
   #---------------------------------------------------------------------
   # Misc
@@ -536,7 +536,7 @@ def execute_jal( s, inst ):
 # to initialize $a0 with the updated work index before looping back to
 # the start of the kernel.
 def execute_jr( s, inst ):
-  if s.xpc_en and ( s.rf[31] == s.xpc_return_trigger ):
+  if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
     if s.xpc_idx < s.xpc_ncalls:
       s.xpc_idx += 1
       s.rf[4]    = s.xpc_idx
