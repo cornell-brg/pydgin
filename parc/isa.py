@@ -219,6 +219,8 @@ encodings = [
   #-----------------------------------------------------------------------
   ['pcall',    '111011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   ['psync',    '111100_00000_00000_00000_00000_000000'],
+  ['mtx',      '010010_xxxxx_xxxxx_00000_xxxxx_xxxxxx'],
+  ['mfx',      '010010_xxxxx_xxxxx_00001_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Misc
   #---------------------------------------------------------------------
@@ -537,12 +539,13 @@ def execute_jal( s, inst ):
 # the start of the kernel.
 def execute_jr( s, inst ):
   if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
-    if s.xpc_idx < s.xpc_ncalls:
+    if s.xpc_idx < s.xpc_end_idx:
       s.xpc_idx += 1
       s.rf[4]    = s.xpc_idx
       s.pc       = s.xpc_start_addr
     else:
-      s.pc = s.xpc_return_addr
+      s.rf[31] = s.xpc_saved_addr
+      s.pc     = s.xpc_return_addr
   else:
     s.pc = s.rf[inst.rs]
 
@@ -988,13 +991,15 @@ def execute_subu_xi( s, inst ):
 # register is used to save the return address for returning from the
 # pcall function.
 def execute_pcall( s, inst ):
-  s.xpc_en     = True
-  s.xpc_idx    = 0
-  s.xpc_ncalls = s.rf[ inst.rs ]
-  assert( s.xpc_ncalls > 0 )
+  s.xpc_en        = True
+  s.xpc_start_idx = s.rf[ inst.rs ]
+  s.xpc_end_idx   = s.rf[ inst.rt ]
+  s.xpc_idx       = s.xpc_start_idx
+  assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
 
-  s.rf[4]  = s.xpc_idx
-  s.rf[31] = s.xpc_return_trigger
+  s.rf[4]          = s.xpc_idx
+  s.xpc_saved_addr = s.rf[31]
+  s.rf[31]         = s.xpc_return_trigger
 
   s.xpc_return_addr = s.pc + 4
   s.pc              = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
@@ -1006,6 +1011,24 @@ def execute_pcall( s, inst ):
 # Reset the XPC bit to signify that all parallel calls are complete.
 def execute_psync( s, inst ):
   s.xpc_en = False
+  s.pc += 4
+
+#-------------------------------------------------------------------------
+# mtx
+#-------------------------------------------------------------------------
+# For serial semantics, this is identical to a register move, until we
+# start modeling a separate register file space for accelerators.
+def execute_mtx( s, inst ):
+  s.rf[inst.rs] = s.rf[inst.rt]
+  s.pc += 4
+
+#-------------------------------------------------------------------------
+# mfx
+#-------------------------------------------------------------------------
+# For serial semantics, this is identical to a register move, until we
+# start modeling a separate register file space for accelerators.
+def execute_mfx( s, inst ):
+  s.rf[inst.rt] = s.rf[inst.rs]
   s.pc += 4
 
 #-----------------------------------------------------------------------

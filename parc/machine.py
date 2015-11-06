@@ -21,10 +21,12 @@ class State( Machine ):
     # index, the requested number of calls and the start address of the
     # function to call.
     self.xpc_en             = False
+    self.xpc_start_idx      = 0
+    self.xpc_end_idx        = 0
     self.xpc_idx            = 0
-    self.xpc_ncalls         = 0
     self.xpc_start_addr     = 0x00000000
     self.xpc_return_addr    = 0x00000000
+    self.xpc_saved_addr     = 0x00000000
     self.xpc_return_trigger = 1
 
     # indicate if this is running a self-checking test
