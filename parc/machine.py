@@ -26,8 +26,17 @@ class State( Machine ):
     self.xpc_idx            = 0
     self.xpc_start_addr     = 0x00000000
     self.xpc_return_addr    = 0x00000000
-    self.xpc_saved_addr     = 0x00000000
     self.xpc_return_trigger = 1
+
+    # Separate accelerator regfile. Currently we only model a single-lane
+    # accelerator with a vector length of 1.
+    self.xpc_rf = RegisterFile()
+
+    # We need a separate "pointer" to the current active regfile
+    # depending on whether we are executing a pcall or not. We save a
+    # copy of the scalar register file into a separate variable then use
+    # the s.rf variable as the active regfile pointer.
+    self.scalar_rf = self.rf
 
     # indicate if this is running a self-checking test
     self.testbin  = False
