@@ -587,7 +587,7 @@ def execute_jr( s, inst ):
     assert inst.rs == 31
 
   if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
-    if s.xpc_idx < s.xpc_end_idx:
+    if s.xpc_idx < ( s.xpc_end_idx - 1 ):
       s.xpc_idx += 1
       s.rf[4]    = s.xpc_idx
       s.pc       = s.xpc_start_addr
