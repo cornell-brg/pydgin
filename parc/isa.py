@@ -583,12 +583,8 @@ def execute_jal( s, inst ):
 def execute_jr( s, inst ):
 
   # Only allow jr for returning from functions inside a pcall
-  # ctorng: should this assert be here? no function calls? I have to
-  # commit quickly, so I am going to leave this commented since I know
-  # this commit works without this assert. I was just testing with it
-  # commented out. If it works with it, then uncomment it.
-#  if s.xpc_en:
-#    assert inst.rs == 31
+  if s.xpc_en:
+    assert inst.rs == 31
 
   if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
     if s.xpc_idx < s.xpc_end_idx:
