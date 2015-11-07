@@ -241,6 +241,13 @@ encodings = [
   ['addiu_xi', '110110_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   ['addu_xi',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010000'],
   ['subu_xi',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010001'],
+  #-----------------------------------------------------------------------
+  # XPC
+  #-----------------------------------------------------------------------
+  ['pcall',    '111011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['psync',    '111100_00000_00000_00000_00000_000000'],
+  ['mtx',      '010010_xxxxx_xxxxx_00000_xxxxx_xxxxxx'],
+  ['mfx',      '010010_xxxxx_xxxxx_00001_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Misc
   #---------------------------------------------------------------------
@@ -561,8 +568,39 @@ def execute_jal( s, inst ):
 #-----------------------------------------------------------------------
 # jr
 #-----------------------------------------------------------------------
+# If we are executing parallel calls, we need to treat jr as a branch
+# back to the top of the function and increment the work index. Only when
+# all the requested calls have been performed, we jump back to the return
+# address as normal. We differentiate this case from a nested function
+# call within a pcall by checking if $ra is set to a magic number. The
+# work index is assumed to be initialized in $a0.  We cannot guarantee
+# that the compiler will not overwrite $a0 inside the kernel, so we need
+# to initialize $a0 with the updated work index before looping back to
+# the start of the kernel.
+#
+# If all requested calls have been performed, we swap the active regfile
+# pointer to the scalar regfile and disable the XPC bit.
 def execute_jr( s, inst ):
-  s.pc = s.rf[inst.rs]
+
+  # Only allow jr for returning from functions inside a pcall
+  # ctorng: should this assert be here? no function calls? I have to
+  # commit quickly, so I am going to leave this commented since I know
+  # this commit works without this assert. I was just testing with it
+  # commented out. If it works with it, then uncomment it.
+#  if s.xpc_en:
+#    assert inst.rs == 31
+
+  if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
+    if s.xpc_idx < s.xpc_end_idx:
+      s.xpc_idx += 1
+      s.rf[4]    = s.xpc_idx
+      s.pc       = s.xpc_start_addr
+    else:
+      s.xpc_en = False
+      s.rf     = s.scalar_rf
+      s.pc     = s.xpc_return_addr
+  else:
+    s.pc = s.rf[inst.rs]
 
 #-----------------------------------------------------------------------
 # jalr
@@ -992,6 +1030,68 @@ def execute_addu_xi( s, inst ):
 # implemented as subu
 def execute_subu_xi( s, inst ):
   execute_subu( s, inst )
+
+#-------------------------------------------------------------------------
+# XPC instructions
+#-------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------
+# pcall
+#-------------------------------------------------------------------------
+# Set a bit to signify that we are now executing parallel calls and
+# initialize XPC registers for tracking the current work index and the
+# total number of calls. Otherwise, the pcall looks like a normal
+# function call except that a signed 16b offset from the current PC is
+# used as the jump target instead of a 26b absolute PC (i.e., br
+# semantics instead of jal semantics). Note that we must also initialize
+# register $a0 to the work index. The work index is incremented by the
+# hardware after each execution of the function (see: jr). We store a
+# magic value (i.e., 1) to $ra so that we can differentiate when to
+# return from the pcall function and when to return from a nested
+# function after the XPC bit is set. A separate microarchitectural
+# register is used to save the return address for returning from the
+# pcall function.
+#
+# When executing a pcall, we switch the regfile pointer to use the
+# accelerator regfile instead of the scalar regfile. This is swapped back
+# when we return from the pcall.
+def execute_pcall( s, inst ):
+  s.xpc_en        = True
+  s.xpc_start_idx = s.rf[ inst.rs ]
+  s.xpc_end_idx   = s.rf[ inst.rt ]
+  s.xpc_idx       = s.xpc_start_idx
+  assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
+
+  s.rf     = s.xpc_rf
+  s.rf[4]  = s.xpc_idx
+  s.rf[31] = s.xpc_return_trigger
+
+  s.xpc_return_addr = s.pc + 4
+  s.pc              = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
+  s.xpc_start_addr  = s.pc
+
+#-------------------------------------------------------------------------
+# psync
+#-------------------------------------------------------------------------
+# Treat as a nop for serial semantics of pcall.
+def execute_psync( s, inst ):
+  s.pc += 4
+
+#-------------------------------------------------------------------------
+# mtx
+#-------------------------------------------------------------------------
+# Move a value from the scalar regfile to the accelerator regfile.
+def execute_mtx( s, inst ):
+  s.xpc_rf[inst.rs] = s.scalar_rf[inst.rt]
+  s.pc += 4
+
+#-------------------------------------------------------------------------
+# mfx
+#-------------------------------------------------------------------------
+# Move a value from the accelerator regfile to the scalar regfile.
+def execute_mfx( s, inst ):
+  s.scalar_rf[inst.rt] = s.xpc_rf[inst.rs]
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # Misc instructions
