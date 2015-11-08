@@ -583,8 +583,8 @@ def execute_jal( s, inst ):
 def execute_jr( s, inst ):
 
   # Only allow jr for returning from functions inside a pcall
-  if s.xpc_en:
-    assert inst.rs == 31
+#  if s.xpc_en:
+#    assert inst.rs == 31
 
   if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
     if s.xpc_idx < ( s.xpc_end_idx - 1 ):
