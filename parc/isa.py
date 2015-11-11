@@ -218,6 +218,7 @@ encodings = [
   # XPC
   #-----------------------------------------------------------------------
   ['pcall',    '111011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['pcallr',   '111100_xxxxx_xxxxx_00000_00000_000001'],
   ['psync',    '111100_00000_00000_00000_00000_000000'],
   ['mtx',      '010010_xxxxx_xxxxx_00000_xxxxx_xxxxxx'],
   ['mfx',      '010010_xxxxx_xxxxx_00001_xxxxx_xxxxxx'],
@@ -1017,6 +1018,41 @@ def execute_pcall( s, inst ):
   s.xpc_return_addr = s.pc + 4
   s.pc              = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   s.xpc_start_addr  = s.pc
+
+#-------------------------------------------------------------------------
+# pcallr
+#-------------------------------------------------------------------------
+# This is the same as pcall with a different signature. It assumes that
+# the start index and size are packed into rf[rs] with the upper 24 bits
+# as start and the lower 8 bits as size. Then rf[rt] has the jump target.
+#
+# This version of pcall exists because we really wanted three registers:
+# begin, end, jump target. We tried to put the jump target into a 16b
+# immediate, but the target was too far away and the compiler
+# complained. We got around that by adding an adhoc handler right next
+# to the pcall, but we thought this was too hacky and decided to make
+# pcallr instead.
+#
+# For the first attempt at pcallr, we tried packing the start and end
+# indices into a single source operand. The upper 16 bits were start
+# and the lower 16 bits were end. Unfortunately, there were some indices
+# that went above 2^16, so we changed it to 24 bits start and 8 bits
+# size.
+def execute_pcallr( s, inst ):
+  s.xpc_en        = True
+  s.xpc_start_idx = s.rf[ inst.rs ] >> 8
+  size            = s.rf[ inst.rs ] & 0x000000FF
+  s.xpc_end_idx   = s.xpc_start_idx + size
+  s.xpc_idx       = s.xpc_start_idx
+  assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
+
+  s.xpc_return_addr = s.pc + 4
+  s.pc              = s.rf[ inst.rt ]
+  s.xpc_start_addr  = s.pc
+
+  s.rf     = s.xpc_rf
+  s.rf[4]  = s.xpc_idx
+  s.rf[31] = s.xpc_return_trigger
 
 #-------------------------------------------------------------------------
 # psync
