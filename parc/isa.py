@@ -244,7 +244,7 @@ encodings = [
   #-----------------------------------------------------------------------
   ['pcall',    '111011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   ['pcallr',   '111100_xxxxx_xxxxx_00000_00000_000001'],
-  ['pcallzr',  '111100_xxxxx_xxxxx_00000_00000_000002'],
+  ['pcallzr',  '111100_xxxxx_xxxxx_00000_00000_000010'],
   ['psync',    '111100_00000_00000_00000_00000_000000'],
   ['mtx',      '010010_xxxxx_xxxxx_00000_xxxxx_xxxxxx'],
   ['mfx',      '010010_xxxxx_xxxxx_00001_xxxxx_xxxxxx'],
