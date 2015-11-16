@@ -246,6 +246,7 @@ encodings = [
   #-----------------------------------------------------------------------
   ['pcall',    '111011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   ['pcallr',   '111100_xxxxx_xxxxx_00000_00000_000001'],
+  ['pcallzr',  '111100_xxxxx_xxxxx_00000_00000_000002'],
   ['psync',    '111100_00000_00000_00000_00000_000000'],
   ['mtx',      '010010_xxxxx_xxxxx_00000_xxxxx_xxxxxx'],
   ['mfx',      '010010_xxxxx_xxxxx_00001_xxxxx_xxxxxx'],
@@ -1091,6 +1092,28 @@ def execute_pcallr( s, inst ):
   s.xpc_start_idx = s.rf[ inst.rs ] >> 8
   size            = s.rf[ inst.rs ] & 0x000000FF
   s.xpc_end_idx   = s.xpc_start_idx + size
+  s.xpc_idx       = s.xpc_start_idx
+  assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
+
+  s.xpc_return_addr = s.pc + 4
+  s.pc              = s.rf[ inst.rt ]
+  s.xpc_start_addr  = s.pc
+
+  s.rf     = s.xpc_rf
+  s.rf[4]  = s.xpc_idx
+  s.rf[31] = s.xpc_return_trigger
+
+#-------------------------------------------------------------------------
+# pcallzr
+#-------------------------------------------------------------------------
+# This is another variant of pcall. It takes two registers: a size and a
+# jump target. The start index is assumed to be 0. This variant is used
+# in the single-tile XPC because we need one giant pcall for the entire
+# loop.
+def execute_pcallzr( s, inst ):
+  s.xpc_en        = True
+  s.xpc_start_idx = 0
+  s.xpc_end_idx   = s.rf[ inst.rs ]
   s.xpc_idx       = s.xpc_start_idx
   assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
 
