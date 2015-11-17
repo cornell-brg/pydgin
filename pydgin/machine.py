@@ -16,6 +16,8 @@ class Machine( object ):
     self.rf .debug = debug
     self.mem.debug = debug
 
+    self.rf.machine = self
+
     # common registers
     self.status        = 0
     self.stats_en      = 0

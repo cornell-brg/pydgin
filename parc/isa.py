@@ -70,7 +70,7 @@ reg_map = {
   'c0_fromsysc2' : 12,  #      mfc0
   'c0_fromsysc3' : 13,  #      mfc0
   'c0_fromsysc4' : 14,  #      mfc0
-  'c0_fromsysc5' : 15,  #      mfc0
+  'c0_coretype'  : 15,  #      mfc0
   'c0_numcores'  : 16,  #      mfc0
   'c0_coreid'    : 17,  #      mfc0
   'c0_tidmask'   : 18,  # mtc0 mfc0
@@ -307,9 +307,11 @@ def execute_mfc0( s, inst ):
   elif inst.rd == reg_map['c0_fromsysc0']:
     # return actual core id
     s.rf[inst.rt] = s.core_id
-  elif inst.rd == reg_map['c0_fromsysc5']:
-    # return core type (always 0 since pydgin has no core type)
-    s.rf[inst.rt] = 0
+  elif inst.rd == reg_map['c0_coretype']:
+    if s.stats_en:
+      s.rf[inst.rt] = 8
+    else:
+      s.rf[inst.rt] = 0
   elif inst.rd == reg_map['c0_numcores']:
     # return actual numcores
     s.rf[inst.rt] = s.ncores

@@ -16,18 +16,20 @@ except ImportError:
 # RegisterFile
 #-----------------------------------------------------------------------
 class RegisterFile( object ):
-  def __init__( self, constant_zero=True, num_regs=32 ):
+  def __init__( self, constant_zero=True, num_regs=32, machine=None ):
     self.num_regs = num_regs
     self.regs     = [0] * self.num_regs
     self.debug    = Debug()
+    self.machine  = machine
 
     if constant_zero: self._setitemimpl = self._set_item_const_zero
     else:             self._setitemimpl = self._set_item
   def __getitem__( self, idx ):
     if self.debug.enabled( "rf" ):
-      print ':: RD.RF[%s] = %s' % (
-                          pad( "%d" % idx, 2 ),
-                          pad_hex( self.regs[idx]) ),
+      if self.machine == None or self.machine.stats_en:
+        print ':: RD.RF[%s] = %s' % (
+                            pad( "%d" % idx, 2 ),
+                            pad_hex( self.regs[idx]) ),
     return self.regs[idx]
   def __setitem__( self, idx, value ):
     self._setitemimpl( idx, value )
@@ -35,16 +37,18 @@ class RegisterFile( object ):
   def _set_item( self, idx, value ):
     self.regs[idx] = value
     if self.debug.enabled( "rf" ):
-      print ':: WR.RF[%s] = %s' % (
-                        pad( "%d" % idx, 2 ),
-                        pad_hex( self.regs[idx] ) ),
+      if self.machine == None or self.machine.stats_en:
+        print ':: WR.RF[%s] = %s' % (
+                          pad( "%d" % idx, 2 ),
+                          pad_hex( self.regs[idx] ) ),
   def _set_item_const_zero( self, idx, value ):
     if idx != 0:
       self.regs[idx] = value
       if self.debug.enabled( "rf" ):
-        print ':: WR.RF[%s] = %s' % (
-                          pad( "%d" % idx, 2 ),
-                          pad_hex( self.regs[idx] ) ),
+        if self.machine == None or self.machine.stats_en:
+          print ':: WR.RF[%s] = %s' % (
+                            pad( "%d" % idx, 2 ),
+                            pad_hex( self.regs[idx] ) ),
 
   #-----------------------------------------------------------------------
   # print_regs

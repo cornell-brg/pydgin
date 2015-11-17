@@ -161,7 +161,7 @@ class Sim( object ):
       # should be safe to constant fold memory
       mem = hint( s.mem, promote=True )
 
-      if s.debug.enabled( "insts" ):
+      if s.debug.enabled( "insts" ) and s.stats_en:
         print pad( "%x" % pc, 8, " ", False ),
 
       # the print statement in memcheck conflicts with @elidable in iread.
@@ -177,7 +177,7 @@ class Sim( object ):
       try:
         inst, exec_fun = self.decode( inst_bits )
 
-        if s.debug.enabled( "insts" ):
+        if s.debug.enabled( "insts" ) and s.stats_en:
           print "c%s %s %s %s" % (
                   core_id,
                   pad_hex( inst_bits ),
@@ -197,9 +197,9 @@ class Sim( object ):
       s.num_insts += 1    # TODO: should this be done inside instruction definition?
       if s.stats_en: s.stat_num_insts += 1
 
-      if s.debug.enabled( "insts" ):
+      if s.debug.enabled( "insts" ) and s.stats_en:
         print
-      if s.debug.enabled( "regdump" ):
+      if s.debug.enabled( "regdump" ) and s.stats_en:
         s.rf.print_regs( per_row=4 )
 
       # check if we have reached the end of the maximum instructions and

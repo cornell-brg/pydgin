@@ -30,7 +30,8 @@ class State( Machine ):
 
     # Separate accelerator regfile. Currently we only model a single-lane
     # accelerator with a vector length of 1.
-    self.xpc_rf = RegisterFile()
+    self.xpc_rf = RegisterFile( machine=self )
+    self.xpc_rf.debug = debug
 
     # We need a separate "pointer" to the current active regfile
     # depending on whether we are executing a pcall or not. We save a
