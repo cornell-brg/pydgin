@@ -9,6 +9,66 @@ from pydgin.utils import signed, sext_16, sext_8, trim_32, \
 from pydgin.misc import create_risc_decoder, FatalError
 
 #=======================================================================
+# Instructions Mix class: this is a dirty hack. Fix if needed.  -hawajkm
+#=======================================================================
+class CtrlStats():
+  def __init__(self):
+    self.cond   = 0
+    self.uncond = 0
+    self.jal    = 0
+
+class ArithStats():
+  def __init__(self):
+    self.ints = 0
+    self.llfu = 0
+
+class MemStats():
+  def __init__(self):
+    self.ld = 0
+    self.st = 0
+
+class AMOStats():
+  def __init__(self):
+    self.arith = 0
+    self.mov   = 0
+
+class SysCallStats():
+  def __init__(self):
+    self.calls = 0
+    self.ret   = 0
+
+class MiscStats():
+  def __init__(self):
+    self.mov = 0
+    self.nop = 0
+
+class InstsStats():
+  def __init__(self):
+    self.count = 0
+    self.ctrl  = CtrlStats()
+    self.arith = ArithStats()
+    self.mem   = MemStats()
+    self.amo   = AMOStats()
+    self.sys   = SysCallStats()
+    self.misc  = MiscStats()
+
+class PCALLStats():
+  def __init__(self):
+    self.size   = 0
+    self.limit  = 0
+    self.target = 0
+    self.pc     = 0
+    self.insts  = InstsStats()
+    self.iters  = []
+    self.div    = []
+    self.func   = []
+
+class BranchAddress():
+  def __init__(self):
+    self.pc     = 0
+    self.target = 0
+
+#=======================================================================
 # Register Definitions
 #=======================================================================
 
@@ -274,6 +334,67 @@ encodings = [
 ]
 
 #=======================================================================
+# Stats Functions
+#=======================================================================
+# Function to handle XPC stats collection
+#                                 -hawajkm
+# This function will get the PC of the instruction, the binary form of
+# the instruction itself and the type of that instruction. Also, it
+# will get the state of the machine. As a result, if needed, one can
+# inspect the PC and the state of the machine S to find out deeper stats
+# such as divergence and re-convergence
+def collect_xpc_stats( pc, s, insts, instType ):
+  if s.xpc_en:
+    # XPC is enabled, so we collect all stats.
+    # For branching
+    ctrl = BranchAddress()
+    ctrl.pc     = pc
+    ctrl.target = s.pc
+    ## Assume no nested pcalls
+    c = s.xpc_stats.count - 1
+    s.xpc_stats.pcalls[c].insts.count += 1
+    if   instType ==  0:
+      s.xpc_stats.pcalls[c].insts.arith.ints  += 1
+    elif instType ==  1:
+      s.xpc_stats.pcalls[c].insts.arith.llfu  += 1
+    elif instType ==  2:
+      s.xpc_stats.pcalls[c].insts.ctrl.cond   += 1
+      # Record the address
+      # We add things in the xi iteration
+      #divLen = len(s.xpc_stats.pcalls[c].div)
+      #if divLen > 0:
+      s.xpc_stats.pcalls[c].div[-1].append(ctrl)
+    elif instType ==  3:
+      s.xpc_stats.pcalls[c].insts.ctrl.uncond += 1
+      # Record the address
+      # We add things in the xi iteration
+      #if len(s.xpc_stats.pcalls[c].div) > 0:
+      s.xpc_stats.pcalls[c].div[-1].append(ctrl)
+    elif instType ==  4:
+      s.xpc_stats.pcalls[c].insts.ctrl.jal    += 1
+      # Record the address
+      # We add things in the xi iteration
+      s.xpc_stats.pcalls[c].div[-1].append(ctrl)
+      s.xpc_stats.pcalls[c].func.append(ctrl)
+    elif instType ==  5:
+      s.xpc_stats.pcalls[c].insts.mem.ld      += 1
+    elif instType ==  6:
+      s.xpc_stats.pcalls[c].insts.mem.st      += 1
+    elif instType ==  7:
+      s.xpc_stats.pcalls[c].insts.amo.arith   += 1
+    elif instType ==  8:
+      s.xpc_stats.pcalls[c].insts.amo.mov     += 1
+    elif instType ==  9:
+      s.xpc_stats.pcalls[c].insts.sys.calls   += 1
+    elif instType == 10:
+      s.xpc_stats.pcalls[c].insts.sys.ret     += 1
+    elif instType == 11:
+      s.xpc_stats.pcalls[c].insts.misc.nop    += 1
+    elif instType == 12:
+      s.xpc_stats.pcalls[c].insts.misc.mov    += 1
+
+
+#=======================================================================
 # Instruction Definitions
 #=======================================================================
 
@@ -285,12 +406,15 @@ encodings = [
 # nop
 #-----------------------------------------------------------------------
 def execute_nop( s, inst ):
+  pc = s.pc
   s.pc += 4
+  collect_xpc_stats( pc, s, inst, 11 )
 
 #-----------------------------------------------------------------------
 # mfc0
 #-----------------------------------------------------------------------
 def execute_mfc0( s, inst ):
+  pc = s.pc
   #if   inst.rd ==  1: pass
   #  s.rf[ inst.rt ] = src[ s.src_ptr ]
   #  s.src_ptr += 1
@@ -304,7 +428,7 @@ def execute_mfc0( s, inst ):
     s.rf[inst.rt] = 0
   elif inst.rd == reg_map['c0_fromsysc5']:
     # return core type (always 0 since pydgin has no core type)
-    s.rf[inst.rt] = 0
+    s.rf[inst.rt] = 123
   elif inst.rd == reg_map['c0_numcores']:
     s.rf[inst.rt] = 1
   elif inst.rd == reg_map['c0_counthi']:
@@ -312,12 +436,15 @@ def execute_mfc0( s, inst ):
     s.rf[inst.rt] = 0
   else:
     raise FatalError('Invalid mfc0 destination: %d!' % inst.rd )
+
   s.pc += 4
+  collect_xpc_stats( pc, s, inst, 12 )
 
 #-----------------------------------------------------------------------
 # mtc0
 #-----------------------------------------------------------------------
 def execute_mtc0( s, inst ):
+  pc = s.pc
   if   inst.rd == reg_map['status']:
     if s.testbin:
       val = s.rf[inst.rt]
@@ -343,7 +470,9 @@ def execute_mtc0( s, inst ):
   #  s.sink_ptr += 1
   else:
     raise FatalError('Invalid mtc0 destination: %d!' % inst.rd )
+  
   s.pc += 4
+  collect_xpc_stats( pc, s, inst, 12 )
 
 #-----------------------------------------------------------------------
 # Register-register arithmetic, logical, and comparison instructions
@@ -353,101 +482,127 @@ def execute_mtc0( s, inst ):
 # addu
 #-----------------------------------------------------------------------
 def execute_addu( s, inst ):
+  pc = s.pc
   s.rf[ inst.rd ] = trim_32( s.rf[ inst.rs ] + s.rf[ inst.rt ] )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # subu
 #-----------------------------------------------------------------------
 def execute_subu( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = trim_32( s.rf[inst.rs] - s.rf[inst.rt] )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # and
 #-----------------------------------------------------------------------
 def execute_and( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = s.rf[inst.rs] & s.rf[inst.rt]
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # or
 #-----------------------------------------------------------------------
 def execute_or( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = s.rf[inst.rs] | s.rf[inst.rt]
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # xor
 #-----------------------------------------------------------------------
 def execute_xor( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = s.rf[inst.rs] ^ s.rf[inst.rt]
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # nor
 #-----------------------------------------------------------------------
 def execute_nor( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = trim_32( ~(s.rf[inst.rs] | s.rf[inst.rt]) )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # slt
 #-----------------------------------------------------------------------
 def execute_slt( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = signed( s.rf[inst.rs] ) < signed( s.rf[inst.rt] )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # sltu
 #-----------------------------------------------------------------------
 def execute_sltu( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = s.rf[inst.rs] < s.rf[inst.rt]
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # mul
 #-----------------------------------------------------------------------
 def execute_mul( s, inst ):
+  pc = s.pc
   s.rf[ inst.rd ] = trim_32( s.rf[ inst.rs ] * s.rf[ inst.rt ] )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # div
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/a/6084608
 def execute_div( s, inst ):
+  pc = s.pc
   x    = signed( s.rf[ inst.rs ] )
   y    = signed( s.rf[ inst.rt ] )
   sign = -1 if (x < 0)^(y < 0) else 1
 
   s.rf[ inst.rd ] = abs(x) / abs(y) * sign
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # divu
 #-----------------------------------------------------------------------
 def execute_divu( s, inst ):
+  pc = s.pc
   s.rf[ inst.rd ] = s.rf[ inst.rs ] / s.rf[ inst.rt ]
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # rem
 #-----------------------------------------------------------------------
 # http://stackoverflow.com/a/6084608
 def execute_rem( s, inst ):
+  pc = s.pc
   x = signed( s.rf[ inst.rs ] )
   y = signed( s.rf[ inst.rt ] )
 
   s.rf[ inst.rd ] = abs(x) % abs(y) * (1 if x > 0 else -1)
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # remu
 #-----------------------------------------------------------------------
 def execute_remu( s, inst ):
+  pc = s.pc
   s.rf[ inst.rd ] = s.rf[ inst.rs ] % s.rf[ inst.rt ]
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # Register-inst.immediate arithmetic, logical, and comparison instructions
@@ -457,43 +612,55 @@ def execute_remu( s, inst ):
 # addiu
 #-----------------------------------------------------------------------
 def execute_addiu( s, inst ):
+  pc = s.pc
   s.rf[ inst.rt ] = trim_32( s.rf[ inst.rs ] + sext_16( inst.imm ) )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # andi
 #-----------------------------------------------------------------------
 def execute_andi( s, inst ):
+  pc = s.pc
   s.rf[inst.rt] = s.rf[inst.rs] & inst.imm
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # ori
 #-----------------------------------------------------------------------
 def execute_ori( s, inst ):
+  pc = s.pc
   s.rf[inst.rt] = s.rf[inst.rs] | inst.imm
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # xori
 #-----------------------------------------------------------------------
 def execute_xori( s, inst ):
+  pc = s.pc
   s.rf[inst.rt] = s.rf[inst.rs] ^ inst.imm
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # slti
 #-----------------------------------------------------------------------
 def execute_slti( s, inst ):
+  pc = s.pc
   s.rf[inst.rt] = signed( s.rf[inst.rs] ) < signed( sext_16(inst.imm) )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # sltiu
 #-----------------------------------------------------------------------
 def execute_sltiu( s, inst ):
+  pc = s.pc
   s.rf[inst.rt] = s.rf[inst.rs] < sext_16(inst.imm)
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # Shift instructions
@@ -503,44 +670,56 @@ def execute_sltiu( s, inst ):
 # sll
 #-----------------------------------------------------------------------
 def execute_sll( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = trim_32( s.rf[inst.rt] << inst.shamt )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # srl
 #-----------------------------------------------------------------------
 def execute_srl( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = s.rf[inst.rt] >> inst.shamt
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # sra
 #-----------------------------------------------------------------------
 def execute_sra( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = trim_32( signed( s.rf[inst.rt] ) >> inst.shamt )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # sllv
 #-----------------------------------------------------------------------
 def execute_sllv( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = trim_32( s.rf[inst.rt] << trim_5( s.rf[inst.rs] ) )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # srlv
 #-----------------------------------------------------------------------
 def execute_srlv( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = s.rf[inst.rt] >> trim_5( s.rf[inst.rs] )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # srav
 #-----------------------------------------------------------------------
 def execute_srav( s, inst ):
   # TODO: should it really be masked like this?
+  pc = s.pc
   s.rf[inst.rd] = trim_32( signed( s.rf[inst.rt] ) >> trim_5( s.rf[inst.rs] ) )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # Unconditional jump instructions
@@ -550,14 +729,18 @@ def execute_srav( s, inst ):
 # j
 #-----------------------------------------------------------------------
 def execute_j( s, inst ):
+  pc = s.pc
   s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
+  collect_xpc_stats( pc, s, inst,  3 )
 
 #-----------------------------------------------------------------------
 # jal
 #-----------------------------------------------------------------------
 def execute_jal( s, inst ):
+  pc = s.pc
   s.rf[31] = s.pc + 4
   s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
+  collect_xpc_stats( pc, s, inst,  4 )
 
 #-----------------------------------------------------------------------
 # jr
@@ -580,15 +763,28 @@ def execute_jr( s, inst ):
   if s.xpc_en:
     assert inst.rs == 31
 
+  pc = s.pc
+  c = s.xpc_stats.count - 1
   if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
     if s.xpc_idx < ( s.xpc_end_idx - 1 ):
       s.xpc_idx += 1
       s.rf[4]    = s.xpc_idx
       s.pc       = s.xpc_start_addr
+      # Append a list to record branches and their decisions for each iteration
+      s.xpc_stats.pcalls[c].div.append([])
     else:
       s.xpc_en = False
       s.rf     = s.scalar_rf
       s.pc     = s.xpc_return_addr
+    
+    nInst = 0
+    if len(s.xpc_stats.pcalls[c].iters) == 0:
+      prevCount = 0
+    else:
+      p         = len(s.xpc_stats.pcalls[c].iters) - 1
+      prevCount = s.xpc_stats.pcalls[c].iters[p]
+    nInst = s.xpc_stats.pcalls[c].insts.count - prevCount
+    s.xpc_stats.pcalls[c].iters.append(nInst)
   else:
     s.pc = s.rf[inst.rs]
 
@@ -596,16 +792,19 @@ def execute_jr( s, inst ):
 # jalr
 #-----------------------------------------------------------------------
 def execute_jalr( s, inst ):
+  pc = s.pc
   s.rf[inst.rd] = s.pc + 4
   s.pc   = s.rf[inst.rs]
+  collect_xpc_stats( pc, s, inst,  4 )
 
 #-----------------------------------------------------------------------
 # lui
 #-----------------------------------------------------------------------
 def execute_lui( s, inst ):
+  pc = s.pc
   s.rf[ inst.rt ] = inst.imm << 16
   s.pc += 4
-
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # Conditional branch instructions
@@ -615,55 +814,67 @@ def execute_lui( s, inst ):
 # beq
 #-----------------------------------------------------------------------
 def execute_beq( s, inst ):
+  pc = s.pc
   if s.rf[inst.rs] == s.rf[inst.rt]:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
+  collect_xpc_stats( pc, s, inst,  2 )
 
 #-----------------------------------------------------------------------
 # bne
 #-----------------------------------------------------------------------
 def execute_bne( s, inst ):
+  pc = s.pc
   if s.rf[inst.rs] != s.rf[inst.rt]:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
+  collect_xpc_stats( pc, s, inst,  2 )
 
 #-----------------------------------------------------------------------
 # blez
 #-----------------------------------------------------------------------
 def execute_blez( s, inst ):
+  pc = s.pc
   if signed( s.rf[inst.rs] ) <= 0:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
+  collect_xpc_stats( pc, s, inst,  2 )
 
 #-----------------------------------------------------------------------
 # bgtz
 #-----------------------------------------------------------------------
 def execute_bgtz( s, inst ):
+  pc = s.pc
   if signed( s.rf[inst.rs] ) > 0:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
+  collect_xpc_stats( pc, s, inst,  2 )
 
 #-----------------------------------------------------------------------
 # bltz
 #-----------------------------------------------------------------------
 def execute_bltz( s, inst ):
+  pc = s.pc
   if signed( s.rf[inst.rs] ) < 0:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
+  collect_xpc_stats( pc, s, inst,  2 )
 
 #-----------------------------------------------------------------------
 # bgez
 #-----------------------------------------------------------------------
 def execute_bgez( s, inst ):
+  pc = s.pc
   if signed( s.rf[inst.rs] ) >= 0:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
     s.pc += 4
+  collect_xpc_stats( pc, s, inst,  2 )
 
 #-----------------------------------------------------------------------
 # Load instructions
@@ -673,41 +884,51 @@ def execute_bgez( s, inst ):
 # lw
 #-----------------------------------------------------------------------
 def execute_lw( s, inst ):
+  pc = s.pc
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 4 )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  5 )
 
 #-----------------------------------------------------------------------
 # lh
 #-----------------------------------------------------------------------
 def execute_lh( s, inst ):
+  pc = s.pc
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = sext_16( s.mem.read( addr, 2 ) )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  5 )
 
 #-----------------------------------------------------------------------
 # lhu
 #-----------------------------------------------------------------------
 def execute_lhu( s, inst ):
+  pc = s.pc
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 2 )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  5 )
 
 #-----------------------------------------------------------------------
 # lb
 #-----------------------------------------------------------------------
 def execute_lb( s, inst ):
+  pc = s.pc
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = sext_8( s.mem.read( addr, 1 ) )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  5 )
 
 #-----------------------------------------------------------------------
 # lbu
 #-----------------------------------------------------------------------
 def execute_lbu( s, inst ):
+  pc = s.pc
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 1 )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  5 )
 
 #-----------------------------------------------------------------------
 # Store instructions
@@ -717,41 +938,51 @@ def execute_lbu( s, inst ):
 # sw
 #-----------------------------------------------------------------------
 def execute_sw( s, inst ):
+  pc = s.pc
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 4, s.rf[inst.rt] )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  6 )
 
 #-----------------------------------------------------------------------
 # sh
 #-----------------------------------------------------------------------
 def execute_sh( s, inst ):
+  pc = s.pc
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 2, s.rf[inst.rt] )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  6 )
 
 #-----------------------------------------------------------------------
 # sb
 #-----------------------------------------------------------------------
 def execute_sb( s, inst ):
+  pc = s.pc
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 1, s.rf[inst.rt] )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  6 )
 
 #-----------------------------------------------------------------------
 # movn
 #-----------------------------------------------------------------------
 def execute_movn( s, inst ):
+  pc = s.pc
   if s.rf[inst.rt] != 0:
     s.rf[inst.rd] = s.rf[inst.rs]
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # movz
 #-----------------------------------------------------------------------
 def execute_movz( s, inst ):
+  pc = s.pc
   if s.rf[inst.rt] == 0:
     s.rf[inst.rd] = s.rf[inst.rs]
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  0 )
 
 #-----------------------------------------------------------------------
 # Syscall instructions
@@ -763,6 +994,7 @@ def execute_movz( s, inst ):
 #from syscalls import syscall_funcs
 from syscalls import do_syscall
 def execute_syscall( s, inst ):
+  pc = s.pc
   #v0 = reg_map['v0']
   #syscall_number = s.rf[ v0 ]
   #if syscall_number in syscall_funcs:
@@ -771,6 +1003,7 @@ def execute_syscall( s, inst ):
   #  print "WARNING: syscall not implemented!", syscall_number
   do_syscall( s )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  9 )
 
 #-----------------------------------------------------------------------
 # Atomic Memory Operation instructions
@@ -780,46 +1013,56 @@ def execute_syscall( s, inst ):
 # amo.add
 #-----------------------------------------------------------------------
 def execute_amo_add( s, inst ):
+  pc = s.pc
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, trim_32(temp + s.rf[inst.rt]) )
   s.rf[ inst.rd ] = temp
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  7 )
 
 #-----------------------------------------------------------------------
 # amo.and
 #-----------------------------------------------------------------------
 def execute_amo_and( s, inst ):
+  pc = s.pc
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, temp & s.rf[inst.rt] )
   s.rf[ inst.rd ] = temp
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  7 )
 
 #-----------------------------------------------------------------------
 # amo.or
 #-----------------------------------------------------------------------
 def execute_amo_or( s, inst ):
+  pc = s.pc
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, temp | s.rf[inst.rt] )
   s.rf[ inst.rd ] = temp
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  7 )
 
 #-----------------------------------------------------------------------
 # amo.xchg
 #-----------------------------------------------------------------------
 def execute_amo_xchg( s, inst ):
+  pc = s.pc
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, s.rf[inst.rt] )
   s.rf[ inst.rd ] = temp
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  8 )
 
 #-----------------------------------------------------------------------
 # amo.min
 #-----------------------------------------------------------------------
 def execute_amo_min( s, inst ):
+  pc = s.pc
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, min( temp, s.rf[inst.rt] ) )
   s.rf[ inst.rd ] = temp
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  7 )
 
 #-----------------------------------------------------------------------
 # Data-Parallel
@@ -876,89 +1119,109 @@ def execute_mfuts( s, inst ):
 # add_s
 #-----------------------------------------------------------------------
 def execute_add_s( s, inst ):
+  pc = s.pc
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = float2bits( a + b )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # sub_s
 #-----------------------------------------------------------------------
 def execute_sub_s( s, inst ):
+  pc = s.pc
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = float2bits( a - b )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # mul_s
 #-----------------------------------------------------------------------
 def execute_mul_s( s, inst ):
+  pc = s.pc
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = float2bits( a * b )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # div_s
 #-----------------------------------------------------------------------
 def execute_div_s( s, inst ):
+  pc = s.pc
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = float2bits( a / b )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # c_eq_s
 #-----------------------------------------------------------------------
 def execute_c_eq_s( s, inst ):
+  pc = s.pc
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = 1 if a == b else 0
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # c_lt_s
 #-----------------------------------------------------------------------
 def execute_c_lt_s( s, inst ):
+  pc = s.pc
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = 1 if a < b else 0
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # c_le_s
 #-----------------------------------------------------------------------
 def execute_c_le_s( s, inst ):
+  pc = s.pc
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = 1 if a <= b else 0
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # cvt_w_s
 #-----------------------------------------------------------------------
 def execute_cvt_w_s( s, inst ):
+  pc = s.pc
   x = bits2float( s.rf[ inst.fs ] )
   s.rf[ inst.fd ] = trim_32( int( x ) )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # cvt_s_w
 #-----------------------------------------------------------------------
 def execute_cvt_s_w( s, inst ):
+  pc = s.pc
   x = signed( s.rf[ inst.fs ] )
   s.rf[ inst.fd ] = float2bits( float( x ) )
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # trunc_w_s
 #-----------------------------------------------------------------------
 def execute_trunc_w_s( s, inst ):
   # TODO: check for overflow
+  pc = s.pc
   x = bits2float( s.rf[ inst.fs ] )
   s.rf[ inst.fd ] = trim_32(int(x))  # round down
   s.pc += 4
+  collect_xpc_stats( pc, s, inst,  1 )
 
 #-----------------------------------------------------------------------
 # XLOOPS instructions
@@ -1043,6 +1306,33 @@ def execute_pcall( s, inst ):
   s.xpc_end_idx   = s.rf[ inst.rt ]
   s.xpc_idx       = s.xpc_start_idx
   assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
+  
+  # Record state to be used by the pcall-stat logic
+  old_pc    = s.pc
+  target_pc = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
+  
+  # Initialize a new pcallr if we haven't seen this
+  # pc and target combo!
+  c   = s.xpc_stats.count - 1
+  # Detecting a new pcall:
+  # This is currently a hacky way, but it works correctly. We keep track of our speculative limit and counted sized so far
+  # We assume that the limit, max of all sizes thus far, will tell us when to stop unless we keep getting higher limits
+  if (c < 0) or (s.xpc_stats.pcalls[c].pc != old_pc) or (s.xpc_stats.pcalls[c].target != target_pc) or ((s.xpc_end_idx < s.xpc_stats.pcalls[c].limit) and (s.xpc_stats.pcalls[c].size == s.xpc_stats.pcalls[c].limit)):
+    # It is a new pcall, let's increment pcall's count
+    # and allocate a new instructions' stats-structure
+    s.xpc_stats.count += 1
+    s.xpc_stats.pcalls.append(PCALLStats())
+    c = s.xpc_stats.count - 1
+    s.xpc_stats.pcalls[c].pc     = old_pc
+    s.xpc_stats.pcalls[c].target = target_pc
+    s.xpc_stats.pcalls[c].limit  = s.xpc_end_idx
+    s.xpc_stats.pcalls[c].size   = (s.xpc_end_idx - s.xpc_start_idx)
+    s.xpc_stats.pcalls[c].div.append([])
+  elif (s.xpc_stats.pcalls[c].pc == old_pc) and (s.xpc_stats.pcalls[c].target == target_pc) and ((s.xpc_end_idx >= s.xpc_stats.pcalls[c].limit) or (s.xpc_stats.pcalls[c].size != s.xpc_stats.pcalls[c].limit)):
+    s.xpc_stats.pcalls[c].size  += (s.xpc_end_idx - s.xpc_start_idx)
+    s.xpc_stats.pcalls[c].limit  = max(s.xpc_stats.pcalls[c].limit, s.xpc_end_idx)
+  else:
+    assert( 0 )
 
   s.rf     = s.xpc_rf
   s.rf[4]  = s.xpc_idx
@@ -1079,9 +1369,37 @@ def execute_pcallr( s, inst ):
   s.xpc_idx       = s.xpc_start_idx
   assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
 
+   # Record state to be used by the pcall-stat logic
+  old_pc    = s.pc
+  target_pc = s.rf[ inst.rt ]
+
   s.xpc_return_addr = s.pc + 4
   s.pc              = s.rf[ inst.rt ]
   s.xpc_start_addr  = s.pc
+
+  # Initialize a new pcallr if we haven't seen this
+  # pc and target combo!
+  c   = s.xpc_stats.count - 1
+  # Detecting a new pcall:
+  # This is currently a hacky way, but it works correctly. We keep track of our speculative limit and counted sized so far
+  # We assume that the limit, max of all sizes thus far, will tell us when to stop unless we keep getting higher limits
+  if (c < 0) or (s.xpc_stats.pcalls[c].pc != old_pc) or (s.xpc_stats.pcalls[c].target != target_pc) or ((s.xpc_end_idx < s.xpc_stats.pcalls[c].limit) and (s.xpc_stats.pcalls[c].size == s.xpc_stats.pcalls[c].limit)):
+    # It is a new pcall, let's increment pcall's count
+    # and allocate a new instructions' stats-structure
+    s.xpc_stats.count += 1
+    s.xpc_stats.pcalls.append(PCALLStats())
+    c = s.xpc_stats.count - 1
+    s.xpc_stats.pcalls[c].pc     = old_pc
+    s.xpc_stats.pcalls[c].target = target_pc
+    s.xpc_stats.pcalls[c].limit  = s.xpc_end_idx
+    s.xpc_stats.pcalls[c].size   = (s.xpc_end_idx - s.xpc_start_idx)
+    s.xpc_stats.pcalls[c].div.append([])
+    #s.xpc_stats.pcalls[c].func.append([])
+  elif (s.xpc_stats.pcalls[c].pc == old_pc) and (s.xpc_stats.pcalls[c].target == target_pc) and ((s.xpc_end_idx >= s.xpc_stats.pcalls[c].limit) or (s.xpc_stats.pcalls[c].size != s.xpc_stats.pcalls[c].limit)):
+    s.xpc_stats.pcalls[c].size  += (s.xpc_end_idx - s.xpc_start_idx)
+    s.xpc_stats.pcalls[c].limit  = max(s.xpc_stats.pcalls[c].limit, s.xpc_end_idx)
+  else:
+    assert( 0 )
 
   s.rf     = s.xpc_rf
   s.rf[4]  = s.xpc_idx
@@ -1092,23 +1410,29 @@ def execute_pcallr( s, inst ):
 #-------------------------------------------------------------------------
 # Treat as a nop for serial semantics of pcall.
 def execute_psync( s, inst ):
+  pc = s.pc
   s.pc += 4
+  collect_xpc_stats( pc, s, inst, -1 )
 
 #-------------------------------------------------------------------------
 # mtx
 #-------------------------------------------------------------------------
 # Move a value from the scalar regfile to the accelerator regfile.
 def execute_mtx( s, inst ):
+  pc = s.pc
   s.xpc_rf[inst.rs] = s.scalar_rf[inst.rt]
   s.pc += 4
+  collect_xpc_stats( pc, s, inst, 12 )
 
 #-------------------------------------------------------------------------
 # mfx
 #-------------------------------------------------------------------------
 # Move a value from the accelerator regfile to the scalar regfile.
 def execute_mfx( s, inst ):
+  pc = s.pc
   s.scalar_rf[inst.rt] = s.xpc_rf[inst.rs]
   s.pc += 4
+  collect_xpc_stats( pc, s, inst, 12 )
 
 #-----------------------------------------------------------------------
 # Misc instructions
@@ -1118,18 +1442,32 @@ def execute_mfx( s, inst ):
 # stat
 #-----------------------------------------------------------------------
 def execute_stat( s, inst ):
+  stat_en = inst.stat_en
+  stat_id = inst.stat_id
+
+  # hawajkm: pcall's overhead timing loop. We see if we have a stat enable/disable on
+  #          stat ID #15. This is valid to track ONLY if xpc_en is false. If xpc_en is
+  #          true, then this is a boges nested macro that mistakenly fired the stats.
+  if not s.xpc_en:
+    if (stat_en and stat_id == 15):
+      s.xpc_stats.insts_t.append(s.num_insts)
+    elif (not stat_en and stat_id == 15):
+      s.xpc_stats.insts_t[-1] = s.num_insts - s.xpc_stats.insts_t[-1]
+  
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # hint_wl
 #-----------------------------------------------------------------------
 def execute_hint_wl( s, inst ):
+  pc = s.pc
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # mug
 #-----------------------------------------------------------------------
 def execute_mug( s, inst ):
+  pc = s.pc
   s.pc += 4
 
 #=======================================================================
