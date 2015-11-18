@@ -47,6 +47,10 @@ class State( Machine ):
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
 
+    # core type and stats core type for xpc
+    self.core_type = 0
+    self.stats_core_type = 0
+
     # stat registers
     self.stat_inst_en        = [ False ] * 16
     self.stat_inst_begin     = [ 0 ]     * 16
