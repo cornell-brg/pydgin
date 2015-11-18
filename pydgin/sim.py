@@ -112,6 +112,11 @@ class Sim( object ):
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
 
+  XPC-specific flags:
+
+    --core-type <t>       The initial core type
+    --stats-core-type <t> The core type to switch to in the stats region
+
   """
 
   #-----------------------------------------------------------------------
@@ -260,6 +265,8 @@ class Sim( object ):
       testbin            = False
       max_insts          = 0
       envp               = []
+      core_type          = 0
+      stats_core_type    = 0
 
       # we're using a mini state machine to parse the args
 
@@ -275,6 +282,8 @@ class Sim( object ):
                            "--ncores",
                            "--core-switch-ival",
                            "--pkernel",
+                           "--core-type",
+                           "--stats-core-type",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -339,6 +348,12 @@ class Sim( object ):
           elif prev_token == "--pkernel":
             self.pkernel_bin = token
 
+          elif prev_token == "--core-type":
+            core_type = int( token )
+
+          elif prev_token == "--stats-core-type":
+            stats_core_type = int( token )
+
           prev_token = ""
 
       if filename_idx == 0:
@@ -368,6 +383,12 @@ class Sim( object ):
       # etc.
 
       self.init_state( exe_file, filename, run_argv, envp, testbin )
+
+      # set the core type and stats core type
+
+      for i in range( self.ncores ):
+        self.states[i].core_type = core_type
+        self.states[i].stats_core_type = stats_core_type
 
       # pass the state to debug for cycle-triggered debugging
 
