@@ -1158,7 +1158,7 @@ def execute_stat( s, inst ):
       s.stat_inst_en[ stat_id ] = False
       s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
 
-    s.pc += 4
+  s.pc += 4
 
 #-----------------------------------------------------------------------
 # hint_wl
