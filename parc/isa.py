@@ -309,8 +309,8 @@ def execute_mfc0( s, inst ):
     # return actual core id
     s.rf[inst.rt] = s.core_id
   elif inst.rd == reg_map['c0_fromsysc5']:
-    # return core type (always 0 since pydgin has no core type)
-    s.rf[inst.rt] = s.core_type
+    # return core type based on if it's in stats region or not
+    s.rf[inst.rt] = s.stats_core_type if s.stats_en else s.core_type
   elif inst.rd == reg_map['c0_numcores']:
     # return actual numcores
     s.rf[inst.rt] = s.ncores
@@ -339,14 +339,8 @@ def execute_mtc0( s, inst ):
       s.status = s.rf[inst.rt]
   elif inst.rd == reg_map['statsen']:
     s.stats_en = s.rf[inst.rt]
-    # enabling stats -- switch to core type if requested
-    s.core_type = s.stats_core_type
-    print "switching to core type %d for the stats region" % s.core_type
   elif inst.rd == reg_map['c0_staten']:
     s.stats_en = s.rf[inst.rt]
-    # enabling stats -- switch to core type if requested
-    s.core_type = s.stats_core_type
-    print "switching to core type %d for the stats region" % s.core_type
 
   #elif inst.rd ==  2: pass
   #  if sink[ s.sink_ptr ] != s.rf[ inst.rt ]:
