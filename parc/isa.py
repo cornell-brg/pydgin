@@ -599,6 +599,9 @@ def execute_jr( s, inst ):
                 and s.xpc_pcall_type == 'pcallrx':
     s.xpc_en = False
     s.pc     = s.xpc_return_addr
+    # Switch back to scalar regfile if --accel-rf
+    if s.accel_rf:
+      s.rf     = s.scalar_rf
     s.rf[31] = s.xpc_saved_ra
 
   else:
@@ -1065,6 +1068,8 @@ def execute_pcall( s, inst ):
   s.pc              = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   s.xpc_start_addr  = s.pc
 
+  s.num_pcalls += 1
+
 #-------------------------------------------------------------------------
 # pcallr
 #-------------------------------------------------------------------------
@@ -1101,6 +1106,8 @@ def execute_pcallr( s, inst ):
   s.rf[4]  = s.xpc_idx
   s.rf[31] = s.xpc_return_trigger
 
+  s.num_pcalls += 1
+
 #-------------------------------------------------------------------------
 # pcallzr
 #-------------------------------------------------------------------------
@@ -1124,6 +1131,8 @@ def execute_pcallzr( s, inst ):
   s.rf[4]  = s.xpc_idx
   s.rf[31] = s.xpc_return_trigger
 
+  s.num_pcalls += 1
+
 #-------------------------------------------------------------------------
 # pcallrx
 #-------------------------------------------------------------------------
@@ -1137,7 +1146,12 @@ def execute_pcallrx( s, inst ):
   s.pc              = s.rf[ inst.rs ]
 
   s.xpc_saved_ra    = s.rf[31]
+  # Switch to accel regfile if --accel-rf
+  if s.accel_rf:
+    s.rf = s.xpc_rf
   s.rf[31]          = s.xpc_return_trigger
+
+  s.num_pcalls += 1
 
 #-------------------------------------------------------------------------
 # psync

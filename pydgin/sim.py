@@ -107,6 +107,7 @@ class Sim( object ):
 
     --core-type <t>       The initial core type
     --stats-core-type <t> The core type to switch to in the stats region
+    --accel-rf            Use separate accel register file for pcalls
 
   """
 
@@ -218,6 +219,7 @@ class Sim( object ):
       envp               = []
       core_type          = 0
       stats_core_type    = 0
+      accel_rf           = False
 
       # we're using a mini state machine to parse the args
 
@@ -247,6 +249,9 @@ class Sim( object ):
 
           elif token == "--test":
             testbin = True
+
+          elif token == "--accel-rf":
+            accel_rf = True
 
           elif token == "--debug" or token == "-d":
             prev_token = token
@@ -327,6 +332,10 @@ class Sim( object ):
 
       self.state.core_type = core_type
       self.state.stats_core_type = stats_core_type
+
+      # set accel rf mode
+
+      self.state.accel_rf = accel_rf
 
       # pass the state to debug for cycle-triggered debugging
 

@@ -78,6 +78,8 @@ class ParcSim( Sim ):
       # print the stat if it's greater than 0
       if self.state.stat_inst_num_insts[ j ] > 0:
         print "  Stat %d = %d" % ( j, self.state.stat_inst_num_insts[ j ] )
+    # print XPC stats
+    print "  Number of pcalls =", self.state.num_pcalls
 
 # this initializes similator and allows translation and python
 # interpretation
