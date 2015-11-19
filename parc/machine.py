@@ -64,6 +64,12 @@ class State( Machine ):
     self.core_type = 0
     self.stats_core_type = 0
 
+    # accel rf mode for xpc
+    self.accel_rf = False
+
+    # xpc stats
+    self.num_pcalls = 0
+
     # stat registers
     self.stat_inst_en      = [ False ] * 16
     self.stat_inst_begin   = [ 0 ]     * 16
