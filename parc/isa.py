@@ -247,6 +247,7 @@ encodings = [
   ['pcall',    '111011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   ['pcallr',   '111100_xxxxx_xxxxx_00000_00000_000001'],
   ['pcallzr',  '111100_xxxxx_xxxxx_00000_00000_000010'],
+  ['pcallrx',  '111100_xxxxx_xxxxx_00000_00000_000011'],
   ['psync',    '111100_00000_00000_00000_00000_000000'],
   ['mtx',      '010010_xxxxx_xxxxx_00000_xxxxx_xxxxxx'],
   ['mfx',      '010010_xxxxx_xxxxx_00001_xxxxx_xxxxxx'],
@@ -585,10 +586,12 @@ def execute_jal( s, inst ):
 def execute_jr( s, inst ):
 
   # Only allow jr for returning from functions inside a pcall
-#  if s.xpc_en:
-#    assert inst.rs == 31
+  #if s.xpc_en:
+  #  assert inst.rs == 31
 
-  if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
+  # Non-pcallrx semantics: handle loop iteration variable
+  if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
+              and s.xpc_pcall_type != 'pcallrx':
     if s.xpc_idx < ( s.xpc_end_idx - 1 ):
       s.xpc_idx += 1
       s.rf[4]    = s.xpc_idx
@@ -597,6 +600,14 @@ def execute_jr( s, inst ):
       s.xpc_en = False
       s.rf     = s.scalar_rf
       s.pc     = s.xpc_return_addr
+
+  # pcallrx semantics: behaves exactly like jr
+  elif s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
+                and s.xpc_pcall_type == 'pcallrx':
+    s.xpc_en = False
+    s.pc     = s.xpc_return_addr
+    s.rf[31] = s.xpc_saved_ra
+
   else:
     s.pc = s.rf[inst.rs]
 
@@ -1054,10 +1065,11 @@ def execute_subu_xi( s, inst ):
 # accelerator regfile instead of the scalar regfile. This is swapped back
 # when we return from the pcall.
 def execute_pcall( s, inst ):
-  s.xpc_en        = True
-  s.xpc_start_idx = s.rf[ inst.rs ]
-  s.xpc_end_idx   = s.rf[ inst.rt ]
-  s.xpc_idx       = s.xpc_start_idx
+  s.xpc_pcall_type = 'pcall'
+  s.xpc_en         = True
+  s.xpc_start_idx  = s.rf[ inst.rs ]
+  s.xpc_end_idx    = s.rf[ inst.rt ]
+  s.xpc_idx        = s.xpc_start_idx
   assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
 
   s.rf     = s.xpc_rf
@@ -1088,11 +1100,12 @@ def execute_pcall( s, inst ):
 # that went above 2^16, so we changed it to 24 bits start and 8 bits
 # size.
 def execute_pcallr( s, inst ):
-  s.xpc_en        = True
-  s.xpc_start_idx = s.rf[ inst.rs ] >> 8
-  size            = s.rf[ inst.rs ] & 0x000000FF
-  s.xpc_end_idx   = s.xpc_start_idx + size
-  s.xpc_idx       = s.xpc_start_idx
+  s.xpc_pcall_type = 'pcallr'
+  s.xpc_en         = True
+  s.xpc_start_idx  = s.rf[ inst.rs ] >> 8
+  size             = s.rf[ inst.rs ] & 0x000000FF
+  s.xpc_end_idx    = s.xpc_start_idx + size
+  s.xpc_idx        = s.xpc_start_idx
   assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
 
   s.xpc_return_addr = s.pc + 4
@@ -1111,10 +1124,11 @@ def execute_pcallr( s, inst ):
 # in the single-tile XPC because we need one giant pcall for the entire
 # loop.
 def execute_pcallzr( s, inst ):
-  s.xpc_en        = True
-  s.xpc_start_idx = 0
-  s.xpc_end_idx   = s.rf[ inst.rs ]
-  s.xpc_idx       = s.xpc_start_idx
+  s.xpc_pcall_type = 'pcallzr'
+  s.xpc_en         = True
+  s.xpc_start_idx  = 0
+  s.xpc_end_idx    = s.rf[ inst.rs ]
+  s.xpc_idx        = s.xpc_start_idx
   assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
 
   s.xpc_return_addr = s.pc + 4
@@ -1124,6 +1138,21 @@ def execute_pcallzr( s, inst ):
   s.rf     = s.xpc_rf
   s.rf[4]  = s.xpc_idx
   s.rf[31] = s.xpc_return_trigger
+
+#-------------------------------------------------------------------------
+# pcallrx
+#-------------------------------------------------------------------------
+# This variant of pcall looks just like a jalr, except it puts a return
+# trigger in r31 so that jr knows when the pcall is over.
+def execute_pcallrx( s, inst ):
+  s.xpc_pcall_type  = 'pcallrx'
+  s.xpc_en          = True
+
+  s.xpc_return_addr = s.pc + 4
+  s.pc              = s.rf[ inst.rs ]
+
+  s.xpc_saved_ra    = s.rf[31]
+  s.rf[31]          = s.xpc_return_trigger
 
 #-------------------------------------------------------------------------
 # psync

@@ -26,7 +26,9 @@ class State( Machine ):
     self.xpc_idx            = 0
     self.xpc_start_addr     = 0x00000000
     self.xpc_return_addr    = 0x00000000
+    self.xpc_saved_ra       = 0x00000000
     self.xpc_return_trigger = 1
+    self.xpc_pcall_type     = '' # Identifier for pcall variants
 
     # Separate accelerator regfile. Currently we only model a single-lane
     # accelerator with a vector length of 1.
