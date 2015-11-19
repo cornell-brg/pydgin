@@ -583,23 +583,23 @@ def execute_jr( s, inst ):
   #  assert inst.rs == 31
 
   # Non-pcallrx semantics: handle loop iteration variable
-  if s.xpc_en and s.xpc_pcall_type != 'pcallrx':
-    if ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
-      if s.xpc_idx < ( s.xpc_end_idx - 1 ):
-        s.xpc_idx += 1
-        s.rf[4]    = s.xpc_idx
-        s.pc       = s.xpc_start_addr
-      else:
-        s.xpc_en = False
-        s.rf     = s.scalar_rf
-        s.pc     = s.xpc_return_addr
-
-  # pcallrx semantics: behaves exactly like jr
-  elif s.xpc_en and s.xpc_pcall_type == 'pcallrx':
-    if ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
+  if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
+              and s.xpc_pcall_type != 'pcallrx':
+    if s.xpc_idx < ( s.xpc_end_idx - 1 ):
+      s.xpc_idx += 1
+      s.rf[4]    = s.xpc_idx
+      s.pc       = s.xpc_start_addr
+    else:
       s.xpc_en = False
       s.rf     = s.scalar_rf
       s.pc     = s.xpc_return_addr
+
+  # pcallrx semantics: behaves exactly like jr
+  elif s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
+                and s.xpc_pcall_type == 'pcallrx':
+    s.xpc_en = False
+    s.pc     = s.xpc_return_addr
+    s.rf[31] = s.xpc_saved_ra
 
   else:
     s.pc = s.rf[inst.rs]
@@ -1136,8 +1136,8 @@ def execute_pcallrx( s, inst ):
   s.xpc_return_addr = s.pc + 4
   s.pc              = s.rf[ inst.rs ]
 
-  s.rf     = s.xpc_rf
-  s.rf[31] = s.xpc_return_trigger
+  s.xpc_saved_ra    = s.rf[31]
+  s.rf[31]          = s.xpc_return_trigger
 
 #-------------------------------------------------------------------------
 # psync
