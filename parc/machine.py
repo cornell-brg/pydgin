@@ -6,6 +6,15 @@ from pydgin.machine import Machine
 from pydgin.storage import RegisterFile
 
 #-----------------------------------------------------------------------
+# Stats
+#-----------------------------------------------------------------------
+class XPCStats():
+  def __init__(self):
+    self.count   = 0
+    self.pcalls  = []
+    self.insts_t = []
+
+#-----------------------------------------------------------------------
 # State
 #-----------------------------------------------------------------------
 class State( Machine ):
@@ -27,6 +36,12 @@ class State( Machine ):
     self.xpc_start_addr     = 0x00000000
     self.xpc_return_addr    = 0x00000000
     self.xpc_return_trigger = 1
+    
+    # XPC Stats
+    # Keeping stats of different aspects of pcall execution
+    # This structure will hold both the count and the array of stats for each pcall.
+    self.xpc_stats = XPCStats()
+    self.xpc_stats.insts_t.append(0)
 
     # Separate accelerator regfile. Currently we only model a single-lane
     # accelerator with a vector length of 1.

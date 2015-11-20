@@ -18,10 +18,21 @@ import sys
 #  print "NOTE: PYDGIN_PYPY_SRC_DIR not defined, using pure python " \
 #        "implementation"
 
+# hawajkm: to make this stat version lightweight, the stats will be dumped
+#          into a file that has the executable filename in its name followed
+#          by the type of the stats, e.g. {EXE_FILENAME}_output.csv
+#          To achieve the aforementioned, the version will be using ntpath
+import ntpath
+
 from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param, \
                          elidable
+
+# Source: http://stackoverflow.com/questions/8384737
+def path_leaf(path):
+    head, tail = ntpath.split(path)
+    return tail or ntpath.basename(head)
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
