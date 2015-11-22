@@ -320,6 +320,7 @@ encodings = [
   ['pcall',    '111011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
   ['pcallr',   '111100_xxxxx_xxxxx_00000_00000_000001'],
   ['pcallzr',  '111100_xxxxx_xxxxx_00000_00000_000010'],
+  ['pcallrx',  '111100_xxxxx_xxxxx_00000_00000_000011'],
   ['psync',    '111100_00000_00000_00000_00000_000000'],
   ['mtx',      '010010_xxxxx_xxxxx_00000_xxxxx_xxxxxx'],
   ['mfx',      '010010_xxxxx_xxxxx_00001_xxxxx_xxxxxx'],
@@ -465,8 +466,8 @@ def execute_mfc0( s, inst ):
     # return actual core id
     s.rf[inst.rt] = s.core_id
   elif inst.rd == reg_map['c0_fromsysc5']:
-    # return core type (always 0 since pydgin has no core type)
-    s.rf[inst.rt] = 123
+    # return core type based on if it's in stats region or not
+    s.rf[inst.rt] = s.stats_core_type if s.stats_en else s.core_type
   elif inst.rd == reg_map['c0_numcores']:
     # return actual numcores
     s.rf[inst.rt] = s.ncores
@@ -800,11 +801,15 @@ def execute_jal( s, inst ):
 def execute_jr( s, inst ):
 
   # Only allow jr for returning from functions inside a pcall
-#  if s.xpc_en:
-#    assert inst.rs == 31
+  #if s.xpc_en:
+  #  assert inst.rs == 31
+
   pc = s.pc
   c = s.xpc_stats.count - 1
-  if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ):
+
+  # Non-pcallrx semantics: handle loop iteration variable
+  if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
+              and s.xpc_pcall_type != 'pcallrx':
     if s.xpc_idx < ( s.xpc_end_idx - 1 ):
       s.xpc_idx += 1
       s.rf[4]    = s.xpc_idx
@@ -830,6 +835,21 @@ def execute_jr( s, inst ):
       nInst = s.xpc_stats.pcalls[c].insts.count - prevCount
       s.xpc_stats.pcalls[c].iters.append(nInst)
       s.xpc_stats.pcalls[c].itersA.append(s.xpc_stats.pcalls[c].insts.count)
+
+  # pcallrx semantics: behaves exactly like jr
+  elif s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
+                and s.xpc_pcall_type == 'pcallrx':
+    s.pc     = s.xpc_return_addr
+    collect_xpc_stats( pc, s, inst, "ctrl.jr" )
+    s.xpc_en = False
+    # Switch back to scalar regfile if --accel-rf
+    if s.accel_rf:
+      s.rf     = s.scalar_rf
+    s.rf[31] = s.xpc_saved_ra
+    
+    # Need to simulate 16(n?) cycles being executed over and over again.
+    # As a result, we will keep a counter much like xi.         -hawajkm
+
   else:
     s.pc = s.rf[inst.rs]
     collect_xpc_stats( pc, s, inst, "ctrl.jr" )
@@ -1369,10 +1389,11 @@ def execute_subu_xi( s, inst ):
 # accelerator regfile instead of the scalar regfile. This is swapped back
 # when we return from the pcall.
 def execute_pcall( s, inst ):
-  s.xpc_en        = True
-  s.xpc_start_idx = s.rf[ inst.rs ]
-  s.xpc_end_idx   = s.rf[ inst.rt ]
-  s.xpc_idx       = s.xpc_start_idx
+  s.xpc_pcall_type = 'pcall'
+  s.xpc_en         = True
+  s.xpc_start_idx  = s.rf[ inst.rs ]
+  s.xpc_end_idx    = s.rf[ inst.rt ]
+  s.xpc_idx        = s.xpc_start_idx
   assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
   
   if s.stats_en:
@@ -1414,6 +1435,8 @@ def execute_pcall( s, inst ):
   s.pc              = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   s.xpc_start_addr  = s.pc
 
+  s.num_pcalls += 1
+
 #-------------------------------------------------------------------------
 # pcallr
 #-------------------------------------------------------------------------
@@ -1434,11 +1457,12 @@ def execute_pcall( s, inst ):
 # that went above 2^16, so we changed it to 24 bits start and 8 bits
 # size.
 def execute_pcallr( s, inst ):
-  s.xpc_en        = True
-  s.xpc_start_idx = s.rf[ inst.rs ] >> 8
-  size            = s.rf[ inst.rs ] & 0x000000FF
-  s.xpc_end_idx   = s.xpc_start_idx + size
-  s.xpc_idx       = s.xpc_start_idx
+  s.xpc_pcall_type = 'pcallr'
+  s.xpc_en         = True
+  s.xpc_start_idx  = s.rf[ inst.rs ] >> 8
+  size             = s.rf[ inst.rs ] & 0x000000FF
+  s.xpc_end_idx    = s.xpc_start_idx + size
+  s.xpc_idx        = s.xpc_start_idx
   assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
   
   # Record state to be used by the pcall-stat logic
@@ -1480,6 +1504,8 @@ def execute_pcallr( s, inst ):
   s.rf     = s.xpc_rf
   s.rf[4]  = s.xpc_idx
   s.rf[31] = s.xpc_return_trigger
+
+  s.num_pcalls += 1
 
 #-------------------------------------------------------------------------
 # pcallzr
@@ -1489,10 +1515,11 @@ def execute_pcallr( s, inst ):
 # in the single-tile XPC because we need one giant pcall for the entire
 # loop.
 def execute_pcallzr( s, inst ):
-  s.xpc_en        = True
-  s.xpc_start_idx = 0
-  s.xpc_end_idx   = s.rf[ inst.rs ]
-  s.xpc_idx       = s.xpc_start_idx
+  s.xpc_pcall_type = 'pcallzr'
+  s.xpc_en         = True
+  s.xpc_start_idx  = 0
+  s.xpc_end_idx    = s.rf[ inst.rs ]
+  s.xpc_idx        = s.xpc_start_idx
   assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
 
   # Record state to be used by the pcall-stat logic
@@ -1534,6 +1561,72 @@ def execute_pcallzr( s, inst ):
   s.rf     = s.xpc_rf
   s.rf[4]  = s.xpc_idx
   s.rf[31] = s.xpc_return_trigger
+
+  s.num_pcalls += 1
+
+#-------------------------------------------------------------------------
+# pcallrx
+#-------------------------------------------------------------------------
+# This variant of pcall looks just like a jalr, except it puts a return
+# trigger in r31 so that jr knows when the pcall is over.
+def execute_pcallrx( s, inst ):
+  s.xpc_pcall_type  = 'pcallrx'
+  s.xpc_en          = True
+
+  # Record state to be used by the pcall-stat logic
+  old_pc    = s.pc
+  target_pc = s.rf[ inst.rt ]
+
+  s.xpc_return_addr = s.pc + 4
+  s.pc              = s.rf[ inst.rs ]
+  s.xpc_saved_ra    = s.rf[31]
+
+  # Before switching to the new, let's do our stats
+  if s.stats_en:
+    # Initialize a new pcallr if we haven't seen this
+    # pc and target combo!
+    c   = s.xpc_stats.count - 1
+    # Detecting a new pcall:
+    # This is currently a hacky way, but it works correctly:
+    # We keep track of our speculative limit and counted sized so far
+    # We assume that the limit, max of all sizes thus far, will tell
+    # us when to stop unless we keep getting higher limits
+    if (c < 0) or (s.xpc_stats.pcalls[c].pc != old_pc) or (s.xpc_stats.pcalls[c].target != target_pc) or \
+       ((s.xpc_end_idx < s.xpc_stats.pcalls[c].limit) and \
+        (s.xpc_stats.pcalls[c].size == s.xpc_stats.pcalls[c].limit)):
+      # It is a new pcall, let's increment pcall's count
+      # and allocate a new instructions' stats-structure
+      s.xpc_stats.count += 1
+      s.xpc_stats.pcalls.append(PCALLStats())
+      c = s.xpc_stats.count - 1
+      s.xpc_stats.pcalls[c].pc     = old_pc
+      s.xpc_stats.pcalls[c].target = target_pc
+      s.xpc_stats.pcalls[c].limit  = s.xpc_end_idx
+      s.xpc_stats.pcalls[c].size   = (s.xpc_end_idx - s.xpc_start_idx)
+      s.xpc_stats.pcalls[c].div.append([])
+      #s.xpc_stats.pcalls[c].func.append([])
+      s.xpc_stats.pcalls[c].mem_req.append([])
+    elif (s.xpc_stats.pcalls[c].pc == old_pc) and (s.xpc_stats.pcalls[c].target == target_pc) and \
+         ((s.xpc_end_idx >= s.xpc_stats.pcalls[c].limit) or \
+          (s.xpc_stats.pcalls[c].size != s.xpc_stats.pcalls[c].limit)):
+      s.xpc_stats.pcalls[c].size  += (s.xpc_end_idx - s.xpc_start_idx)
+      s.xpc_stats.pcalls[c].limit  = max(s.xpc_stats.pcalls[c].limit, s.xpc_end_idx)
+      s.xpc_stats.pcalls[c].div.append([])
+      s.xpc_stats.pcalls[c].mem_req.append([])
+    else:
+      assert( 0 )
+  
+  # Here we hack pydgin to iterate through the pcall as if we are executing a loop.
+  # We need to do this _BEFORE_ we do any stats. This pCall and the subsequent JRs
+  # should *not* be recorded as instructions, because they are there to serve as a
+  # mechanism for our stats ...!
+
+  # Switch to accel regfile if --accel-rf
+  if s.accel_rf:
+    s.rf = s.xpc_rf
+  s.rf[31]          = s.xpc_return_trigger
+
+  s.num_pcalls += 1
 
 #-------------------------------------------------------------------------
 # psync

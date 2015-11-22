@@ -35,7 +35,9 @@ class State( Machine ):
     self.xpc_idx            = 0
     self.xpc_start_addr     = 0x00000000
     self.xpc_return_addr    = 0x00000000
+    self.xpc_saved_ra       = 0x00000000
     self.xpc_return_trigger = 1
+    self.xpc_pcall_type     = '' # Identifier for pcall variants
     
     # XPC Stats
     # Keeping stats of different aspects of pcall execution
@@ -72,6 +74,16 @@ class State( Machine ):
     self.except_addr = 0
     # epc is the address to return back to that eret uses
     self.epc = 0
+
+    # core type and stats core type for xpc
+    self.core_type = 0
+    self.stats_core_type = 0
+
+    # accel rf mode for xpc
+    self.accel_rf = False
+
+    # xpc stats
+    self.num_pcalls = 0
 
     # stat registers
     self.stat_inst_en      = [ False ] * 16

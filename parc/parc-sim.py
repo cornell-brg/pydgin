@@ -476,6 +476,9 @@ class ParcSim( Sim ):
 #    print "        calls = %d" % (total_xpc_stats.insts.sys.calls / self.states[0].xpc_stats.count)
 #    print "        rets  = %d" % (total_xpc_stats.insts.sys.ret / self.states[0].xpc_stats.count)
 
+    # print XPC stats
+    print "  Number of pcalls =", state.num_pcalls
+
 # this initializes similator and allows translation and python
 # interpretation
 
