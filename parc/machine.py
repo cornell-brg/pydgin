@@ -13,6 +13,7 @@ class XPCStats():
     self.count   = 0
     self.pcalls  = []
     self.insts_t = []
+    self.insts_A = []
 
 #-----------------------------------------------------------------------
 # State

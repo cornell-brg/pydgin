@@ -74,14 +74,6 @@ class InstsStats():
     self.sys   = SysCallStats()
     self.misc  = MiscStats()
 
-class MemReqStats():
-  def __init__(self):
-    self._type   = ""
-    self.bblock  = 0
-    self.pc      = 0
-    self.address = 0
-    self.data    = 0
-
 class PCALLStats():
   def __init__(self):
     self.size    = 0
@@ -94,12 +86,13 @@ class PCALLStats():
     self.div     = []
     self.mem_req = []
     self.func    = []
-
-class PCALLStats():
-  def __init__(self):
-    self.size  = 0
-    self.insts = InstsStats()
-    self.iters = []
+    # pcallrx
+    self.a0      = 0
+    self.a1      = 0
+    self.a2      = 0
+    self.a3      = 0
+    self.a4      = 0
+    self.xi      = 0
 
 #-------------------------------------------------------------------------
 # ParcSim
@@ -273,7 +266,7 @@ class ParcSim( Sim ):
         i += 1
 
     # Print the header row
-    csvOutput.write("pcall_id,size,total_insts,pcall_insts,ctrl.cond,ctrl.j,ctrl.jr,ctrl.jal,arith.int,arith.llfu,arith.fp,mem.ld,mem.st,mem.sync,amo.mov,amo.arith,sys.calls,sys.eret,misc.mov,misc.nop")
+    csvOutput.write("pcall_id,pcall_pc,pcall_target,size,total_insts,pcall_insts,ctrl.cond,ctrl.j,ctrl.jr,ctrl.jal,arith.int,arith.llfu,arith.fp,mem.ld,mem.st,mem.sync,amo.mov,amo.arith,sys.calls,sys.eret,misc.mov,misc.nop")
     # function calls
     funcOutput.write("pcall_id,(call_pc, func_pc)")
     # ctrlOutput

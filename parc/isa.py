@@ -75,6 +75,11 @@ class PCALLStats():
     self.div     = []
     self.mem_req = []
     self.func    = []
+    # pcallrx
+    self.this     = 0
+    self.xi       = 0
+    self.maxLimit = 0
+    self.stride   = 0
 
 class BranchAddress():
   def __init__(self):
@@ -839,13 +844,61 @@ def execute_jr( s, inst ):
   # pcallrx semantics: behaves exactly like jr
   elif s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
                 and s.xpc_pcall_type == 'pcallrx':
-    s.pc     = s.xpc_return_addr
-    collect_xpc_stats( pc, s, inst, "ctrl.jr" )
-    s.xpc_en = False
-    # Switch back to scalar regfile if --accel-rf
-    if s.accel_rf:
-      s.rf     = s.scalar_rf
-    s.rf[31] = s.xpc_saved_ra
+    # Major hack incoming!!
+    # For this, we will not be faithful to the execution of the binary,
+    # we will actually pass different data to the registers so that we
+    # can hack into the software mining technique and actually make it
+    # execute a predetermined number of cycles followed by a JR.
+    # We *HAVE* to keep track of the JRs as they will be executed in real
+    # scenarios in hardware.
+    
+    pcall_done = False
+
+    if s.stats_en:
+      # a pcall that we care about
+      # determine whether we are done
+      ## Update xi
+      # Update the counters
+      s.xpc_stats.xi += s.task_size
+      if s.xpc_stats.xi >= s.xpc_stats.maxLimit:
+        pcall_done = True
+      else:
+        # Reset status
+        s.rf[4] = s.xpc_stats.this
+        s.rf[5] = s.xpc_stats.xi
+       #s.rf[6] = s.xpc_stats.xi + s.task_size \
+       #          if s.xpc_stats.xi + s.task_size <= s.xpc_stats.maxLimit else s.xpc_stats.maxLimit
+        s.rf[6] = min(s.xpc_stats.xi + s.task_size, s.xpc_stats.maxLimit)
+        s.rf[7] = s.xpc_stats.stride
+      nInst = 0
+      if len(s.xpc_stats.pcalls[c].iters) == 0:
+        prevCount = 0
+      else:
+        p         = len(s.xpc_stats.pcalls[c].iters) - 1
+        prevCount = s.xpc_stats.pcalls[c].itersA[p]
+      nInst = s.xpc_stats.pcalls[c].insts.count - prevCount
+      s.xpc_stats.pcalls[c].iters.append(nInst)
+      s.xpc_stats.pcalls[c].itersA.append(s.xpc_stats.pcalls[c].insts.count)
+    else:
+      # pcall outside stats region ... default to normal pcallrx behaviour
+      pcall_done = True
+
+    # check if this pcall is done with
+    if pcall_done:
+      s.pc     = s.xpc_return_addr
+      # Before we disable XPC
+      collect_xpc_stats( pc, s, inst, "ctrl.jr" )
+      s.xpc_en = False
+      # Switch back to scalar regfile if --accel-rf
+      if s.accel_rf:
+        s.rf     = s.scalar_rf
+      s.rf[31] = s.xpc_saved_ra
+    else:
+      s.pc     = s.xpc_stats.pcalls[c].target
+      collect_xpc_stats( pc, s, inst, "ctrl.jr" )
+      # Append a list to record branches and their decisions for each iteration
+      s.xpc_stats.pcalls[c].div.append([])
+      s.xpc_stats.pcalls[c].mem_req.append([])
     
     # Need to simulate 16(n?) cycles being executed over and over again.
     # As a result, we will keep a counter much like xi.         -hawajkm
@@ -1575,12 +1628,12 @@ def execute_pcallrx( s, inst ):
 
   # Record state to be used by the pcall-stat logic
   old_pc    = s.pc
-  target_pc = s.rf[ inst.rt ]
+  target_pc = s.rf[ inst.rs ]
 
   s.xpc_return_addr = s.pc + 4
   s.pc              = s.rf[ inst.rs ]
   s.xpc_saved_ra    = s.rf[31]
-
+  
   # Before switching to the new, let's do our stats
   if s.stats_en:
     # Initialize a new pcallr if we haven't seen this
@@ -1601,14 +1654,15 @@ def execute_pcallrx( s, inst ):
       c = s.xpc_stats.count - 1
       s.xpc_stats.pcalls[c].pc     = old_pc
       s.xpc_stats.pcalls[c].target = target_pc
-      s.xpc_stats.pcalls[c].limit  = s.xpc_end_idx
-      s.xpc_stats.pcalls[c].size   = (s.xpc_end_idx - s.xpc_start_idx)
+      s.xpc_stats.pcalls[c].limit  = s.rf[6]
+      s.xpc_stats.pcalls[c].size   = (s.rf[6] - s.rf[5])
       s.xpc_stats.pcalls[c].div.append([])
       #s.xpc_stats.pcalls[c].func.append([])
       s.xpc_stats.pcalls[c].mem_req.append([])
     elif (s.xpc_stats.pcalls[c].pc == old_pc) and (s.xpc_stats.pcalls[c].target == target_pc) and \
          ((s.xpc_end_idx >= s.xpc_stats.pcalls[c].limit) or \
           (s.xpc_stats.pcalls[c].size != s.xpc_stats.pcalls[c].limit)):
+      # Hopefully we do not fall into this abyss ... This will really confuse the heck out of my analysis
       s.xpc_stats.pcalls[c].size  += (s.xpc_end_idx - s.xpc_start_idx)
       s.xpc_stats.pcalls[c].limit  = max(s.xpc_stats.pcalls[c].limit, s.xpc_end_idx)
       s.xpc_stats.pcalls[c].div.append([])
@@ -1616,16 +1670,28 @@ def execute_pcallrx( s, inst ):
     else:
       assert( 0 )
   
-  # Here we hack pydgin to iterate through the pcall as if we are executing a loop.
-  # We need to do this _BEFORE_ we do any stats. This pCall and the subsequent JRs
-  # should *not* be recorded as instructions, because they are there to serve as a
-  # mechanism for our stats ...!
+    # Here we hack pydgin to iterate through the pcall as if we are executing a loop.
+    # We need to do this _BEFORE_ we do any stats. This pCall and the subsequent JRs
+    # should *not* be recorded as instructions, because they are there to serve as a
+    # mechanism for our stats ...!
+    
+    # First keep a copy of a0-a3 (4-7)
+    # These copy is saved in the global xpc_stats
+    s.xpc_stats.this     = s.rf[4]
+    s.xpc_stats.xi       = s.rf[5]
+    s.xpc_stats.maxLimit = s.rf[6]
+    s.xpc_stats.stride   = s.rf[7]
+    # We set the max to be of the task size
+    #s.rf[4]        = 
+    s.rf[5]         = s.xpc_stats.xi         # Start
+    s.rf[6]         = s.xpc_stats.xi + s.task_size
+    #s.rf[7]        = 
 
   # Switch to accel regfile if --accel-rf
   if s.accel_rf:
     s.rf = s.xpc_rf
   s.rf[31]          = s.xpc_return_trigger
-
+  
   s.num_pcalls += 1
 
 #-------------------------------------------------------------------------
