@@ -187,10 +187,12 @@ class ParcSim( Sim ):
           # calculate the final value
           state.stat_inst_num_insts[ j ] += state.num_insts - \
                                           state.stat_inst_begin[j]
-
         # print the stat if it's greater than 0
         if state.stat_inst_num_insts[ j ] > 0:
           print "  Stat %d = %d" % ( j, state.stat_inst_num_insts[ j ] )
+
+      # print XPC stats
+      print "  Number of pcalls =", state.num_pcalls
     
     # hawajkm: printing pcall stats
     #          we only assume that pcall is relevant in core 0
@@ -469,8 +471,6 @@ class ParcSim( Sim ):
 #    print "        calls = %d" % (total_xpc_stats.insts.sys.calls / self.states[0].xpc_stats.count)
 #    print "        rets  = %d" % (total_xpc_stats.insts.sys.ret / self.states[0].xpc_stats.count)
 
-    # print XPC stats
-    print "  Number of pcalls =", state.num_pcalls
 
 # this initializes similator and allows translation and python
 # interpretation

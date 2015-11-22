@@ -21,7 +21,7 @@ class Machine( object ):
     self.stats_en        = 0
     self.num_insts       = 0
     self.stat_num_insts  = 0
-    self.task_size       = 0
+    self.vlen            = 0
 
     # we need a dedicated running flag because status could be 0 on a
     # syscall_exit

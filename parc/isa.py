@@ -853,23 +853,26 @@ def execute_jr( s, inst ):
     # scenarios in hardware.
     
     pcall_done = False
+    justFinished = False
 
     if s.stats_en:
       # a pcall that we care about
       # determine whether we are done
       ## Update xi
       # Update the counters
-      s.xpc_stats.xi += s.task_size
-      if s.xpc_stats.xi >= s.xpc_stats.maxLimit:
+      s.xpc_stats.xi += 1
+      if s.xpc_stats.xi >= s.vlen:
         pcall_done = True
+        justFinished = True
       else:
         # Reset status
         s.rf[4] = s.xpc_stats.this
         s.rf[5] = s.xpc_stats.xi
        #s.rf[6] = s.xpc_stats.xi + s.task_size \
        #          if s.xpc_stats.xi + s.task_size <= s.xpc_stats.maxLimit else s.xpc_stats.maxLimit
-        s.rf[6] = min(s.xpc_stats.xi + s.task_size, s.xpc_stats.maxLimit)
-        s.rf[7] = s.xpc_stats.stride
+       #s.rf[6] = min(s.xpc_stats.xi + s.task_size, s.xpc_stats.maxLimit)
+        s.rf[6] = s.xpc_stats.maxLimit
+        s.rf[7] = s.vlen
       nInst = 0
       if len(s.xpc_stats.pcalls[c].iters) == 0:
         prevCount = 0
@@ -887,15 +890,22 @@ def execute_jr( s, inst ):
     if pcall_done:
       s.pc     = s.xpc_return_addr
       # Before we disable XPC
-      collect_xpc_stats( pc, s, inst, "ctrl.jr" )
+      if justFinished:
+        # Do not count for JRs
+        s.num_insts -= 1
+        if s.stats_en: s.stat_num_insts -= 1
+      else:
+        collect_xpc_stats( pc, s, inst, "ctrl.jr" )
       s.xpc_en = False
       # Switch back to scalar regfile if --accel-rf
       if s.accel_rf:
         s.rf     = s.scalar_rf
       s.rf[31] = s.xpc_saved_ra
     else:
+      s.num_insts -= 1    # Not counting for JRs
+      if s.stats_en: s.stat_num_insts -= 1
       s.pc     = s.xpc_stats.pcalls[c].target
-      collect_xpc_stats( pc, s, inst, "ctrl.jr" )
+      #collect_xpc_stats( pc, s, inst, "ctrl.jr" )
       # Append a list to record branches and their decisions for each iteration
       s.xpc_stats.pcalls[c].div.append([])
       s.xpc_stats.pcalls[c].mem_req.append([])
@@ -1684,8 +1694,8 @@ def execute_pcallrx( s, inst ):
     # We set the max to be of the task size
     #s.rf[4]        = 
     s.rf[5]         = s.xpc_stats.xi         # Start
-    s.rf[6]         = s.xpc_stats.xi + s.task_size
-    #s.rf[7]        = 
+    #s.rf[6]         = s.xpc_stats.xi + s.task_size
+    s.rf[7]         = s.vlen
 
   # Switch to accel regfile if --accel-rf
   if s.accel_rf:

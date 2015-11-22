@@ -128,8 +128,7 @@ class Sim( object ):
     --core-type <t>       The initial core type
     --stats-core-type <t> The core type to switch to in the stats region
     --accel-rf            Use separate accel register file for pcalls
-    --task_size           Specify the size of one task for XPC stats analysis
-                          <default=16>
+    --vlen                Specify the vector length <default=16>
 
   """
 
@@ -282,7 +281,7 @@ class Sim( object ):
       core_type          = 0
       stats_core_type    = 0
       accel_rf           = False
-      task_size          = 16
+      vlen               = 16
 
       # we're using a mini state machine to parse the args
 
@@ -300,7 +299,7 @@ class Sim( object ):
                            "--pkernel",
                            "--core-type",
                            "--stats-core-type",
-                           "--task-size",
+                           "--vlen",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -374,8 +373,8 @@ class Sim( object ):
           elif prev_token == "--stats-core-type":
             stats_core_type = int( token )
 
-          elif prev_token == "--task-size":
-            task_size = int( token )
+          elif prev_token == "--vlen":
+            vlen = int( token )
 
           prev_token = ""
 
@@ -412,7 +411,7 @@ class Sim( object ):
       for i in range( self.ncores ):
         self.states[i].core_type = core_type
         self.states[i].stats_core_type = stats_core_type
-        self.states[i].task_size       = task_size
+        self.states[i].vlen            = vlen
 
       # set accel rf mode
 
