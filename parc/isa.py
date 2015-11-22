@@ -55,17 +55,26 @@ class InstsStats():
     self.sys   = SysCallStats()
     self.misc  = MiscStats()
 
+class MemReqStats():
+  def __init__(self):
+    self._type   = ""
+    self.bblock  = 0
+    self.pc      = 0
+    self.address = 0
+    self.data    = 0
+
 class PCALLStats():
   def __init__(self):
-    self.size   = 0
-    self.limit  = 0
-    self.target = 0
-    self.pc     = 0
-    self.insts  = InstsStats()
-    self.iters  = []
-    self.itersA = []
-    self.div    = []
-    self.func   = []
+    self.size    = 0
+    self.limit   = 0
+    self.target  = 0
+    self.pc      = 0
+    self.insts   = InstsStats()
+    self.iters   = []
+    self.itersA  = []
+    self.div     = []
+    self.mem_req = []
+    self.func    = []
 
 class BranchAddress():
   def __init__(self):
@@ -350,13 +359,18 @@ encodings = [
 # will get the state of the machine. As a result, if needed, one can
 # inspect the PC and the state of the machine S to find out deeper stats
 # such as divergence and re-convergence
-def collect_xpc_stats( pc, s, insts, instType ):
+def collect_xpc_stats( pc, s, inst, instType ):
   if s.xpc_en and s.stats_en:
     # XPC is enabled, so we collect all stats.
     # For branching
     ctrl = BranchAddress()
     ctrl.pc     = pc
     ctrl.target = s.pc
+    # For memory
+    mem_req = MemReqStats()
+    mem_req.pc      = pc
+    mem_req.address = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+    mem_req.data    = s.rf[inst.rt]
     ## Assume no nested pcalls
     c = s.xpc_stats.count - 1
     s.xpc_stats.pcalls[c].insts.count += 1
@@ -392,8 +406,14 @@ def collect_xpc_stats( pc, s, insts, instType ):
       s.xpc_stats.pcalls[c].func.append(ctrl)
     elif instType ==  "mem.ld":
       s.xpc_stats.pcalls[c].insts.mem.ld      += 1
+      mem_req._type  = "ld"
+      mem_req.bblock = len(s.xpc_stats.pcalls[c].div[-1]) - 1
+      s.xpc_stats.pcalls[c].mem_req[-1].append(mem_req)
     elif instType ==  "mem.st":
       s.xpc_stats.pcalls[c].insts.mem.st      += 1
+      mem_req._type = "st"
+      mem_req.bblock = len(s.xpc_stats.pcalls[c].div[-1]) - 1
+      s.xpc_stats.pcalls[c].mem_req[-1].append(mem_req)
     elif instType ==  "amo.arith":
       s.xpc_stats.pcalls[c].insts.amo.arith   += 1
     elif instType ==  "amo.mov":
@@ -800,6 +820,7 @@ def execute_jr( s, inst ):
       if s.xpc_en:
         # Append a list to record branches and their decisions for each iteration
         s.xpc_stats.pcalls[c].div.append([])
+        s.xpc_stats.pcalls[c].mem_req.append([])
       nInst = 0
       if len(s.xpc_stats.pcalls[c].iters) == 0:
         prevCount = 0
@@ -1376,10 +1397,12 @@ def execute_pcall( s, inst ):
       s.xpc_stats.pcalls[c].limit  = s.xpc_end_idx
       s.xpc_stats.pcalls[c].size   = (s.xpc_end_idx - s.xpc_start_idx)
       s.xpc_stats.pcalls[c].div.append([])
+      s.xpc_stats.pcalls[c].mem_req.append([])
     elif (s.xpc_stats.pcalls[c].pc == old_pc) and (s.xpc_stats.pcalls[c].target == target_pc) and ((s.xpc_end_idx >= s.xpc_stats.pcalls[c].limit) or (s.xpc_stats.pcalls[c].size != s.xpc_stats.pcalls[c].limit)):
       s.xpc_stats.pcalls[c].size  += (s.xpc_end_idx - s.xpc_start_idx)
       s.xpc_stats.pcalls[c].limit  = max(s.xpc_stats.pcalls[c].limit, s.xpc_end_idx)
       s.xpc_stats.pcalls[c].div.append([])
+      s.xpc_stats.pcalls[c].mem_req.append([])
     else:
       assert( 0 )
 
@@ -1444,11 +1467,13 @@ def execute_pcallr( s, inst ):
       s.xpc_stats.pcalls[c].limit  = s.xpc_end_idx
       s.xpc_stats.pcalls[c].size   = (s.xpc_end_idx - s.xpc_start_idx)
       s.xpc_stats.pcalls[c].div.append([])
+      s.xpc_stats.pcalls[c].mem_req.append([])
       #s.xpc_stats.pcalls[c].func.append([])
     elif (s.xpc_stats.pcalls[c].pc == old_pc) and (s.xpc_stats.pcalls[c].target == target_pc) and ((s.xpc_end_idx >= s.xpc_stats.pcalls[c].limit) or (s.xpc_stats.pcalls[c].size != s.xpc_stats.pcalls[c].limit)):
       s.xpc_stats.pcalls[c].size  += (s.xpc_end_idx - s.xpc_start_idx)
       s.xpc_stats.pcalls[c].limit  = max(s.xpc_stats.pcalls[c].limit, s.xpc_end_idx)
       s.xpc_stats.pcalls[c].div.append([])
+      s.xpc_stats.pcalls[c].mem_req.append([])
     else:
       assert( 0 )
 
@@ -1497,10 +1522,12 @@ def execute_pcallzr( s, inst ):
       s.xpc_stats.pcalls[c].size   = (s.xpc_end_idx - s.xpc_start_idx)
       s.xpc_stats.pcalls[c].div.append([])
       #s.xpc_stats.pcalls[c].func.append([])
+      s.xpc_stats.pcalls[c].mem_req.append([])
     elif (s.xpc_stats.pcalls[c].pc == old_pc) and (s.xpc_stats.pcalls[c].target == target_pc) and ((s.xpc_end_idx >= s.xpc_stats.pcalls[c].limit) or (s.xpc_stats.pcalls[c].size != s.xpc_stats.pcalls[c].limit)):
       s.xpc_stats.pcalls[c].size  += (s.xpc_end_idx - s.xpc_start_idx)
       s.xpc_stats.pcalls[c].limit  = max(s.xpc_stats.pcalls[c].limit, s.xpc_end_idx)
       s.xpc_stats.pcalls[c].div.append([])
+      s.xpc_stats.pcalls[c].mem_req.append([])
     else:
       assert( 0 )
 

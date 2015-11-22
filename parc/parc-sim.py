@@ -74,6 +74,27 @@ class InstsStats():
     self.sys   = SysCallStats()
     self.misc  = MiscStats()
 
+class MemReqStats():
+  def __init__(self):
+    self._type   = ""
+    self.bblock  = 0
+    self.pc      = 0
+    self.address = 0
+    self.data    = 0
+
+class PCALLStats():
+  def __init__(self):
+    self.size    = 0
+    self.limit   = 0
+    self.target  = 0
+    self.pc      = 0
+    self.insts   = InstsStats()
+    self.iters   = []
+    self.itersA  = []
+    self.div     = []
+    self.mem_req = []
+    self.func    = []
+
 class PCALLStats():
   def __init__(self):
     self.size  = 0
@@ -239,6 +260,18 @@ class ParcSim( Sim ):
           divTOutput = open(exe_filename + "_divergence" + str(i) + ".bin", "wb")
           break
         i += 1
+
+    # Dump for divergence, but technical format
+    if not os.path.exists(exe_filename + "_memory.bin"):
+      memOutput = open(exe_filename + "_memory.bin", "wb")
+    else:
+      i = 0
+      while(1):
+        if not os.path.exists(exe_filename + "_memory" + str(i) + ".bin"):
+          memOutput = open(exe_filename + "_memory" + str(i) + ".bin", "wb")
+          break
+        i += 1
+
     # Print the header row
     csvOutput.write("pcall_id,size,total_insts,pcall_insts,ctrl.cond,ctrl.j,ctrl.jr,ctrl.jal,arith.int,arith.llfu,arith.fp,mem.ld,mem.st,mem.sync,amo.mov,amo.arith,sys.calls,sys.eret,misc.mov,misc.nop")
     # function calls
@@ -248,6 +281,8 @@ class ParcSim( Sim ):
     divTOutput.write("%d" % (self.states[0].xpc_stats.count))
     # Number of dynamic instructions
     instOutput.write("pcall_id,number_of_instructions")
+    # Memory Trace
+    memOutput.write("%d" % (self.states[0].xpc_stats.count))
     for i, pcall in enumerate(self.states[0].xpc_stats.pcalls):
       
       # Add it to our final total
@@ -317,6 +352,12 @@ class ParcSim( Sim ):
         instOutput.write("%d" % nIter)
       #instOutput.write("]")
 
+      # Dump memory trace
+      memOutput.write("\n0x%x 0x%x 0x%x" % (pcall.pc, pcall.target, len(pcall.mem_req)))
+      for d, memArray in enumerate(pcall.mem_req):
+        memOutput.write("\n%d" % (len(memArray)))
+        for req in memArray:
+          memOutput.write(" %s %d 0x%x 0x%x 0x%x" % (req._type, req.bblock, req.pc, req.address, req.data))
 #      print "  pcall %d:" % i
 #      
 #      # Get to it
