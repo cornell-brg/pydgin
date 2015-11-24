@@ -86,13 +86,6 @@ class PCALLStats():
     self.div     = []
     self.mem_req = []
     self.func    = []
-    # pcallrx
-    self.a0      = 0
-    self.a1      = 0
-    self.a2      = 0
-    self.a3      = 0
-    self.a4      = 0
-    self.xi      = 0
 
 #-------------------------------------------------------------------------
 # ParcSim

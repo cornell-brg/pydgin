@@ -10,10 +10,14 @@ from pydgin.storage import RegisterFile
 #-----------------------------------------------------------------------
 class XPCStats():
   def __init__(self):
-    self.count   = 0
-    self.pcalls  = []
-    self.insts_t = []
-    self.insts_A = []
+    self.count    = 0
+    self.pcalls   = []
+    self.insts_t  = []
+    self.insts_A  = []
+    self.this     = 0
+    self.xi       = 0
+    self.maxLimit = 0
+    self.stride   = 0
 
 #-----------------------------------------------------------------------
 # State
@@ -45,6 +49,7 @@ class State( Machine ):
     # This structure will hold both the count and the array of stats for each pcall.
     self.xpc_stats = XPCStats()
     self.xpc_stats.insts_t.append(0)
+    self.xpc_stats.insts_A.append(0)
 
     # Separate accelerator regfile. Currently we only model a single-lane
     # accelerator with a vector length of 1.
