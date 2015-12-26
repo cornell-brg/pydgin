@@ -16,9 +16,10 @@ all_targets = [ "pydgin-parc-jit", "pydgin-parc-nojit-debug",
 
 def build_target( name, pypy_dir, build_dir ):
 
-  # use the name to determine the arch, jit and debug
+  # use the name to determine the arch, jit, softfloat requirement, and debug
 
   arch = None
+  require_softfloat = False
   if "parc" in name:
     arch = "parc"
   if "arm" in name:
@@ -29,7 +30,43 @@ def build_target( name, pypy_dir, build_dir ):
     assert arch is None, "conflicting arch definitions {} and {}" \
                          .format( arch, "riscv" )
     arch = "riscv"
+    # risc-v is the only architecture that requires softfloat for now
+    require_softfloat = True
   assert arch is not None, "could not determine arch from name"
+
+  # check if we have already built softfloat and if not, build it
+  if require_softfloat:
+    # check os to find which extension to check for (we only support mac
+    # or linux)
+    assert sys.platform == "linux" or sys.platform == "linux2" \
+          or sys.platform == "darwin"
+
+    softfloat_file = "libsoftfloat.dylib" if sys.platform == "darwin" \
+          else "libsoftfloat.so"
+
+    print "softfloat is required, checking if {} exists..." \
+          .format( softfloat_file ),
+    found_softfloat = os.path.isfile( softfloat_file )
+
+    if not found_softfloat:
+      print "no"
+      print "calling build-softfloat.py to build it"
+      cmd = "../scripts/build-softfloat.py"
+      print cmd
+      ret = subprocess.call( cmd, shell=True )
+
+      # check for success and if the file exists
+
+      if ret != 0:
+        print "softfloat library could not be built, aborting!"
+        sys.exit( ret )
+
+      if not os.path.isfile( softfloat_file ):
+        print "{} could not be found, aborting!".format( softfloat_file )
+        sys.exit( ret )
+
+    else:
+      print "yes"
 
   if "jit" in name and "nojit" not in name:
     jit = True
@@ -86,8 +123,10 @@ def build_target( name, pypy_dir, build_dir ):
   os.symlink( '{}/{}'.format( build_dir, name ), symlink_name )
 
 def main():
-  if len( sys.argv ) > 1 and sys.argv[1] == '--help':
+  if len( sys.argv ) > 1 and 'help' in sys.argv[1]:
     print "Usage:\n  ./build.py [targets]"
+    print "  where targets can be 'all' or one of the following:"
+    print "  {}".format( ", ".join( all_targets ) )
     return 1
 
   # ensure we know where the pypy source code is
