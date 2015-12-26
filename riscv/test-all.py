@@ -39,7 +39,7 @@ num_error  = 0
 for dump in sorted( dumps ):
   bin_name = dump[:-5]
   try:
-    out = subprocess.check_output( [interp, "--test", bin_name] if interp else
+    out = subprocess.check_output( interp.split() + ["--test", bin_name] if interp else
                                    ["python", "../riscv/riscv-sim.py", "--test", bin_name],
                                    stderr=subprocess.STDOUT )
   except subprocess.CalledProcessError as e:
@@ -61,3 +61,8 @@ for dump in sorted( dumps ):
 
 print "Number of tests: {} passed: {} failed: {} error: {}" \
     .format( num_tests, num_passed, num_failed, num_error  )
+
+# return non-zero value if we had any failures or errors
+if num_failed > 0 or num_error > 0:
+  sys.exit( 1 )
+
