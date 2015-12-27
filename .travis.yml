@@ -21,7 +21,7 @@ python:
 
 env:
   global:
-    - PYDGIN_PYPY_SRC_DIR="/home/travis/pypy-4.0.1-src/"
+    - PYDGIN_PYPY_SRC_DIR="$TRAVIS_BUILD_DIR/pypy-4.0.1-src"
 
 #-------------------------------------------------------------------------
 # install dependencies
@@ -30,6 +30,7 @@ env:
 install:
 
 # download and untar pypy source
+ - pwd
  - cd ..
  - wget https://bitbucket.org/pypy/pypy/downloads/pypy-4.0.1-src.tar.bz2
  - tar xjf pypy-4.0.1-src.tar.bz2
