@@ -19,11 +19,12 @@ usage = """Usage:
   ./build.py [flags] [targets]
   Flags: -h,--help   this help message
          -jN         parallelize for N cores (omit N for # of processors)
+         --batch     pass --batch flag to rpython (don't fall to pdb on error)
   Targets: 'all' or one or more of the following:
            {}
 """.format( ", ".join( all_targets ) )
 
-def build_target( name, pypy_dir, build_dir ):
+def build_target( name, pypy_dir, build_dir, extra_rpython_flags ):
 
   # use the name to determine the arch, jit, softfloat requirement, and debug
 
@@ -109,12 +110,13 @@ def build_target( name, pypy_dir, build_dir ):
   # create the translation command and execute it
 
   os.chdir('../{}'.format( arch ) )
-  cmd = ( '{4} {1}/rpython/bin/rpython {2} {0}-sim.py {3}'
-          .format( arch, pypy_dir,
-                   "--opt=jit" if jit   else "",
-                   "--debug"   if debug else "",
-                   python_bin )
-        )
+  cmd = ( '{python_bin} {pypy_dir}/rpython/bin/rpython {rpython_opts} '
+          '{arch}-sim.py {pydgin_opts}' ) \
+          .format( arch=arch, pypy_dir=pypy_dir,
+                   rpython_opts=( extra_rpython_flags +
+                                  ("--opt=jit" if jit   else "") ),
+                   pydgin_opts =( "--debug"   if debug else "" ),
+                   python_bin=python_bin )
 
   print cmd
   ret = subprocess.call( cmd, shell=True )
@@ -141,6 +143,8 @@ def setup_environment():
   # don't parallelize by default
   num_processes = 1
 
+  extra_rpython_flags = ""
+
   for flag in flags:
     if flag == '-h' or flag == '--help':
       print usage
@@ -151,6 +155,8 @@ def setup_environment():
         num_processes = multiprocessing.cpu_count()
       else:
         num_processes = int( flag[2:] )
+    elif flag == "--batch":
+      extra_rpython_flags += "--batch "
     else:
       print "Unknown flag:", flag
       print usage
@@ -190,24 +196,26 @@ def setup_environment():
   build_dir = "{}/builds/pydgin-{}/bin".format( cwd, pydgin_ver )
   subprocess.call( "mkdir -p {}".format( build_dir ), shell=True )
 
-  return targets, pypy_dir, build_dir, num_processes
+  return targets, pypy_dir, build_dir, num_processes, extra_rpython_flags
 
 
 def main():
   # get targets and environment
-  targets, pypy_dir, build_dir, num_processes = setup_environment()
+  targets, pypy_dir, build_dir, num_processes, extra_rpython_flags \
+                                                      = setup_environment()
 
   # don't parallelize for 1 process
   if num_processes <= 1:
     for target in targets:
-      build_target( target, pypy_dir, build_dir )
+      build_target( target, pypy_dir, build_dir, extra_rpython_flags )
 
   else:
     # build targets in parallel
     pool = multiprocessing.Pool( processes=num_processes )
     try:
       for target in targets:
-        pool.apply_async( build_target, [target, pypy_dir, build_dir])
+        pool.apply_async( build_target,
+                          [target, pypy_dir, build_dir, extra_rpython_flags] )
 
       pool.close()
       pool.join()
