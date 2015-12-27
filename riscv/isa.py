@@ -2,7 +2,24 @@
 # isa.py
 #=======================================================================
 
-ENABLE_FP = True
+# Check if importing softfloat will succeed. If it's not built, then
+# softfloat._abi will not exist and throw and ImportError
+
+try:
+  import softfloat
+  ENABLE_FP = True
+except ImportError:
+  print ( "WARNING: softfloat could not be imported because it was not "
+          "built. Floating point will be disabled. Build softfloat using "
+          "build-softfloat.py script under scripts/ to enable floating "
+          "point support." )
+  ENABLE_FP = False
+except AttributeError:
+  print ( "WARNING: the CFFI installation doesn't support "
+          "_cffi_backend.FFI() call. Floating point will be disabled. "
+          "Upgrade CFFI to enable floating point support." )
+  ENABLE_FP = False
+
 
 from utils        import sext_32, signed, sext, trim
 from pydgin.misc  import create_risc_decoder, FatalError, \
