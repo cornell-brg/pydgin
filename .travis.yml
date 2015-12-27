@@ -47,6 +47,5 @@ script:
 
 # the only "test" for now is building pydgins successfully
  - cd build
-# TODO: only trying to build pydgin-arm-jit until this is fixed
- - ../scripts/build.py --batch pydgin-arm-jit
+ - ../scripts/build.py --batch
 

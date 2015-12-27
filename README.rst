@@ -2,6 +2,9 @@
 |Pydgin|
 ===============================================================================
 
+.. image:: https://travis-ci.org/cornell-brg/pydgin.svg
+    :target: https://travis-ci.org/cornell-brg/pydgin
+
 Pydgin: a (Py)thon (D)SL for (G)enerating (In)struction set simulators.
 
 -------------------------------------------------------------------------------
