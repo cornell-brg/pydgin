@@ -1,0 +1,49 @@
+#=========================================================================
+# TravisCI Setup
+#=========================================================================
+
+# To enable containers:
+
+sudo: false
+
+#-------------------------------------------------------------------------
+# language and build matric
+#-------------------------------------------------------------------------
+
+language: python
+python:
+ - "2.7"
+ # - "pypy"
+
+#-------------------------------------------------------------------------
+# environment
+#-------------------------------------------------------------------------
+
+env:
+  global:
+    - PYDGIN_PYPY_SRC_DIR="/home/travis/pypy-4.0.1-src/"
+
+#-------------------------------------------------------------------------
+# install dependencies
+#-------------------------------------------------------------------------
+
+install:
+
+# download and untar pypy source
+ - cd ..
+ - wget https://bitbucket.org/pypy/pypy/downloads/pypy-4.0.1-src.tar.bz2
+ - tar xjf pypy-4.0.1-src.tar.bz2
+# create the build directory
+# TODO: once we have proper tests, building pydgins should go here too
+ - cd pydgin
+ - mkdir -p build
+
+#-------------------------------------------------------------------------
+# test runner
+#-------------------------------------------------------------------------
+
+script:
+
+# the only "test" for now is building pydgins successfully
+ - cd build
+ - ../scripts/build.py
