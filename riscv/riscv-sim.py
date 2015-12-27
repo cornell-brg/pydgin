@@ -21,7 +21,7 @@ from isa            import decode
 class RiscVSim( Sim ):
 
   def __init__( self ):
-    Sim.__init__( self, 'RISC-V', jit_enabled=True )
+    Sim.__init__( self, 'RISC-V', 'riscv', jit_enabled=True )
 
   #-----------------------------------------------------------------------
   # decode

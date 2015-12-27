@@ -33,9 +33,16 @@ def jitpolicy(driver):
 
 class Sim( object ):
 
-  def __init__( self, arch_name, jit_enabled=False ):
+  def __init__( self, arch_name_human, arch_name="", jit_enabled=False ):
 
-    self.arch_name   = arch_name
+    # the human-friendly architecture name can contain large caps, special
+    # characters etc.
+
+    self.arch_name_human = arch_name_human
+    if arch_name == "":
+      self.arch_name = arch_name_human.lower()
+    else:
+      self.arch_name = arch_name
 
     self.jit_enabled = jit_enabled
 
@@ -240,7 +247,7 @@ class Sim( object ):
         if prev_token == "":
 
           if token == "--help" or token == "-h":
-            print self.help_message % ( self.arch_name, argv[0] )
+            print self.help_message % ( self.arch_name_human, argv[0] )
             return 0
 
           elif token == "--test":
@@ -347,7 +354,7 @@ class Sim( object ):
       print "Disabling debugging"
 
     # form a name
-    exe_name = "pydgin-%s" % self.arch_name.lower()
+    exe_name = "pydgin-%s" % self.arch_name
     if driver.config.translation.jit:
       exe_name += "-jit"
     else:
