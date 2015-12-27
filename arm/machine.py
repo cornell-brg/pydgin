@@ -48,10 +48,10 @@ class State( Machine ):
     return self.pc
 
   def cpsr( self ):
-    return ( self.N << 31 ) | \
-           ( self.Z << 30 ) | \
-           ( self.C << 29 ) | \
-           ( self.V << 28 ) | \
+    return ( r_uint( self.N ) << 31 ) | \
+           ( r_uint( self.Z ) << 30 ) | \
+           ( r_uint( self.C ) << 29 ) | \
+           ( r_uint( self.V ) << 28 ) | \
            ( r_uint( self.mode ) )
 
 #-----------------------------------------------------------------------
