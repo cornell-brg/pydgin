@@ -29,6 +29,8 @@ env:
 
 install:
 
+# we need cffi
+ - pip install cffi
 # download and untar pypy source
  - pwd
  - cd ..
@@ -47,5 +49,6 @@ script:
 
 # the only "test" for now is building pydgins successfully
  - cd build
+ - ../scripts/build-softfloat.py
  - ../scripts/build.py --batch
 
