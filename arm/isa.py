@@ -358,7 +358,7 @@ def execute_and( s, inst ):
 def execute_b( s, inst ):
   if condition_passed( s, inst.cond ):
     offset   = signed( sext_30( inst.imm_24 ) << 2 )
-    s.rf[PC] = trim_32( s.rf[PC] + offset )
+    s.rf[PC] = trim_32( signed( s.rf[PC] ) + offset )
     return
   s.rf[PC] = s.fetch_pc() + 4
 
@@ -369,7 +369,7 @@ def execute_bl( s, inst ):
   if condition_passed( s, inst.cond ):
     s.rf[LR] = trim_32( s.fetch_pc() + 4 )
     offset   = signed( sext_30( inst.imm_24 ) << 2 )
-    s.rf[PC] = trim_32( s.rf[PC] + offset )
+    s.rf[PC] = trim_32( signed( s.rf[PC] ) + offset )
     return
   s.rf[PC] = s.fetch_pc() + 4
 
@@ -951,7 +951,7 @@ def execute_smlal( s, inst ):
     RdHi, RdLo  = inst.rn, inst.rd
     Rm,   Rs    = signed(s.rf[ inst.rm ]), signed(s.rf[ inst.rs ])
     accumulate  = (s.rf[ RdHi ] << 32) | s.rf[ RdLo ]
-    result      = (Rm * Rs) + accumulate
+    result      = (Rm * Rs) + signed( accumulate )
 
     if RdHi == RdLo: raise FatalError('UNPREDICTABLE')
 

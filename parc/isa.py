@@ -45,8 +45,8 @@ reg_map = {
   # currently implemented coprocessor 0 registers
 
   'status'    :  1,   # mtc0
- #'mngr2proc' :  1,   #      mfc0
- #'proc2mngr' :  2,   # mtc0
+# 'mngr2proc' :  1,   # mfc0
+# 'proc2mngr' :  2,   # mtc0
   'statsen'   : 10,   # mtc0
   'coreid'    : 17,   #      mfc0
 
@@ -96,6 +96,31 @@ reg_map = {
 # frame_pointer         : 30
 # return_address        : 31
 # syscall_pseudo_return :  3
+
+# Here's what I think our coprocessor registers are being used for:
+# cp0 regs
+
+# r1: assembly test
+# r2
+# r3
+# r4
+# r5
+# r6
+# r7
+# r8
+# r9
+# r10: core id
+# r11
+# r12
+# r13
+# r14
+# r15: core type
+# r16: num cores
+# r17: thread id (used to be called core id)
+# r18
+# r19
+# r20
+# r21: stats en
 
 #=======================================================================
 # Instruction Encodings
@@ -219,6 +244,7 @@ encodings = [
   #---------------------------------------------------------------------
   ['stat',     '100111_00000_xxxxx_00000_00000_001111'],
   ['hint_wl',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010010'],
+  ['mug',      '010111_xxxxx_xxxxx_00000_00000_000000'],
   #---------------------------------------------------------------------
   # Floating Point
   #---------------------------------------------------------------------
@@ -260,14 +286,21 @@ def execute_mfc0( s, inst ):
   #if   inst.rd ==  1: pass
   #  s.rf[ inst.rt ] = src[ s.src_ptr ]
   #  s.src_ptr += 1
+  # return actual core id (this is actually thread id)
   if   inst.rd == reg_map['c0_coreid']:
     s.rf[inst.rt] = 0
   elif inst.rd == reg_map['c0_count']:
     s.rf[inst.rt] = s.num_insts
+  elif inst.rd == reg_map['c0_fromsysc0']:
+    # return actual core id
+    s.rf[inst.rt] = 0
+  elif inst.rd == reg_map['c0_fromsysc5']:
+    # return core type (always 0 since pydgin has no core type)
+    s.rf[inst.rt] = 0
   elif inst.rd == reg_map['c0_numcores']:
     s.rf[inst.rt] = 1
   elif inst.rd == reg_map['c0_counthi']:
-    print "WARNING: counthi always returns 0..."
+    # print "WARNING: counthi always returns 0..."
     s.rf[inst.rt] = 0
   else:
     raise FatalError('Invalid mfc0 destination: %d!' % inst.rd )
@@ -959,6 +992,12 @@ def execute_stat( s, inst ):
 # hint_wl
 #-----------------------------------------------------------------------
 def execute_hint_wl( s, inst ):
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# mug
+#-----------------------------------------------------------------------
+def execute_mug( s, inst ):
   s.pc += 4
 
 #=======================================================================

@@ -3,7 +3,7 @@
 #=======================================================================
 # Collection of utility functions for ARM instruction implementations.
 
-from pydgin.utils import trim_32
+from pydgin.utils import trim_32, r_uint
 from pydgin.misc  import FatalError
 from instruction  import *
 
@@ -403,7 +403,7 @@ def condition_passed( s, cond ):
 # arith_shift
 #-----------------------------------------------------------------------
 def arith_shift( data, shift ):
-  fill = 0xFFFFFFFF if (data >> 31) else 0
+  fill = r_uint( 0xFFFFFFFF if (data >> 31) else 0 )
   return (fill << (32-shift)) | (data >> shift)
 
 #-----------------------------------------------------------------------

@@ -20,7 +20,7 @@
 
 from pydgin.misc  import FatalError
 from isa          import reg_map
-from pydgin.utils import trim_32
+from pydgin.utils import trim_32, intmask
 
 #-----------------------------------------------------------------------
 # os state and helpers
@@ -69,9 +69,9 @@ syscall_funcs = {
 # syscall, and return the result back into the architectural state.
 def do_syscall( s ):
   syscall_number = s.rf[ v4 ]
-  arg0 = s.rf[ a1 ]
-  arg1 = s.rf[ a2 ]
-  arg2 = s.rf[ a3 ]
+  arg0 = intmask( s.rf[ a1 ] )
+  arg1 = intmask( s.rf[ a2 ] )
+  arg2 = intmask( s.rf[ a3 ] )
 
   if syscall_number not in syscall_funcs:
     print "WARNING: syscall not implemented: %d" % syscall_number

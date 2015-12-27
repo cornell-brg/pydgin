@@ -2,30 +2,29 @@
 # machine.py
 #=======================================================================
 
+from pydgin.machine import Machine
 from pydgin.storage import RegisterFile
-from pydgin.debug   import Debug, pad, pad_hex
+from pydgin.debug   import pad, pad_hex
+from pydgin.utils   import r_uint, specialize
 
 #-----------------------------------------------------------------------
 # State
 #-----------------------------------------------------------------------
-class State( object ):
+class State( Machine ):
   _virtualizable_ = ['pc', 'num_insts', 'N', 'Z', 'C', 'V']
   def __init__( self, memory, debug, reset_addr=0x400 ):
-    self.pc       = reset_addr
-    self.rf       = ArmRegisterFile( self, num_regs=16 )
-    self.mem      = memory
-
-    self    .debug = debug
-    self.rf .debug = debug
-    self.mem.debug = debug
-
-    self.rf[ 15 ]  = reset_addr
+    Machine.__init__(self,
+                     memory,
+                     ArmRegisterFile( self, num_regs=16 ),
+                     debug,
+                     reset_addr=reset_addr )
+    self.rf[ 15 ]  = self.pc
 
     # current program status register (CPSR)
-    self.N    = 0b0      # Negative condition
-    self.Z    = 0b0      # Zero condition
-    self.C    = 0b0      # Carry condition
-    self.V    = 0b0      # Overflow condition
+    self.N    = r_uint( 0b0 )     # Negative condition
+    self.Z    = r_uint( 0b0 )     # Zero condition
+    self.C    = r_uint( 0b0 )     # Carry condition
+    self.V    = r_uint( 0b0 )     # Overflow condition
     #self.J    = 0b0      # Jazelle state flag
     #self.I    = 0b0      # IRQ Interrupt Mask
     #self.F    = 0b0      # FIQ Interrupt Mask
@@ -40,17 +39,7 @@ class State( object ):
     # 0b10111     abt (abort)
     # 0b11011     und (undefined)
     # 0b11111     sys
-    self.mode = 0b10000
-
-    # other registers
-    self.status        = 0
-    self.num_insts       = 0
-    # unused
-    self.stats_en      = 0
-    self.stat_num_insts  = 0
-
-    # marks if should be running, syscall_exit sets it false
-    self.running       = True
+    self.mode = r_uint( 0b10000 )
 
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
@@ -88,7 +77,9 @@ class ArmRegisterFile( RegisterFile ):
     else:
       return self.regs[idx]
 
+  @specialize.argtype(2)
   def __setitem__( self, idx, value ):
+    value = r_uint( value )
     if idx == 15:
       self.state.pc = value
       if self.debug.enabled( "rf" ):
