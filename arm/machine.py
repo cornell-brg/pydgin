@@ -52,7 +52,7 @@ class State( Machine ):
            ( self.Z << 30 ) | \
            ( self.C << 29 ) | \
            ( self.V << 28 ) | \
-           ( self.mode    )
+           ( r_uint( self.mode ) )
 
 #-----------------------------------------------------------------------
 # ArmRegisterFile
