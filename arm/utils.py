@@ -107,7 +107,7 @@ def shifter_operand_imm( s, inst ):
   elif shift_op == ROTATE_RIGHT:
     # NOTE: shift_imm == 0 signifies a rotate right with extend (RRX)
     if shift_imm == 0:
-      out  = (s.C << 31) | (Rm >> 1)
+      out  = r_uint(s.C << 31) | (Rm >> 1)
       cout = Rm & 1
     else:
       out  = rotate_right( Rm, shift_imm )

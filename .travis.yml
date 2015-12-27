@@ -47,5 +47,5 @@ script:
 
 # the only "test" for now is building pydgins successfully
  - cd build
- - ../scripts/build.py
+ - ../scripts/build.py --batch
 
