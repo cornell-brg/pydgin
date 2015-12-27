@@ -188,11 +188,13 @@ def execute_csrrw( s, inst ):
   result = s.rf[inst.rs1]
   # currently only support csr == 3, which accesses fcsr
   if inst.csr == 3:
-    s.fcsr, s.rf[inst.rd] = s.rf[inst.rs1], s.fcsr
-  # TODO: use the actual csr value of pass/fail
-  elif result & 0x1:
+    # only the low 8 bits of fcsr should be non-zero
+    s.fcsr, s.rf[inst.rd] = trim( s.rf[inst.rs1], 8), s.fcsr
+
+  # mtohost for pass/fail
+  elif inst.csr == 0x780 and result & 0x1:
     status = result >> 1
-    if status: raise FatalError("Fail! %s" % (result >> 1 ) )
+    if status: raise FatalError("Fail! (test #%s)" % status )
     else:      raise FatalError("Pass!")
   else:
     raise NotImplementedInstError()
