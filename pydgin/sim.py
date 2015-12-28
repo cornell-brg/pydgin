@@ -68,6 +68,16 @@ class Sim( object ):
     raise NotImplementedError()
 
   #-----------------------------------------------------------------------
+  # hooks provided for isa implementations
+  #-----------------------------------------------------------------------
+
+  def pre_execute( self ):
+    pass
+
+  def post_execute( self ):
+    pass
+
+  #-----------------------------------------------------------------------
   # init_state
   #-----------------------------------------------------------------------
   # This needs to be implemented in the child class
@@ -168,6 +178,8 @@ class Sim( object ):
                   pad( inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),
 
+        self.pre_execute()
+
         exec_fun( s, inst )
       except NotImplementedInstError:
         # re-decode instruction to get the instruction name
@@ -183,6 +195,8 @@ class Sim( object ):
 
       s.num_insts += 1    # TODO: should this be done inside instruction definition?
       if s.stats_en: s.stat_num_insts += 1
+
+      self.post_execute()
 
       if s.debug.enabled( "insts" ):
         print
