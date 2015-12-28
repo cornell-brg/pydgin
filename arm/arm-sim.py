@@ -38,6 +38,20 @@ class ArmSim( Sim ):
     return Instruction( bits, inst_str ), exec_fun
 
   #-----------------------------------------------------------------------
+  # pre_execute
+  #-----------------------------------------------------------------------
+  # Override pre execute to print the CPSRs on debug
+
+  def pre_execute( self ):
+    if self.debug.enabled( "rf" ):
+      print ':: RD.CPSR = %s%s%s%s' % (
+        'N' if self.state.N else '-',
+        'Z' if self.state.Z else '-',
+        'C' if self.state.C else '-',
+        'V' if self.state.V else '-'
+      ),
+
+  #-----------------------------------------------------------------------
   # init_state
   #-----------------------------------------------------------------------
   # This method is called to load the program and initialize architectural
