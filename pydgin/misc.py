@@ -40,9 +40,9 @@ class NotImplementedInstError( FatalError ):
 #-----------------------------------------------------------------------
 # load_program
 #-----------------------------------------------------------------------
-def load_program( fp, mem, alignment=0 ):
+def load_program( fp, mem, alignment=0, is_64bit=False ):
 
-  mem_image  = elf.elf_reader( fp )
+  mem_image  = elf.elf_reader( fp, is_64bit=is_64bit )
   sections   = mem_image.get_sections()
   entrypoint = -1
 

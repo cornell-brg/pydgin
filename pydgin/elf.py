@@ -460,9 +460,6 @@ class ElfSymTabEntry (object):
 
 def elf_reader( file_obj, is_64bit=False ):
 
-  # XXX
-  is_64bit = True
-
   # Read the data for the ELF header
 
   ehdr_data = file_obj.read( ElfHeader.NBYTES64 if is_64bit
