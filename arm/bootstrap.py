@@ -3,6 +3,7 @@
 #=======================================================================
 
 from machine        import State
+from pydgin.utils   import r_uint
 #from pydgin.storage import Memory
 
 EMULATE_GEM5  = False
@@ -247,7 +248,7 @@ def syscall_init( mem, entrypoint, breakpoint, argv, envp, debug ):
 
   # TODO: where should this go?
   #state.pc         = entrypoint
-  state.breakpoint = breakpoint
+  state.breakpoint = r_uint( breakpoint )
 
   # initialize processor registers
   state.rf[  0 ] = 0            # ptr to func to run when program exits, disable
