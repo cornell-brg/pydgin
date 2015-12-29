@@ -52,11 +52,11 @@ script:
 
  - cd build
 # first run interpretive tests so that we can fail fast
- - cd ../arm; py.test -v arm_test.py
+ - cd ../arm; py.test -v arm_test.py; cd ../build
  - ../scripts/build-softfloat.py
 # then build nojit versions of programs and re-run tests
  - ../scripts/build.py --batch pydgin-parc-nojit-debug pydgin-arm-nojit-debug pydgin-riscv-nojit-debug
- - cd ../arm; py.test -v arm_test.py
+ - cd ../arm; py.test -v arm_test.py; cd ../build
 # finally build jit versions of programs and re-run tests
  - ../scripts/build.py --batch pydgin-parc-jit pydgin-arm-jit pydgin-riscv-jit
  - cd ../arm; py.test -v arm_test.py
