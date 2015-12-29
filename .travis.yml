@@ -36,6 +36,9 @@ install:
  - cd ..
  - wget https://bitbucket.org/pypy/pypy/downloads/pypy-4.0.1-src.tar.bz2
  - tar xjf pypy-4.0.1-src.tar.bz2
+# clone precompiled binaries for testing and copy
+ - git clone https://github.com/cornell-brg/pydgin-precompiled.git
+ - cp -r pydgin-precompiled/ubmark-nosyscalls/build-arm pydgin/ubmark-nosyscalls
 # create the build directory
 # TODO: once we have proper tests, building pydgins should go here too
  - cd pydgin
@@ -47,8 +50,14 @@ install:
 
 script:
 
-# the only "test" for now is building pydgins successfully
  - cd build
+# first run interpretive tests so that we can fail fast
+ - cd ../arm; py.test -v arm_test.py
  - ../scripts/build-softfloat.py
- - ../scripts/build.py --batch
+# then build nojit versions of programs and re-run tests
+ - ../scripts/build.py --batch pydgin-parc-nojit-debug pydgin-arm-nojit-debug pydgin-riscv-nojit-debug
+ - cd ../arm; py.test -v arm_test.py
+# finally build jit versions of programs and re-run tests
+ - ../scripts/build.py --batch pydgin-parc-jit pydgin-arm-jit pydgin-riscv-jit
+ - cd ../arm; py.test -v arm_test.py
 
