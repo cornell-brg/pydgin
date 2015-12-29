@@ -11,14 +11,24 @@ import subprocess
 # test configuration
 #-----------------------------------------------------------------------
 
+arch       = 'arm'
 dbg_opts   = '--debug insts,mem,rf,regdump'
+opts       = '--max-insts 10000'
+dir        = '../{}'.format( arch )
 
-python     = 'python ../arm/arm-sim.py'
-python_dbg = 'python ../arm/arm-sim.py {}'.format( dbg_opts )
-transl     = '../arm/pydgin-arm-jit'
-transl_dbg = '../arm/pydgin-arm-jit-debug {}'.format( dbg_opts )
+python     = 'python {dir}/{arch}-sim.py {opts}'.format( **locals() )
+python_dbg = 'python {dir}/{arch}-sim.py {opts} {dbg_opts}'.format( **locals() )
 
-ub_path  = '../ubmark-nosyscalls/build-arm'
+# discover translated binaries
+
+transl_bins     = filter( lambda b : b.startswith("pydgin-{}-".format(arch)),
+                          os.listdir( dir ) )
+transl_dbg_bins = filter( lambda b : "-debug" in b, transl_bins )
+transl     = map( lambda b : "{}/{} {}".format( dir, b, opts ), transl_bins )
+transl_dbg = map( lambda b : "{}/{} {} {}".format( dir, b, opts, dbg_opts ),
+                  transl_dbg_bins )
+
+ub_path  = '../ubmark-nosyscalls/build-{}'.format( arch )
 
 ubmarks = [ os.path.join( ub_path, x ) for x in [
   'ubmark-vvadd',
@@ -40,38 +50,18 @@ for filename in ubmarks:
     raise Exception('Please build ubmark binary: {}'.format( filename ))
 
 #-----------------------------------------------------------------------
-# test_python
+# test_ubmark
 #-----------------------------------------------------------------------
 @pytest.mark.parametrize( 'ubmark,iterations', configs )
-def test_python( ubmark, iterations, sim=python ):
+@pytest.mark.parametrize( 'sim', [python, python_dbg] + transl + transl_dbg )
+def test_ubmark( ubmark, iterations, sim ):
   cmd = '{sim} {ubmark} {iterations}'.format( **locals() )
 
-  subprocess.check_call( cmd, shell=True )
+  output = subprocess.check_output( cmd, shell=True )
 
-#-----------------------------------------------------------------------
-# test_translated
-#-----------------------------------------------------------------------
-@pytest.mark.parametrize( 'ubmark,iterations', configs )
-def test_translated( ubmark, iterations, sim=transl ):
-  cmd = '{sim} {ubmark} {iterations}'.format( **locals() )
+  # make sure we got a passed message
 
-  subprocess.check_call( cmd, shell=True )
+  assert "Reached the max_insts" not in output
+  assert "failed" not in output
+  assert "passed" in output
 
-#-----------------------------------------------------------------------
-# test_python_debug
-#-----------------------------------------------------------------------
-@pytest.mark.parametrize( 'ubmark,iterations', configs[0:1] )
-def test_python_debug( ubmark, iterations, sim=python_dbg ):
-  cmd = '{sim} {ubmark} {iterations}'.format( **locals() )
-
-  subprocess.check_call( cmd, shell=True )
-
-
-#-----------------------------------------------------------------------
-# test_translated_debug
-#-----------------------------------------------------------------------
-@pytest.mark.parametrize( 'ubmark,iterations', configs[0:1] )
-def test_translated_debug( ubmark, iterations, sim=transl_dbg ):
-  cmd = '{sim} {ubmark} {iterations}'.format( **locals() )
-
-  subprocess.check_call( cmd, shell=True )
