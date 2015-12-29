@@ -2,6 +2,7 @@
 # arm_asm_test.py
 #=======================================================================
 
+import os
 import os.path
 import itertools
 import pytest
@@ -22,6 +23,12 @@ dbg_opts    = '--debug insts,mem,regdump,syscalls'
 
 python_dbg  = 'python ../arm/arm-sim.py {}'   .format( dbg_opts )
 transl_dbg  = '../arm/pydgin-arm-nojit-debug {}'.format( dbg_opts )
+
+sims = [ python_dbg ]
+
+# add translated dbg only if it exists
+if "pydgin-arm-nojit-debug" in os.listdir( "../arm" ):
+  sims.append( transl_dbg )
 
 #=======================================================================
 # assembly file tests
@@ -202,7 +209,7 @@ file_tests = [
 # test_asm_file_py
 #-----------------------------------------------------------------------
 @pytest.mark.parametrize( 'test_file,expected_out', file_tests )
-@pytest.mark.parametrize( 'sim', [ python_dbg, transl_dbg ] )
+@pytest.mark.parametrize( 'sim', sims )
 def test_asm_file_py( tmpdir, test_file, expected_out, sim ):
 
   # disabled compiling here in the interest of providing pre-compiled test
