@@ -10,6 +10,7 @@ from pydgin.utils import (
   sext_16,
   sext_8,
   signed,
+  intmask,
 )
 # arm-specific utils
 from utils import (
@@ -493,7 +494,7 @@ def execute_cmn( s, inst ):
 def execute_cmp( s, inst ):
   if condition_passed( s, inst.cond ):
     a, (b, _) = s.rf[ inst.rn ], shifter_operand( s, inst )
-    result = a - b
+    result = intmask( a - b )
 
     s.N = (result >> 31)&1
     s.Z = trim_32( result ) == 0
@@ -884,7 +885,7 @@ def execute_orr( s, inst ):
 def execute_rsb( s, inst ):
   if condition_passed( s, inst.cond ):
     a, (b, _) = s.rf[ inst.rn ], shifter_operand( s, inst )
-    result  = b - a
+    result  = intmask( b - a )
     s.rf[ inst.rd ] = trim_32( result )
 
     if inst.S:
@@ -904,7 +905,7 @@ def execute_rsb( s, inst ):
 def execute_rsc( s, inst ):
   if condition_passed( s, inst.cond ):
     a, (b, _) = s.rf[ inst.rn ], shifter_operand( s, inst )
-    result  = b - a - (not s.C)
+    result  = intmask( b - a - (not s.C) )
     s.rf[ inst.rd ] = trim_32( result )
 
     if inst.S:
@@ -924,7 +925,7 @@ def execute_rsc( s, inst ):
 def execute_sbc( s, inst ):
   if condition_passed( s, inst.cond ):
     a, (b, _) = s.rf[ inst.rn ], shifter_operand( s, inst )
-    result  = a - b - (not s.C)
+    result  = intmask( a - b - (not s.C) )
     s.rf[ inst.rd ] = trim_32( result )
 
     if inst.S:
@@ -1105,7 +1106,7 @@ def execute_strt( s, inst ):
 def execute_sub( s, inst ):
   if condition_passed( s, inst.cond ):
     a, (b, _) = s.rf[ inst.rn ], shifter_operand( s, inst )
-    result  = a - b
+    result  = intmask( a - b )
     s.rf[ inst.rd ] = trim_32( result )
 
     if inst.S:
