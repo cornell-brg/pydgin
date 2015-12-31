@@ -39,7 +39,12 @@ install:
 # clone precompiled binaries for testing and copy
  - git clone https://github.com/cornell-brg/pydgin-precompiled.git
  - cp -r pydgin-precompiled/ubmark-nosyscalls/build-arm pydgin/ubmark-nosyscalls
+ - cp -r pydgin-precompiled/ubmark-nosyscalls/build-parc pydgin/ubmark-nosyscalls
+ - cp -r pydgin-precompiled/ubmark-nosyscalls/build-riscv pydgin/ubmark-nosyscalls
  - cp -r pydgin-precompiled/arm/asm_tests/build pydgin/arm/asm_tests
+ - cp -r pydgin-precompiled/parc/asm_tests/build pydgin/parc/asm_tests
+ - mkdir pydgin/riscv/asm_tests
+ - cp -r pydgin-precompiled/riscv/asm_tests/build pydgin/riscv/asm_tests
 # create the build directory
 # TODO: once we have proper tests, building pydgins should go here too
  - cd pydgin
@@ -53,12 +58,20 @@ script:
 
  - cd build
 # first run interpretive tests so that we can fail fast
- - cd ../arm; py.test; cd ../build
+ - cd ../parc; py.test -v
+ - cd ../arm; py.test -v
+ - cd ../riscv; py.test -v
+ - cd ../build
  - ../scripts/build-softfloat.py
 # then build nojit versions of programs and re-run tests
  - ../scripts/build.py --batch pydgin-parc-nojit-debug pydgin-arm-nojit-debug pydgin-riscv-nojit-debug
- - cd ../arm; py.test; cd ../build
+ - cd ../parc; py.test -v
+ - cd ../arm; py.test -v
+ - cd ../riscv; py.test -v
+ - cd ../build
 # finally build jit versions of programs and re-run tests
  - ../scripts/build.py --batch pydgin-parc-jit pydgin-arm-jit pydgin-riscv-jit
- - cd ../arm; py.test
+ - cd ../parc; py.test -v
+ - cd ../arm; py.test -v
+ - cd ../riscv; py.test -v
 
