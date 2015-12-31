@@ -209,10 +209,13 @@ def execute_csrrw( s, inst ):
     s.fcsr, s.rf[inst.rd] = trim( s.rf[inst.rs1], 8), s.fcsr
 
   # mtohost for pass/fail
-  elif inst.csr == 0x780 and result & 0x1:
+  elif inst.csr == 0x780 and result & 0x1 and s.testbin:
     status = result >> 1
-    if status: raise FatalError("Fail! (test #%s)" % status )
-    else:      raise FatalError("Pass!")
+    if status:
+      print "  [ FAILED ] %s (test #%s)" % (s.exe_name, status)
+    else:
+      print "  [ passed ] %s" % s.exe_name
+    s.running = False
   else:
     raise NotImplementedInstError()
   s.pc += 4
