@@ -88,7 +88,7 @@ tests = [
   "parcv3-movz",
   "parcv3-mul-s",
   "parcv3-sub-s",
-  "parcv3-syscall"
+  #"parcv3-syscall"
 ]
 
 # verify binaries exist

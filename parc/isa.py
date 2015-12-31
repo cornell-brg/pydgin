@@ -413,7 +413,7 @@ def execute_div( s, inst ):
   y    = signed( s.rf[ inst.rt ] )
   sign = -1 if (x < 0)^(y < 0) else 1
 
-  s.rf[ inst.rd ] = abs(x) / abs(y) * sign
+  s.rf[ inst.rd ] = trim_32( abs(x) / abs(y) * sign )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -431,7 +431,7 @@ def execute_rem( s, inst ):
   x = signed( s.rf[ inst.rs ] )
   y = signed( s.rf[ inst.rt ] )
 
-  s.rf[ inst.rd ] = abs(x) % abs(y) * (1 if x > 0 else -1)
+  s.rf[ inst.rd ] = trim_32( abs(x) % abs(y) * (1 if x > 0 else -1) )
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -581,7 +581,7 @@ def execute_lui( s, inst ):
 #-----------------------------------------------------------------------
 def execute_beq( s, inst ):
   if s.rf[inst.rs] == s.rf[inst.rt]:
-    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
+    s.pc  = trim_32( signed(s.pc) + 4 + signed(sext_16(inst.imm) << 2) )
   else:
     s.pc += 4
 
@@ -590,7 +590,7 @@ def execute_beq( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bne( s, inst ):
   if s.rf[inst.rs] != s.rf[inst.rt]:
-    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
+    s.pc  = trim_32( signed(s.pc) + 4 + signed(sext_16(inst.imm) << 2) )
   else:
     s.pc += 4
 
@@ -599,7 +599,7 @@ def execute_bne( s, inst ):
 #-----------------------------------------------------------------------
 def execute_blez( s, inst ):
   if signed( s.rf[inst.rs] ) <= 0:
-    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
+    s.pc  = trim_32( signed(s.pc) + 4 + signed(sext_16(inst.imm) << 2) )
   else:
     s.pc += 4
 
@@ -608,7 +608,7 @@ def execute_blez( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bgtz( s, inst ):
   if signed( s.rf[inst.rs] ) > 0:
-    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
+    s.pc  = trim_32( signed(s.pc) + 4 + signed(sext_16(inst.imm) << 2) )
   else:
     s.pc += 4
 
@@ -617,7 +617,7 @@ def execute_bgtz( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bltz( s, inst ):
   if signed( s.rf[inst.rs] ) < 0:
-    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
+    s.pc  = trim_32( signed(s.pc) + 4 + signed(sext_16(inst.imm) << 2) )
   else:
     s.pc += 4
 
@@ -626,7 +626,7 @@ def execute_bltz( s, inst ):
 #-----------------------------------------------------------------------
 def execute_bgez( s, inst ):
   if signed( s.rf[inst.rs] ) >= 0:
-    s.pc  = s.pc + 4 + trim_32(signed(sext_16(inst.imm)) << 2)
+    s.pc  = trim_32( signed(s.pc) + 4 + signed(sext_16(inst.imm) << 2) )
   else:
     s.pc += 4
 
