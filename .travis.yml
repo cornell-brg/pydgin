@@ -56,9 +56,13 @@ install:
 
 script:
 
+# TODO: remove this
+ - ls -RF
  - cd build
 # build softfloat before tests because riscv needs it
  - ../scripts/build-softfloat.py
+# TODO: remove this
+ - ls -RF ..
 # first run interpretive tests so that we can fail fast
  - cd ../parc; py.test -v
  - cd ../arm; py.test -v
@@ -66,6 +70,8 @@ script:
  - cd ../build
 # then build nojit versions of programs and re-run tests
  - ../scripts/build.py --batch pydgin-parc-nojit-debug pydgin-arm-nojit-debug pydgin-riscv-nojit-debug
+# TODO: remove this
+ - ls -RF ..
  - cd ../parc; py.test -v
  - cd ../arm; py.test -v
  - cd ../riscv; py.test -v
