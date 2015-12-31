@@ -70,6 +70,8 @@ script:
  - cd ../build
 # then build nojit versions of programs and re-run tests
  - ../scripts/build.py --batch pydgin-parc-nojit-debug pydgin-arm-nojit-debug pydgin-riscv-nojit-debug
+# XXX: super hacky
+ - cat /tmp/usession-release-4.0.1-1/testing_1/Makefile
 # TODO: remove this
  - ls -RF ..
  - cd ../parc; py.test -v
