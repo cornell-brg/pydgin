@@ -19,6 +19,7 @@ try:
     include_dirs = [ INCL_DIR ],
     library_dirs = [ LIB_DIR ],
     libraries    = ['softfloat'],
+    link_extra   = ['-Wl,-rpath=%s' % LIB_DIR]
   )
 
   bool          = rffi.UINT
