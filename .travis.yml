@@ -74,7 +74,9 @@ script:
  - ls -RF ..
  - cd ../parc; py.test -v
  - cd ../arm; py.test -v
- - cd ../riscv; py.test -v
+ - cd ../riscv
+ - ../riscv/pydgin-riscv-nojit-debug --max-insts 10000 --test --debug insts,mem,rf,regdump ../riscv/asm_tests/build/rv64ui-p-add
+ - py.test -v
  - cd ../build
 # finally build jit versions of programs and re-run tests
  - ../scripts/build.py --batch pydgin-parc-jit pydgin-arm-jit pydgin-riscv-jit
