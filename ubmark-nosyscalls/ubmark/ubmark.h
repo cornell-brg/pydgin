@@ -16,30 +16,30 @@
 
 inline void test_fail( int temp )
 {
-  #ifdef _MIPS_ARCH_MAVEN
-  asm( "li %0, 2;"
-       "mtc0 %0, $1;"
-       "nop;nop;nop;nop;nop;"
-       :
-       : "r"(temp)
-  );
-  #else
+  //#ifdef _MIPS_ARCH_MAVEN
+  //asm( "li %0, 2;"
+  //     "mtc0 %0, $1;"
+  //     "nop;nop;nop;nop;nop;"
+  //     :
+  //     : "r"(temp)
+  //);
+  //#else
   printf( "Test failed(%d)\n", temp );
-  #endif
+  //#endif
 }
 
 inline void test_pass( int temp )
 {
-  #ifdef _MIPS_ARCH_MAVEN
-  asm( "li %0, 1;"
-       "mtc0 %0, $1;"
-       "nop;nop;nop;nop;nop;"
-       :
-       : "r"(temp)
-  );
-  #else
+  //#ifdef _MIPS_ARCH_MAVEN
+  //asm( "li %0, 1;"
+  //     "mtc0 %0, $1;"
+  //     "nop;nop;nop;nop;nop;"
+  //     :
+  //     : "r"(temp)
+  //);
+  //#else
   printf( "Test passed!\n" );
-  #endif
+  //#endif
 }
 
 inline void test_stats_on( int temp )
