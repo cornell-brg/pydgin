@@ -45,9 +45,6 @@ install:
  - cp -r pydgin-precompiled/parc/asm_tests/build pydgin/parc/asm_tests
  - mkdir pydgin/riscv/asm_tests
  - cp -r pydgin-precompiled/riscv/asm_tests/build pydgin/riscv/asm_tests
-# TODO: delete following after debugging
- - ls pydgin/riscv/asm_tests
- - ls pydgin/riscv/asm_tests/build
 # create the build directory
 # TODO: once we have proper tests, building pydgins should go here too
  - cd pydgin
@@ -60,12 +57,13 @@ install:
 script:
 
  - cd build
+# build softfloat before tests because riscv needs it
+ - ../scripts/build-softfloat.py
 # first run interpretive tests so that we can fail fast
  - cd ../parc; py.test -v
  - cd ../arm; py.test -v
  - cd ../riscv; py.test -v
  - cd ../build
- - ../scripts/build-softfloat.py
 # then build nojit versions of programs and re-run tests
  - ../scripts/build.py --batch pydgin-parc-nojit-debug pydgin-arm-nojit-debug pydgin-riscv-nojit-debug
  - cd ../parc; py.test -v
