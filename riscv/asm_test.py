@@ -132,7 +132,7 @@ if not os.path.exists( build_dir ):
   raise Exception('Please build test binaries in {}!'.format( build_dir ))
 for filename in tests:
   if not os.path.isfile( "{}/{}".format( build_dir, filename ) ):
-    raise Exception('Please build test binary: {}'.format( filename ))
+    raise Exception('Please build test binary: {}/{}'.format( build_dir, filename ))
 
 #-----------------------------------------------------------------------
 # test_asm

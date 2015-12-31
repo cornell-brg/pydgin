@@ -45,6 +45,9 @@ install:
  - cp -r pydgin-precompiled/parc/asm_tests/build pydgin/parc/asm_tests
  - mkdir pydgin/riscv/asm_tests
  - cp -r pydgin-precompiled/riscv/asm_tests/build pydgin/riscv/asm_tests
+# TODO: delete following after debugging
+ - ls pydgin/riscv/asm_tests
+ - ls pydgin/riscv/asm_tests/build
 # create the build directory
 # TODO: once we have proper tests, building pydgins should go here too
  - cd pydgin
