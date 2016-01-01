@@ -46,7 +46,6 @@ install:
  - mkdir pydgin/riscv/asm_tests
  - cp -r pydgin-precompiled/riscv/asm_tests/build pydgin/riscv/asm_tests
 # create the build directory
-# TODO: once we have proper tests, building pydgins should go here too
  - cd pydgin
  - mkdir -p build
 
@@ -56,33 +55,23 @@ install:
 
 script:
 
-# TODO: remove this
- - ls -RF
  - cd build
 # build softfloat before tests because riscv needs it
  - ../scripts/build-softfloat.py
-# TODO: remove this
- - ls -RF ..
 # first run interpretive tests so that we can fail fast
- - cd ../parc; py.test -v
- - cd ../arm; py.test -v
- - cd ../riscv; py.test -v
+ - cd ../parc; py.test
+ - cd ../arm; py.test
+ - cd ../riscv; py.test
  - cd ../build
 # then build nojit versions of programs and re-run tests
  - ../scripts/build.py --batch pydgin-parc-nojit-debug pydgin-arm-nojit-debug pydgin-riscv-nojit-debug
-# XXX: super hacky
- - cat /tmp/usession-release-4.0.1-1/testing_1/Makefile
-# TODO: remove this
- - ls -RF ..
- - cd ../parc; py.test -v
- - cd ../arm; py.test -v
- - cd ../riscv
- - ../riscv/pydgin-riscv-nojit-debug --max-insts 10000 --test --debug insts,mem,rf,regdump ../riscv/asm_tests/build/rv64ui-p-add
- - py.test -v
+ - cd ../parc; py.test
+ - cd ../arm; py.test
+ - cd ../riscv; py.test
  - cd ../build
 # finally build jit versions of programs and re-run tests
  - ../scripts/build.py --batch pydgin-parc-jit pydgin-arm-jit pydgin-riscv-jit
- - cd ../parc; py.test -v
- - cd ../arm; py.test -v
- - cd ../riscv; py.test -v
+ - cd ../parc; py.test
+ - cd ../arm; py.test
+ - cd ../riscv; py.test
 
