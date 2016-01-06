@@ -127,6 +127,17 @@ def build_target( name, pypy_dir, build_dir, extra_rpython_flags ):
     print "{} failed building, aborting!".format( name )
     sys.exit( ret )
 
+  # for some reason, -rpath to the linker doesn't seem to work on macs?
+  # we patch the binary generated to add the exact dir of libsoftfloat.so
+
+  if require_softfloat and sys.platform == "darwin":
+    cmd = "install_name_tool -change {short_so} {full_so} {pydgin}" \
+          .format( short_so="libsoftfloat.so",
+                   full_so="{}/../../../libsoftfloat.so".format( build_dir ),
+                   pydgin=name )
+    print cmd
+    subprocess.call( cmd, shell=True )
+
   shutil.copy( name, '{}'.format( build_dir ) )
   symlink_name = '{}/../{}'.format( build_dir, name )
   if os.path.lexists( symlink_name ):

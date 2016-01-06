@@ -19,7 +19,9 @@ try:
     include_dirs = [ INCL_DIR ],
     library_dirs = [ LIB_DIR ],
     libraries    = ['softfloat'],
-    link_extra   = ['-Wl,-rpath=%s' % LIB_DIR]
+    # NOTE: this doesn't seem to work on Macs, so I did a hack in the
+    # build script as well to patch the binary later
+    link_extra   = ['-Wl,-rpath,%s' % LIB_DIR]
   )
 
   bool          = rffi.UINT
