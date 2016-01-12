@@ -65,7 +65,7 @@ class RegisterFile( object ):
       str = ""
       for r in xrange( c, min( self.num_regs, c+per_row ) ):
         str += "%s:%s " % ( pad( "%d" % r, 2 ),
-                            pad_hex( self.regs[r] ) )
+                            pad_hex( self.regs[r], len=(self.nbits/4) ) )
       print str
 
 #-----------------------------------------------------------------------
