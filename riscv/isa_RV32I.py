@@ -259,7 +259,16 @@ def execute_fence_i( s, inst ):
   s.pc += 4
 
 def execute_scall( s, inst ):
-  do_syscall( s )
+  # test pass/fail
+  if s.testbin:
+    status = s.rf[ 28 ] >> 1
+    if status:
+      print "  [ FAILED ] %s (test #%s)" % (s.exe_name, status)
+    else:
+      print "  [ passed ] %s" % s.exe_name
+    s.running = False
+  else:
+    do_syscall( s )
   s.pc += 4
 
 def execute_sbreak( s, inst ):
