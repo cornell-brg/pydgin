@@ -29,6 +29,7 @@ from pydgin.utils import (
 )
 
 from helpers import *
+from csr     import PRV_U, PRV_S, PRV_H, PRV_M
 
 import isa_RV32I, isa_RV64I, isa_RV32M, isa_RV64M, isa_RV32A, isa_RV64A
 
@@ -178,8 +179,12 @@ def execute_nop( s, inst ):
   s.pc += 4
 
 def execute_sret( s, inst ):
-  raise NotImplementedInstError()
-  s.pc += 4
+  if   s.prv == PRV_M:
+    s.pc = s.mepc
+  elif s.prv == PRV_S:
+    s.pc = s.sepc
+  else:
+    raise FatalError( "sret encountered on privilege level %d" % s.prv )
 
 def execute_sfence_vm( s, inst ):
   raise NotImplementedInstError()
