@@ -202,46 +202,45 @@ def execute_hrts( s, inst ):
   s.pc += 4
 
 def execute_csrrw( s, inst ):
-  result = s.rf[inst.rs1]
-  # currently only support csr == 3, which accesses fcsr
-  if inst.csr == 3:
-    # only the low 8 bits of fcsr should be non-zero
-    s.fcsr, s.rf[inst.rd] = trim( s.rf[inst.rs1], 8), s.fcsr
-
-  # mtohost for pass/fail
-  elif inst.csr == 0x780 and result & 0x1 and s.testbin:
-    status = result >> 1
-    if status:
-      print "  [ FAILED ] %s (test #%s)" % (s.exe_name, status)
-    else:
-      print "  [ passed ] %s" % s.exe_name
-    s.running = False
-  else:
-    raise NotImplementedInstError()
+  old_val = s.csr.get_csr( inst.csr )
+  new_val = s.rf[inst.rs1]
+  s.csr.set_csr( inst.csr, new_val )
+  s.rf[inst.rd] = old_val
   s.pc += 4
 
 def execute_csrrs( s, inst ):
-  # currently only support csr == 3, which accesses fcsr
-  if inst.csr == 3:
-    s.rf[inst.rd] = s.fcsr
-  else:
-    raise NotImplementedInstError()
+  old_val = s.csr.get_csr( inst.csr )
+  new_val = old_val | s.rf[inst.rs1]
+  s.csr.set_csr( inst.csr, new_val )
+  s.rf[inst.rd] = old_val
   s.pc += 4
 
 def execute_csrrc( s, inst ):
-  raise NotImplementedInstError()
+  old_val = s.csr.get_csr( inst.csr )
+  new_val = old_val & ~s.rf[inst.rs1]
+  s.csr.set_csr( inst.csr, new_val )
+  s.rf[inst.rd] = old_val
   s.pc += 4
 
 def execute_csrrwi( s, inst ):
-  raise NotImplementedInstError()
+  old_val = s.csr.get_csr( inst.csr )
+  new_val = inst.zimm
+  s.csr.set_csr( inst.csr, new_val )
+  s.rf[inst.rd] = old_val
   s.pc += 4
 
 def execute_csrrsi( s, inst ):
-  raise NotImplementedInstError()
+  old_val = s.csr.get_csr( inst.csr )
+  new_val = old_val | inst.zimm
+  s.csr.set_csr( inst.csr, new_val )
+  s.rf[inst.rd] = old_val
   s.pc += 4
 
 def execute_csrrci( s, inst ):
-  raise NotImplementedInstError()
+  old_val = s.csr.get_csr( inst.csr )
+  new_val = old_val & ~inst.zimm
+  s.csr.set_csr( inst.csr, new_val )
+  s.rf[inst.rd] = old_val
   s.pc += 4
 
 def execute_custom0( s, inst ):

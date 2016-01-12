@@ -81,3 +81,7 @@ class Instruction( object ):
   @property
   def csr(self):
     return self.x(20, 12)
+
+  @property
+  def zimm(self):
+    return self.x(15, 5)
