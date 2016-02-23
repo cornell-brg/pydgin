@@ -9,7 +9,7 @@ import sys
 sys.path.append('..')
 
 from pydgin.sim     import Sim, init_sim
-from pydgin.storage import Memory
+from pydgin.storage import Memory, MMUMemory
 from pydgin.misc    import load_program
 from bootstrap      import syscall_init, test_init, memory_size
 from instruction    import Instruction
@@ -48,6 +48,12 @@ class ParcSim( Sim ):
     # Load the program into a memory object
 
     mem = Memory( size=memory_size, byte_storage=False )
+
+    # MMU project: use MMUMemory
+    # HACKY: we don't have the state yet... pass a null pointer
+
+    mem = MMUMemory( None, mem )
+
     entrypoint, breakpoint = load_program( exe_file, mem  )
 
     # Insert bootstrapping code into memory and initialize processor state
@@ -55,6 +61,9 @@ class ParcSim( Sim ):
     if testbin: self.state = test_init   ( mem, self.debug )
     else:       self.state = syscall_init( mem, breakpoint, run_argv,
                                            run_envp, self.debug )
+
+    # MMU project: actually pass the state to the mmu memory
+    mem.state = self.state
 
     self.state.testbin  = testbin
     self.state.exe_name = exe_name
@@ -67,6 +76,11 @@ class ParcSim( Sim ):
   def run( self ):
     Sim.run( self )
     print "Instructions Executed in Stat Region =", self.state.stat_num_insts
+
+    # MMU project: print load/store counters
+    print "Num mem reads =",  self.state.num_reads
+    print "Num mem ireads =", self.state.num_ireads
+    print "Num mem writes =", self.state.num_writes
 
 # this initializes similator and allows translation and python
 # interpretation

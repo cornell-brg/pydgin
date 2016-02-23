@@ -13,6 +13,37 @@ except ImportError:
   def widen( value ):
     return value
 
+#-------------------------------------------------------------------------
+# MMU project: MMUMemory
+#-------------------------------------------------------------------------
+
+class MMUMemory( object ):
+  _immutable_fields_ = [ "state", "mem" ]
+  def __init__( self, state, mem ):
+    self.state = state
+    self.mem   = mem
+
+  @specialize.argtype(1)
+  def read( self, start_addr, num_bytes ):
+    if self.state is not None:
+      self.state.num_reads += 1
+      # if you want to add trace in the future, open a trace file in
+      # parc/machine.py, and use it to write a new access
+      #self.state.trace.write( hex(start_addr) )
+    return self.mem.read( start_addr, num_bytes )
+
+  def iread( self, start_addr, num_bytes ):
+    if self.state is not None:
+      self.state.num_ireads += 1
+    return self.mem.iread( start_addr, num_bytes )
+
+  @specialize.argtype(1, 3)
+  def write( self, start_addr, num_bytes, value ):
+    if self.state is not None:
+      self.state.num_writes += 1
+    return self.mem.write( start_addr, num_bytes, value )
+
+
 #-----------------------------------------------------------------------
 # RegisterFile
 #-----------------------------------------------------------------------

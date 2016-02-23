@@ -27,5 +27,10 @@ class State( Machine ):
     # syscall stuff... TODO: should this be here?
     self.breakpoint = r_uint( 0 )
 
+    # MMU project: add counters for loads/stores
+    self.num_reads = 0
+    self.num_ireads = 0
+    self.num_writes = 0
+
   def fetch_pc( self ):
     return self.pc
