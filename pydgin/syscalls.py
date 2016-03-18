@@ -316,8 +316,6 @@ def syscall_write( s, arg0, arg1, arg2 ):
 # open
 #-----------------------------------------------------------------------
 def syscall_open( s, arg0, arg1, arg2 ):
-  if s.debug.enabled( "syscalls" ):
-    print "syscall_open"
 
   filename_ptr = arg0
   flags        = arg1
@@ -337,6 +335,8 @@ def syscall_open( s, arg0, arg1, arg2 ):
   # get the filename
 
   filename = get_str( s, filename_ptr )
+  if s.debug.enabled( "syscalls" ):
+    print "filename=%s" % filename,
 
   # open vs. os.open():  http://stackoverflow.com/a/15039662
 
@@ -407,6 +407,9 @@ def syscall_link( s, arg0, arg1, arg2 ):
   src       = get_str( s, src_ptr )
   link_name = get_str( s, link_ptr )
 
+  if s.debug.enabled( "syscalls" ):
+    print "src=%s link=%s" % (src, link_name),
+
   try:
     os.link( src, link_name )
     errno = 0
@@ -431,6 +434,8 @@ def syscall_unlink( s, arg0, arg1, arg2 ):
 
   path = get_str( s, path_ptr )
 
+  if s.debug.enabled( "syscalls" ):
+    print "path=%s" % path,
 
   try:
     os.unlink( path )
@@ -521,6 +526,9 @@ def syscall_stat( s, arg0, arg1, arg2 ):
     print "syscall_stat( path=%x, buf=%x )" % ( path_ptr, buf_ptr ),
 
   path = get_str( s, path_ptr )
+
+  if s.debug.enabled( "syscalls" ):
+    print "path=%s" % path,
 
   try:
     # we get a python stat object

@@ -236,7 +236,7 @@ class _WordMemory( object ):
     # change version
     page = self.get_page_noelide( start_addr )
     if page.is_inst():
-      print "marking inst page a data page"
+      #print "marking inst page a data page"
       page.increment_version()
     self.data[ word ] = r_uint32( value )
 

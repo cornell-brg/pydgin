@@ -45,6 +45,9 @@ def syscall_fstat( s, arg0, arg1, arg2 ):
   fd       = arg0
   buf_ptr  = arg1
 
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_fstat( fd=%x, buf=%x )" % ( fd, buf_ptr ),
+
   if not cmn_sysc.is_fd_open( s, fd ):
     return -1, cmn_sysc.BAD_FD_ERRNO
 
@@ -74,6 +77,9 @@ def syscall_fstat64( s, arg0, arg1, arg2 ):
 
   fd       = arg0
   buf_ptr  = arg1
+
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_fstat64( fd=%x, buf=%x )" % ( fd, buf_ptr ),
 
   if not cmn_sysc.is_fd_open( s, fd ):
     return -1, cmn_sysc.BAD_FD_ERRNO
@@ -105,10 +111,13 @@ def syscall_stat( s, arg0, arg1, arg2 ):
   path_ptr = arg0
   buf_ptr  = arg1
 
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_stat( path=%x, buf=%x )" % ( path_ptr, buf_ptr ),
+
   path = cmn_sysc.get_str( s, path_ptr )
 
   if s.debug.enabled( "syscalls" ):
-    print "filename: %s" % path
+    print "path=%s" % path,
 
   errno = 0
 
@@ -137,10 +146,13 @@ def syscall_stat64( s, arg0, arg1, arg2 ):
   path_ptr = arg0
   buf_ptr  = arg1
 
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_stat( path=%x, buf=%x )" % ( path_ptr, buf_ptr ),
+
   path = cmn_sysc.get_str( s, path_ptr )
 
   if s.debug.enabled( "syscalls" ):
-    print "filename: %s" % path
+    print "path=%s" % path,
 
   errno = 0
 
@@ -169,6 +181,9 @@ def syscall_fcntl64( s, arg0, arg1, arg2 ):
   fd   = arg0
   cmd  = arg1
 
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_fcntl64( fd=%x, cmd=%x )" % ( fd, cmd ),
+
   errno = 0
   ret = -1
 
@@ -193,6 +208,9 @@ def syscall_mmap( s, arg0, arg1, arg2 ):
   req_addr = arg0
   req_len  = arg1
 
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_mmap( addr=%x, len=%x )" % ( req_addr, req_len ),
+
   # assign a new address using the mmap_boundary. TODO: we iginore the
   # requested address
 
@@ -207,6 +225,9 @@ def syscall_mmap( s, arg0, arg1, arg2 ):
 def syscall_getcwd( s, arg0, arg1, arg2 ):
   ptr = arg0
   len = arg1
+
+  if s.debug.enabled( "syscalls" ):
+    print "syscall_getcwd( ptr=%x, len=%x )" % ( ptr, len ),
 
   errno = 0
 
@@ -228,6 +249,11 @@ def syscall_getcwd( s, arg0, arg1, arg2 ):
 #-----------------------------------------------------------------------
 # ignore the syscall without warning
 def syscall_ignore( s, arg0, arg1, arg2 ):
+
+  if s.debug.enabled( "syscalls" ):
+    syscall_number = s.rf[ v4 ]
+    print "syscall_ignore( syscall=%d, arg0=%x, arg1=%x, arg2=%x )" % \
+          ( syscall_number, arg0, arg1, arg2 ),
 
   # return success
 
@@ -395,6 +421,7 @@ syscall_funcs = {
    78:  syscall_ignore,
    91:  syscall_ignore,
   122:  syscall_ignore,
+  140:  syscall_ignore,
   174:  syscall_ignore,
   175:  syscall_ignore,
   191:  syscall_ignore,
@@ -433,7 +460,7 @@ def do_syscall( s ):
 
       if syscall_number == 195 or syscall_number == 183 or syscall_number == 196:
         filename = cmn_sysc.get_str( s, s.rf[0] )
-        print "filename: %s" % filename
+        print "ignored syscall %d filename %s" % (syscall_number, filename)
 
       # returning success
       s.rf[ a1 ] = 0

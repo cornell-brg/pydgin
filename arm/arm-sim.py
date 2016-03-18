@@ -56,9 +56,37 @@ class ArmSim( Sim ):
     # TODO add decode inside instruction:
     #return decode( bits )
 
-    # we check for the following sequence for trigger:
-    # add r1, r1, #0 (e2811000)
-    # add r2, r2, #0 (e2822000)
+    # This is getting a bit complicated, so here is some explanation. All
+    # triggers start with "add r1, r1, #0" (e2811000). Next instruction
+    # might mean different things:
+    #   add r2, r2, #0 (e2822000) -- JIT region begin
+    #   add r3, r3, #0 (e2833000) -- Guard fail (no bridge)
+    #   add r4, r4, #0 (e2844000) -- Guard fail (w/ bridge)
+    #   add r5, r5, #0 (e2855000) -- Load (disabled)
+    #   add r6, r6, #0 (e2866000) -- Store (disabled)
+    #   add r7, r7, #0 (e2877000) -- Finish
+    #   add r8, r8, #0 (e2888000) -- Function call
+    #   add r9, r9, #0 (e2899000) -- Three-inst triggers
+    #   add r10,r10,#X (e28aaXXX) -- Add-sub triggers
+    #
+    # Three-inst triggers (next instruction after "add r9, r9, #0"):
+    #   add r2, r2, #0 (e2822000) -- Blackhole region begin
+    #   add r3, r3, #0 (e2833000) -- Blackhole region exit
+    #   add r4, r4, #0 (e2844000) -- Blackhole region exit (w/ exception)
+    #   add r5, r5, #0 (e2855000) -- GC Major collection begin
+    #   add r6, r6, #0 (e2866000) -- GC Major collection end
+    #   add r7, r7, #0 (e2877000) -- GC Minor collection begin
+    #   add r8, r8, #0 (e2888000) -- GC Minor collection end
+    #   add r9, r9, #0 (e2899000) -- Tracing begin
+    #   add r10,r10,#0 (e28aa000) -- Tracing end
+    #   add r11,r11,#0 (e28bb000) -- Tracing begin (GF -- what was this?)
+    #   add r12,r12,#0 (e28cc000) -- Tracing end (GF -- what was this?)
+    #   add r13,r13,#0 (e28dd000) -- Continue with interpreter
+    #   add r14,r14,#0 (e28ee000) -- Continue with interpreter (w/ exception)
+    #
+    # Add-sub triggers are called as such because they add a value and
+    # then they subtract the same value in the nextinstruction. For now,
+    # different values added (and subtracted are application-level hooks)
     if self.state.trig_state == 0 and bits == 0xe2811000:
       self.state.trig_state = 1
     elif self.state.trig_state == 1:
@@ -74,17 +102,24 @@ class ArmSim( Sim ):
           self.trigger_event( "jit_block", self.state.pc )
         elif bits == 0xe2877000:
           self.trigger_event( "finish", self.state.pc )
-        #elif bits == 0xe2833000:
-        #  self.trigger_event( "guard_fail_%x" % self.state.pc )
-        #elif bits == 0xe2844000:
-        #  self.trigger_event( "guard_fail_bridge_%x" % self.state.pc )
-        #elif bits == 0xe2888000:
-        #  self.trigger_event( "fun_call_%x" % self.state.pc )
+        elif bits == 0xe2833000:
+          self.trigger_event( "guard_fail_%x" % self.state.pc )
+        elif bits == 0xe2844000:
+          self.trigger_event( "guard_fail_bridge_%x" % self.state.pc )
+        elif bits == 0xe2888000:
+          self.trigger_event( "fun_call_%x" % self.state.pc )
         # discount the hook instructions
         self.state.ncycles -= 2
         self.state.trig_state = 0
       elif bits == 0xe2899000:
         self.state.trig_state = 109
+      # these are the addsub (application-level) hooks:
+      elif ( bits & 0xfffff000 ) == 0xe28aa000:
+        # get the hook id
+        hook_id = bits & 0xfff
+        self.trigger_event( "hook_%s" % hook_id )
+        self.state.ncycles -= 2
+        self.state.trig_state = 0
       else:
         self.state.trig_state = 0
 
