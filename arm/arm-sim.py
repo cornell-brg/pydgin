@@ -108,6 +108,11 @@ class ArmSim( Sim ):
           self.trigger_event( "guard_fail_bridge_%x" % self.state.pc )
         elif bits == 0xe2888000:
           self.trigger_event( "fun_call_%x" % self.state.pc )
+          # if we have counting function calls enabled, record the return
+          # pc and the num insts at this point
+          if self.state.count_fun_calls:
+            self.state.fun_call_num_insts = self.state.ncycles
+            self.state.fun_call_return_pc = self.state.pc + 8
         # discount the hook instructions
         self.state.ncycles -= 2
         self.state.trig_state = 0

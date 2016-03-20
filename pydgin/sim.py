@@ -104,7 +104,9 @@ class Sim( object ):
     --max-insts <i> Run until the maximum number of instructions
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
+  Pyxcel specific options:
     --event-file <file> Set event file
+    --count-fun-calls   Count the overhead of function calls from the jit
 
   """
 
@@ -195,6 +197,11 @@ class Sim( object ):
     print 'DONE! Status =', s.status
     print 'Instructions Executed =', s.ncycles
 
+    # pyxcel specific:
+    if s.count_fun_calls:
+      print "fun call num insts =", s.fun_num_insts
+
+
   #-----------------------------------------------------------------------
   # get_entry_point
   #-----------------------------------------------------------------------
@@ -214,6 +221,7 @@ class Sim( object ):
       testbin            = False
       max_insts          = 0
       envp               = []
+      count_fun_calls    = False
 
       # we're using a mini state machine to parse the args
 
@@ -249,6 +257,9 @@ class Sim( object ):
             if not Debug.global_enabled:
               print "WARNING: debugs are not enabled for this translation. " + \
                     "To allow debugs, translate with --debug option."
+
+          elif token == "--count-fun-calls":
+            count_fun_calls = True
 
           elif token in tokens_with_args:
             prev_token = token
@@ -318,6 +329,10 @@ class Sim( object ):
       # pass the state to debug for cycle-triggered debugging
 
       self.debug.set_state( self.state )
+
+      # pyxcel related: count fun calls
+
+      self.state.count_fun_calls = count_fun_calls
 
       # Close after loading
 

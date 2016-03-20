@@ -435,6 +435,12 @@ def execute_bx( s, inst ):
     if s.T:
       raise FatalError( "Entering THUMB mode! Unsupported!")
 
+    # pyxcel record num insts in function calls
+    if s.count_fun_calls:
+      if s.pc == s.fun_call_return_pc:
+        s.fun_call_return_pc = 0
+        s.fun_num_insts += (s.ncycles - s.fun_call_num_insts)
+
   # no pc + 4 on success
   else:
     s.rf[PC] = s.fetch_pc() + 4

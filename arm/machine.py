@@ -10,6 +10,7 @@ from pydgin.debug   import Debug, pad, pad_hex
 #-----------------------------------------------------------------------
 class State( object ):
   _virtualizable_ = ['pc', 'ncycles']
+  _immutable_fields_ = [ 'count_fun_calls' ]
   def __init__( self, memory, debug, reset_addr=0x400 ):
     self.pc       = reset_addr
     self.rf       = ArmRegisterFile( self, num_regs=16 )
@@ -60,6 +61,13 @@ class State( object ):
     self.event_file = None
     self.print_event = False
     self.event_ctrs = {}
+    # function call analysis
+    self.count_fun_calls = False
+    # total number of insts spent at function calls
+    self.fun_num_insts = 0
+    # the number of insts at the time of function call
+    self.fun_call_num_insts = 0
+    self.fun_call_return_pc = 0
 
     # mmap boundary
     from bootstrap import memory_size
