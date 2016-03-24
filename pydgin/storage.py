@@ -109,7 +109,7 @@ class Page( object ):
 #-------------------------------------------------------------------------
 # Memory that uses ints instead of chars
 class _WordMemory( object ):
-  _immutable_fields_ = [ 'page_shamt', 'num_pages', 'pages[*]' ]
+  _immutable_fields_ = [ 'page_shamt', 'num_pages', 'state', 'pages[*]' ]
   def __init__( self, data=None, size=2**10 ):
     self.data  = data if data else [ r_uint32(0) ] * (size >> 2)
     self.size  = (len( self.data ) << 2)
@@ -122,6 +122,9 @@ class _WordMemory( object ):
     self.page_shamt = 8
     self.num_pages = ( 0xffffffff >> self.page_shamt ) + 1
     self.pages = [ Page() for i in xrange( self.num_pages ) ]
+
+    # hacky: state should be patched in
+    self.state = None
 
   def bounds_check( self, addr, x ):
     # check if the accessed data is larger than the memory size
@@ -150,6 +153,10 @@ class _WordMemory( object ):
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
     if self.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr, 'RD' )
+
+    # for pyxcel
+    if self.state is not None:
+      self.state.record_load( start_addr )
 
     value = 0
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
@@ -214,6 +221,10 @@ class _WordMemory( object ):
 
     if self.debug.enabled( "memcheck" ):
       self.bounds_check( start_addr, 'WR' )
+
+    # for pyxcel
+    if self.state is not None:
+      self.state.record_store( start_addr )
 
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
       pass # no masking needed

@@ -435,12 +435,6 @@ def execute_bx( s, inst ):
     if s.T:
       raise FatalError( "Entering THUMB mode! Unsupported!")
 
-    # pyxcel record num insts in function calls
-    if s.count_fun_calls:
-      if s.pc == s.fun_call_return_pc:
-        s.fun_call_return_pc = 0
-        s.fun_num_insts += (s.ncycles - s.fun_call_num_insts)
-
   # no pc + 4 on success
   else:
     s.rf[PC] = s.fetch_pc() + 4
@@ -573,6 +567,7 @@ def execute_ldm1( s, inst ):
       if register_mask & 0b1:
         s.rf[ i ] = s.mem.read( addr, 4 )
         addr += 4
+
       register_mask >>= 1
 
     if register_mask & 0b1:  # reg 15
@@ -627,6 +622,7 @@ def execute_ldr( s, inst ):
     if inst.rd == 15:
       s.rf[PC] = data & 0xFFFFFFFE
       s.T      = data & 0b1
+
       return
     else:
       s.rf[ inst.rd ] = data

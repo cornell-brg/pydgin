@@ -25,27 +25,6 @@ class ArmSim( Sim ):
   def __init__( self ):
     Sim.__init__( self, "ARM", jit_enabled=True )
 
-
-  # print pc only if non-zero
-  def trigger_event( self, descr, pc=0 ):
-
-    if descr not in self.state.event_ctrs:
-      self.state.event_ctrs[ descr ] = 1
-      iter = 1
-    else:
-      iter = self.state.event_ctrs[ descr ] + 1
-      self.state.event_ctrs[ descr ] = iter
-
-    # if pc provided, append to descr
-    if pc != 0:
-      descr = "%s_%x" % ( descr, pc )
-    if self.state.print_event:
-      print descr, self.state.ncycles
-    if self.state.event_file:
-      # write events to a csv file
-      self.state.event_file.write( "%s,%d,%d\n"
-                          % (descr, self.state.ncycles, iter) )
-
   #-----------------------------------------------------------------------
   # decode
   #-----------------------------------------------------------------------
@@ -99,19 +78,20 @@ class ArmSim( Sim ):
            bits == 0xe2888000:
 
         if bits == 0xe2822000:
-          self.trigger_event( "jit_block", self.state.pc )
+          self.state.trigger_event( "jit_block", self.state.pc )
         elif bits == 0xe2877000:
-          self.trigger_event( "finish", self.state.pc )
+          self.state.trigger_event( "finish", self.state.pc,
+                                    end_descr="jit_block" )
         elif bits == 0xe2833000:
-          self.trigger_event( "guard_fail_%x" % self.state.pc )
+          self.state.trigger_event( "guard_fail", self.state.pc,
+                                    end_descr="jit_block" )
         elif bits == 0xe2844000:
-          self.trigger_event( "guard_fail_bridge_%x" % self.state.pc )
+          self.state.trigger_event( "guard_fail_bridge", self.state.pc )
         elif bits == 0xe2888000:
-          self.trigger_event( "fun_call_%x" % self.state.pc )
+          self.state.trigger_event( "fun_call", self.state.pc )
           # if we have counting function calls enabled, record the return
           # pc and the num insts at this point
           if self.state.count_fun_calls:
-            self.state.fun_call_num_insts = self.state.ncycles
             self.state.fun_call_return_pc = self.state.pc + 8
         # discount the hook instructions
         self.state.ncycles -= 2
@@ -122,7 +102,7 @@ class ArmSim( Sim ):
       elif ( bits & 0xfffff000 ) == 0xe28aa000:
         # get the hook id
         hook_id = bits & 0xfff
-        self.trigger_event( "hook_%s" % hook_id )
+        self.state.trigger_event( "hook_%s" % hook_id )
         self.state.ncycles -= 2
         self.state.trig_state = 0
       else:
@@ -130,31 +110,35 @@ class ArmSim( Sim ):
 
     elif self.state.trig_state == 109:
       if   bits == 0xe2822000:
-        self.trigger_event( "blackhole_start" )
+        self.state.trigger_event( "blackhole_start" )
       elif bits == 0xe2833000:
-        self.trigger_event( "blackhole_stop_leave" )
+        self.state.trigger_event( "blackhole_stop_leave",
+                                  end_descr="blackhole_start" )
       elif bits == 0xe2844000:
-        self.trigger_event( "blackhole_stop_exc" )
+        self.state.trigger_event( "blackhole_stop_exc",
+                                  end_descr="blackhole_start" )
       elif bits == 0xe2855000:
-        self.trigger_event( "gc_major_start" )
+        self.state.trigger_event( "gc_major_start" )
       elif bits == 0xe2866000:
-        self.trigger_event( "gc_major_stop" )
+        self.state.trigger_event( "gc_major_stop" )
       elif bits == 0xe2877000:
-        self.trigger_event( "gc_minor_start" )
+        self.state.trigger_event( "gc_minor_start" )
       elif bits == 0xe2888000:
-        self.trigger_event( "gc_minor_stop" )
+        self.state.trigger_event( "gc_minor_stop" )
       elif bits == 0xe2899000:
-        self.trigger_event( "tracing_start" )
+        self.state.trigger_event( "tracing_start" )
       elif bits == 0xe28aa000:
-        self.trigger_event( "tracing_stop" )
+        self.state.trigger_event( "tracing_stop",
+                                  end_descr="tracing_start" )
       elif bits == 0xe28bb000:
-        self.trigger_event( "tracing_start_gf" )
+        self.state.trigger_event( "tracing_start_gf" )
       elif bits == 0xe28cc000:
-        self.trigger_event( "tracing_stop_gf" )
+        self.state.trigger_event( "tracing_stop_gf",
+                                  end_descr="tracing_start_gf" )
       elif bits == 0xe28dd000:
-        self.trigger_event( "cont_run_portal" )
+        self.state.trigger_event( "cont_run_portal" )
       elif bits == 0xe28ee000:
-        self.trigger_event( "cont_run_exc" )
+        self.state.trigger_event( "cont_run_exc" )
 
       self.state.ncycles -= 3
       self.state.trig_state = 0

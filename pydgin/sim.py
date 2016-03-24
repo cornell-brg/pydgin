@@ -107,6 +107,7 @@ class Sim( object ):
   Pyxcel specific options:
     --event-file <file> Set event file
     --count-fun-calls   Count the overhead of function calls from the jit
+    --jit-mem-analysis  JIT memory analysis
 
   """
 
@@ -197,10 +198,27 @@ class Sim( object ):
     print 'DONE! Status =', s.status
     print 'Instructions Executed =', s.ncycles
 
-    # pyxcel specific:
-    if s.count_fun_calls:
-      print "fun call num insts =", s.fun_num_insts
+    # event counters
+    for event in s.event_num_insts:
+      print "event %s = %d (%f)" \
+            % ( event, s.event_num_insts[event],
+                100.0 * s.event_num_insts[event] / s.ncycles )
 
+    # jit mem analysis
+    if s.jit_mem_analysis:
+      # conflict rate increments are 5%
+      rate_inc = 0.05
+      rate = 0
+      while rate < 1:
+        rate_ctr = 0
+        for conflict_rate in s.jit_mem_conflict_rates:
+          if conflict_rate >= rate and conflict_rate < (rate + rate_inc):
+            rate_ctr += 1
+
+        print "jit conflict rate %f = %d" % \
+            ( 100.0 * rate, rate_ctr )
+
+        rate += rate_inc
 
   #-----------------------------------------------------------------------
   # get_entry_point
@@ -222,6 +240,7 @@ class Sim( object ):
       max_insts          = 0
       envp               = []
       count_fun_calls    = False
+      jit_mem_analysis   = False
 
       # we're using a mini state machine to parse the args
 
@@ -260,6 +279,9 @@ class Sim( object ):
 
           elif token == "--count-fun-calls":
             count_fun_calls = True
+
+          elif token == "--jit-mem-analysis":
+            jit_mem_analysis = True
 
           elif token in tokens_with_args:
             prev_token = token
@@ -333,6 +355,10 @@ class Sim( object ):
       # pyxcel related: count fun calls
 
       self.state.count_fun_calls = count_fun_calls
+      self.state.jit_mem_analysis = jit_mem_analysis
+
+      # hacky: attach state to mem
+      self.state.mem.state = self.state
 
       # Close after loading
 
