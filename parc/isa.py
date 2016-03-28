@@ -361,7 +361,7 @@ encodings = [
 # inspect the PC and the state of the machine S to find out deeper stats
 # such as divergence and re-convergence
 def collect_xpc_stats( pc, s, inst, instType ):
-  if s.xpc_en and s.stats_en:
+  if s.xpc_en and s.stats_en and s.xpc_pcall_type == 'pcallrx':
     # XPC is enabled, so we collect all stats.
     # For branching
     ctrl = BranchAddress()
@@ -821,7 +821,7 @@ def execute_jr( s, inst ):
       s.xpc_en = False
       s.rf     = s.scalar_rf
 
-    if s.stats_en:
+    if s.stats_en and False:
       if s.xpc_en:
         # Append a list to record branches and their decisions for each iteration
         s.xpc_stats.pcalls[c].div.append([])
@@ -1441,7 +1441,7 @@ def execute_pcall( s, inst ):
   s.xpc_idx        = s.xpc_start_idx
   assert ( s.xpc_end_idx - s.xpc_start_idx ) > 0
   
-  if s.stats_en:
+  if s.stats_en and False:
     # Record state to be used by the pcall-stat logic
     old_pc    = s.pc
     target_pc = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
@@ -1518,7 +1518,7 @@ def execute_pcallr( s, inst ):
   s.pc              = s.rf[ inst.rt ]
   s.xpc_start_addr  = s.pc
   
-  if s.stats_en:
+  if s.stats_en and False:
     # Initialize a new pcallr if we haven't seen this
     # pc and target combo!
     c   = s.xpc_stats.count - 1
@@ -1575,7 +1575,7 @@ def execute_pcallzr( s, inst ):
   s.pc              = s.rf[ inst.rt ]
   s.xpc_start_addr  = s.pc
 
-  if s.stats_en:
+  if s.stats_en and False:
     # Initialize a new pcallr if we haven't seen this
     # pc and target combo!
     c   = s.xpc_stats.count - 1
