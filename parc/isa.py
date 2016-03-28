@@ -3,8 +3,8 @@
 #=======================================================================
 
 from        utils import trim_5
-from pydgin.utils import signed , unsigned  , sext_16   , sext_8, \
-                         trim_32, bits2float, float2bits, r_uint
+from pydgin.utils import signed    , sext_16   , sext_8, trim_32, \
+                         bits2float, float2bits, r_uint
 
 from pydgin.misc import create_risc_decoder, FatalError
 
@@ -783,7 +783,7 @@ def execute_amo_xchg( s, inst ):
 #-----------------------------------------------------------------------
 def execute_amo_min( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
-  s.mem.write( s.rf[inst.rs], 4, unsigned( min( signed( temp ), signed( s.rf[inst.rt] ) ) ) )
+  s.mem.write( s.rf[inst.rs], 4, trim_32( min( signed( temp ), signed( s.rf[inst.rt] ) ) ) )
   s.rf[ inst.rd ] = temp
   s.pc += 4
 
