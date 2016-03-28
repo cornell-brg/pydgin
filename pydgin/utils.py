@@ -42,6 +42,14 @@ def signed( value ):
     return -intmask( trim_32( twos_complement ) )
   return intmask( value )
 
+#-----------------------------------------------------------------------
+# unsigned
+#-----------------------------------------------------------------------
+def unsigned( value ):
+  temp = value
+  if temp < 0:
+    temp = (2**32) + temp
+  return intmask( temp )
 
 #-----------------------------------------------------------------------
 # trim_32
