@@ -82,6 +82,11 @@ class ParcSim( Sim ):
     print "Num mem ireads =", self.state.num_ireads
     print "Num mem writes =", self.state.num_writes
 
+    # MMU project: if page table enabled, print the stats
+    if self.state.enable_page_table:
+      print "Page table hits =",   self.state.page_table.hits
+      print "Page table misses =", self.state.page_table.misses
+
 # this initializes similator and allows translation and python
 # interpretation
 

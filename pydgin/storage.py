@@ -30,17 +30,29 @@ class MMUMemory( object ):
       # if you want to add trace in the future, open a trace file in
       # parc/machine.py, and use it to write a new access
       #self.state.trace.write( hex(start_addr) )
+
+      # data read in the page table
+      if self.state.enable_page_table:
+        self.state.page_table.tlb_lookup( start_addr )
     return self.mem.read( start_addr, num_bytes )
 
   def iread( self, start_addr, num_bytes ):
     if self.state is not None:
       self.state.num_ireads += 1
+
+      # instruction read in the page table
+      if self.state.enable_page_table:
+        self.state.page_table.tlb_lookup( start_addr )
     return self.mem.iread( start_addr, num_bytes )
 
   @specialize.argtype(1, 3)
   def write( self, start_addr, num_bytes, value ):
     if self.state is not None:
       self.state.num_writes += 1
+
+      # data write in the page table
+      if self.state.enable_page_table:
+        self.state.page_table.tlb_lookup( start_addr )
     return self.mem.write( start_addr, num_bytes, value )
 
 

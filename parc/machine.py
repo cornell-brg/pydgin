@@ -5,12 +5,14 @@
 from pydgin.machine import Machine
 from pydgin.storage import RegisterFile
 from pydgin.utils   import r_uint
+from mmu.tlb        import PageTable
 
 #-----------------------------------------------------------------------
 # State
 #-----------------------------------------------------------------------
 class State( Machine ):
   _virtualizable_ = ['pc', 'num_insts']
+  _immutable_fields_ = ['enable_page_table']
   def __init__( self, memory, debug, reset_addr=0x400):
     Machine.__init__(self, memory, RegisterFile(), debug, reset_addr=reset_addr )
 
@@ -31,6 +33,10 @@ class State( Machine ):
     self.num_reads = 0
     self.num_ireads = 0
     self.num_writes = 0
+
+    # MMU project: page table
+    self.enable_page_table = False
+    self.page_table = PageTable(8)
 
   def fetch_pc( self ):
     return self.pc

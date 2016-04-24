@@ -119,6 +119,7 @@ class Sim( object ):
     --max-insts <i> Run until the maximum number of instructions
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
+    --enable-page-table  Enable page table model
 
   """
 
@@ -239,6 +240,7 @@ class Sim( object ):
       testbin            = False
       max_insts          = 0
       envp               = []
+      enable_page_table  = False
 
       # we're using a mini state machine to parse the args
 
@@ -273,6 +275,9 @@ class Sim( object ):
             if not Debug.global_enabled:
               print "WARNING: debugs are not enabled for this translation. " + \
                     "To allow debugs, translate with --debug option."
+
+          elif token == "--enable-page-table":
+            enable_page_table = True
 
           elif token in tokens_with_args:
             prev_token = token
@@ -335,6 +340,10 @@ class Sim( object ):
       # etc.
 
       self.init_state( exe_file, filename, run_argv, envp, testbin )
+
+      # MMU project: set page table enabled
+
+      self.state.enable_page_table = enable_page_table
 
       # pass the state to debug for cycle-triggered debugging
 
