@@ -5,7 +5,7 @@ from collections import OrderedDict
 class PageTable:
   # Constructor for the class.
   # The default page table size is 8
-  def __init__(self, table_size = 8):
+  def __init__(self, table_size = 32):
     self.hits          = 0
     self.misses        = 0
     self.tlb           = None
@@ -13,13 +13,13 @@ class PageTable:
 
   #Routine to mask the LSB bits
   def mask_lsb(self, value):
-    return ((value & 0xFFFFFC00) >> 10)
+    return ((value & 0xFFFFF000) >> 12)
 
   def populate_table( self, key ):
     self.tlb = OrderedDict()
     for i in xrange( key, key + self.pg_table_size ):
       # the value of the tlb dict isn't used
-      self.tlb[i] = key
+      self.tlb[i] = key + i
 
   def tlb_lookup( self, addr ):
     searchkey = self.mask_lsb( addr )
@@ -41,7 +41,7 @@ class PageTable:
       self.hits += 1
 
 def main():
-  sample_table = PageTable(8)
+  sample_table = PageTable(32)
   sample_table.tlb_lookup(0x00222220)
   sample_table.tlb_lookup(0x00222221)
   sample_table.tlb_lookup(0x10000020)
