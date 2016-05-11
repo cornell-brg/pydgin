@@ -84,8 +84,10 @@ class ParcSim( Sim ):
 
     # MMU project: if page table enabled, print the stats
     if self.state.enable_page_table:
-      print "Page table hits =",   self.state.page_table.hits
-      print "Page table misses =", self.state.page_table.misses
+      print "Page table hits (data)=",   self.state.dpage_table.hits
+      print "Page table misses (data) =", self.state.dpage_table.misses
+      print "Page table hits (Inst)=",   self.state.ipage_table.hits
+      print "Page table misses (Inst) =", self.state.ipage_table.misses
 
 # this initializes similator and allows translation and python
 # interpretation
