@@ -6,12 +6,14 @@ from pydgin.machine import Machine
 from pydgin.storage import RegisterFile
 from pydgin.debug   import pad, pad_hex
 from pydgin.utils   import r_uint, specialize
+from mmu.tlb        import PageTable
 
 #-----------------------------------------------------------------------
 # State
 #-----------------------------------------------------------------------
 class State( Machine ):
   _virtualizable_ = ['pc', 'num_insts', 'N', 'Z', 'C', 'V']
+  _immutable_fields_ = ['enable_page_table']
   def __init__( self, memory, debug, reset_addr=0x400 ):
     Machine.__init__(self,
                      memory,
@@ -43,6 +45,18 @@ class State( Machine ):
 
     # syscall stuff... TODO: should this be here?
     self.breakpoint = 0
+
+    # MMU project: add counters for loads/stores
+    self.num_reads = 0
+    self.num_ireads = 0
+    self.num_writes = 0
+
+    # MMU project: page table
+    self.enable_page_table = False
+    self.ipage_table = PageTable(64)
+
+    # Include page table for data cache
+    self.dpage_table = PageTable(64)
 
   def fetch_pc( self ):
     return self.pc
