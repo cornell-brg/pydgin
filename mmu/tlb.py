@@ -18,27 +18,27 @@ class PageTable:
   # Routine to populate the page table with pg_table_size entries
   def populate_table(self, key):
     self.tlb.clear()
-    self.tlb.setdefault(key, [])
-    self.tlb[key].append(1)  #valid bit
-    self.tlb[key].append(1)  #Physical Address
-    self.tlb[key].append(1)  #Number to keep track for LRU
+    #self.tlb.setdefault(key, [])
+    #self.tlb[key].append(1)  #valid bit
+    #self.tlb[key].append(1)  #Physical Address
+    #self.tlb[key].append(1)  #Number to keep track for LRU
     for x in range(1, self.pg_table_size):
-      self.tlb.update({key + x : [1, x*10, 1]})
+      self.tlb.update({key + x : 1})
 
 
   def update_table(self, key):
     key_addresses = self.tlb.keys()
     stale_key = key_addresses[0]
-    old_index = self.tlb.get(key_addresses[0])
+    old_index = self.tlb[key_addresses[0]]
     highest_index = old_index
 
     for delete_key in self.tlb.keys():
-      if ( self.tlb.get(delete_key)[2] < old_index[2]):
+      if ( self.tlb[delete_key] < old_index):
         stale_key = delete_key
-        old_index = self.tlb.get(delete_key)
+        old_index = self.tlb[delete_key]
 
     del self.tlb[stale_key]
-    self.tlb.update({key : [1, 1000, 1]})
+    self.tlb.update({key :  1})
     return
 
   def tlb_lookup(self, searchkey):
@@ -53,12 +53,12 @@ class PageTable:
       self.misses += 1
     else:
       #There is a hit and hence LRU value needs to be updated accordingly.
-      valid = self.tlb.get(searchkey)[0]
-      phys_addr = self.tlb.get(searchkey)[1]
-      lru_value = self.tlb.get(searchkey)[2]
-      lru_value += 1
+      #valid = self.tlb.get(searchkey)[0]
+      #phys_addr = self.tlb.get(searchkey)[1]
+      lru_value = self.tlb[searchkey]
+      lru_value = lru_value + 1
       del self.tlb[searchkey]
-      self.tlb.update({searchkey : [valid, phys_addr, lru_value]})
+      self.tlb.update({searchkey :  lru_value})
       self.hits += 1
     return
 
