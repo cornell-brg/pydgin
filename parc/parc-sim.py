@@ -63,6 +63,7 @@ class ParcSim( Sim ):
                                            run_envp, self.debug )
 
     # MMU project: actually pass the state to the mmu memory
+
     mem.state = self.state
 
     self.state.testbin  = testbin
@@ -78,11 +79,13 @@ class ParcSim( Sim ):
     print "Instructions Executed in Stat Region =", self.state.stat_num_insts
 
     # MMU project: print load/store counters
+
     print "Num mem reads =",  self.state.num_reads
     print "Num mem ireads =", self.state.num_ireads
     print "Num mem writes =", self.state.num_writes
 
     # MMU project: if page table enabled, print the stats
+
     if self.state.enable_page_table:
       print "Page table hits (data)=",   self.state.dpage_table.hits
       print "Page table misses (data) =", self.state.dpage_table.misses

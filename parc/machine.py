@@ -34,7 +34,8 @@ class State( Machine ):
     self.num_ireads = 0
     self.num_writes = 0
 
-    # MMU project: page table
+    # MMU project: 
+    # Include the page table for instruction cache    
     self.enable_page_table = False
     self.ipage_table = PageTable(64)
     

@@ -34,6 +34,7 @@ class MMUMemory( object ):
       # data read in the page table
       if self.state.enable_page_table:
         self.state.dpage_table.tlb_lookup( r_uint( start_addr ) )
+
     return self.mem.read( start_addr, num_bytes )
 
   def iread( self, start_addr, num_bytes ):
@@ -43,6 +44,7 @@ class MMUMemory( object ):
       # instruction read in the page table
       if self.state.enable_page_table:
         self.state.ipage_table.tlb_lookup( r_uint( start_addr ) )
+
     return self.mem.iread( start_addr, num_bytes )
 
   @specialize.argtype(1, 3)
@@ -53,6 +55,7 @@ class MMUMemory( object ):
       # data write in the page table
       if self.state.enable_page_table:
         self.state.dpage_table.tlb_lookup( r_uint( start_addr ) )
+
     return self.mem.write( start_addr, num_bytes, value )
 
 
