@@ -34,21 +34,20 @@ class PageTable:
   def mask_lsb( self, value ):
 
     if ( self.pg_page_size == 8 ):
-      new_addr = ( ( value & 0xFFFFE000 ) >> 13 )
+      return ( ( value & 0xFFFFE000 ) >> 13 )
 
     elif ( self.pg_page_size == 16 ):
-      new_addr = ( ( value & 0xFFFFC000 ) >> 14 )
+      return ( ( value & 0xFFFFC000 ) >> 14 )
 
     elif ( self.pg_page_size == 32 ):
-      new_addr = ( ( value & 0xFFFF8000 ) >> 15 )
+      return ( ( value & 0xFFFF8000 ) >> 15 )
 
     elif ( self.pg_page_size == 64 ):
-      new_addr = ( ( value & 0xFFFF0000 ) >> 16 )
+      return ( ( value & 0xFFFF0000 ) >> 16 )
 
     elif ( self.pg_page_size == 128 ):
-      new_addr = ( ( value & 0xFFFE0000 ) >> 17 )
+      return ( ( value & 0xFFFE0000 ) >> 17 )
 
-    return new_addr
 
   ##############################################################
   #  Create the page table for TLB
@@ -81,7 +80,7 @@ class PageTable:
         old_index = self.tlb[ delete_key ]
 
     del self.tlb[ stale_key ] 
-    self.tlb.update( { key : 1 } )
+    self.tlb.update( { key : 0 } )
 
     return
 
@@ -113,7 +112,7 @@ class PageTable:
 
       #There is a hit and hence LRU value needs to be updated accordingly.
       lru_value = self.tlb[ searchkey ]
-      lru_value = lru_value + 1
+      lru_value = 1
       del self.tlb[ searchkey ]
       self.tlb.update( { searchkey :  lru_value } )
       self.hits += 1
@@ -144,7 +143,7 @@ def main():
   sample_table.tlb_lookup(0x20000221)
   sample_table.tlb_lookup(0x22000221)
   sample_table.tlb_lookup(0x20030221)
-  sample_table.tlb_lookup(0x22040221)
+  sample_table.tlb_lookup(0x22000221)
   print "Hits=" + str( sample_table.hits )
   print "Misses=" + str( sample_table.misses )
     

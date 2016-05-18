@@ -16,12 +16,13 @@ class PageTable:
   # The constructor initializes the hits, miss varibale and also
   # a tlb dictionary with default page table entry size of 8 
 
-  def __init__( self, table_size = 64 ):
+  def __init__( self, table_size = 8 , page_size = 8):
 
     self.hits          = 0
     self.misses        = 0
     self.tlb           = None
     self.pg_table_size = table_size
+    self.pg_page_size  = page_size
 
   ##############################################################
   # Routine to mask the LSB bits
@@ -30,7 +31,22 @@ class PageTable:
   # for searching the address in the page table in TLB
 
   def mask_lsb( self, value ):
-    return ( ( value & 0xFFFF8000 ) >> 15 )
+
+    if ( self.pg_page_size == 8 ):
+      return ( ( value & 0xFFFFE000 ) >> 13 )
+
+    elif ( self.pg_page_size == 16 ):
+      return ( ( value & 0xFFFFC000 ) >> 14 )
+
+    elif ( self.pg_page_size == 32 ):
+      return ( ( value & 0xFFFF8000 ) >> 15 )
+
+    elif ( self.pg_page_size == 64 ):
+      return ( ( value & 0xFFFF0000 ) >> 16 )
+
+    elif ( self.pg_page_size == 128 ):
+      return ( ( value & 0xFFFE0000 ) >> 17 )
+
 
   ##############################################################
   #  Create the page table for TLB
@@ -86,7 +102,7 @@ class PageTable:
 # modeled TLB before integrating in pydgin
 
 def main():
-  sample_table = PageTable(64)
+  sample_table = PageTable(8,64)
   sample_table.tlb_lookup(0x00222220)
   sample_table.tlb_lookup(0x00222221)
   sample_table.tlb_lookup(0x10000020)

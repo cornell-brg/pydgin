@@ -37,10 +37,10 @@ class State( Machine ):
     # MMU project: 
     # Include the page table for instruction cache    
     self.enable_page_table = False
-    self.ipage_table = PageTable(64)
+    self.ipage_table = PageTable(64,8)
     
     # Include page table for data cache
-    self.dpage_table = PageTable(64)
+    self.dpage_table = PageTable(64,8)
 
   def fetch_pc( self ):
     return self.pc
