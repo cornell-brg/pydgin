@@ -16,12 +16,12 @@ class PageTable:
   # The constructor initializes the hits, miss varibale and also
   # a tlb dictionary with default page table entry size of 8 
 
-  def __init__( self, table_size = 8 , page_size = 8):
+  def __init__( self, tlb_size = 8 , page_size = 8):
 
     self.hits          = 0
     self.misses        = 0
     self.tlb           = None
-    self.pg_table_size = table_size
+    self.pg_tlb_size   = tlb_size
     self.pg_page_size  = page_size
 
   ##############################################################
@@ -57,7 +57,7 @@ class PageTable:
   def populate_table( self, key ):
     self.tlb = OrderedDict()
  
-    for i in xrange( key, key + self.pg_table_size ):
+    for i in xrange( key, key + self.pg_tlb_size ):
       # the value of the tlb dict isn't used
       self.tlb[i] = key + i
 

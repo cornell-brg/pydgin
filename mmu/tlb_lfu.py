@@ -17,12 +17,12 @@ class PageTable:
   # a tlb dictionary with default page table entry size of 8 and 
   # page size as 8KB
 
-  def __init__( self, table_size = 8 , page_size = 8):
+  def __init__( self, tlb_size = 8 , page_size = 8):
 
     self.hits          = 0
     self.misses        = 0
     self.tlb           = None
-    self.pg_table_size = table_size
+    self.pg_tlb_size   = tlb_size
     self.pg_page_size  = page_size
 
   ##############################################################
@@ -59,7 +59,7 @@ class PageTable:
 
     self.tlb = OrderedDict()
 
-    for x in range( 1, self.pg_table_size ):
+    for x in range( 1, self.pg_tlb_size ):
       self.tlb.update( { key + x : 1 } )
 
   ##############################################################
@@ -110,11 +110,11 @@ class PageTable:
 
     else:
 
-      #There is a hit and hence LRU value needs to be updated accordingly.
-      lru_value = self.tlb[ searchkey ]
-      lru_value = lru_value + 1
+      #There is a hit and hence LFU value needs to be updated accordingly.
+      lfu_value = self.tlb[ searchkey ]
+      lfu_value = lfu_value + 1
       del self.tlb[ searchkey ]
-      self.tlb.update( { searchkey :  lru_value } )
+      self.tlb.update( { searchkey :  lfu_value } )
       self.hits += 1
 
     return
