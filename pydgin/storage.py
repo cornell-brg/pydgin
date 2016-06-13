@@ -96,10 +96,11 @@ def Memory( data=None, size=2**10, byte_storage=False ):
 #-------------------------------------------------------------------------
 # Memory that uses ints instead of chars
 class _WordMemory( object ):
-  def __init__( self, data=None, size=2**10 ):
+  def __init__( self, data=None, size=2**10, suppress_debug=False ):
     self.data  = data if data else [ r_uint32(0) ] * (size >> 2)
     self.size  = r_uint(len( self.data ) << 2)
     self.debug = Debug()
+    self.suppress_debug = suppress_debug
 
     # TODO: pass data_section to memory for bounds checking
     self.data_section = 0x00000000
@@ -129,9 +130,9 @@ class _WordMemory( object ):
     word = start_addr >> 2
     byte = start_addr &  0b11
 
-    if self.debug.enabled( "mem" ):
+    if self.debug.enabled( "mem" ) and not self.suppress_debug:
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
-    if self.debug.enabled( "memcheck" ):
+    if self.debug.enabled( "memcheck" ) and not self.suppress_debug:
       self.bounds_check( start_addr, 'RD' )
 
     value = 0
@@ -169,7 +170,7 @@ class _WordMemory( object ):
     word = start_addr >> 2
     byte = start_addr &  0b11
 
-    if self.debug.enabled( "memcheck" ):
+    if self.debug.enabled( "memcheck" ) and not self.suppress_debug:
       self.bounds_check( start_addr, 'WR' )
 
     if   num_bytes == 4:  # TODO: byte should only be 0 (only aligned)
@@ -185,7 +186,7 @@ class _WordMemory( object ):
     else:
       raise Exception('Invalid num_bytes: %d!' % num_bytes)
 
-    if self.debug.enabled( "mem" ):
+    if self.debug.enabled( "mem" ) and not self.suppress_debug:
       print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
                                      pad_hex( value ) ),
     self.data[ word ] = r_uint32( value )
@@ -194,10 +195,11 @@ class _WordMemory( object ):
 # _ByteMemory
 #-----------------------------------------------------------------------
 class _ByteMemory( object ):
-  def __init__( self, data=None, size=2**10 ):
+  def __init__( self, data=None, size=2**10, suppress_debug=False ):
     self.data  = data if data else [' '] * size
     self.size  = len( self.data )
     self.debug = Debug()
+    self.suppress_debug = suppress_debug
 
   def bounds_check( self, addr ):
     # check if the accessed data is larger than the memory size
@@ -210,15 +212,15 @@ class _ByteMemory( object ):
 
   @unroll_safe
   def read( self, start_addr, num_bytes ):
-    if self.debug.enabled( "memcheck" ):
+    if self.debug.enabled( "memcheck" ) and not self.suppress_debug:
       self.bounds_check( start_addr )
     value = 0
-    if self.debug.enabled( "mem" ):
+    if self.debug.enabled( "mem" ) and not self.suppress_debug:
       print ':: RD.MEM[%s] = ' % pad_hex( start_addr ),
     for i in range( num_bytes-1, -1, -1 ):
       value = value << 8
       value = value | ord( self.data[ start_addr + i ] )
-    if self.debug.enabled( "mem" ):
+    if self.debug.enabled( "mem" ) and not self.suppress_debug:
       print '%s' % pad_hex( value ),
     return value
 
@@ -236,9 +238,9 @@ class _ByteMemory( object ):
 
   @unroll_safe
   def write( self, start_addr, num_bytes, value ):
-    if self.debug.enabled( "memcheck" ):
+    if self.debug.enabled( "memcheck" ) and not self.suppress_debug:
       self.bounds_check( start_addr )
-    if self.debug.enabled( "mem" ):
+    if self.debug.enabled( "mem" ) and not self.suppress_debug:
       print ':: WR.MEM[%s] = %s' % ( pad_hex( start_addr ),
                                      pad_hex( value ) ),
     for i in range( num_bytes ):
@@ -267,11 +269,12 @@ class _SparseMemory( object ):
 
   def add_block( self, block_addr ):
     #print "adding block: %x" % block_addr
-    self.block_dict[ block_addr ] = self.BlockMemory( size=self.block_size )
+    self.block_dict[ block_addr ] = self.BlockMemory( size=self.block_size,
+                                                      suppress_debug=True )
 
   @elidable
   def get_block_mem( self, block_addr ):
-    #block_idx  = block_dict[ 
+    #block_idx  = block_dict[
     if block_addr not in self.block_dict:
       self.add_block( block_addr )
     block_mem = self.block_dict[ block_addr ]
