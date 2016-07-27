@@ -528,28 +528,21 @@ def elf_reader( file_obj, is_64bit=False ):
     #section_name = start.partition('\0')[0]
     section_name = start.split('\0', 1)[0]
 
-    # only sections marked as lloc should be written to memory
-
-    if not (shdr.flags & ElfSectionHeader.FLAGS_ALLOC):
-      continue
-
     # Read the section data if it exists
-
-    if section_name not in ['.sbss', '.bss']:
+    if (not (shdr.flags & ElfSectionHeader.FLAGS_ALLOC) and
+        section_name != 'loader_cfg'):
+      continue
+    elif shdr.type == ElfSectionHeader.TYPE_NOBITS:
+      data = '\0' * shdr.size  # Section contains no data.
+    elif (shdr.type == ElfSectionHeader.TYPE_PROGBITS or
+          shdr.type == ElfSectionHeader.TYPE_STRTAB or
+          shdr.type == ElfSectionHeader.TYPE_SYMTAB):
       file_obj.seek( intmask( shdr.offset ) )
       data = file_obj.read( intmask( shdr.size ) )
-
-    # NOTE: the .bss and .sbss sections don't actually contain any
-    # data in the ELF.  These sections should be initialized to zero.
-    # For more information see:
-    #
-    # - http://stackoverflow.com/questions/610682/bss-section-in-elf-file
-
-    else:
-      data = '\0' * shdr.size
+    else:  # Unknown section type.
+      continue
 
     # Save the data holding the symbol string table
-
     if shdr.type == ElfSectionHeader.TYPE_STRTAB:
       strtab_data = data
 
