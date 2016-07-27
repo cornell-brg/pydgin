@@ -414,5 +414,5 @@ def init_sim( sim ):
   if caller_name == "__main__":
     # enable debug flags in interpreted mode
     Debug.global_enabled = True
-    sim.get_entry_point()( sys.argv )
+    sys.exit(sim.get_entry_point()( sys.argv ))
 
