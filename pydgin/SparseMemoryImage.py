@@ -25,8 +25,9 @@ class SparseMemoryImage (object):
       self.data = data
 
     def __str__( self ):
-      return "{}: addr={} data={}" \
-        .format( self.name, hex(self.addr), binascii.hexlify(self.data) )
+      return "{}: addr={} data={}" % ( self.name,
+                                       hex(self.addr),
+                                       binascii.hexlify(self.data) )
 
     def __eq__( self, other ):
       return     self.name == other.name \
@@ -69,8 +70,10 @@ class SparseMemoryImage (object):
     idx = 0
     print "Idx Name           Addr     Size"
     for section in self.sections:
-      print "{:>3} {:<14} {:0>8x} {}" \
-        .format( idx, section.name, section.addr, len(section.data) )
+      print "{:>3} {:<14} {:0>8x} {}" % ( idx,
+                                          section.name,
+                                          section.addr,
+                                          len(section.data) )
       idx += 1
 
   #-----------------------------------------------------------------------
@@ -97,5 +100,5 @@ class SparseMemoryImage (object):
 
   def print_symbol_table( self ):
     for key,value in self.symbols.iteritems():
-      print " {:0>8x} {}".format( value, key )
+      print " {:0>8x} {}" % ( value, key )
 
