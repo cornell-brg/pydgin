@@ -75,5 +75,11 @@ class State( Machine ):
     self.stat_inst_begin   = [ 0 ]     * 16
     self.stat_inst_num_insts = [ 0 ]     * 16
 
+    # shreesha: task tracing
+    # global task-counter
+    self.task_counter = 0
+    # task-counter stack to correctly track the task execution order
+    self.task_counter_stack = []
+
   def fetch_pc( self ):
     return self.pc

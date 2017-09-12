@@ -103,6 +103,7 @@ class Sim( object ):
          regdump            register dump
          syscalls           syscall information
          bootstrap          initial stack and register state
+         tasktrace          enable tracing for tasks
 
     --max-insts <i> Run until the maximum number of instructions
     --ncores <i>    Number of cores to simulate
@@ -189,6 +190,14 @@ class Sim( object ):
                   pad_hex( inst_bits ),
                   pad( inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),
+        # shreesha: if the tasktrace flag is enabled and currently, there
+        # is a task being executed, then dump trace
+        if s.debug.enabled( "tasktrace") and len( s.task_counter_stack ) != 0:
+          print "t%s %s %s %s" % (
+                  s.task_counter_stack[-1],
+                  pad( "%x" % pc, 8, " ", False ),
+                  pad_hex( inst_bits ),
+                  pad( inst.str, 12 )),
 
         exec_fun( s, inst )
       except FatalError as error:
@@ -207,6 +216,9 @@ class Sim( object ):
         print
       if s.debug.enabled( "regdump" ):
         s.rf.print_regs( per_row=4 )
+      # shreesha: pretty trace formatting
+      if s.debug.enabled( "tasktrace" ) and len( s.task_counter_stack ) != 0:
+        print
 
       # check if we have reached the end of the maximum instructions and
       # exit if necessary
@@ -240,7 +252,7 @@ class Sim( object ):
           sim       = self,
         )
 
-    print 'DONE! Status =', s.status
+    print '\nDONE! Status =', s.status
     print 'Total Ticks Simulated = %d' % tick_ctr
 
     # show all stats

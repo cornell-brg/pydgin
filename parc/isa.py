@@ -1205,6 +1205,20 @@ def execute_stat( s, inst ):
   # beginning cycle and add the difference to the accumulator when turned
   # off (or the program has ended)
 
+  # shreesha: task tracing
+  # stat_id 10 in the wsrt runtime is related to the start and
+  # end of a task execution. On the start of the task execution we simply
+  # bump the global task counter and then push the value into the stack to
+  # correctly track the execution order. When a task finishes we simply pop
+  # the task counter from the task_counter_stack data structure
+  if stat_en and stat_id == 10:
+    s.task_counter = s.task_counter + 1
+    s.task_counter_stack.append( s.task_counter )
+
+  if not stat_en and stat_id == 10:
+    s.task_counter_stack.pop()
+  # task tracing
+
   # turn on stats
   if stat_en and not s.stat_inst_en[ stat_id ]:
     s.stat_inst_en[ stat_id ] = True
