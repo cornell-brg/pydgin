@@ -80,6 +80,8 @@ class State( Machine ):
     self.task_counter = 0
     # task-counter stack to correctly track the task execution order
     self.task_counter_stack = []
+    # flag to indicate task vs. runtime mode
+    self.task_mode = False
 
   def fetch_pc( self ):
     return self.pc

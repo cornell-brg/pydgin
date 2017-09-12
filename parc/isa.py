@@ -1215,6 +1215,12 @@ def execute_stat( s, inst ):
     s.task_counter = s.task_counter + 1
     s.task_counter_stack.append( s.task_counter )
 
+  if stat_en and stat_id == 15:
+    s.task_mode = False
+
+  if not stat_en and stat_id == 15:
+    s.task_mode = True
+
   if not stat_en and stat_id == 10:
     s.task_counter_stack.pop()
   # task tracing

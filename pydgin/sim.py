@@ -192,12 +192,12 @@ class Sim( object ):
                   pad( "%d" % s.num_insts, 8 ), ),
         # shreesha: if the tasktrace flag is enabled and currently, there
         # is a task being executed, then dump trace
-        if s.debug.enabled( "tasktrace") and len( s.task_counter_stack ) != 0:
+        if s.debug.enabled( "tasktrace") and len( s.task_counter_stack ) != 0 and s.task_mode:
           print "t%s %s %s %s" % (
                   s.task_counter_stack[-1],
                   pad( "%x" % pc, 8, " ", False ),
                   pad_hex( inst_bits ),
-                  pad( inst.str, 12 )),
+                  pad( inst.str, 12 ))
 
         exec_fun( s, inst )
       except FatalError as error:
@@ -216,9 +216,6 @@ class Sim( object ):
         print
       if s.debug.enabled( "regdump" ):
         s.rf.print_regs( per_row=4 )
-      # shreesha: pretty trace formatting
-      if s.debug.enabled( "tasktrace" ) and len( s.task_counter_stack ) != 0:
-        print
 
       # check if we have reached the end of the maximum instructions and
       # exit if necessary
