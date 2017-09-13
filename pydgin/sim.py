@@ -32,24 +32,6 @@ def jitpolicy(driver):
 #-------------------------------------------------------------------------
 # Abstract simulator class
 
-runtime_list = [
-[23636, 8],
-[23628, 8],
-[23644, 384],
-[26836, 604],
-[24028, 2808],
-]
-
-def in_runtime(pc):
-  flag = False
-  for r in runtime_list:
-    base = r[0]
-    size = r[1]
-    if base <= pc <= base+size:
-      flag = True
-      break
-  return flag
-
 class Sim( object ):
 
   def __init__( self, arch_name, jit_enabled=False ):
@@ -210,7 +192,7 @@ class Sim( object ):
                   pad( "%d" % s.num_insts, 8 ), ),
         # shreesha: if the tasktrace flag is enabled and currently, there
         # is a task being executed, then dump trace
-        if s.debug.enabled( "tasktrace") and len( s.task_counter_stack ) != 0 and not in_runtime(pc):
+        if s.debug.enabled( "tasktrace") and len( s.task_counter_stack ) != 0 and s.task_mode:
           print "t%s %s %s %s" % (
                   s.task_counter_stack[-1],
                   pad( "%x" % pc, 8, " ", False ),

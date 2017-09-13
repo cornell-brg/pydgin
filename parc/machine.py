@@ -80,8 +80,14 @@ class State( Machine ):
     self.task_counter = 0
     # task-counter stack to correctly track the task execution order
     self.task_counter_stack = []
-    # flag to indicate task vs. runtime mode
+    # flag to indicate runtime mode
+    self.runtime_mode = False
+    # runtime ras
+    self.runtime_ras = []
+    # flag to indicate task mode
     self.task_mode = False
+    # task ras
+    self.task_ras = []
     # task graph
     self.task_graph = []
 

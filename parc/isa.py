@@ -564,9 +564,24 @@ def execute_j( s, inst ):
 #-----------------------------------------------------------------------
 # jal
 #-----------------------------------------------------------------------
+# TBD: Fix this to be actually read from a file and constructed as an in
+# memory data-structure
+runtime_funcs_addr_list = [26836, 23644, 24028, 23636, 23628]
+
 def execute_jal( s, inst ):
   s.rf[31] = s.pc + 4
   s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
+  # shreesha: tasktrace
+  # if the target address is belongs to one of the runtime related
+  # functions (TaskGroup(), run(), wait(), run_and_wait()), then set the
+  # runtime mode flag and record the return address to turn off the runtime
+  # mode at exit. When detecting a runtime mode, check if the previously in
+  # task mode and set that to false
+  if s.pc in runtime_funcs_addr_list:
+    if s.task_mode:
+      s.task_mode = False
+    s.runtime_mode = True
+    s.runtime_ras.append( s.rf[31] )
 
 #-----------------------------------------------------------------------
 # jr
@@ -590,29 +605,52 @@ def execute_jr( s, inst ):
   #  assert inst.rs == 31
 
   # Non-pcallrx semantics: handle loop iteration variable
-  if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
-              and s.xpc_pcall_type != 'pcallrx':
-    if s.xpc_idx < ( s.xpc_end_idx - 1 ):
-      s.xpc_idx += 1
-      s.rf[4]    = s.xpc_idx
-      s.pc       = s.xpc_start_addr
-    else:
-      s.xpc_en = False
-      s.rf     = s.scalar_rf
-      s.pc     = s.xpc_return_addr
+  #if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
+  #            and s.xpc_pcall_type != 'pcallrx':
+  #  if s.xpc_idx < ( s.xpc_end_idx - 1 ):
+  #    s.xpc_idx += 1
+  #    s.rf[4]    = s.xpc_idx
+  #    s.pc       = s.xpc_start_addr
+  #  else:
+  #    s.xpc_en = False
+  #    s.rf     = s.scalar_rf
+  #    s.pc     = s.xpc_return_addr
 
-  # pcallrx semantics: behaves exactly like jr
-  elif s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
-                and s.xpc_pcall_type == 'pcallrx':
-    s.xpc_en = False
-    s.pc     = s.xpc_return_addr
-    # Switch back to scalar regfile if --accel-rf
-    if s.accel_rf:
-      s.rf     = s.scalar_rf
-    s.rf[31] = s.xpc_saved_ra
+  ## pcallrx semantics: behaves exactly like jr
+  #elif s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
+  #              and s.xpc_pcall_type == 'pcallrx':
+  #  s.xpc_en = False
+  #  s.pc     = s.xpc_return_addr
+  #  # Switch back to scalar regfile if --accel-rf
+  #  if s.accel_rf:
+  #    s.rf     = s.scalar_rf
+  #  s.rf[31] = s.xpc_saved_ra
 
-  else:
-    s.pc = s.rf[inst.rs]
+  s.pc = s.rf[inst.rs]
+
+  # shreesha: tasktrace
+  # check if the return address was in the return address for exiting the
+  # runtime mode and set the runtime mode to be false. If the task return
+  # address is not empty, then we were executing in task mode and are
+  # getting back to the task mode
+  if s.pc in s.runtime_ras:
+    s.runtime_mode = False
+    s.runtime_ras.pop()
+    if len( s.task_ras ) != 0:
+      s.task_mode = True
+
+  # shreesha: tasktrace
+  # check if the return address was in the return address for exiting the
+  # task mode and set the task mode to be false. If the runtime return
+  # address is not empty, then we were executing in runtime mode and are
+  # getting back to the runtime mode
+  if s.pc in s.task_ras:
+    s.task_mode = False
+    s.task_ras.pop()
+    # pop the task_counter_stack
+    s.task_counter_stack.pop()
+    if len( s.runtime_ras ) != 0:
+      s.runtime_mode = True
 
 #-----------------------------------------------------------------------
 # jalr
@@ -620,6 +658,22 @@ def execute_jr( s, inst ):
 def execute_jalr( s, inst ):
   s.rf[inst.rd] = s.pc + 4
   s.pc   = s.rf[inst.rs]
+  # shreesha: tasktrace
+  # check if we are in runtime mode and that stat instruction code for
+  # executing a task has been set, if this is true then we are executing in
+  # task mode, record where we entered the task mode & reset runtime mode
+  if s.runtime_mode and s.stat_inst_en[10]:
+    s.runtime_mode = False
+    s.task_mode = True
+    s.task_ras.append( s.rf[inst.rd] )
+    # increment the task_counter and build the task dependence graph with
+    # the aid of the task_counter_stack
+    if s.task_counter == 0:
+      s.task_graph.append([0,1])
+    else:
+      s.task_graph.append([s.task_counter_stack[-1], s.task_counter+1])
+    s.task_counter = s.task_counter + 1
+    s.task_counter_stack.append( s.task_counter )
 
 #-----------------------------------------------------------------------
 # lui
@@ -1205,37 +1259,13 @@ def execute_stat( s, inst ):
   # beginning cycle and add the difference to the accumulator when turned
   # off (or the program has ended)
 
-  # shreesha: task tracing
-  # stat_id 10 in the wsrt runtime is related to the start and
-  # end of a task execution. On the start of the task execution we simply
-  # bump the global task counter and then push the value into the stack to
-  # correctly track the execution order. When a task finishes we simply pop
-  # the task counter from the task_counter_stack data structure
-  if stat_en and stat_id == 10:
-    if s.task_counter == 0:
-      s.task_graph.append([0,1])
-    else:
-      s.task_graph.append([s.task_counter_stack[-1], s.task_counter+1])
-    s.task_counter = s.task_counter + 1
-    s.task_counter_stack.append( s.task_counter )
-
-  if stat_en and stat_id == 15:
-    s.task_mode = False
-
-  if not stat_en and stat_id == 15:
-    s.task_mode = True
-
-  if not stat_en and stat_id == 10:
-    s.task_counter_stack.pop()
-  # task tracing
-
   # turn on stats
-  if stat_en and not s.stat_inst_en[ stat_id ]:
+  if stat_en and (not s.stat_inst_en[ stat_id ]):
     s.stat_inst_en[ stat_id ] = True
     s.stat_inst_begin[ stat_id ] = s.num_insts
 
   # turn off stats -- accumulate the difference
-  elif not stat_en and s.stat_inst_en[ stat_id ]:
+  elif (not stat_en) and s.stat_inst_en[ stat_id ]:
     s.stat_inst_en[ stat_id ] = False
     s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
 
