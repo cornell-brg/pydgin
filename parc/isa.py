@@ -1212,6 +1212,10 @@ def execute_stat( s, inst ):
   # correctly track the execution order. When a task finishes we simply pop
   # the task counter from the task_counter_stack data structure
   if stat_en and stat_id == 10:
+    if s.task_counter == 0:
+      s.task_graph.append([0,1])
+    else:
+      s.task_graph.append([s.task_counter_stack[-1], s.task_counter+1])
     s.task_counter = s.task_counter + 1
     s.task_counter_stack.append( s.task_counter )
 

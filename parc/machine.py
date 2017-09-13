@@ -82,6 +82,8 @@ class State( Machine ):
     self.task_counter_stack = []
     # flag to indicate task vs. runtime mode
     self.task_mode = False
+    # task graph
+    self.task_graph = []
 
   def fetch_pc( self ):
     return self.pc

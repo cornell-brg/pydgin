@@ -118,6 +118,10 @@ class ParcSim( Sim ):
       # print XPC stats
       print "  Number of pcalls =", state.num_pcalls
 
+      # print the task graph
+      for pair in state.task_graph:
+        print pair
+
 # this initializes similator and allows translation and python
 # interpretation
 
