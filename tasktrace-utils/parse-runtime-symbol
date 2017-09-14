@@ -7,10 +7,10 @@
 # list structure used by the pydgin task trace tool
 
 import os
-import pickle
 import re
 import sys
 import subprocess
+import csv
 
 #-------------------------------------------------------------------------
 # Utility Functions
@@ -52,6 +52,7 @@ def inspect_app( app ):
 
 def main():
   for app in app_list:
-    pickle.dump( inspect_app( app ), open( app + ".nm", "wb" ) ) 
+    f = open( app + ".nm", "wb" )
+    csv.writer(f).writerow( inspect_app( app ) )
 
 main()

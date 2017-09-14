@@ -62,6 +62,7 @@ class Sim( object ):
     self.task_trace_dump = False
     self.task_trace_writer = None
     self.task_graph_writer = None
+    self.task_trace_ctr = 0
     self.task_trace_dump_interval = 10000
 
   #-----------------------------------------------------------------------
@@ -155,7 +156,6 @@ class Sim( object ):
     core_id = 0
     tick_ctr = 0
     # shreesha: tasktrace
-    task_trace_ctr = 0
     s = self.states[ core_id ]
 
     # use proc 0 to determine if should be running
@@ -200,17 +200,19 @@ class Sim( object ):
                   pad( "%d" % s.num_insts, 8 ), ),
         # shreesha: is a task being executed, then dump trace
         if s.task_mode:
-          task_trace_ctr = task_trace_ctr + 1
-          s.task_trace.append( [s.task_counter_stack[-1], pc, inst_bits, inst.str ])
-          if task_trace_ctr == self.task_trace_dump_interval:
-            task_trace_ctr = 0
-            writer = csv.writer(self.task_trace_writer)
-            for x in s.task_trace:
-              writer.writerow(x)
+          self.task_trace_ctr = self.task_trace_ctr + 1
+          s.task_trace.append( [s.task_counter_stack[-1], pc, inst_bits])
+          if self.task_trace_ctr == self.task_trace_dump_interval:
+            self.task_trace_ctr = 0
+            for entry in s.task_trace:
+              for item in entry:
+                self.task_trace_writer.write("%s," % item)
+              self.task_trace_writer.write("\n")
             s.task_trace = []
-            writer = csv.writer(self.task_graph_writer)
-            for x in s.task_graph:
-              writer.writerow(x)
+            for entry in s.task_graph:
+              for item in entry:
+                self.task_graph_writer.write("%s," % item)
+              self.task_graph_writer.write("\n")
             s.task_graph = []
 
         exec_fun( s, inst )
@@ -270,13 +272,15 @@ class Sim( object ):
     if self.task_trace_dump:
       for state in self.states:
         if state.task_trace:
-          writer = csv.writer(self.task_trace_writer)
-          for x in state.task_trace:
-            writer.writerow(x)
+          for entry in state.task_trace:
+            for item in entry:
+              self.task_trace_writer.write("%s," % item)
+            self.task_trace_writer.write("\n")
         if state.task_graph:
-          writer = csv.writer(self.task_graph_writer)
-          for x in state.task_graph:
-            writer.writerow(x)
+          for entry in state.task_graph:
+            for item in entry:
+              self.task_graph_writer.write("%s," % item)
+            self.task_graph_writer.write("\n")
         self.task_trace_writer.close()
         self.task_graph_writer.close()
 
@@ -464,7 +468,8 @@ class Sim( object ):
       if task_runtime_md:
         try:
           task_runtime_md_file = open( task_runtime_md, 'rb' )
-          runtime_funcs_addr_list = pickle.load( task_runtime_md_file )
+          line = task_runtime_md_file.readline().strip().split(",")
+          runtime_funcs_addr_list = [ int( n ) for n in line ]
           for i in range( self.ncores ):
             self.states[i].runtime_funcs_addr_list = runtime_funcs_addr_list
           task_runtime_md_file.close()
