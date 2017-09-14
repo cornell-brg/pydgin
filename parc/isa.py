@@ -564,9 +564,6 @@ def execute_j( s, inst ):
 #-----------------------------------------------------------------------
 # jal
 #-----------------------------------------------------------------------
-# TBD: Fix this to be actually read from a file and constructed as an in
-# memory data-structure
-runtime_funcs_addr_list = [26836, 23644, 24028, 23636, 23628]
 
 def execute_jal( s, inst ):
   s.rf[31] = s.pc + 4
@@ -577,7 +574,7 @@ def execute_jal( s, inst ):
   # runtime mode flag and record the return address to turn off the runtime
   # mode at exit. When detecting a runtime mode, check if the previously in
   # task mode and set that to false
-  if s.pc in runtime_funcs_addr_list:
+  if s.pc in s.runtime_funcs_addr_list:
     if s.task_mode:
       s.task_mode = False
     s.runtime_mode = True

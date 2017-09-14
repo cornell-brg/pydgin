@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+#=========================================================================
+# parse-runtime-symbol.py
+#=========================================================================
+# Uses the nm tools from binutils to display the symbols and size of each
+# symbol, filters out the runtime specific functions, and pickles it into a
+# list structure used by the pydgin task trace tool
+
+import os
+import pickle
+import re
+import sys
+import subprocess
+
+#-------------------------------------------------------------------------
+# Utility Functions
+#-------------------------------------------------------------------------
+
+def execute(cmd):
+  #print cmd
+  try:
+    return subprocess.check_output(cmd, shell=True)
+  except  subprocess.CalledProcessError, err:
+    print "ERROR: " + err.output
+
+#-------------------------------------------------------------------------
+# app_list
+#-------------------------------------------------------------------------
+
+app_list = [
+  'px-fib'
+]
+
+#-------------------------------------------------------------------------
+# inspect_app
+#-------------------------------------------------------------------------
+
+maven_nm_cmd = "maven-nm -C --radix=d %(app)s | grep Task"
+
+def inspect_app( app ):
+  cmd = maven_nm_cmd % { 'app' : app }
+  lines = execute( cmd ).split('\n')
+  runtime_funcs = []
+  for line in lines:
+    if not re.search( "execute_task", line) and line:
+      runtime_funcs.append( line.split()[0] )
+  return [ int( addr ) for addr in runtime_funcs ]
+
+#-------------------------------------------------------------------------
+# main()
+#-------------------------------------------------------------------------
+
+def main():
+  for app in app_list:
+    pickle.dump( inspect_app( app ), open( app + ".nm", "wb" ) ) 
+
+main()

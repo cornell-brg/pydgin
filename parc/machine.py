@@ -90,6 +90,10 @@ class State( Machine ):
     self.task_ras = []
     # task graph
     self.task_graph = []
+    # task trace
+    self.task_trace = []
+    # task runtime addr list
+    self.runtime_funcs_addr_list = []
 
   def fetch_pc( self ):
     return self.pc

@@ -6,6 +6,7 @@
 
 import os
 import sys
+import pickle
 
 # ensure we know where the pypy source code is
 # XXX: removed the dependency to PYDGIN_PYPY_SRC_DIR because rpython
@@ -56,6 +57,8 @@ class Sim( object ):
     self.ncores = 1
     self.core_switch_ival = 1
     self.pkernel_bin = None
+    # shreesha: task-trace file
+    self.task_trace_dump = None
 
   #-----------------------------------------------------------------------
   # decode
@@ -103,7 +106,6 @@ class Sim( object ):
          regdump            register dump
          syscalls           syscall information
          bootstrap          initial stack and register state
-         tasktrace          enable tracing for tasks
 
     --max-insts <i> Run until the maximum number of instructions
     --ncores <i>    Number of cores to simulate
@@ -192,7 +194,7 @@ class Sim( object ):
                   pad( "%d" % s.num_insts, 8 ), ),
         # shreesha: if the tasktrace flag is enabled and currently, there
         # is a task being executed, then dump trace
-        if s.debug.enabled( "tasktrace") and len( s.task_counter_stack ) != 0 and s.task_mode:
+        if s.runtime_funcs_addr_list and s.task_mode:
           print "t%s %s %s %s" % (
                   s.task_counter_stack[-1],
                   pad( "%x" % pc, 8, " ", False ),
@@ -270,6 +272,8 @@ class Sim( object ):
         set_param( self.jitdriver, "trace_limit", self.default_trace_limit )
 
       filename_idx       = 0
+      # shreesha: file ptr to the task metadata
+      task_runtime_md    = None
       debug_flags        = []
       debug_starts_after = 0
       testbin            = False
@@ -295,6 +299,7 @@ class Sim( object ):
                            "--pkernel",
                            "--core-type",
                            "--stats-core-type",
+                           "--task-runtime-md"
                          ]
 
       # go through the args one by one and parse accordingly
@@ -368,6 +373,9 @@ class Sim( object ):
           elif prev_token == "--stats-core-type":
             stats_core_type = int( token )
 
+          elif prev_token == "--task-runtime-md":
+            task_runtime_md = token
+
           prev_token = ""
 
       if filename_idx == 0:
@@ -418,6 +426,20 @@ class Sim( object ):
 
       exe_file.close()
 
+      # shreesha: tasktrace
+      # Try reading the task runtime metadata
+      if task_runtime_md:
+        try:
+          task_runtime_md_file = open( task_runtime_md, 'rb' )
+          runtime_funcs_addr_list = pickle.load( task_runtime_md_file )
+          for i in range( self.ncores ):
+            self.states[i].runtime_funcs_addr_list = runtime_funcs_addr_list
+          task_runtime_md_file.close()
+
+        except IOError:
+          print "Could not open file %s" % task_runtime_md
+          return 1
+
       # Execute the program
 
       self.run()
@@ -455,7 +477,6 @@ class Sim( object ):
     driver.exe_name = exe_name
 
     # NOTE: RPython has an assertion to check the type of entry_point to
-    # be function (not a bound method). So we use get_entry_point which
     # generates a function type
     #return self.entry_point, None
     return self.get_entry_point(), None
