@@ -7,6 +7,7 @@
 import os
 import sys
 import pickle
+import csv
 
 # ensure we know where the pypy source code is
 # XXX: removed the dependency to PYDGIN_PYPY_SRC_DIR because rpython
@@ -57,8 +58,11 @@ class Sim( object ):
     self.ncores = 1
     self.core_switch_ival = 1
     self.pkernel_bin = None
-    # shreesha: task-trace file
-    self.task_trace_dump = None
+    # shreesha: task-trace state
+    self.task_trace_dump = False
+    self.task_trace_writer = None
+    self.task_graph_writer = None
+    self.task_trace_dump_interval = 10000
 
   #-----------------------------------------------------------------------
   # decode
@@ -150,6 +154,8 @@ class Sim( object ):
 
     core_id = 0
     tick_ctr = 0
+    # shreesha: tasktrace
+    task_trace_ctr = 0
     s = self.states[ core_id ]
 
     # use proc 0 to determine if should be running
@@ -192,14 +198,20 @@ class Sim( object ):
                   pad_hex( inst_bits ),
                   pad( inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),
-        # shreesha: if the tasktrace flag is enabled and currently, there
-        # is a task being executed, then dump trace
-        if s.runtime_funcs_addr_list and s.task_mode:
-          print "t%s %s %s %s" % (
-                  s.task_counter_stack[-1],
-                  pad( "%x" % pc, 8, " ", False ),
-                  pad_hex( inst_bits ),
-                  pad( inst.str, 12 ))
+        # shreesha: is a task being executed, then dump trace
+        if s.task_mode:
+          task_trace_ctr = task_trace_ctr + 1
+          s.task_trace.append( [s.task_counter_stack[-1], pc, inst_bits, inst.str ])
+          if task_trace_ctr == self.task_trace_dump_interval:
+            task_trace_ctr = 0
+            writer = csv.writer(self.task_trace_writer)
+            for x in s.task_trace:
+              writer.writerow(x)
+            s.task_trace = []
+            writer = csv.writer(self.task_graph_writer)
+            for x in s.task_graph:
+              writer.writerow(x)
+            s.task_graph = []
 
         exec_fun( s, inst )
       except FatalError as error:
@@ -254,6 +266,20 @@ class Sim( object ):
     print '\nDONE! Status =', s.status
     print 'Total Ticks Simulated = %d' % tick_ctr
 
+    # shreesha: dump any remaining stuff
+    if self.task_trace_dump:
+      for state in self.states:
+        if state.task_trace:
+          writer = csv.writer(self.task_trace_writer)
+          for x in state.task_trace:
+            writer.writerow(x)
+        if state.task_graph:
+          writer = csv.writer(self.task_graph_writer)
+          for x in state.task_graph:
+            writer.writerow(x)
+        self.task_trace_writer.close()
+        self.task_graph_writer.close()
+
     # show all stats
     for i, state in enumerate( self.states ):
       print 'Core %d Instructions Executed = %d' % ( i, state.num_insts )
@@ -299,7 +325,8 @@ class Sim( object ):
                            "--pkernel",
                            "--core-type",
                            "--stats-core-type",
-                           "--task-runtime-md"
+                           "--task-runtime-md",
+                           "--task-dump-interval"
                          ]
 
       # go through the args one by one and parse accordingly
@@ -375,6 +402,12 @@ class Sim( object ):
 
           elif prev_token == "--task-runtime-md":
             task_runtime_md = token
+            self.task_trace_dump = True
+            self.task_trace_writer = open("task-trace.csv", "w")
+            self.task_graph_writer = open("task-graph.csv", "w")
+
+          elif prev_token == "--task-dump-interval":
+            self.task_trace_dump_interval = int( token )
 
           prev_token = ""
 
@@ -437,7 +470,7 @@ class Sim( object ):
           task_runtime_md_file.close()
 
         except IOError:
-          print "Could not open file %s" % task_runtime_md
+          print "Could not open the task-runtime-md file %s" % task_runtime_md
           return 1
 
       # Execute the program
