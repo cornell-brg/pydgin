@@ -28,8 +28,19 @@ def execute(cmd):
 #-------------------------------------------------------------------------
 
 app_list = [
-  'px-fib'
+  'cilk-matmul-parc-mtpull'
 ]
+
+#-------------------------------------------------------------------------
+# g_runtime_funcs
+#-------------------------------------------------------------------------
+
+g_runtime_funcs = {
+  "run"          : "wsrt::TaskGroup::run",
+  "run_and_wait" : "wsrt::TaskGroup::run_and_wait",
+  "wait"         : "wsrt::TaskGroup::wait()", 
+  "TaskGroup"    : "wsrt::TaskGroup::TaskGroup()",
+}
 
 #-------------------------------------------------------------------------
 # inspect_app
@@ -40,11 +51,14 @@ maven_nm_cmd = "maven-nm -C --radix=d %(app)s | grep Task"
 def inspect_app( app ):
   cmd = maven_nm_cmd % { 'app' : app }
   lines = execute( cmd ).split('\n')
-  runtime_funcs = []
-  for line in lines:
-    if not re.search( "execute_task", line) and line:
-      runtime_funcs.append( line.split()[0] )
-  return [ int( addr ) for addr in runtime_funcs ]
+  runtime_funcs_addrs = []
+  runtime_funcs_names = []
+  for func,string in g_runtime_funcs.iteritems():
+    for line in lines[:-1]:
+      if re.search(r'\b%(string)s\b' % {'string':string}, line.split()[-1] ):
+        runtime_funcs_addrs.append(int(line.split()[0]))
+        runtime_funcs_names.append(func)
+  return runtime_funcs_addrs,runtime_funcs_names
 
 #-------------------------------------------------------------------------
 # main()
@@ -53,6 +67,8 @@ def inspect_app( app ):
 def main():
   for app in app_list:
     f = open( app + ".nm", "wb" )
-    csv.writer(f).writerow( inspect_app( app ) )
+    addrs,names = inspect_app( app )
+    csv.writer(f).writerow( addrs )
+    csv.writer(f).writerow( names )
 
 main()
