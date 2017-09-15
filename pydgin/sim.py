@@ -408,7 +408,9 @@ class Sim( object ):
             task_runtime_md = token
             self.task_trace_dump = True
             self.task_trace_writer = open("task-trace.csv", "w")
+            self.task_trace_writer.write("tid,pc,inst_bits,nan\n")
             self.task_graph_writer = open("task-graph.csv", "w")
+            self.task_graph_writer.write("parent,child,nan\n")
 
           elif prev_token == "--task-dump-interval":
             self.task_trace_dump_interval = int( token )
