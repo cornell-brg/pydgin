@@ -1,13 +1,12 @@
-#!/usr/bin/env python
 #=========================================================================
-# task-regs-tool
+# task_regs.py
 #=========================================================================
 # Author : Shreesha Srinath
 # Date   : September 15th, 2017
 #
 # Given, a binary file and the corresponding serial task execution trace
-# the task-regs-tool will analyze the maximum number of registers that are
-# used to execute a given task 
+# the get_regs will analyze the maximum number of registers that are
+# used to execute a given task
 
 import csv
 import os
@@ -83,8 +82,8 @@ def convert_to_regs( x ):
 # given a app-binary file and the corresponding task_trace file, the
 # function returns a set of unique register specifiers used in the trace
 
-def get_regs( app, task_trace ):
-  objdump_cmd  = g_objdump_cmd % { 'app' : app } 
+def get_regs( app, task_trace, outdir ):
+  objdump_cmd  = g_objdump_cmd % { 'app' : app }
   disasm_insts = execute( objdump_cmd ).split("\n")
   insts_list   = []
   for inst in disasm_insts:
@@ -99,9 +98,8 @@ def get_regs( app, task_trace ):
   unique_regs_map = set()
   for col in g_operand_columns:
     for reg in regs_df[col].apply(convert_to_regs).unique():
-      unique_regs_map.add( reg ) 
-  return filter( None, unique_regs_map )
-
-unique_regs_map = get_regs("px-fib", "task-trace.csv")
-print "Number of unique registers: ", len( unique_regs_map ) 
-print unique_regs_map
+      unique_regs_map.add( reg )
+  unique_regs_map = filter(None,unique_regs_map)
+  with open("%(outdir)s/regs.out" % {'outdir' : outdir}, "w") as output:
+    output.write("Number of unique registers: %(regs)d\n" % { 'regs': len( unique_regs_map ) })
+    output.write(str(list(unique_regs_map))+"\n")
