@@ -64,6 +64,7 @@ class Sim( object ):
     self.task_graph_writer = None
     self.task_trace_ctr = 0
     self.task_trace_dump_interval = 10000
+    self.outdir = os.path.dirname(os.path.abspath( __file__ ))
 
   #-----------------------------------------------------------------------
   # decode
@@ -120,11 +121,7 @@ class Sim( object ):
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
 
-  XPC-specific flags:
-
-    --core-type <t>       The initial core type
-    --stats-core-type <t> The core type to switch to in the stats region
-    --accel-rf            Use separate accel register file for pcalls
+    --outdir        Output directory
 
   """
 
@@ -330,7 +327,8 @@ class Sim( object ):
                            "--core-type",
                            "--stats-core-type",
                            "--task-runtime-md",
-                           "--task-dump-interval"
+                           "--task-dump-interval",
+                           "--outdir"
                          ]
 
       # go through the args one by one and parse accordingly
@@ -407,10 +405,9 @@ class Sim( object ):
           elif prev_token == "--task-runtime-md":
             task_runtime_md = token
             self.task_trace_dump = True
-            self.task_trace_writer = open("task-trace.csv", "w")
-            self.task_trace_writer.write("tid,pc,inst_bits,nan\n")
-            self.task_graph_writer = open("task-graph.csv", "w")
-            self.task_graph_writer.write("parent,child,nan\n")
+
+          elif prev_token == "--outdir":
+            self.outdir = token
 
           elif prev_token == "--task-dump-interval":
             self.task_trace_dump_interval = int( token )
@@ -475,6 +472,10 @@ class Sim( object ):
           for i in range( self.ncores ):
             self.states[i].runtime_funcs_addr_list = runtime_funcs_addr_list
           task_runtime_md_file.close()
+          self.task_trace_writer = open(self.outdir+"/task-trace.csv", "w")
+          self.task_trace_writer.write("tid,pc,inst_bits,nan\n")
+          self.task_graph_writer = open(self.outdir+"/task-graph.csv", "w")
+          self.task_graph_writer.write("parent,child,nan\n")
 
         except IOError:
           print "Could not open the task-runtime-md file %s" % task_runtime_md

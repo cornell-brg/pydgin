@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 #=========================================================================
-# parse-runtime-symbol.py
+# parse-runtime-symbols
 #=========================================================================
+# Author : Shreesha Srinath
+# Date   : September 16th, 2017
+#
 # Uses the nm tools from binutils to display the symbols and size of each
 # symbol, filters out the runtime specific functions, and pickles it into a
 # list structure used by the pydgin task trace tool
@@ -11,6 +14,9 @@ import re
 import sys
 import subprocess
 import csv
+
+sys.path.extend(['../scripts'])
+from apps import *
 
 #-------------------------------------------------------------------------
 # Utility Functions
@@ -48,7 +54,8 @@ g_runtime_funcs = {
 
 maven_nm_cmd = "maven-nm -C --radix=d %(app)s | grep Task"
 
-def inspect_app( app ):
+def inspect_app( app_kernel ):
+  app = os.path.dirname(os.path.abspath(__file__)) + "/../scripts/links/" + app_kernel
   cmd = maven_nm_cmd % { 'app' : app }
   lines = execute( cmd ).split('\n')
   runtime_funcs_addrs = []
@@ -65,10 +72,14 @@ def inspect_app( app ):
 #-------------------------------------------------------------------------
 
 def main():
-  for app in app_list:
-    f = open( app + ".nm", "wb" )
-    addrs,names = inspect_app( app )
-    csv.writer(f).writerow( addrs )
-    csv.writer(f).writerow( names )
+  res_dir  = sys.argv[1]
+  for app in app_dict.keys():
+    try:
+      addrs,names = inspect_app( app )
+      f = open( res_dir + "/" + app + ".nm", "wb" )
+      csv.writer(f).writerow( addrs )
+      csv.writer(f).writerow( names )
+    except:
+      print "%(app)s is not a task-parallel program\n" % { 'app' : app }
 
 main()
