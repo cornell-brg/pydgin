@@ -91,15 +91,17 @@ def get_regs( app, task_trace, outdir ):
     inst = inst.split()
     if len( inst ) >= 4:
       insts_list.append( [inst[0]] + inst[3].split(",") )
-  disasm_df       = pd.DataFrame(insts_list,columns=["pc", "dest", "src0", "src1"])
-  disasm_df["pc"] = disasm_df["pc"].apply(hex2int)
+  disasm_df       = pd.DataFrame(insts_list,columns=['pc', 'dest', 'src0', 'src1'])
+  disasm_df['pc'] = disasm_df['pc'].apply(hex2int)
   task_trace_df   = pd.read_csv(task_trace)
-  regs_df         = disasm_df[disasm_df["pc"].isin(task_trace_df["pc"].unique())]
-  unique_regs_map = set()
-  for col in g_operand_columns:
-    for reg in regs_df[col].apply(convert_to_regs).unique():
-      unique_regs_map.add( reg )
-  unique_regs_map = filter(None,unique_regs_map)
+  pcall_sections  = task_trace_df['pid'].unique()
   with open("%(outdir)s/regs.out" % {'outdir' : outdir}, "w") as output:
-    output.write("Number of unique registers: %(regs)d\n" % { 'regs': len( unique_regs_map ) })
-    output.write(str(list(unique_regs_map))+"\n")
+    for pid in pcall_sections:
+      regs_df = disasm_df[disasm_df['pc'].isin(task_trace_df[task_trace_df['pid']==pid]['pc'].unique())]
+      unique_regs_map = set()
+      for col in g_operand_columns:
+        for reg in regs_df[col].apply(convert_to_regs).unique():
+          unique_regs_map.add( reg )
+      unique_regs_map = filter(None,unique_regs_map)
+      output.write("Number of unique registers in section %(pid)s: %(regs)d\n" % { 'pid': pid, 'regs': len( unique_regs_map ) })
+      output.write(str(list(unique_regs_map))+"\n")

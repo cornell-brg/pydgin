@@ -33,6 +33,7 @@ from doit_pydgin_utils import appdir, appinputdir
 # Use app_list to specify which of the apps in app_dict to actually sim
 
 app_list = [
+  'px-fib',
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc-mtpull',
   'pbbs-bfs-ndBFS-parc-mtpull',
@@ -67,6 +68,7 @@ app_dict = {
     # maven-app-misc
     #........................................................................
 
+    'px-fib'              : { 'mtpull' : [ '--impl mt --n 4', ] },
     'bilateral'           : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
                               'scalar' : [ '--impl scalar --warmup', ] },

@@ -574,7 +574,7 @@ def execute_jal( s, inst ):
   # runtime mode flag and record the return address to turn off the runtime
   # mode at exit. When detecting a runtime mode, check if the previously in
   # task mode and set that to false
-  if s.pc in s.runtime_funcs_addr_list:
+  if s.pc in s.runtime_funcs_addr_list and s.stat_inst_en[8]:
     if s.task_mode:
       s.task_mode = False
     s.runtime_mode = True
@@ -666,9 +666,9 @@ def execute_jalr( s, inst ):
     # increment the task_counter and build the task dependence graph with
     # the aid of the task_counter_stack
     if s.task_counter == 0:
-      s.task_graph.append([0,1])
+      s.task_graph.append([s.parallel_section_counter,0,1])
     else:
-      s.task_graph.append([s.task_counter_stack[-1], s.task_counter+1])
+      s.task_graph.append([s.parallel_section_counter,s.task_counter_stack[-1],s.task_counter+1])
     s.task_counter = s.task_counter + 1
     s.task_counter_stack.append( s.task_counter )
 
@@ -1260,11 +1260,16 @@ def execute_stat( s, inst ):
   if stat_en and (not s.stat_inst_en[ stat_id ]):
     s.stat_inst_en[ stat_id ] = True
     s.stat_inst_begin[ stat_id ] = s.num_insts
+    if stat_id == 8:
+      s.parallel_section_counter =  s.parallel_section_counter + 1
 
   # turn off stats -- accumulate the difference
   elif (not stat_en) and s.stat_inst_en[ stat_id ]:
     s.stat_inst_en[ stat_id ] = False
     s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
+    if stat_id == 8:
+      s.task_counter = 0
+      assert( not s.task_counter )
 
   s.pc += 4
 

@@ -148,7 +148,7 @@ def gen_trace_per_app( evaldict ):
 
   yield docstring_taskdict
 
-  pydgin_binary = "pydgin-parc-jit"
+  pydgin_binary = "../../scripts/builds/pydgin-parc-jit"
   pydgin_opts   = " --ncores 1 --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel "
 
   # Create path to resultsdir inside evaldir

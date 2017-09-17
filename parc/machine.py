@@ -94,6 +94,8 @@ class State( Machine ):
     self.task_trace = []
     # task runtime addr list
     self.runtime_funcs_addr_list = []
+    # parallel region
+    self.parallel_section_counter = 0
 
   def fetch_pc( self ):
     return self.pc
