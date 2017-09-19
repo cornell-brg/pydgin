@@ -203,7 +203,7 @@ class Sim( object ):
             self.task_trace_ctr = 0
             for entry in s.task_trace:
               for item in entry:
-                self.task_trace_writer.write("%s," % item)
+                self.task_trace_writer.write("%x," % item)
               self.task_trace_writer.write("\n")
             s.task_trace = []
             for entry in s.task_graph:
@@ -271,7 +271,7 @@ class Sim( object ):
         if state.task_trace:
           for entry in state.task_trace:
             for item in entry:
-              self.task_trace_writer.write("%s," % item)
+              self.task_trace_writer.write("%x," % item)
             self.task_trace_writer.write("\n")
         if state.task_graph:
           for entry in state.task_graph:

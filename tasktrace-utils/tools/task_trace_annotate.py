@@ -67,7 +67,7 @@ def annotate_trace( app, trace, metadata, outdir ):
     if len( inst ) >= 4:
       insts_list.append( [inst[0]] + [inst[2]] + inst[3].split(",") )
   disasm_df         = pd.DataFrame(insts_list,columns=["pc", "asm", "dest", "src0", "src1"])
-  disasm_df["pc"]   = disasm_df["pc"].apply(hex2int)
+  disasm_df["pc"]   = disasm_df["pc"]
   disasm_df["dest"] = disasm_df["dest"].apply(hex2int)
 
   # read the task trace

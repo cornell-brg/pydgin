@@ -92,7 +92,7 @@ def get_regs( app, task_trace, outdir ):
     if len( inst ) >= 4:
       insts_list.append( [inst[0]] + inst[3].split(",") )
   disasm_df       = pd.DataFrame(insts_list,columns=['pc', 'dest', 'src0', 'src1'])
-  disasm_df['pc'] = disasm_df['pc'].apply(hex2int)
+  disasm_df['pc'] = disasm_df['pc']
   task_trace_df   = pd.read_csv(task_trace)
   pcall_sections  = task_trace_df['pid'].unique()
   with open("%(outdir)s/regs.out" % {'outdir' : outdir}, "w") as output:

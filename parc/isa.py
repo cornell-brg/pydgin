@@ -569,16 +569,15 @@ def execute_jal( s, inst ):
   s.rf[31] = s.pc + 4
   s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
   # shreesha: tasktrace
-  # if the target address is belongs to one of the runtime related
+  # if the target address belongs to one of the runtime-related
   # functions (TaskGroup(), run(), wait(), run_and_wait()), then set the
-  # runtime mode flag and record the return address to turn off the runtime
-  # mode at exit. When detecting a runtime mode, check if the previously in
-  # task mode and set that to false
+  # runtime mode flag and record the return address if in task-mode and set
+  # the task-mode to false.
   if s.pc in s.runtime_funcs_addr_list and s.stat_inst_en[8]:
     if s.task_mode:
       s.task_mode = False
+      s.task_ras.append( s.rf[31] )
     s.runtime_mode = True
-    s.runtime_ras.append( s.rf[31] )
 
 #-----------------------------------------------------------------------
 # jr
@@ -597,57 +596,23 @@ def execute_jal( s, inst ):
 # pointer to the scalar regfile and disable the XPC bit.
 def execute_jr( s, inst ):
 
-  # Only allow jr for returning from functions inside a pcall
-  #if s.xpc_en:
-  #  assert inst.rs == 31
-
-  # Non-pcallrx semantics: handle loop iteration variable
-  #if s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
-  #            and s.xpc_pcall_type != 'pcallrx':
-  #  if s.xpc_idx < ( s.xpc_end_idx - 1 ):
-  #    s.xpc_idx += 1
-  #    s.rf[4]    = s.xpc_idx
-  #    s.pc       = s.xpc_start_addr
-  #  else:
-  #    s.xpc_en = False
-  #    s.rf     = s.scalar_rf
-  #    s.pc     = s.xpc_return_addr
-
-  ## pcallrx semantics: behaves exactly like jr
-  #elif s.xpc_en and ( inst.rs == 31 ) and ( s.rf[31] == s.xpc_return_trigger ) \
-  #              and s.xpc_pcall_type == 'pcallrx':
-  #  s.xpc_en = False
-  #  s.pc     = s.xpc_return_addr
-  #  # Switch back to scalar regfile if --accel-rf
-  #  if s.accel_rf:
-  #    s.rf     = s.scalar_rf
-  #  s.rf[31] = s.xpc_saved_ra
-
   s.pc = s.rf[inst.rs]
 
   # shreesha: tasktrace
-  # check if the return address was in the return address for exiting the
-  # runtime mode and set the runtime mode to be false. If the task return
-  # address is not empty, then we were executing in task mode and are
-  # getting back to the task mode
+  # Returning to runtime-mode
   if s.pc in s.runtime_ras:
-    s.runtime_mode = False
-    s.runtime_ras.pop()
-    if len( s.task_ras ) != 0:
-      s.task_mode = True
-
-  # shreesha: tasktrace
-  # check if the return address was in the return address for exiting the
-  # task mode and set the task mode to be false. If the runtime return
-  # address is not empty, then we were executing in runtime mode and are
-  # getting back to the runtime mode
-  if s.pc in s.task_ras:
+    s.runtime_mode = True
     s.task_mode = False
-    s.task_ras.pop()
     # pop the task_counter_stack
     s.task_counter_stack.pop()
-    if len( s.runtime_ras ) != 0:
-      s.runtime_mode = True
+    s.runtime_ras.pop()
+
+  # shreesha: tasktrace
+  # Returning to task-mode
+  if s.pc in s.task_ras:
+    s.task_mode = True
+    s.task_ras.pop()
+    s.runtime_mode = False
 
 #-----------------------------------------------------------------------
 # jalr
@@ -662,7 +627,7 @@ def execute_jalr( s, inst ):
   if s.runtime_mode and s.stat_inst_en[10]:
     s.runtime_mode = False
     s.task_mode = True
-    s.task_ras.append( s.rf[inst.rd] )
+    s.runtime_ras.append( s.rf[inst.rd] )
     # increment the task_counter and build the task dependence graph with
     # the aid of the task_counter_stack
     if s.task_counter == 0:
@@ -1255,6 +1220,10 @@ def execute_stat( s, inst ):
   # instead of accumulating all of the stats every cycle, we mark the
   # beginning cycle and add the difference to the accumulator when turned
   # off (or the program has ended)
+
+  # if returning from a wait() function bump the task-counter
+  if stat_en and stat_id == 3:
+    s.task_counter = s.task_counter + 1
 
   # turn on stats
   if stat_en and (not s.stat_inst_en[ stat_id ]):
