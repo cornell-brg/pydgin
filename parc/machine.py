@@ -6,6 +6,14 @@ from pydgin.machine import Machine
 from pydgin.storage import RegisterFile
 
 #-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
+
+class ChildListStackEntry( object ):
+  def __init__( self ):
+    self.parent = 0
+    self.child_list = []
+
+#-----------------------------------------------------------------------
 # State
 #-----------------------------------------------------------------------
 class State( Machine ):
@@ -76,10 +84,18 @@ class State( Machine ):
     self.stat_inst_num_insts = [ 0 ]     * 16
 
     # shreesha: task tracing
+    # child_list_stack -- [ChildListStackEntry]
+    self.child_list_stack = []
+    self.curr_child_list = []
+    # current strand type
+    # 0 = child, 1 = continuation
+    self.strand_type = 0
+    # current taskid
+    self.curr_taskid = 0
     # global task-counter
     self.task_counter = 0
-    # task-counter stack to correctly track the task execution order
-    self.task_counter_stack = []
+    # task queue to track the execution order
+    self.task_queue = []
     # flag to indicate runtime mode
     self.runtime_mode = False
     # runtime ras

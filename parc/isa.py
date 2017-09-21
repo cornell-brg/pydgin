@@ -8,6 +8,8 @@ from pydgin.utils import signed, sext_16, sext_8, trim_32, \
 
 from pydgin.misc import create_risc_decoder, FatalError
 
+from machine import ChildListStackEntry
+
 #=======================================================================
 # Register Definitions
 #=======================================================================
@@ -573,7 +575,7 @@ def execute_jal( s, inst ):
   # functions (TaskGroup(), run(), wait(), run_and_wait()), then set the
   # runtime mode flag and record the return address if in task-mode and set
   # the task-mode to false.
-  if s.pc in s.runtime_funcs_addr_list and s.stat_inst_en[8]:
+  if s.pc in s.runtime_funcs_addr_list and s.stat_inst_en[8] and s.stats_en:
     if s.task_mode:
       s.task_mode = False
       s.task_ras.append( s.rf[31] )
@@ -603,8 +605,6 @@ def execute_jr( s, inst ):
   if s.pc in s.runtime_ras:
     s.runtime_mode = True
     s.task_mode = False
-    # pop the task_counter_stack
-    s.task_counter_stack.pop()
     s.runtime_ras.pop()
 
   # shreesha: tasktrace
@@ -628,14 +628,6 @@ def execute_jalr( s, inst ):
     s.runtime_mode = False
     s.task_mode = True
     s.runtime_ras.append( s.rf[inst.rd] )
-    # increment the task_counter and build the task dependence graph with
-    # the aid of the task_counter_stack
-    if s.task_counter == 0:
-      s.task_graph.append([s.parallel_section_counter,0,1])
-    else:
-      s.task_graph.append([s.parallel_section_counter,s.task_counter_stack[-1],s.task_counter+1])
-    s.task_counter = s.task_counter + 1
-    s.task_counter_stack.append( s.task_counter )
 
 #-----------------------------------------------------------------------
 # lui
@@ -1215,15 +1207,12 @@ def execute_mfx( s, inst ):
 # stat
 #-----------------------------------------------------------------------
 def execute_stat( s, inst ):
+  s.pc += 4
   stat_en = inst.stat_en
   stat_id = inst.stat_id
   # instead of accumulating all of the stats every cycle, we mark the
   # beginning cycle and add the difference to the accumulator when turned
   # off (or the program has ended)
-
-  # if returning from a wait() function bump the task-counter
-  if stat_en and stat_id == 3:
-    s.task_counter = s.task_counter + 1
 
   # turn on stats
   if stat_en and (not s.stat_inst_en[ stat_id ]):
@@ -1236,11 +1225,45 @@ def execute_stat( s, inst ):
   elif (not stat_en) and s.stat_inst_en[ stat_id ]:
     s.stat_inst_en[ stat_id ] = False
     s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
-    if stat_id == 8:
-      s.task_counter = 0
-      assert( not s.task_counter )
 
-  s.pc += 4
+  # shreesha: task-tracing
+  # enq event
+  if stat_en and stat_id == 13:
+    s.task_counter = s.task_counter + 1
+    s.task_queue.append(s.task_counter)
+    s.curr_child_list.append(s.task_counter)
+    if s.curr_taskid != 0:
+      s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter])
+  # deq event
+  elif stat_en and stat_id == 12:
+    s.curr_taskid = s.task_queue[-1]
+    s.task_queue.pop()
+    s.strand_type = 0
+  # start of wait()
+  elif stat_en and stat_id == 3:
+    item = ChildListStackEntry()
+    item.parent = s.curr_taskid
+    item.child_list = s.curr_child_list
+    s.child_list_stack.append(item)
+    s.curr_child_list = []
+  # end of wait()
+  elif (not stat_en) and stat_id == 3:
+    s.task_counter = s.task_counter + 1
+    s.curr_taskid = s.task_counter
+    s.strand_type = 1
+    item = s.child_list_stack[-1]
+    for edge in item.child_list:
+      s.task_graph.append([s.parallel_section_counter,edge,s.curr_taskid])
+    s.child_list_stack.pop()
+    for entry in s.child_list_stack:
+      for i,edge in enumerate(entry.child_list):
+        if edge == item.parent:
+          entry.child_list[i] = s.curr_taskid
+  # end of a parallel section
+  elif (not stat_en) and stat_id == 8:
+    s.curr_taskid = 0
+    s.task_counter = 0
+    s.task_queue = []
 
 #-----------------------------------------------------------------------
 # hint_wl

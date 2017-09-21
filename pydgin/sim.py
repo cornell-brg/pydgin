@@ -198,7 +198,7 @@ class Sim( object ):
         # shreesha: is a task being executed, then dump trace
         if s.task_mode:
           self.task_trace_ctr = self.task_trace_ctr + 1
-          s.task_trace.append( [s.parallel_section_counter, s.task_counter_stack[-1], pc])
+          s.task_trace.append( [s.parallel_section_counter, s.curr_taskid, pc, s.strand_type])
           if self.task_trace_ctr == self.task_trace_dump_interval:
             self.task_trace_ctr = 0
             for entry in s.task_trace:
@@ -473,7 +473,7 @@ class Sim( object ):
             self.states[i].runtime_funcs_addr_list = runtime_funcs_addr_list
           task_runtime_md_file.close()
           self.task_trace_writer = open(self.outdir+"/task-trace.csv", "w")
-          self.task_trace_writer.write("pid,tid,pc,nan\n")
+          self.task_trace_writer.write("pid,tid,pc,stype,nan\n")
           self.task_graph_writer = open(self.outdir+"/task-graph.csv", "w")
           self.task_graph_writer.write("pid,parent,child,nan\n")
 
