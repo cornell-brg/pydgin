@@ -270,6 +270,7 @@ def gen_trace_per_app( evaldict ):
           draw_graph,
           [
             "%(app_results_dir)s/task-graph.csv" % {'app_results_dir' : app_results_dir},
+            "%(app_results_dir)s/task-trace.csv" % {'app_results_dir' : app_results_dir},
             "%(outdir)s" % {'outdir' : app_results_dir},
           ]
         )

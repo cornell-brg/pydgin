@@ -475,7 +475,7 @@ class Sim( object ):
           self.task_trace_writer = open(self.outdir+"/task-trace.csv", "w")
           self.task_trace_writer.write("pid,tid,pc,stype,nan\n")
           self.task_graph_writer = open(self.outdir+"/task-graph.csv", "w")
-          self.task_graph_writer.write("pid,parent,child,stype,nan\n")
+          self.task_graph_writer.write("pid,parent,child,nan\n")
 
         except IOError:
           print "Could not open the task-runtime-md file %s" % task_runtime_md

@@ -575,7 +575,7 @@ def execute_jal( s, inst ):
   # functions (TaskGroup(), run(), wait(), run_and_wait()), then set the
   # runtime mode flag and record the return address if in task-mode and set
   # the task-mode to false.
-  if s.pc in s.runtime_funcs_addr_list and s.stat_inst_en[8] and s.stats_en:
+  if s.pc in s.runtime_funcs_addr_list and s.stat_inst_en[8]:
     if s.task_mode:
       s.task_mode = False
       s.task_ras.append( s.rf[31] )
@@ -1232,7 +1232,7 @@ def execute_stat( s, inst ):
     s.task_counter = s.task_counter + 1
     s.task_queue.append(s.task_counter)
     s.curr_child_list.append(s.task_counter)
-    s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter,s.strand_type])
+    s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter])
   # deq event
   elif stat_en and stat_id == 12:
     s.curr_taskid = s.task_queue[-1]
@@ -1252,7 +1252,7 @@ def execute_stat( s, inst ):
     s.strand_type = 1
     item = s.child_list_stack[-1]
     for edge in item.child_list:
-      s.task_graph.append([s.parallel_section_counter,edge,s.curr_taskid,s.strand_type])
+      s.task_graph.append([s.parallel_section_counter,edge,s.curr_taskid])
     s.child_list_stack.pop()
     for entry in s.child_list_stack:
       for i,edge in enumerate(entry.child_list):
