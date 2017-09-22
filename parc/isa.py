@@ -1232,8 +1232,7 @@ def execute_stat( s, inst ):
     s.task_counter = s.task_counter + 1
     s.task_queue.append(s.task_counter)
     s.curr_child_list.append(s.task_counter)
-    if s.curr_taskid != 0:
-      s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter])
+    s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter,s.strand_type])
   # deq event
   elif stat_en and stat_id == 12:
     s.curr_taskid = s.task_queue[-1]
@@ -1253,7 +1252,7 @@ def execute_stat( s, inst ):
     s.strand_type = 1
     item = s.child_list_stack[-1]
     for edge in item.child_list:
-      s.task_graph.append([s.parallel_section_counter,edge,s.curr_taskid])
+      s.task_graph.append([s.parallel_section_counter,edge,s.curr_taskid,s.strand_type])
     s.child_list_stack.pop()
     for entry in s.child_list_stack:
       for i,edge in enumerate(entry.child_list):

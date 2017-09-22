@@ -12,6 +12,7 @@ import sys
 sys.path.extend(['../tools'])
 from task_regs import *
 from task_trace_annotate import *
+from task_graph import *
 
 #----------------------------------------------------------------------------
 # Tasks
@@ -261,13 +262,25 @@ def gen_trace_per_app( evaldict ):
           ]
         )
 
+        #......................................
+        # Assemble graph commands
+        #......................................
+
+        graph_cmd = (
+          draw_graph,
+          [
+            "%(app_results_dir)s/task-graph.csv" % {'app_results_dir' : app_results_dir},
+            "%(outdir)s" % {'outdir' : app_results_dir},
+          ]
+        )
+
         #.......................
         # Build Task Dictionary
         #.......................
         taskdict = { \
             'basename' : basename,
             'name'     : labeled_app,
-            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, regs_cmd, annotate_cmd ],
+            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, regs_cmd, annotate_cmd, graph_cmd ],
             'targets'  : targets,
             'task_dep' : [ 'runtime-md' ],
             'file_dep' : [ app_binary ],
