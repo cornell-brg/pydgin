@@ -1219,7 +1219,7 @@ def execute_stat( s, inst ):
     s.stat_inst_en[ stat_id ] = True
     s.stat_inst_begin[ stat_id ] = s.num_insts
     if stat_id == 8:
-      s.parallel_section_counter =  s.parallel_section_counter + 1
+      s.parallel_section_counter = s.parallel_section_counter + 1
 
   # turn off stats -- accumulate the difference
   elif (not stat_en) and s.stat_inst_en[ stat_id ]:
@@ -1228,25 +1228,25 @@ def execute_stat( s, inst ):
 
   # shreesha: task-tracing
   # enq event
-  if stat_en and stat_id == 13:
+  if stat_en and stat_id == 13 and s.stat_inst_en[8]:
     s.task_counter = s.task_counter + 1
     s.task_queue.append(s.task_counter)
     s.curr_child_list.append(s.task_counter)
     s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter])
   # deq event
-  elif stat_en and stat_id == 12:
+  elif stat_en and stat_id == 12 and s.stat_inst_en[8]:
     s.curr_taskid = s.task_queue[-1]
     s.task_queue.pop()
     s.strand_type = 0
   # start of wait()
-  elif stat_en and stat_id == 3:
+  elif stat_en and stat_id == 3 and s.stat_inst_en[8]:
     item = ChildListStackEntry()
     item.parent = s.curr_taskid
     item.child_list = s.curr_child_list
     s.child_list_stack.append(item)
     s.curr_child_list = []
   # end of wait()
-  elif (not stat_en) and stat_id == 3:
+  elif (not stat_en) and stat_id == 3 and s.stat_inst_en[8]:
     s.task_counter = s.task_counter + 1
     s.curr_taskid = s.task_counter
     s.strand_type = 1
