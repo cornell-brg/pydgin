@@ -112,6 +112,9 @@ class State( Machine ):
     self.runtime_funcs_addr_list = []
     # parallel region
     self.parallel_section_counter = 0
+    # type = 0 for task-parallel
+    # type = 1 for data-parallel
+    self.parallel_section_type = 0
 
   def fetch_pc( self ):
     return self.pc

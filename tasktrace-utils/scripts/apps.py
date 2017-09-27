@@ -34,8 +34,9 @@ from doit_pydgin_utils import appdir, appinputdir
 
 app_list = [
   'px-fib',
+  'ubmark-vvadd',
   # pbbs apps
-  #'pbbs-bfs-deterministicBFS-parc-mtpull',
+  'pbbs-bfs-deterministicBFS-parc-mtpull',
   #'pbbs-bfs-ndBFS-parc-mtpull',
   #'pbbs-csort-quickSort-parc-mtpull',
   #'pbbs-csort-sampleSort-parc-mtpull',
@@ -68,7 +69,8 @@ app_dict = {
     # maven-app-misc
     #........................................................................
 
-    'px-fib'              : { 'mtpull' : [ '--impl mt --n 4', ] },
+    'ubmark-vvadd'        : { 'mtpull' : [ '--impl mtpull', ] },
+    'px-fib'              : { 'mtpull' : [ '--impl mt --n 15', ] },
     'bilateral'           : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
                               'scalar' : [ '--impl scalar --warmup', ] },
@@ -525,7 +527,7 @@ app_dict = {
             "-n 128 -z 256 ",
         ],
         "tiny": [
-            "-n 128 -z 173 "
+            "-n 64 -z 128 "
         ]
     },
     "cilk-cilksort-parc": {

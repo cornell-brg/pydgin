@@ -64,7 +64,7 @@ def asap_schedule( tg, source ):
 # maximal_sharing
 #-------------------------------------------------------------------------
 
-def maximal_sharing( level, strands ):
+def maximal_sharing( strands ):
   unique = 0
   total  = 0
   streams = strands.values()
@@ -110,25 +110,38 @@ def trace_analyze(graph,trace,outdir):
     for region in parallel_regions:
       trace_df = task_trace_df[task_trace_df['pid']==region]
       graph_df = task_graph_df[task_graph_df['pid']==region]
-      # create a networkx directed graph
-      tg = nx.DiGraph()
-      # add the edeges based on the task-graph
-      tg.add_edges_from(graph_df[['parent','child']].values)
-
-      # get the asap schedule
-      schedule = asap_schedule( tg, nx.topological_sort(tg).next() )
-
-      # analyze the trace based on the asap schedule
+      region_type = trace_df['ptype'].unique()
       unique_insts = 0
       total_insts = 0
-      for level,nodes in schedule.iteritems():
-        traces = trace_df[trace_df['tid'].isin(nodes)]
+      # data-parallel region
+      if region_type == 1:
+        nodes = trace_df['tid'].unique()
         strands = {}
         for node in nodes:
-          strands[node] = traces[traces['tid'] == node]['pc'].values.tolist()
-        (unique, total) = maximal_sharing( level, strands )
+          strands[node] = trace_df[trace_df['tid'] == node]['pc'].values.tolist()
+        (unique, total) = maximal_sharing( strands )
         unique_insts = unique_insts + unique
         total_insts  = total_insts + total
+      # task-parallel region
+      else:
+        # create a networkx directed graph
+        tg = nx.DiGraph()
+        # add the edeges based on the task-graph
+        tg.add_edges_from(graph_df[['parent','child']].values)
+
+        # get the asap schedule
+        schedule = asap_schedule( tg, nx.topological_sort(tg).next() )
+
+        # analyze the trace based on the asap schedule
+        for level,nodes in schedule.iteritems():
+          traces = trace_df[trace_df['tid'].isin(nodes)]
+          strands = {}
+          for node in nodes:
+            strands[node] = traces[traces['tid'] == node]['pc'].values.tolist()
+          (unique, total) = maximal_sharing( strands )
+          unique_insts = unique_insts + unique
+          total_insts  = total_insts + total
+
       out.write("Parallel region %(region)s:\n"  % {'region':region})
       out.write("  unique    insts: %(insts)d\n" % {'insts' :unique_insts})
       out.write("  total     insts: %(insts)d\n" % {'insts' :total_insts})

@@ -624,7 +624,7 @@ def execute_jalr( s, inst ):
   # check if we are in runtime mode and that stat instruction code for
   # executing a task has been set, if this is true then we are executing in
   # task mode, record where we entered the task mode & reset runtime mode
-  if s.runtime_mode and s.stat_inst_en[10]:
+  if s.runtime_mode and s.stat_inst_en[10] and s.stat_inst_en[8]:
     s.runtime_mode = False
     s.task_mode = True
     s.runtime_ras.append( s.rf[inst.rd] )
@@ -1263,6 +1263,12 @@ def execute_stat( s, inst ):
     s.curr_taskid = 0
     s.task_counter = 0
     s.task_queue = []
+  # end of a data-parallel loop
+  elif (not stat_en) and stat_id == 4:
+    s.parallel_section_type = 0
+  # end of a data-parallel loop
+  elif stat_en and stat_id == 4:
+    s.parallel_section_type = 1
 
 #-----------------------------------------------------------------------
 # hint_wl
