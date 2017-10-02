@@ -61,6 +61,32 @@ def asap_schedule( tg, source ):
   return schedule
 
 #-------------------------------------------------------------------------
+# bounded_greedy_schedule
+#-------------------------------------------------------------------------
+
+def bounded_greedy_schedule( tg, source, num_procs = 4 ):
+  asap_sched = asap_schedule( tg, source )
+
+  # greedy scheduling
+  greedy_labels = {}
+  label = 0
+  for level,nodes in asap_sched.iteritems():
+    while ( len(nodes) > 0 ):
+      for i in range( num_procs, 0, -1 ):
+        node = nodes[0]
+        greedy_labels[node] = label
+        nodes.pop(0)
+        if ( len(nodes) == 0 ): break
+      label = label + 1
+
+  # group the nodes by the assigned label values
+  schedule = defaultdict(list)
+  for node, label in sorted(greedy_labels.iteritems()):
+    schedule[label].append(node)
+
+  return schedule
+
+#-------------------------------------------------------------------------
 # maximal_sharing
 #-------------------------------------------------------------------------
 
@@ -133,6 +159,12 @@ def trace_analyze(graph,trace,outdir):
 
         # get the asap schedule
         schedule = asap_schedule( tg, nx.topological_sort(tg).next() )
+
+        # get the asap schedule
+        #schedule = bounded_greedy_scheduling( tg, nx.topological_sort(tg).next() )
+        # print schedule
+        #for level,nodes in schedule.iteritems():
+        #  print "Level: ", level, " nodes:", nodes
 
         # analyze the trace based on the asap schedule
         for level,nodes in schedule.iteritems():
