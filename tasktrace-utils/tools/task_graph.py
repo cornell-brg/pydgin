@@ -38,7 +38,13 @@ g_node_attributes = [
 
 def draw_graph(graph,trace,outdir):
   task_graph_df = pd.read_csv(graph)
-  task_trace_df = pd.read_csv(trace,converters={'tid': lambda x: int(x,16)})
+  task_trace_df = pd.read_csv(trace,
+                              converters = {
+                                'pid'   : lambda x : int( x, 16 ),
+                                'tid'   : lambda x : int( x, 16 ),
+                                'stype' : lambda x : int( x, 16 ),
+                              }
+                             )
   parallel_regions = task_trace_df['pid'].unique()
   for region in parallel_regions:
     region_type = task_trace_df[task_trace_df['pid']==region]['ptype'].unique()

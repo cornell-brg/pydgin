@@ -467,10 +467,12 @@ class Sim( object ):
       if task_runtime_md:
         try:
           task_runtime_md_file = open( task_runtime_md, 'rb' )
-          line = task_runtime_md_file.readline().strip().split(",")
-          runtime_funcs_addr_list = [ int( n ) for n in line ]
+          addr_list    = task_runtime_md_file.readline().strip().split(",")
+          addr_list    = [ int(n) for n in addr_list ]
+          name_list    = task_runtime_md_file.readline().strip().split(",")
           for i in range( self.ncores ):
-            self.states[i].runtime_funcs_addr_list = runtime_funcs_addr_list
+            for x,addr in enumerate(addr_list):
+              self.states[i].runtime_dict[addr] = name_list[x]
           task_runtime_md_file.close()
           self.task_trace_writer = open(self.outdir+"/task-trace.csv", "w")
           self.task_trace_writer.write("pid,ptype,tid,pc,stype,nan\n")

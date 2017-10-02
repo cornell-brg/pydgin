@@ -108,9 +108,11 @@ class State( Machine ):
     self.task_graph = []
     # task trace
     self.task_trace = []
-    # task runtime addr list
-    self.runtime_funcs_addr_list = []
+    # task runtime addr,name dict
+    self.runtime_dict = {}
     # parallel region
+    self.parallel_section = False
+    self.parallel_section_ra = 0
     self.parallel_section_counter = 0
     # type = 0 for task-parallel
     # type = 1 for data-parallel

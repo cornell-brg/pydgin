@@ -575,10 +575,19 @@ def execute_jal( s, inst ):
   # functions (TaskGroup(), run(), wait(), run_and_wait()), then set the
   # runtime mode flag and record the return address if in task-mode and set
   # the task-mode to false.
-  if s.pc in s.runtime_funcs_addr_list and s.stat_inst_en[8]:
+  #
+  # NOTE: 09/29/2017
+  # Updates: If starting a new parallel section which is detected by the
+  # first call to run_and_wait or wait, clear the task queue and reset the
+  # task counter, current taskid
+  if s.pc in s.runtime_dict.keys() and s.stat_inst_en[8]:
     if s.task_mode:
       s.task_mode = False
       s.task_ras.append( s.rf[31] )
+    if ((not s.parallel_section) \
+       and ( s.runtime_dict[s.pc] == "run_and_wait" or s.runtime_dict[s.pc] == "wait")):
+      s.parallel_section = True
+      s.parallel_section_ra = s.rf[31]
     s.runtime_mode = True
 
 #-----------------------------------------------------------------------
@@ -614,6 +623,15 @@ def execute_jr( s, inst ):
     s.task_ras.pop()
     s.runtime_mode = False
 
+  # shreesha: tasktrace
+  # End of a parallel section
+  if s.pc == s.parallel_section_ra:
+    s.parallel_section = False
+    s.parallel_section_ra = 0
+    s.curr_taskid = 0
+    s.task_counter = 0
+    s.task_queue = []
+
 #-----------------------------------------------------------------------
 # jalr
 #-----------------------------------------------------------------------
@@ -635,7 +653,6 @@ def execute_jalr( s, inst ):
 def execute_lui( s, inst ):
   s.rf[ inst.rt ] = inst.imm << 16
   s.pc += 4
-
 
 #-----------------------------------------------------------------------
 # Conditional branch instructions
@@ -1218,8 +1235,6 @@ def execute_stat( s, inst ):
   if stat_en and (not s.stat_inst_en[ stat_id ]):
     s.stat_inst_en[ stat_id ] = True
     s.stat_inst_begin[ stat_id ] = s.num_insts
-    if stat_id == 8:
-      s.parallel_section_counter = s.parallel_section_counter + 1
 
   # turn off stats -- accumulate the difference
   elif (not stat_en) and s.stat_inst_en[ stat_id ]:
@@ -1231,8 +1246,9 @@ def execute_stat( s, inst ):
   if stat_en and stat_id == 13 and s.stat_inst_en[8]:
     s.task_counter = s.task_counter + 1
     s.task_queue.append(s.task_counter)
-    s.curr_child_list.append(s.task_counter)
-    s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter])
+    if (not s.parallel_section_type):
+      s.curr_child_list.append(s.task_counter)
+      s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter])
   # deq event
   elif stat_en and stat_id == 12 and s.stat_inst_en[8]:
     s.curr_taskid = s.task_queue[-1]
@@ -1240,33 +1256,31 @@ def execute_stat( s, inst ):
     s.strand_type = 0
   # start of wait()
   elif stat_en and stat_id == 3 and s.stat_inst_en[8]:
-    item = ChildListStackEntry()
-    item.parent = s.curr_taskid
-    item.child_list = s.curr_child_list
-    s.child_list_stack.append(item)
-    s.curr_child_list = []
+    if (not s.parallel_section_type):
+      item = ChildListStackEntry()
+      item.parent = s.curr_taskid
+      item.child_list = s.curr_child_list
+      s.child_list_stack.append(item)
+      s.curr_child_list = []
   # end of wait()
   elif (not stat_en) and stat_id == 3 and s.stat_inst_en[8]:
     s.task_counter = s.task_counter + 1
     s.curr_taskid = s.task_counter
     s.strand_type = 1
-    item = s.child_list_stack[-1]
-    for edge in item.child_list:
-      s.task_graph.append([s.parallel_section_counter,edge,s.curr_taskid])
-    s.child_list_stack.pop()
-    for entry in s.child_list_stack:
-      for i,edge in enumerate(entry.child_list):
-        if edge == item.parent:
-          entry.child_list[i] = s.curr_taskid
+    if not s.parallel_section_type:
+      item = s.child_list_stack[-1]
+      for edge in item.child_list:
+        s.task_graph.append([s.parallel_section_counter,edge,s.curr_taskid])
+      s.child_list_stack.pop()
+      for entry in s.child_list_stack:
+        for i,edge in enumerate(entry.child_list):
+          if edge == item.parent:
+            entry.child_list[i] = s.curr_taskid
   # end of a parallel section
-  elif (not stat_en) and stat_id == 8:
-    s.curr_taskid = 0
-    s.task_counter = 0
-    s.task_queue = []
-  # end of a data-parallel loop
-  elif (not stat_en) and stat_id == 4:
+  elif stat_en and stat_id == 8:
+    s.parallel_section_counter = s.parallel_section_counter + 1
     s.parallel_section_type = 0
-  # end of a data-parallel loop
+  # start of a data-parallel loop
   elif stat_en and stat_id == 4:
     s.parallel_section_type = 1
 
