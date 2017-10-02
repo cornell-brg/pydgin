@@ -161,7 +161,7 @@ def trace_analyze(graph,trace,outdir):
         schedule = asap_schedule( tg, nx.topological_sort(tg).next() )
 
         # get the asap schedule
-        #schedule = bounded_greedy_scheduling( tg, nx.topological_sort(tg).next() )
+        #schedule = bounded_greedy_schedule( tg, nx.topological_sort(tg).next() )
         # print schedule
         #for level,nodes in schedule.iteritems():
         #  print "Level: ", level, " nodes:", nodes

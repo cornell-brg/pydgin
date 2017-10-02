@@ -10,9 +10,13 @@ def execute(cmd):
   except  subprocess.CalledProcessError, err:
     print "ERROR: " + err.output
 
+def common_entries(*dcts):
+  for i in set(dcts[0]).intersection(*dcts[1:]):
+    yield (i,) + tuple(d[i] for d in dcts)
+
 def results_summary():
   resultsdir_path = '../results'
-
+  results_unbounded = {}
   with open('summary-unbounded.txt', 'w') as out:
     subfolders = os.listdir( resultsdir_path )
     for subfolder in subfolders:
@@ -21,8 +25,10 @@ def results_summary():
       lines = execute( cmd )
       out.write(subfolder+"\n")
       out.write(lines)
+      results_unbounded[subfolder] = lines
 
   resultsdir_path = '../results-bounded'
+  results_bounded = {}
   with open('summary-bounded.txt', 'w') as out:
     subfolders = os.listdir( resultsdir_path )
     for subfolder in subfolders:
@@ -31,16 +37,12 @@ def results_summary():
       lines = execute( cmd )
       out.write(subfolder+"\n")
       out.write(lines)
+      results_bounded[subfolder] = lines
 
-  with open("summary-unbounded.txt") as xh:
-    with open('summary-bounded.txt') as yh:
-      with open("summary.txt","w") as zh:
-        #Read first file
-        xlines = xh.readlines()
-        #Read second file
-        ylines = yh.readlines()
-        #Combine content of both lists  and Write to third file
-        for line1, line2 in zip(xlines, ylines):
-          zh.write("{} | {}\n".format(line1.rstrip(), line2.rstrip()))
+  with open('summary.txt', 'w') as out:
+    for app,x,y in list(common_entries(results_unbounded,results_bounded)):
+      out.write(app)
+      out.write(" | u:"+x.rstrip())
+      out.write(" | b:"+y.rstrip()+"\n")
 
 results_summary()
