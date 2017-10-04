@@ -58,12 +58,11 @@ class Sim( object ):
     self.ncores = 1
     self.core_switch_ival = 1
     self.pkernel_bin = None
-    # shreesha: task-trace state
-    self.task_trace_dump = False
-    self.task_trace_writer = None
-    self.task_graph_writer = None
-    self.task_trace_ctr = 0
-    self.task_trace_dump_interval = 10000
+    # shreesha: trace state
+    self.trace_dump = False
+    self.trace_writer = None
+    self.trace_ctr = 0
+    self.trace_dump_interval = 50000
     self.outdir = os.path.dirname(os.path.abspath( __file__ ))
 
   #-----------------------------------------------------------------------
@@ -121,6 +120,9 @@ class Sim( object ):
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
 
+    --enable-trace  Enable tracing
+    --trace-dump-interval <n>
+                    Dump trace at the end of an interval
     --outdir        Output directory
 
   """
@@ -152,7 +154,7 @@ class Sim( object ):
 
     core_id = 0
     tick_ctr = 0
-    # shreesha: tasktrace
+    # shreesha: trace
     s = self.states[ core_id ]
 
     # use proc 0 to determine if should be running
@@ -195,24 +197,21 @@ class Sim( object ):
                   pad_hex( inst_bits ),
                   pad( inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),
-        # shreesha: is a task being executed, then dump trace
-        if s.task_mode:
-          self.task_trace_ctr = self.task_trace_ctr + 1
-          s.task_trace.append( [s.parallel_section_counter, s.parallel_section_type, s.curr_taskid, pc, s.strand_type])
-          if self.task_trace_ctr == self.task_trace_dump_interval:
-            self.task_trace_ctr = 0
-            for entry in s.task_trace:
-              for item in entry:
-                self.task_trace_writer.write("%x," % item)
-              self.task_trace_writer.write("\n")
-            s.task_trace = []
-            for entry in s.task_graph:
-              for item in entry:
-                self.task_graph_writer.write("%s," % item)
-              self.task_graph_writer.write("\n")
-            s.task_graph = []
 
         exec_fun( s, inst )
+
+        # shreesha: dump trace in parallel mode
+        if s.parallel_mode:
+          self.trace_ctr = self.trace_ctr + 1
+          s.trace.append( [core_id, pc, s.returns] )
+          if self.trace_ctr == self.trace_dump_interval:
+            self.trace_ctr = 0
+            for entry in s.trace:
+              for item in entry:
+                self.trace_writer.write("%x," % item)
+              self.trace_writer.write("\n")
+            s.trace = []
+
       except FatalError as error:
         print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
         print "Exception message: %s" % error.msg
@@ -266,20 +265,14 @@ class Sim( object ):
     print 'Total Ticks Simulated = %d' % tick_ctr
 
     # shreesha: dump any remaining stuff
-    if self.task_trace_dump:
+    if self.trace_dump:
       for state in self.states:
-        if state.task_trace:
-          for entry in state.task_trace:
+        if len(state.trace) != 0:
+          for entry in state.trace:
             for item in entry:
-              self.task_trace_writer.write("%x," % item)
-            self.task_trace_writer.write("\n")
-        if state.task_graph:
-          for entry in state.task_graph:
-            for item in entry:
-              self.task_graph_writer.write("%s," % item)
-            self.task_graph_writer.write("\n")
-        self.task_trace_writer.close()
-        self.task_graph_writer.close()
+              self.trace_writer.write("%x," % item)
+            self.trace_writer.write("\n")
+      self.trace_writer.close()
 
     # show all stats
     for i, state in enumerate( self.states ):
@@ -299,8 +292,6 @@ class Sim( object ):
         set_param( self.jitdriver, "trace_limit", self.default_trace_limit )
 
       filename_idx       = 0
-      # shreesha: file ptr to the task metadata
-      task_runtime_md    = None
       debug_flags        = []
       debug_starts_after = 0
       testbin            = False
@@ -326,8 +317,8 @@ class Sim( object ):
                            "--pkernel",
                            "--core-type",
                            "--stats-core-type",
-                           "--task-runtime-md",
-                           "--task-dump-interval",
+                           "--enable-trace",
+                           "--trace-dump-interval",
                            "--outdir"
                          ]
 
@@ -402,15 +393,14 @@ class Sim( object ):
           elif prev_token == "--stats-core-type":
             stats_core_type = int( token )
 
-          elif prev_token == "--task-runtime-md":
-            task_runtime_md = token
-            self.task_trace_dump = True
+          elif prev_token == "--enable-trace":
+            self.trace_dump = True
 
           elif prev_token == "--outdir":
             self.outdir = token
 
-          elif prev_token == "--task-dump-interval":
-            self.task_trace_dump_interval = int( token )
+          elif prev_token == "--trace-dump-interval":
+            self.trace_dump_interval = int( token )
 
           prev_token = ""
 
@@ -462,25 +452,16 @@ class Sim( object ):
 
       exe_file.close()
 
-      # shreesha: tasktrace
-      # Try reading the task runtime metadata
-      if task_runtime_md:
+      # shreesha: trace
+      if self.trace_dump:
         try:
-          task_runtime_md_file = open( task_runtime_md, 'rb' )
-          addr_list    = task_runtime_md_file.readline().strip().split(",")
-          addr_list    = [ int(n) for n in addr_list ]
-          name_list    = task_runtime_md_file.readline().strip().split(",")
+          self.trace_writer = open(self.outdir+"/trace.csv", "w")
+          self.trace_writer.write("cid,pc,ret_cnt,nan\n")
           for i in range( self.ncores ):
-            for x,addr in enumerate(addr_list):
-              self.states[i].runtime_dict[addr] = name_list[x]
-          task_runtime_md_file.close()
-          self.task_trace_writer = open(self.outdir+"/task-trace.csv", "w")
-          self.task_trace_writer.write("pid,ptype,tid,pc,stype,nan\n")
-          self.task_graph_writer = open(self.outdir+"/task-graph.csv", "w")
-          self.task_graph_writer.write("pid,parent,child,nan\n")
+            self.states[i].sim_ptr = self
 
         except IOError:
-          print "Could not open the task-runtime-md file %s" % task_runtime_md
+          print "Could not open the trace.csv"
           return 1
 
       # Execute the program

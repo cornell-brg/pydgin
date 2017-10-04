@@ -115,8 +115,6 @@ class ParcSim( Sim ):
         # print the stat if it's greater than 0
         if state.stat_inst_num_insts[ j ] > 0:
           print "  Stat %d = %d" % ( j, state.stat_inst_num_insts[ j ] )
-      # print total tasks executed
-      print "  Number of tasks executed =", state.task_counter
 
 # this initializes similator and allows translation and python
 # interpretation

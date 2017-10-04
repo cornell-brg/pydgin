@@ -570,25 +570,6 @@ def execute_j( s, inst ):
 def execute_jal( s, inst ):
   s.rf[31] = s.pc + 4
   s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
-  # shreesha: tasktrace
-  # if the target address belongs to one of the runtime-related
-  # functions (TaskGroup(), run(), wait(), run_and_wait()), then set the
-  # runtime mode flag and record the return address if in task-mode and set
-  # the task-mode to false.
-  #
-  # NOTE: 09/29/2017
-  # Updates: If starting a new parallel section which is detected by the
-  # first call to run_and_wait or wait, clear the task queue and reset the
-  # task counter, current taskid
-  if s.pc in s.runtime_dict.keys() and s.stat_inst_en[8]:
-    if s.task_mode:
-      s.task_mode = False
-      s.task_ras.append( s.rf[31] )
-    if ((not s.parallel_section) \
-       and ( s.runtime_dict[s.pc] == "run_and_wait" or s.runtime_dict[s.pc] == "wait")):
-      s.parallel_section = True
-      s.parallel_section_ra = s.rf[31]
-    s.runtime_mode = True
 
 #-----------------------------------------------------------------------
 # jr
@@ -606,46 +587,15 @@ def execute_jal( s, inst ):
 # If all requested calls have been performed, we swap the active regfile
 # pointer to the scalar regfile and disable the XPC bit.
 def execute_jr( s, inst ):
-
   s.pc = s.rf[inst.rs]
-
-  # shreesha: tasktrace
-  # Returning to runtime-mode
-  if s.pc in s.runtime_ras:
-    s.runtime_mode = True
-    s.task_mode = False
-    s.runtime_ras.pop()
-
-  # shreesha: tasktrace
-  # Returning to task-mode
-  if s.pc in s.task_ras:
-    s.task_mode = True
-    s.task_ras.pop()
-    s.runtime_mode = False
-
-  # shreesha: tasktrace
-  # End of a parallel section
-  if s.pc == s.parallel_section_ra:
-    s.parallel_section = False
-    s.parallel_section_ra = 0
-    s.curr_taskid = 0
-    s.task_counter = 0
-    s.task_queue = []
+  s.returns = s.returns + 1
 
 #-----------------------------------------------------------------------
 # jalr
 #-----------------------------------------------------------------------
 def execute_jalr( s, inst ):
   s.rf[inst.rd] = s.pc + 4
-  s.pc   = s.rf[inst.rs]
-  # shreesha: tasktrace
-  # check if we are in runtime mode and that stat instruction code for
-  # executing a task has been set, if this is true then we are executing in
-  # task mode, record where we entered the task mode & reset runtime mode
-  if s.runtime_mode and s.stat_inst_en[10] and s.stat_inst_en[8]:
-    s.runtime_mode = False
-    s.task_mode = True
-    s.runtime_ras.append( s.rf[inst.rd] )
+  s.pc = s.rf[inst.rs]
 
 #-----------------------------------------------------------------------
 # lui
@@ -1241,48 +1191,16 @@ def execute_stat( s, inst ):
     s.stat_inst_en[ stat_id ] = False
     s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
 
-  # shreesha: task-tracing
-  # enq event
-  if stat_en and stat_id == 13 and s.stat_inst_en[8]:
-    s.task_counter = s.task_counter + 1
-    s.task_queue.append(s.task_counter)
-    if (not s.parallel_section_type):
-      s.curr_child_list.append(s.task_counter)
-      s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter])
-  # deq event
-  elif stat_en and stat_id == 12 and s.stat_inst_en[8]:
-    s.curr_taskid = s.task_queue[-1]
-    s.task_queue.pop()
-    s.strand_type = 0
-  # start of wait()
-  elif stat_en and stat_id == 3 and s.stat_inst_en[8]:
-    if (not s.parallel_section_type):
-      item = ChildListStackEntry()
-      item.parent = s.curr_taskid
-      item.child_list = s.curr_child_list
-      s.child_list_stack.append(item)
-      s.curr_child_list = []
-  # end of wait()
-  elif (not stat_en) and stat_id == 3 and s.stat_inst_en[8]:
-    s.task_counter = s.task_counter + 1
-    s.curr_taskid = s.task_counter
-    s.strand_type = 1
-    if not s.parallel_section_type:
-      item = s.child_list_stack[-1]
-      for edge in item.child_list:
-        s.task_graph.append([s.parallel_section_counter,edge,s.curr_taskid])
-      s.child_list_stack.pop()
-      for entry in s.child_list_stack:
-        for i,edge in enumerate(entry.child_list):
-          if edge == item.parent:
-            entry.child_list[i] = s.curr_taskid
-  # end of a parallel section
-  elif stat_en and stat_id == 8:
-    s.parallel_section_counter = s.parallel_section_counter + 1
-    s.parallel_section_type = 0
-  # start of a data-parallel loop
-  elif stat_en and stat_id == 4:
-    s.parallel_section_type = 1
+  if stat_en and stat_id == 8:
+    s.parallel_mode = True
+    s.returns = 0
+    for i in range( 1, s.ncores ):
+      s.sim_ptr.states[i].parallel_mode = True
+      s.sim_ptr.states[i].returns = 0
+  elif (not stat_en) and stat_id == 8:
+    s.parallel_mode = False
+    for i in range( 1, s.ncores ):
+      s.sim_ptr.states[i].parallel_mode = False
 
 #-----------------------------------------------------------------------
 # hint_wl

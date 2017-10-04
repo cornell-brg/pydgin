@@ -83,40 +83,11 @@ class State( Machine ):
     self.stat_inst_begin   = [ 0 ]     * 16
     self.stat_inst_num_insts = [ 0 ]     * 16
 
-    # shreesha: task tracing
-    # child_list_stack -- [ChildListStackEntry]
-    self.child_list_stack = []
-    self.curr_child_list = []
-    # current strand type
-    # 0 = child, 1 = continuation
-    self.strand_type = 0
-    # current taskid
-    self.curr_taskid = 0
-    # global task-counter
-    self.task_counter = 0
-    # task queue to track the execution order
-    self.task_queue = []
-    # flag to indicate runtime mode
-    self.runtime_mode = False
-    # runtime ras
-    self.runtime_ras = []
-    # flag to indicate task mode
-    self.task_mode = False
-    # task ras
-    self.task_ras = []
-    # task graph
-    self.task_graph = []
-    # task trace
-    self.task_trace = []
-    # task runtime addr,name dict
-    self.runtime_dict = {}
-    # parallel region
-    self.parallel_section = False
-    self.parallel_section_ra = 0
-    self.parallel_section_counter = 0
-    # type = 0 for task-parallel
-    # type = 1 for data-parallel
-    self.parallel_section_type = 0
+    # shreesha: tracing
+    self.trace = []
+    self.sim_ptr = None
+    self.parallel_mode = False
+    self.returns = 0
 
   def fetch_pc( self ):
     return self.pc
