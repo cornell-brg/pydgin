@@ -203,7 +203,7 @@ class Sim( object ):
         # shreesha: dump trace in parallel mode
         if s.parallel_mode:
           self.trace_ctr = self.trace_ctr + 1
-          s.trace.append( [core_id, pc, s.returns] )
+          s.trace.append( [s.parallel_section, core_id, pc, s.returns] )
           if self.trace_ctr == self.trace_dump_interval:
             self.trace_ctr = 0
             for entry in s.trace:
@@ -456,7 +456,7 @@ class Sim( object ):
       if self.trace_dump:
         try:
           self.trace_writer = open(self.outdir+"/trace.csv", "w")
-          self.trace_writer.write("cid,pc,ret_cnt,nan\n")
+          self.trace_writer.write("pid,cid,pc,ret_cnt,nan\n")
           for i in range( self.ncores ):
             self.states[i].sim_ptr = self
 

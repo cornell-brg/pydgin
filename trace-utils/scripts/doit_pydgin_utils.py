@@ -11,9 +11,6 @@ from doit_utils import *
 import sys
 sys.path.extend(['../tools'])
 
-from task_regs import *
-from task_trace_annotate import *
-from task_graph import *
 from task_trace_analysis import *
 
 #----------------------------------------------------------------------------
@@ -84,24 +81,6 @@ def task_link_apps():
   return taskdict
 
 #----------------------------------------------------------------------------
-# task_runtime_md()
-#----------------------------------------------------------------------------
-
-def task_runtime_md():
-
-  action = '../tools/parse-runtime-symbols links'
-
-  taskdict = {
-    'basename' : 'runtime-md',
-    'actions'  : [ action ],
-    'task_dep' : [ 'link-apps' ],
-    'uptodate' : [ False ], # always re-execute
-    'doc'      : os.path.basename(__file__).rstrip('c'),
-  }
-
-  return taskdict
-
-#----------------------------------------------------------------------------
 # get_base_evaldict()
 #----------------------------------------------------------------------------
 
@@ -152,7 +131,7 @@ def gen_trace_per_app( evaldict ):
   yield docstring_taskdict
 
   pydgin_binary = "../../scripts/builds/pydgin-parc-jit"
-  pydgin_opts   = " --ncores 1 --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel "
+  pydgin_opts   = " --ncores 4 --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel "
 
   # Create path to resultsdir inside evaldir
   resultsdir_path = evaldir + '/' + resultsdir
@@ -214,9 +193,8 @@ def gen_trace_per_app( evaldict ):
 
         # additional pydgin specifc options for task tracing
         extra_pydgin_opts = ""
-        if os.path.isfile("links/"+app+".nm"):
-          extra_pydgin_opts = " --task-runtime-md %(runtime_md)s " % { 'runtime_md' : "links/"+app+".nm"}
-          extra_pydgin_opts = extra_pydgin_opts + "--outdir %(outdir)s " % { 'outdir' : app_results_dir }
+        extra_pydgin_opts = " --enable-trace 1 "
+        extra_pydgin_opts = extra_pydgin_opts + "--outdir %(outdir)s " % { 'outdir' : app_results_dir }
 
         pydgin_cmd = ' '.join([
           # pydgin binary
@@ -237,46 +215,6 @@ def gen_trace_per_app( evaldict ):
 
         ])
 
-        #...................................
-        # Assemble command for regs analysis
-        #...................................
-
-        regs_cmd = (
-          get_regs,
-          [
-            "links/"+app,
-            "%(app_results_dir)s/task-trace.csv" % {'app_results_dir' : app_results_dir},
-            "%(outdir)s" % {'outdir' : app_results_dir},
-          ]
-        )
-
-        #......................................
-        # Assemble command for task annotations
-        #......................................
-
-        annotate_cmd = (
-          annotate_trace,
-          [
-            "links/"+app,
-            "%(app_results_dir)s/task-trace.csv" % {'app_results_dir' : app_results_dir},
-            "links/"+app+".nm",
-            "%(outdir)s" % {'outdir' : app_results_dir},
-          ]
-        )
-
-        #......................................
-        # Assemble graph commands
-        #......................................
-
-        graph_cmd = (
-          draw_graph,
-          [
-            "%(app_results_dir)s/task-graph.csv" % {'app_results_dir' : app_results_dir},
-            "%(app_results_dir)s/task-trace.csv" % {'app_results_dir' : app_results_dir},
-            "%(outdir)s" % {'outdir' : app_results_dir},
-          ]
-        )
-
         #......................................
         # Assemble trace analysis commands
         #......................................
@@ -284,8 +222,7 @@ def gen_trace_per_app( evaldict ):
         analyze_cmd = (
           trace_analyze,
           [
-            "%(app_results_dir)s/task-graph.csv" % {'app_results_dir' : app_results_dir},
-            "%(app_results_dir)s/task-trace.csv" % {'app_results_dir' : app_results_dir},
+            "%(app_results_dir)s/trace.csv" % {'app_results_dir' : app_results_dir},
             "%(outdir)s" % {'outdir' : app_results_dir},
           ]
         )
@@ -297,9 +234,9 @@ def gen_trace_per_app( evaldict ):
         taskdict = { \
             'basename' : basename,
             'name'     : labeled_app,
-            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, graph_cmd, analyze_cmd ],
+            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd],
             'targets'  : targets,
-            'task_dep' : [ 'runtime-md' ],
+            'task_dep' : [ 'link-apps' ],
             'file_dep' : [ app_binary ],
             'uptodate' : [ True ], # Don't rebuild if targets exists
             'clean'    : [ 'rm -rf {}'.format(app_results_dir) ]

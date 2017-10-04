@@ -88,6 +88,7 @@ class State( Machine ):
     self.sim_ptr = None
     self.parallel_mode = False
     self.returns = 0
+    self.parallel_section = 0
 
   def fetch_pc( self ):
     return self.pc
