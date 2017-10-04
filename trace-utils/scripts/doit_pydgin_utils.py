@@ -11,7 +11,7 @@ from doit_utils import *
 import sys
 sys.path.extend(['../tools'])
 
-from task_trace_analysis import *
+from trace_analysis import *
 
 #----------------------------------------------------------------------------
 # Tasks
@@ -234,7 +234,7 @@ def gen_trace_per_app( evaldict ):
         taskdict = { \
             'basename' : basename,
             'name'     : labeled_app,
-            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd],
+            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, analyze_cmd],
             'targets'  : targets,
             'task_dep' : [ 'link-apps' ],
             'file_dep' : [ app_binary ],
