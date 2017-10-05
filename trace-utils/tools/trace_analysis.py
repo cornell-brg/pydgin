@@ -8,11 +8,11 @@
 import os
 import sys
 import subprocess
+import functools
 
 import pandas as pd
 
 from collections import Counter
-from collections import defaultdict
 
 #-------------------------------------------------------------------------
 # Utility Functions
@@ -24,6 +24,54 @@ def execute(cmd):
     return subprocess.check_output(cmd, shell=True)
   except  subprocess.CalledProcessError, err:
     print "ERROR: " + err.output
+
+#-------------------------------------------------------------------------
+# min_pc
+#-------------------------------------------------------------------------
+
+def min_pc( strands ):
+  unique = 0
+  total  = 0
+  streams = strands.values()
+  if len(streams) == 1:
+    unique = unique + len(streams[0])
+    total = total + len(streams[0])
+    return (unique,total)
+
+  timesteps = 0
+  for stream in streams:
+    if len(stream) > timesteps:
+      timesteps = len(stream)
+    total = total + len(stream)
+
+  # create an active mask
+  active_mask = [True]*len(streams)
+  done = [False]*len(streams)
+  all_done = False
+
+  while (not all_done):
+    pc_list = []
+    for i,flag in enumerate(active_mask):
+      if flag:
+        try:
+          pc_list.append(streams[i][0])
+        except IndexError:
+          pc_list.append(sys.maxint)
+          active_mask = False
+          done[i] = True
+
+    min_pc = min(pc_list)
+    if min_pc == sys.maxint:
+      break
+    for i,stream in enumerate(streams):
+      if (not done[i]) and stream[0] != min_pc:
+        active_mask[i] = False
+      elif (not done[i]) and stream[0] == min_pc:
+        stream.pop(0)
+    unique = unique + 1
+    all_done = functools.reduce(lambda a,b : a&b, done)
+
+  return (unique,total)
 
 #-------------------------------------------------------------------------
 # maximal_sharing
@@ -54,6 +102,7 @@ def maximal_sharing( strands ):
           continue
       pc_counts = Counter(pc_list)
       unique = unique + len(set(pc_counts))
+
   return (unique,total)
 
 #-------------------------------------------------------------------------
@@ -80,7 +129,8 @@ def trace_analyze(trace,outdir):
       for core in range(len(num_cores)):
         strands[core] = trace[trace['cid']==core]['pc'].values.tolist()
 
-      (unique_insts, total_insts) = maximal_sharing( strands )
+      #(unique_insts, total_insts) = maximal_sharing( strands )
+      (unique_insts, total_insts) = min_pc( strands )
 
       g_unique_insts = g_unique_insts + unique_insts
       g_total_insts  = g_total_insts + total_insts
