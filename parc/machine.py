@@ -85,7 +85,6 @@ class State( Machine ):
 
     # shreesha: tracing
     self.trace = []
-    self.sim_ptr = None
     self.parallel_mode = False
     self.returns = 0
     self.parallel_section = 0

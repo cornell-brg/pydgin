@@ -457,8 +457,6 @@ class Sim( object ):
         try:
           self.trace_writer = open(self.outdir+"/trace.csv", "w")
           self.trace_writer.write("pid,cid,pc,ret_cnt,nan\n")
-          for i in range( self.ncores ):
-            self.states[i].sim_ptr = self
 
         except IOError:
           print "Could not open the trace.csv"

@@ -570,6 +570,7 @@ def execute_j( s, inst ):
 def execute_jal( s, inst ):
   s.rf[31] = s.pc + 4
   s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
+  s.returns = s.returns + 1
 
 #-----------------------------------------------------------------------
 # jr
@@ -588,7 +589,7 @@ def execute_jal( s, inst ):
 # pointer to the scalar regfile and disable the XPC bit.
 def execute_jr( s, inst ):
   s.pc = s.rf[inst.rs]
-  s.returns = s.returns + 1
+  s.returns = s.returns - 1
 
 #-----------------------------------------------------------------------
 # jalr
@@ -596,6 +597,7 @@ def execute_jr( s, inst ):
 def execute_jalr( s, inst ):
   s.rf[inst.rd] = s.pc + 4
   s.pc = s.rf[inst.rs]
+  s.returns = s.returns + 1
 
 #-----------------------------------------------------------------------
 # lui
@@ -1191,18 +1193,12 @@ def execute_stat( s, inst ):
     s.stat_inst_en[ stat_id ] = False
     s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
 
-  if stat_en and stat_id == 8:
+  if stat_en and stat_id == 6:
     s.parallel_mode = True
     s.parallel_section = s.parallel_section + 1
     s.returns = 0
-    for i in range( 1, s.ncores ):
-      s.sim_ptr.states[i].parallel_mode = True
-      s.sim_ptr.states[i].returns = 0
-      s.sim_ptr.states[i].parallel_section = s.sim_ptr.states[i].parallel_section + 1
-  elif (not stat_en) and stat_id == 8:
+  elif (not stat_en) and stat_id == 6:
     s.parallel_mode = False
-    for i in range( 1, s.ncores ):
-      s.sim_ptr.states[i].parallel_mode = False
 
 #-----------------------------------------------------------------------
 # hint_wl
