@@ -50,6 +50,49 @@ std::ostream& operator<< ( std::ostream& o, const Entry& e )
 }
 
 //-------------------------------------------------------------------------
+// max_share()
+//-------------------------------------------------------------------------
+// Given a vector of strands where each entry is a deque of pcs
+// that correspond to the execution trace, the function returns a tuple
+// of the unique instructions seen and the total number of instructions
+// using no reconvergence
+
+std::tuple< int,int > max_share( std::vector< std::deque<int> >& strands )
+{
+  int unique = 0;
+  int total  = 0;
+  int ncores = strands.size();
+
+  if ( ncores == 1 ) {
+    return std::make_tuple(strands[0].size(), strands[0].size());
+  }
+  else {
+    // collect the total number of instructions that are to be analyzed
+    int max_timesteps = 0;
+    for ( auto const& strand: strands ) {
+      total += strand.size();
+      if ( max_timesteps < strand.size() )
+        max_timesteps = strand.size();
+    }
+
+    for ( int i = 0; i < max_timesteps; ++i ) {
+      std::vector< int > pc_list;
+      for ( int i = 0; i < ncores; ++i ) {
+        if ( !strands[i].empty() ) {
+          pc_list.push_back( strands[i].front() );
+          strands[i].pop_front();
+        }
+      }
+      auto new_end = std::unique(pc_list.begin(), pc_list.end());
+      pc_list.erase( new_end, pc_list.end() );
+      unique += pc_list.size();
+    }
+    return std::make_tuple(unique, total);
+  }
+}
+
+
+//-------------------------------------------------------------------------
 // min_pc()
 //-------------------------------------------------------------------------
 // Given a vector of strands where each entry is a deque of pcs
@@ -199,7 +242,8 @@ int main ( int argc, char* argv[] )
       }
 
       // analyze strands in the region
-      auto res = min_pc( strands );
+      auto res = max_share( strands );
+      //auto res = min_pc( strands );
 
       int unique_insts = std::get<0>( res );
       int total_insts  = std::get<1>( res );

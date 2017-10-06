@@ -16,7 +16,7 @@ def common_entries(*dcts):
     yield (i,) + tuple(d[i] for d in dcts)
 
 def results_summary():
-  resultsdir_path = '../results'
+  resultsdir_path = '../results-minpc-small'
   with open('summary.txt', 'w') as out:
     subfolders = os.listdir( resultsdir_path )
     for subfolder in subfolders:
