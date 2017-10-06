@@ -59,6 +59,7 @@ class Sim( object ):
     self.core_switch_ival = 1
     self.pkernel_bin = None
     # shreesha: trace state
+    self.enable_switch_cores = False
     self.trace_dump = False
     self.trace_writer = None
     self.trace_ctr = 0
@@ -120,6 +121,8 @@ class Sim( object ):
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
 
+    --enable-switch-cores
+                    Enable switching cores
     --enable-trace  Enable tracing
     --trace-dump-interval <n>
                     Dump trace at the end of an interval
@@ -236,10 +239,28 @@ class Sim( object ):
         break
 
       # check if the switching interval is reached
-      #if self.ncores > 1 and tick_ctr % self.core_switch_ival == 0:
-      #  core_id = ( core_id + 1 ) % self.ncores
+      if self.ncores > 1 and tick_ctr % self.core_switch_ival == 0 and self.enable_switch_cores:
+        core_id = ( core_id + 1 ) % self.ncores
+        if self.ncores > 1:
+          core_id = hint( core_id, promote=True )
+          # here, we try switching until we find a core that's running.
+          # this is an optimization when cores call the exit syscall and
+          # no longer need to be ticked
+          while True:
+            s       = self.states[ core_id ]
+            if s.running:
+              break
 
-      if s.fetch_pc() <= old:
+        jitdriver.can_enter_jit(
+          pc        = s.fetch_pc(),
+          core_id   = core_id,
+          tick_ctr  = tick_ctr,
+          max_insts = max_insts,
+          state     = s,
+          sim       = self,
+        )
+
+      elif s.fetch_pc() <= old:
         # experiment with switching core id here
         if self.ncores > 1:
           core_id = hint( core_id, promote=True )
@@ -318,6 +339,7 @@ class Sim( object ):
                            "--core-type",
                            "--stats-core-type",
                            "--enable-trace",
+                           "--enable-switch-cores",
                            "--trace-dump-interval",
                            "--outdir"
                          ]
@@ -392,6 +414,9 @@ class Sim( object ):
 
           elif prev_token == "--stats-core-type":
             stats_core_type = int( token )
+
+          elif prev_token == "--enable-switch-cores":
+            self.enable_switch_cores = True
 
           elif prev_token == "--enable-trace":
             self.trace_dump = True

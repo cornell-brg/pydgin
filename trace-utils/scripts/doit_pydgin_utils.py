@@ -156,7 +156,7 @@ def gen_trace_per_app( evaldict ):
 
   yield docstring_taskdict
 
-  pydgin_binary = "../../scripts/builds/pydgin-parc-jit"
+  pydgin_binary = "../../scripts/builds/pydgin-parc-nojit-debug"
   pydgin_opts   = " --ncores 4 --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel "
 
   # Create path to resultsdir inside evaldir
@@ -219,7 +219,7 @@ def gen_trace_per_app( evaldict ):
 
         # additional pydgin specifc options for task tracing
         extra_pydgin_opts = ""
-        extra_pydgin_opts = " --enable-trace 1 "
+        extra_pydgin_opts = " --enable-trace 1 --enable-switch-cores 1 "
         extra_pydgin_opts = extra_pydgin_opts + "--outdir %(outdir)s " % { 'outdir' : app_results_dir }
 
         pydgin_cmd = ' '.join([
