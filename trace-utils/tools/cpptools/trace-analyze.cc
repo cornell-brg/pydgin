@@ -26,6 +26,26 @@
 #include <vector>
 
 //-------------------------------------------------------------------------
+// dump_stats()
+//-------------------------------------------------------------------------
+
+void dump_stats( std::ostream& out, const int& unique_insts,
+                 const int& total_insts, const int& region, bool summary = false )
+{
+  if ( summary ) {
+    out << "Overall stats:" << std::endl;
+  } else {
+    out << "Parallel region " << region << ":" << std::endl;
+  }
+
+  out << "  unique    insts: " << unique_insts << std::endl;
+  out << "  total     insts: " << total_insts << std::endl;
+  out << "  redundant insts: " << ( total_insts - unique_insts ) << std::endl;
+  out << "  savings: " << (static_cast<float>( total_insts - unique_insts )/( total_insts ) )*100 << "%" << std::endl;
+  out << std::endl;
+}
+
+//-------------------------------------------------------------------------
 // Entry
 //-------------------------------------------------------------------------
 // Struct to represent an entry in the csv file
@@ -57,7 +77,7 @@ std::ostream& operator<< ( std::ostream& o, const Entry& e )
 // of the unique instructions seen and the total number of instructions
 // using no reconvergence
 
-std::tuple< int,int > max_share( std::vector< std::deque<int> >& strands )
+std::tuple< int,int > max_share( std::vector< std::deque<int> > strands )
 {
   int unique = 0;
   int total  = 0;
@@ -222,9 +242,9 @@ int main ( int argc, char* argv[] )
     }
 
     // Stats
-    int g_unique_insts = 0;
-    int g_total_insts  = 0;
-    int g_ncores       = num_cores.size();
+    int g_ncores = num_cores.size();
+
+    std::vector< std::vector< std::tuple< int, int> > > per_region_stats( 2 );
 
     std::ofstream out;
     out.open( ( outdir + "/trace-analysis.txt" ).c_str() );
@@ -242,27 +262,35 @@ int main ( int argc, char* argv[] )
       }
 
       // analyze strands in the region
-      auto res = max_share( strands );
-      //auto res = min_pc( strands );
+      auto res0 = max_share( strands );
+      per_region_stats[0].push_back( res0 );
 
-      int unique_insts = std::get<0>( res );
-      int total_insts  = std::get<1>( res );
-
-      out << "Parallel region " << region << ":" << std::endl;
-      out << "  unique    insts: " << unique_insts << std::endl;
-      out << "  total     insts: " << total_insts << std::endl;
-      out << "  redundant insts: " << ( total_insts - unique_insts ) << std::endl;
-      out << "  savings: " << (static_cast<float>( total_insts - unique_insts )/( total_insts ) )*100 << "%" << std::endl;
-
-      g_unique_insts += unique_insts;
-      g_total_insts  += total_insts;
+      auto res1 = min_pc( strands );
+      per_region_stats[1].push_back( res1 );
     }
 
-    out << "Overall stats\n";
-    out << "  unique    insts: " << g_unique_insts << std::endl;
-    out << "  total     insts: " << g_total_insts << std::endl;
-    out << "  redundant insts: " << ( g_total_insts - g_unique_insts ) << std::endl;
-    out << "  savings: " << (static_cast<float>( g_total_insts - g_unique_insts )/( g_total_insts ) )*100 << "%" << std::endl;
+    for ( int i = 0; i < 2; ++i ) {
+      out << "//" << std::string( 72, '-' ) << std::endl;
+      if      ( i == 0 ) { out << "// Max-sharing results " << std::endl; }
+      else if ( i == 1 ) { out << "// Min-pc results " << std::endl; }
+      out << "//" << std::string( 72, '-' ) << std::endl << std::endl;
+
+      int g_unique_insts = 0;
+      int g_total_insts  = 0;
+      for ( int region = 0; region < pregions.size(); ++region ) {
+        int unique_insts = std::get<0>( per_region_stats[i][region] );
+        int total_insts  = std::get<1>( per_region_stats[i][region] );
+
+        g_unique_insts += unique_insts;
+        g_total_insts  += total_insts;
+
+        dump_stats( out, unique_insts, total_insts, region+1 );
+      }
+
+      dump_stats( out, g_unique_insts, g_total_insts, 0, true );
+    }
+
+    out.close();
 
   }
   catch ( const cxxopts::OptionException& e ) {
