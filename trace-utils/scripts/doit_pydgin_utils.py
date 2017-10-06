@@ -16,13 +16,14 @@ from trace_analysis import *
 #----------------------------------------------------------------------------
 # Tasks
 #----------------------------------------------------------------------------
-
 # Paths
 
 evaldir        = '..'                            # Evaluation directory
 scriptsdir     = evaldir + '/tools'              # Scripts directory
 appdir         = 'links'                         # App binaries directory
 appinputdir    = appdir  + '/inputs'             # App inputs directory
+cpptoolsdir    = scriptsdir + '/cpptools'        # C++ tools directory
+tools_builddir = evaldir + "/build-tools"        # Build dir for C++ tools
 
 #----------------------------------------------------------------------------
 # get_labeled_apps()
@@ -55,6 +56,30 @@ def get_labeled_apps(app_dict, app_list, app_group):
 
   return labeled_apps
 
+
+#----------------------------------------------------------------------------
+# task_build_tools():
+#----------------------------------------------------------------------------
+
+def task_build_tools():
+  target   = evaldir + "/build-tools/trace-analyze"
+  file_dep = get_files_in_dir( cpptoolsdir )
+
+  action = ' '.join( [
+    'cd {};'.format(tools_builddir),
+    'g++ -O3 -o trace-analyze ',
+    '-I ../tools/cpptools {}/trace-analyze.cc -lpthread'.format(cpptoolsdir),
+  ] )
+
+  taskdict = {
+    'basename' : 'build-tools',
+    'actions'  : [ (create_folder, [tools_builddir]), action ],
+    'file_dep' : file_dep,
+    'targets'  : [ target ]
+  }
+
+  return taskdict
+
 #----------------------------------------------------------------------------
 # task_link_apps()
 #----------------------------------------------------------------------------
@@ -73,6 +98,7 @@ def task_link_apps():
 
   taskdict = { \
     'basename' : 'link-apps',
+    'task_dep' : [ 'build-tools' ],
     'actions'  : [ action ],
     'uptodate' : [ False ], # always re-execute
     'doc'      : os.path.basename(__file__).rstrip('c'),
@@ -219,13 +245,11 @@ def gen_trace_per_app( evaldict ):
         # Assemble trace analysis commands
         #......................................
 
-        analyze_cmd = (
-          trace_analyze,
-          [
-            "%(app_results_dir)s/trace.csv" % {'app_results_dir' : app_results_dir},
-            "%(outdir)s" % {'outdir' : app_results_dir},
-          ]
-        )
+        analyze_cmd = ' '.join([
+            "{}/trace-analyze".format(tools_builddir),
+            " --trace {}/trace.csv".format(app_results_dir),
+            " --outdir {}".format(app_results_dir),
+        ])
 
         #.......................
         # Build Task Dictionary
