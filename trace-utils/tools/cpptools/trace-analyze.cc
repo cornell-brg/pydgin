@@ -30,7 +30,8 @@
 //-------------------------------------------------------------------------
 
 void dump_stats( std::ostream& out, const int& unique_insts,
-                 const int& total_insts, const int& region, bool summary = false )
+                 const int& total_insts, const int& steps, const int& region,
+                 bool summary = false )
 {
   if ( summary ) {
     out << "Overall stats:" << std::endl;
@@ -41,7 +42,8 @@ void dump_stats( std::ostream& out, const int& unique_insts,
   out << "  unique    insts: " << unique_insts << std::endl;
   out << "  total     insts: " << total_insts << std::endl;
   out << "  redundant insts: " << ( total_insts - unique_insts ) << std::endl;
-  out << "  savings: " << (static_cast<float>( total_insts - unique_insts )/( total_insts ) )*100 << "%" << std::endl;
+  out << "          savings: " << (static_cast<float>( total_insts - unique_insts )/( total_insts ) )*100 << "%" << std::endl;
+  out << "  total     steps: " << steps << std::endl;
   out << std::endl;
 }
 
@@ -77,14 +79,14 @@ std::ostream& operator<< ( std::ostream& o, const Entry& e )
 // of the unique instructions seen and the total number of instructions
 // using no reconvergence
 
-std::tuple< int,int > max_share( std::vector< std::deque<int> > strands )
+std::tuple< int,int,int > max_share( std::vector< std::deque< Entry > > strands )
 {
   int unique = 0;
   int total  = 0;
   int ncores = strands.size();
 
   if ( ncores == 1 ) {
-    return std::make_tuple(strands[0].size(), strands[0].size());
+    return std::make_tuple(strands[0].size(), strands[0].size(), strands[0].size());
   }
   else {
     // collect the total number of instructions that are to be analyzed
@@ -99,7 +101,7 @@ std::tuple< int,int > max_share( std::vector< std::deque<int> > strands )
       std::vector< int > pc_list;
       for ( int i = 0; i < ncores; ++i ) {
         if ( !strands[i].empty() ) {
-          pc_list.push_back( strands[i].front() );
+          pc_list.push_back( strands[i].front().pc );
           strands[i].pop_front();
         }
       }
@@ -107,10 +109,9 @@ std::tuple< int,int > max_share( std::vector< std::deque<int> > strands )
       pc_list.erase( new_end, pc_list.end() );
       unique += pc_list.size();
     }
-    return std::make_tuple(unique, total);
+    return std::make_tuple(unique, total, max_timesteps);
   }
 }
-
 
 //-------------------------------------------------------------------------
 // min_pc()
@@ -120,14 +121,14 @@ std::tuple< int,int > max_share( std::vector< std::deque<int> > strands )
 // of the unique instructions seen and the total number of instructions
 // using the min_pc based reconvergence heuristic
 
-std::tuple< int,int > min_pc( std::vector< std::deque<int> >& strands )
+std::tuple< int,int,int > min_pc( std::vector< std::deque< Entry > >& strands )
 {
   int unique = 0;
   int total  = 0;
   int ncores = strands.size();
 
   if ( ncores == 1 ) {
-    return std::make_tuple(strands[0].size(), strands[0].size());
+    return std::make_tuple(strands[0].size(), strands[0].size(), strands[0].size());
   }
   else {
     // collect the total number of instructions that are to be analyzed
@@ -139,12 +140,13 @@ std::tuple< int,int > min_pc( std::vector< std::deque<int> >& strands )
     std::vector< bool > done( ncores, false );
 
     // min-pc based reconvergence loop
+    int max_timesteps = 0;
     while ( !all_done ) {
 
       std::vector< int > pc_list;
       for ( int i = 0; i < ncores; ++i ) {
         if ( !strands[i].empty() ) {
-          pc_list.push_back( strands[i].front() );
+          pc_list.push_back( strands[i].front().pc );
         }
         else {
           pc_list.push_back( std::numeric_limits< int >::max() );
@@ -158,12 +160,13 @@ std::tuple< int,int > min_pc( std::vector< std::deque<int> >& strands )
       }
 
       for ( int i = 0; i < ncores; ++i ) {
-        if ( !done[i] && ( strands[i].front() == min_pc ) ) {
+        if ( !done[i] && ( strands[i].front().pc == min_pc ) ) {
           strands[i].pop_front();
         }
       }
 
-      unique = unique + 1;
+      unique += 1;
+      max_timesteps += 1;
 
       all_done = true;
       for ( int i = 0; i < ncores; ++i ) {
@@ -171,7 +174,7 @@ std::tuple< int,int > min_pc( std::vector< std::deque<int> >& strands )
       }
 
     }
-    return std::make_tuple(unique, total);
+    return std::make_tuple(unique, total, max_timesteps);
   }
 }
 
@@ -244,19 +247,20 @@ int main ( int argc, char* argv[] )
     // Stats
     int g_ncores = num_cores.size();
 
-    std::vector< std::vector< std::tuple< int, int> > > per_region_stats( 2 );
+    std::vector< std::vector< std::tuple< int,int,int > > > per_region_stats( 2 );
 
     std::ofstream out;
     out.open( ( outdir + "/trace-analysis.txt" ).c_str() );
 
     // Loop through for each parallel region
     for ( auto const& region: pregions ) {
+
       // Data-structure for the strands in a given parallel region
-      std::vector< std::deque< int > > strands( g_ncores );
+      std::vector< std::deque< Entry > > strands( g_ncores );
       for ( int core = 0; core < g_ncores; ++core ) {
         for ( auto const& entry: trace ) {
           if ( entry.pid == region && entry.cid == core ) {
-            strands[core].push_back( entry.pc );
+            strands[core].push_back( entry );
           }
         }
       }
@@ -277,17 +281,22 @@ int main ( int argc, char* argv[] )
 
       int g_unique_insts = 0;
       int g_total_insts  = 0;
+      int g_total_steps  = 0;
+
       for ( int region = 0; region < pregions.size(); ++region ) {
+
         int unique_insts = std::get<0>( per_region_stats[i][region] );
         int total_insts  = std::get<1>( per_region_stats[i][region] );
+        int total_steps  = std::get<2>( per_region_stats[i][region] );
 
         g_unique_insts += unique_insts;
         g_total_insts  += total_insts;
+        g_total_steps  += total_steps;
 
-        dump_stats( out, unique_insts, total_insts, region+1 );
+        dump_stats( out, unique_insts, total_insts, total_steps, region+1 );
       }
 
-      dump_stats( out, g_unique_insts, g_total_insts, 0, true );
+      dump_stats( out, g_unique_insts, g_total_insts, g_total_steps, 0, true );
     }
 
     out.close();
