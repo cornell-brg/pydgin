@@ -62,14 +62,14 @@ app_list_spmd = [
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc',
   'pbbs-bfs-ndBFS-parc',
-  'pbbs-csort-quickSort-parc',
-  'pbbs-csort-sampleSort-parc',
+  #'pbbs-csort-quickSort-parc',
+  #'pbbs-csort-sampleSort-parc',
   'pbbs-dict-deterministicHash-parc',
   #'pbbs-hull-quickHull-parc-mtpull', -- can't support nested pfor within a task yet
   'pbbs-isort-blockRadixSort-parc',
   'pbbs-knn-octTree2Neighbors-parc',
   'pbbs-mis-ndMIS-parc',
-  'pbbs-nbody-parallelBarnesHut-parc',
+  #'pbbs-nbody-parallelBarnesHut-parc',
   'pbbs-rdups-deterministicHash-parc',
   'pbbs-sa-parallelRange-parc',
   'pbbs-st-ndST-parc',
