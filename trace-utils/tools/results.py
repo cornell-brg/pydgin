@@ -22,7 +22,7 @@ def execute(cmd):
     #print cmd
     return subprocess.check_output(cmd, shell=True)
   except  subprocess.CalledProcessError, err:
-    print "ERROR: " + err.output
+    return err
 
 #-------------------------------------------------------------------------
 # Global variable
@@ -59,29 +59,33 @@ app_short_name_dict = {
 #-------------------------------------------------------------------------
 
 def results_summary():
-  resultsdir_path = '../results-minpc-small'
-  with open('results.csv', 'w') as out:
+  resultsdir_path = '../results-minpc-small-wsrt'
+  with open('results-wsrt.csv', 'w') as out:
     out.write('app,config,stat,value\n')
     subfolders = os.listdir( resultsdir_path )
     for subfolder in subfolders:
       trace_file =  resultsdir_path + '/' + subfolder + '/trace-analysis.txt'
       cmd = "grep -r -A 5 Overall %(out)s" % { 'out' : trace_file }
-      lines = execute( cmd )
-      stats = defaultdict(list)
-      for line in lines.split('\n'):
-        line = line.split(':')
-        line = [ re.sub('%', '', token).rstrip() for token in line ]
-        if 'savings' in line[0]:
-          stats['savings'].append( line[1] )
-        elif 'steps' in line[0]:
-          stats['steps'].append( line[1] )
+      try:
+        lines = execute( cmd )
+        stats = defaultdict(list)
+        for line in lines.split('\n'):
+          line = line.split(':')
+          line = [ re.sub('%', '', token).rstrip() for token in line ]
+          if 'savings' in line[0]:
+            stats['savings'].append( line[1] )
+          elif 'steps' in line[0]:
+            stats['steps'].append( line[1] )
 
-      app = re.sub("-parc", '', subfolder)
-      app = re.sub("-small", '', app)
+        app = re.sub("-parc", '', subfolder)
+        app = re.sub("-small", '', app)
 
-      out.write('{},{},{},{}\n'.format(app,'maxshare','savings',stats['savings'][0]))
-      out.write('{},{},{},{}\n'.format(app,'minpc','savings',stats['savings'][1]))
-      out.write('{},{},{},{}\n'.format(app,'maxshare','steps',stats['steps'][0]))
-      out.write('{},{},{},{}\n'.format(app,'minpc','steps',stats['steps'][1]))
+        out.write('{},{},{},{}\n'.format(app,'maxshare','savings',stats['savings'][0]))
+        out.write('{},{},{},{}\n'.format(app,'minpc','savings',stats['savings'][1]))
+        out.write('{},{},{},{}\n'.format(app,'maxshare','steps',stats['steps'][0]))
+        out.write('{},{},{},{}\n'.format(app,'minpc','steps',stats['steps'][1]))
+      except:
+        print "{}: Trace file not present".format( subfolder )
+        continue
 
 results_summary()

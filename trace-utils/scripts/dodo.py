@@ -32,11 +32,11 @@ def task_pydgin_sims():
   evaldict = get_base_evaldict()
 
   evaldict['basename']    = "sim-pydgin"
-  evaldict['resultsdir']  = "results-minpc-small"
+  evaldict['resultsdir']  = "results-minpc-small-wsrt"
   evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
   evaldict['app_group']   = ["small","mt"]
-  evaldict['app_list']    = app_list_spmd
+  evaldict['app_list']    = app_list
   evaldict['app_dict']    = app_dict
 
   yield gen_trace_per_app( evaldict )
