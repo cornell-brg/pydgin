@@ -99,15 +99,20 @@ std::tuple< int,int,int > max_share( std::vector< std::deque< Entry > > strands 
 
     for ( int i = 0; i < max_timesteps; ++i ) {
       std::vector< int > pc_list;
+      std::vector< int > unique_pc_list;
       for ( int i = 0; i < ncores; ++i ) {
         if ( !strands[i].empty() ) {
           pc_list.push_back( strands[i].front().pc );
           strands[i].pop_front();
         }
       }
-      auto new_end = std::unique(pc_list.begin(), pc_list.end());
-      pc_list.erase( new_end, pc_list.end() );
-      unique += pc_list.size();
+      for ( auto pc: pc_list ) {
+        if ( std::find( unique_pc_list.begin(), unique_pc_list.end(), pc )
+             == unique_pc_list.end() ) {
+          unique_pc_list.push_back( pc );
+        }
+      }
+      unique += unique_pc_list.size();
     }
     return std::make_tuple(unique, total, max_timesteps);
   }
