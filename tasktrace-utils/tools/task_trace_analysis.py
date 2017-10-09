@@ -91,13 +91,13 @@ def bounded_greedy_schedule( tg, source, num_procs = 4 ):
 #-------------------------------------------------------------------------
 
 def maximal_sharing( strands ):
-  unique = 0
-  total  = 0
+  unique    = 0
+  total     = 0
   streams = strands.values()
   if len(streams) == 1:
     unique = unique + len(streams[0])
     total = total + len(streams[0])
-    return (unique,total)
+    return (len(streams[0]),unique,total)
 
   timesteps = 0
   for stream in streams:
@@ -105,17 +105,16 @@ def maximal_sharing( strands ):
       timesteps = len(stream)
     total = total + len(stream)
 
-  if timesteps:
-    for step in range(timesteps):
-      pc_list = []
-      for stream in streams:
-        try:
-          pc_list.append(stream[step])
-        except IndexError:
-          continue
-      pc_counts = Counter(pc_list)
-      unique = unique + len(set(pc_counts))
-  return (unique,total)
+  for step in range(timesteps):
+    pc_list = []
+    for stream in streams:
+      try:
+        pc_list.append(stream[step])
+      except IndexError:
+        continue
+    pc_counts = Counter(pc_list)
+    unique = unique + len(set(pc_counts))
+  return (timesteps,unique,total)
 
 #-------------------------------------------------------------------------
 # trace_analyze()
@@ -135,21 +134,40 @@ def trace_analyze(graph,trace,outdir):
   with open("%(outdir)s/trace-analysis.txt" % {'outdir':outdir}, "w") as out:
     g_unique_insts = 0
     g_total_insts = 0
+    g_total_steps = 0
     for region in parallel_regions:
       trace_df = task_trace_df[task_trace_df['pid']==region]
       graph_df = task_graph_df[task_graph_df['pid']==region]
       region_type = trace_df['ptype'].unique()
       unique_insts = 0
       total_insts = 0
+      total_steps = 0
       # data-parallel region
       if region_type == 1:
         nodes = trace_df['tid'].unique()
         strands = {}
-        for node in nodes:
-          strands[node] = trace_df[trace_df['tid'] == node]['pc'].values.tolist()
-        (unique, total) = maximal_sharing( strands )
-        unique_insts = unique_insts + unique
-        total_insts  = total_insts + total
+        start_idx = 0
+        while start_idx < len( nodes ):
+          end_idx = start_idx + 4 if start_idx < len( nodes ) else len( nodes )
+          for node in range( start_idx, end_idx ):
+            strands[node] = trace_df[trace_df['tid'] == node]['pc'].values.tolist()
+          (steps, unique, total) = maximal_sharing( strands )
+          unique_insts = unique_insts + unique
+          total_insts  = total_insts + total
+          total_steps  = total_steps + steps
+          start_idx = start_idx + 4
+
+        g_unique_insts = g_unique_insts + unique_insts
+        g_total_insts  = g_total_insts + total_insts
+        g_total_steps  = g_total_steps + total_steps
+
+        out.write("Parallel region %(region)s:\n"  % {'region':region})
+        out.write("  unique    insts: %(insts)d\n" % {'insts' :unique_insts})
+        out.write("  total     insts: %(insts)d\n" % {'insts' :total_insts})
+        out.write("  redundant insts: %(insts)d\n" % {'insts' :(total_insts-unique_insts)})
+        out.write("  savings: %(savings).2f%%\n" % {'savings':((total_insts-unique_insts)/float(total_insts))*100})
+        out.write("  total     stpes: %(steps)d\n" % {'steps' :total_steps})
+
       # task-parallel region
       else:
         # create a networkx directed graph
@@ -163,8 +181,8 @@ def trace_analyze(graph,trace,outdir):
         # get the asap schedule
         #schedule = bounded_greedy_schedule( tg, nx.topological_sort(tg).next() )
         # print schedule
-        #for level,nodes in schedule.iteritems():
-        #  print "Level: ", level, " nodes:", nodes
+        for level,nodes in schedule.iteritems():
+          print "Level: ", level, " nodes:", nodes
 
         # analyze the trace based on the asap schedule
         for level,nodes in schedule.iteritems():
@@ -172,21 +190,25 @@ def trace_analyze(graph,trace,outdir):
           strands = {}
           for node in nodes:
             strands[node] = traces[traces['tid'] == node]['pc'].values.tolist()
-          (unique, total) = maximal_sharing( strands )
+          (steps, unique, total) = maximal_sharing( strands )
           unique_insts = unique_insts + unique
           total_insts  = total_insts + total
+          total_steps  = total_steps + steps
 
-      g_unique_insts = g_unique_insts + unique_insts
-      g_total_insts  = g_total_insts + total_insts
+        g_unique_insts = g_unique_insts + unique_insts
+        g_total_insts  = g_total_insts + total_insts
+        g_total_steps  = g_total_steps + total_steps
 
-      out.write("Parallel region %(region)s:\n"  % {'region':region})
-      out.write("  unique    insts: %(insts)d\n" % {'insts' :unique_insts})
-      out.write("  total     insts: %(insts)d\n" % {'insts' :total_insts})
-      out.write("  redundant insts: %(insts)d\n" % {'insts' :(total_insts-unique_insts)})
-      out.write("  savings: %(savings).2f%%\n" % {'savings':((total_insts-unique_insts)/float(total_insts))*100})
+        out.write("Parallel region %(region)s:\n"  % {'region':region})
+        out.write("  unique    insts: %(insts)d\n" % {'insts' :unique_insts})
+        out.write("  total     insts: %(insts)d\n" % {'insts' :total_insts})
+        out.write("  redundant insts: %(insts)d\n" % {'insts' :(total_insts-unique_insts)})
+        out.write("  savings: %(savings).2f%%\n" % {'savings':((total_insts-unique_insts)/float(total_insts))*100})
+        out.write("  total     stpes: %(steps)d\n" % {'steps' :total_steps})
 
     out.write("Overall stats\n")
     out.write("  unique    insts: %(insts)d\n" % {'insts' :g_unique_insts})
     out.write("  total     insts: %(insts)d\n" % {'insts' :g_total_insts})
     out.write("  redundant insts: %(insts)d\n" % {'insts' :(g_total_insts-g_unique_insts)})
     out.write("  savings: %(savings).2f%%\n" % {'savings':((g_total_insts-g_unique_insts)/float(g_total_insts))*100})
+    out.write("  total     steps: %(steps)d\n" % {'steps' :g_total_steps})
