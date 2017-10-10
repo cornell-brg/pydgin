@@ -61,7 +61,7 @@ app_short_name_dict = {
 def results_summary():
   resultsdir_path = '../results-minpc-small-wsrt'
   with open('results-wsrt.csv', 'w') as out:
-    out.write('rtype,app,config,stat,value\n')
+    out.write('app,config,stat,value\n')
     subfolders = os.listdir( resultsdir_path )
     for subfolder in subfolders:
       trace_file =  resultsdir_path + '/' + subfolder + '/trace-analysis.txt'
@@ -84,10 +84,10 @@ def results_summary():
         if not app in app_short_name_dict.keys():
           continue
 
-        out.write('{},{},{},{},{}\n'.format("wsrt",app_short_name_dict[app],'maxshare','savings',stats['savings'][0]))
-        out.write('{},{},{},{},{}\n'.format("wsrt",app_short_name_dict[app],'minpc','savings',stats['savings'][1]))
-        out.write('{},{},{},{},{}\n'.format("wsrt",app_short_name_dict[app],'maxshare','steps',stats['steps'][0]))
-        out.write('{},{},{},{},{}\n'.format("wsrt",app_short_name_dict[app],'minpc','steps',stats['steps'][1]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'wsrt-maxshare','savings',stats['savings'][0]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'wsrt-minpc','savings',stats['savings'][1]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'wsrt-maxshare','steps',stats['steps'][0]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'wsrt-minpc','steps',stats['steps'][1]))
       except:
         print "{}: Trace file not present".format( subfolder )
         continue
