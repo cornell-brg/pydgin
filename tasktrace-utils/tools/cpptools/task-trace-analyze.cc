@@ -38,7 +38,7 @@ typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS> G
 typedef boost::graph_traits< Graph >::vertex_descriptor Vertex_t;
 typedef boost::graph_traits< Graph >::edge_descriptor Edge_t;
 
-int g_num_contexts = 2;
+int g_num_contexts = 4;
 
 //-------------------------------------------------------------------------
 // dump_stats()
@@ -411,7 +411,7 @@ int main ( int argc, char* argv[] )
     //---------------------------------------------------------------------
 
     // Stats
-    std::vector< std::vector< std::tuple< int,int,int > > > per_region_stats( 2 );
+    std::vector< std::vector< std::tuple< int,int,int > > > per_region_stats( 4 );
 
     std::ofstream out;
     out.open( ( outdir + "/trace-analysis.txt" ).c_str() );
@@ -453,17 +453,20 @@ int main ( int argc, char* argv[] )
         // Unbounded
         //-----------------------------------------------------------------
 
-        auto res0 = min_pc( strands );
+        auto res0 = max_share( strands );
         per_region_stats[0].push_back( res0 );
+
+        auto res1 = min_pc( strands );
+        per_region_stats[1].push_back( res1 );
 
         //-----------------------------------------------------------------
         // Bounded
         //-----------------------------------------------------------------
 
         int start_idx    = 0;
-        int unique_insts = 0;
-        int total_insts  = 0;
-        int total_steps  = 0;
+        std::vector< int > unique_insts( 2, 0);
+        std::vector< int > total_insts( 2, 0 );
+        std::vector< int > total_steps( 2, 0 );
 
         do {
 
@@ -472,15 +475,22 @@ int main ( int argc, char* argv[] )
 
           std::vector< std::deque< TraceEntry > > bstrands( &strands[start_idx], &strands[end_idx] );
 
-          auto res1 = min_pc( bstrands );
-          unique_insts += std::get<0>( res1 );
-          total_insts  += std::get<1>( res1 );
-          total_steps  += std::get<2>( res1 );
+          auto res2 = max_share( bstrands );
+          unique_insts[0] += std::get<0>( res2 );
+          total_insts[0]  += std::get<1>( res2 );
+          total_steps[0]  += std::get<2>( res2 );
+
+          auto res3 = min_pc( bstrands );
+          unique_insts[1] += std::get<0>( res3 );
+          total_insts[1]  += std::get<1>( res3 );
+          total_steps[1]  += std::get<2>( res3 );
 
           start_idx += g_num_contexts;
 
         } while ( start_idx < strands.size() );
-        per_region_stats[1].push_back( std::make_tuple( unique_insts, total_insts, total_steps ) );
+
+        per_region_stats[2].push_back( std::make_tuple( unique_insts[0], total_insts[0], total_steps[0] ) );
+        per_region_stats[3].push_back( std::make_tuple( unique_insts[1], total_insts[1], total_steps[1] ) );
 
       }
       // Task-parallel region
@@ -499,9 +509,9 @@ int main ( int argc, char* argv[] )
         auto ubounded_schedule = asap_schedule( tg );
         print_schedule( ubounded_schedule );
 
-        int unique_insts = 0;
-        int total_insts  = 0;
-        int total_steps  = 0;
+        std::vector< int > unique_insts( 2, 0);
+        std::vector< int > total_insts( 2, 0 );
+        std::vector< int > total_steps( 2, 0 );
 
         for ( auto const& kv: ubounded_schedule ) {
           int num_tasks = kv.second.size();
@@ -515,12 +525,18 @@ int main ( int argc, char* argv[] )
             }
             ++i;
           }
-          auto res = max_share( strands );
-          unique_insts += std::get<0>( res );
-          total_insts  += std::get<1>( res );
-          total_steps  += std::get<2>( res );
+          auto res0 = max_share( strands );
+          unique_insts[0] += std::get<0>( res0 );
+          total_insts[0]  += std::get<1>( res0 );
+          total_steps[0]  += std::get<2>( res0 );
+
+          auto res1 = min_pc( strands );
+          unique_insts[1] += std::get<0>( res1 );
+          total_insts[1]  += std::get<1>( res1 );
+          total_steps[1]  += std::get<2>( res1 );
         }
-        per_region_stats[0].push_back( std::make_tuple( unique_insts, total_insts, total_steps ) );
+        per_region_stats[0].push_back( std::make_tuple( unique_insts[0], total_insts[0], total_steps[0] ) );
+        per_region_stats[1].push_back( std::make_tuple( unique_insts[1], total_insts[1], total_steps[1] ) );
 
         //-----------------------------------------------------------------
         // Bounded
@@ -529,9 +545,9 @@ int main ( int argc, char* argv[] )
         auto bounded_schedule = bounded_greedy_schedule( tg );
         print_schedule( bounded_schedule );
 
-        unique_insts = 0;
-        total_insts  = 0;
-        total_steps  = 0;
+        unique_insts.resize( 2 );
+        total_insts.resize( 2 );
+        total_steps.resize( 2 );
 
         for ( auto const& kv: bounded_schedule ) {
           int num_tasks = kv.second.size();
@@ -545,20 +561,28 @@ int main ( int argc, char* argv[] )
             }
             ++i;
           }
-          auto res = max_share( strands );
-          unique_insts += std::get<0>( res );
-          total_insts  += std::get<1>( res );
-          total_steps  += std::get<2>( res );
+          auto res0 = max_share( strands );
+          unique_insts[0] += std::get<0>( res0 );
+          total_insts[0]  += std::get<1>( res0 );
+          total_steps[0]  += std::get<2>( res0 );
+
+          auto res1 = min_pc( strands );
+          unique_insts[1] += std::get<0>( res1 );
+          total_insts[1]  += std::get<1>( res1 );
+          total_steps[1]  += std::get<2>( res1 );
         }
-        per_region_stats[1].push_back( std::make_tuple( unique_insts, total_insts, total_steps ) );
+        per_region_stats[2].push_back( std::make_tuple( unique_insts[0], total_insts[0], total_steps[0] ) );
+        per_region_stats[3].push_back( std::make_tuple( unique_insts[1], total_insts[1], total_steps[1] ) );
 
       }
     }
 
-    for ( int i = 0; i < 2; ++i ) {
+    for ( int i = 0; i < 4; ++i ) {
       out << "//" << std::string( 72, '-' ) << std::endl;
-      if      ( i == 0 ) { out << "// Unbounded results " << std::endl; }
-      else if ( i == 1 ) { out << "// Bounded results " << std::endl; }
+      if      ( i == 0 ) { out << "// Unbounded max-share results " << std::endl; }
+      else if ( i == 1 ) { out << "// Unbounded min-pc results " << std::endl; }
+      else if ( i == 2 ) { out << "// Bounded max-share results " << std::endl; }
+      else if ( i == 3 ) { out << "// Bounded min-pc results " << std::endl; }
       out << "//" << std::string( 72, '-' ) << std::endl << std::endl;
 
       int g_unique_insts = 0;
