@@ -53,7 +53,7 @@ app_list = [
   #'cilk-cholesky-parc-mtpull', -- can't build task-graph correctly
   'cilk-cilksort-parc-mtpull',
   'cilk-heat-parc-mtpull',
-  'cilk-knapsack-parc-mtpull',
+  #'cilk-knapsack-parc-mtpull',
   'cilk-matmul-parc-mtpull',
 ]
 

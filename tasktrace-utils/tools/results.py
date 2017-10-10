@@ -59,9 +59,9 @@ app_short_name_dict = {
 #-------------------------------------------------------------------------
 
 def results_summary():
-  resultsdir_path = '../results-tiny'
+  resultsdir_path = '../results'
   with open('results-task.csv', 'w') as out:
-    out.write('rtype,app,config,stat,value\n')
+    out.write('app,config,stat,value\n')
     subfolders = os.listdir( resultsdir_path )
     for subfolder in subfolders:
       trace_file =  resultsdir_path + '/' + subfolder + '/trace-analysis.txt'
@@ -85,14 +85,14 @@ def results_summary():
         if not app in app_short_name_dict.keys():
           continue
 
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'unbounded-maxshare','savings',stats['savings'][0]))
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'unbounded-minpc','savings',stats['savings'][1]))
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'bounded-maxshare','savings',stats['savings'][2]))
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'bounded-minpc','savings',stats['savings'][3]))
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'ubounded-maxshare','steps',stats['steps'][0]))
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'ubounded-minpc','steps',stats['steps'][1]))
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'bounded-maxshare','steps',stats['steps'][2]))
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'bounded-minpc','steps',stats['steps'][3]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-u','savings',stats['savings'][0]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-u','savings',stats['savings'][1]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-4','savings',stats['savings'][2]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-4','savings',stats['savings'][3]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-u','steps',stats['steps'][0]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-u','steps',stats['steps'][1]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-4','steps',stats['steps'][2]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-4','steps',stats['steps'][3]))
       except:
         print "{}: Trace file not present".format( subfolder )
         continue
