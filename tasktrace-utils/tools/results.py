@@ -59,7 +59,7 @@ app_short_name_dict = {
 #-------------------------------------------------------------------------
 
 def results_summary():
-  resultsdir_path = '../results'
+  resultsdir_path = '../results-tiny'
   with open('results-task.csv', 'w') as out:
     out.write('rtype,app,config,stat,value\n')
     subfolders = os.listdir( resultsdir_path )
@@ -79,15 +79,20 @@ def results_summary():
 
         app = re.sub("-parc", '', subfolder)
         app = re.sub("-small", '', app)
+        app = re.sub("-tiny", '', app)
         app = re.sub("-mtpull", '', app)
 
         if not app in app_short_name_dict.keys():
           continue
 
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'ubounded','savings',stats['savings'][0]))
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'bounded-2','savings',stats['savings'][1]))
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'ubounded','steps',stats['steps'][0]))
-        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'bounded-2','steps',stats['steps'][1]))
+        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'unbounded-maxshare','savings',stats['savings'][0]))
+        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'unbounded-minpc','savings',stats['savings'][1]))
+        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'bounded-maxshare','savings',stats['savings'][2]))
+        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'bounded-minpc','savings',stats['savings'][3]))
+        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'ubounded-maxshare','steps',stats['steps'][0]))
+        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'ubounded-minpc','steps',stats['steps'][1]))
+        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'bounded-maxshare','steps',stats['steps'][2]))
+        out.write('{},{},{},{},{}\n'.format("task",app_short_name_dict[app],'bounded-minpc','steps',stats['steps'][3]))
       except:
         print "{}: Trace file not present".format( subfolder )
         continue
