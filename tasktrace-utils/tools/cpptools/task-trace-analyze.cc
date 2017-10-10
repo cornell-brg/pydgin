@@ -261,7 +261,7 @@ std::tuple< int,int,int > max_share( std::vector< std::deque< TraceEntry > > str
 // of the unique instructions seen and the total number of instructions
 // using the min_pc based reconvergence heuristic
 
-std::tuple< int,int,int > min_pc( std::vector< std::deque< TraceEntry > >& strands )
+std::tuple< int,int,int > min_pc( std::vector< std::deque< TraceEntry > > strands )
 {
   int unique = 0;
   int total  = 0;
@@ -453,7 +453,7 @@ int main ( int argc, char* argv[] )
         // Unbounded
         //-----------------------------------------------------------------
 
-        auto res0 = max_share( strands );
+        auto res0 = min_pc( strands );
         per_region_stats[0].push_back( res0 );
 
         //-----------------------------------------------------------------
@@ -472,7 +472,7 @@ int main ( int argc, char* argv[] )
 
           std::vector< std::deque< TraceEntry > > bstrands( &strands[start_idx], &strands[end_idx] );
 
-          auto res1 = max_share( bstrands );
+          auto res1 = min_pc( bstrands );
           unique_insts += std::get<0>( res1 );
           total_insts  += std::get<1>( res1 );
           total_steps  += std::get<2>( res1 );
