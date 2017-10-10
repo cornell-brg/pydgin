@@ -1,5 +1,5 @@
 #=========================================================================
-# results.py
+# results-spmd.py
 #=========================================================================
 # Author : Shreesha Srinath
 # Date   : October 6th, 2017
@@ -59,9 +59,9 @@ app_short_name_dict = {
 #-------------------------------------------------------------------------
 
 def results_summary():
-  resultsdir_path = '../results-minpc-small-wsrt'
-  with open('results-wsrt.csv', 'w') as out:
-    out.write('app,config,stat,value\n')
+  resultsdir_path = '../results-minpc-small'
+  with open('results-spmd.csv', 'w') as out:
+    out.write('rtype,app,config,stat,value\n')
     subfolders = os.listdir( resultsdir_path )
     for subfolder in subfolders:
       trace_file =  resultsdir_path + '/' + subfolder + '/trace-analysis.txt'
@@ -79,11 +79,15 @@ def results_summary():
 
         app = re.sub("-parc", '', subfolder)
         app = re.sub("-small", '', app)
+        app = re.sub("-mtpull", '', app)
 
-        out.write('{},{},{},{}\n'.format(app,'maxshare','savings',stats['savings'][0]))
-        out.write('{},{},{},{}\n'.format(app,'minpc','savings',stats['savings'][1]))
-        out.write('{},{},{},{}\n'.format(app,'maxshare','steps',stats['steps'][0]))
-        out.write('{},{},{},{}\n'.format(app,'minpc','steps',stats['steps'][1]))
+        if not app in app_short_name_dict.keys():
+          continue
+
+        out.write('{},{},{},{},{}\n'.format("spmd",app_short_name_dict[app],'maxshare','savings',stats['savings'][0]))
+        out.write('{},{},{},{},{}\n'.format("spmd",app_short_name_dict[app],'minpc','savings',stats['savings'][1]))
+        out.write('{},{},{},{},{}\n'.format("spmd",app_short_name_dict[app],'maxshare','steps',stats['steps'][0]))
+        out.write('{},{},{},{},{}\n'.format("spmd",app_short_name_dict[app],'minpc','steps',stats['steps'][1]))
       except:
         print "{}: Trace file not present".format( subfolder )
         continue
