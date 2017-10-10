@@ -646,6 +646,8 @@ def execute_jalr( s, inst ):
     s.runtime_mode = False
     s.task_mode = True
     s.runtime_ras.append( s.rf[inst.rd] )
+    if s.parallel_section_type:
+      s.curr_taskid = s.curr_taskid + 1
 
 #-----------------------------------------------------------------------
 # lui
@@ -1243,19 +1245,19 @@ def execute_stat( s, inst ):
 
   # shreesha: task-tracing
   # enq event
-  if stat_en and stat_id == 13 and s.stat_inst_en[8]:
+  if stat_en and stat_id == 13 and s.stat_inst_en[8] and (not s.parallel_section_type):
     s.task_counter = s.task_counter + 1
     s.task_queue.append(s.task_counter)
     if (not s.parallel_section_type):
       s.curr_child_list.append(s.task_counter)
       s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter])
   # deq event
-  elif stat_en and stat_id == 12 and s.stat_inst_en[8]:
+  elif stat_en and stat_id == 12 and s.stat_inst_en[8] and (not s.parallel_section_type):
     s.curr_taskid = s.task_queue[-1]
     s.task_queue.pop()
     s.strand_type = 0
   # start of wait()
-  elif stat_en and stat_id == 3 and s.stat_inst_en[8]:
+  elif stat_en and stat_id == 3 and s.stat_inst_en[8] and (not s.parallel_section_type):
     if (not s.parallel_section_type):
       item = ChildListStackEntry()
       item.parent = s.curr_taskid
@@ -1263,7 +1265,7 @@ def execute_stat( s, inst ):
       s.child_list_stack.append(item)
       s.curr_child_list = []
   # end of wait()
-  elif (not stat_en) and stat_id == 3 and s.stat_inst_en[8]:
+  elif (not stat_en) and stat_id == 3 and s.stat_inst_en[8] and (not s.parallel_section_type):
     s.task_counter = s.task_counter + 1
     s.curr_taskid = s.task_counter
     s.strand_type = 1
@@ -1283,6 +1285,7 @@ def execute_stat( s, inst ):
   # start of a data-parallel loop
   elif stat_en and stat_id == 4:
     s.parallel_section_type = 1
+    s.curr_taskid = 0
 
 #-----------------------------------------------------------------------
 # hint_wl
