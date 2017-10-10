@@ -45,7 +45,7 @@ app_list = [
   'pbbs-isort-blockRadixSort-parc-mtpull',
   'pbbs-knn-octTree2Neighbors-parc-mtpull',
   'pbbs-mis-ndMIS-parc-mtpull',
-  'pbbs-nbody-parallelBarnesHut-parc-mtpull',
+  #'pbbs-nbody-parallelBarnesHut-parc-mtpull',
   'pbbs-rdups-deterministicHash-parc-mtpull',
   'pbbs-sa-parallelRange-parc-mtpull',
   'pbbs-st-ndST-parc-mtpull',
@@ -70,7 +70,7 @@ app_dict = {
     #........................................................................
 
     'ubmark-vvadd'        : { 'mtpull' : [ '--impl mtpull', ] },
-    'px-fib'              : { 'mtpull' : [ '--impl mt --n 15', ] },
+    'px-fib'              : { 'mtpull' : [ '--impl mt --n 4', ] },
     'bilateral'           : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
                               'scalar' : [ '--impl scalar --warmup', ] },

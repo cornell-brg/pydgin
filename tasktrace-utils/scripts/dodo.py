@@ -32,10 +32,10 @@ def task_pydgin_sims():
   evaldict = get_base_evaldict()
 
   evaldict['basename']    = "sim-pydgin"
-  evaldict['results_dir'] = "pydgin-sims"
+  evaldict['resultsdir']  = "results"
   evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
-  evaldict['app_group']   = ["tiny","mtpull"]
+  evaldict['app_group']   = ["small","mtpull"]
   evaldict['app_list']    = app_list
   evaldict['app_dict']    = app_dict
 
