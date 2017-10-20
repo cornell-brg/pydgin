@@ -43,7 +43,7 @@ app_list = [
   'pbbs-dict-deterministicHash-parc-mtpull',
   #'pbbs-hull-quickHull-parc-mtpull', -- can't support nested pfor within a task yet
   'pbbs-isort-blockRadixSort-parc-mtpull',
-  'pbbs-knn-octTree2Neighbors-parc-mtpull',
+  #'pbbs-knn-octTree2Neighbors-parc-mtpull', -- not working on wsrt
   'pbbs-mis-ndMIS-parc-mtpull',
   'pbbs-nbody-parallelBarnesHut-parc-mtpull',
   'pbbs-rdups-deterministicHash-parc-mtpull',

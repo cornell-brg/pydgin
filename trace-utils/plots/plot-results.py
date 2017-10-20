@@ -10,35 +10,37 @@ import sys
 
 import pandas as pd
 
+from collections import OrderedDict
+
 #-------------------------------------------------------------------------
 # Global variables
 #-------------------------------------------------------------------------
 
-app_short_name_dict = {
-  'pbbs-bfs-deterministicBFS'    : 'bfs-d',
-  'pbbs-bfs-ndBFS'               : 'bfs-nd',
-  'pbbs-csort-quickSort'         : 'qsort',
-  'pbbs-csort-quickSort-1'       : 'qsort-1',
-  'pbbs-csort-quickSort-2'       : 'qsort-2',
-  'pbbs-csort-sampleSort'        : 'sampsort',
-  'pbbs-csort-sampleSort-1'      : 'sampsort-1',
-  'pbbs-csort-sampleSort-2'      : 'sampsort-2',
-  'pbbs-dict-deterministicHash'  : 'dict',
-  #'pbbs-hull-quickHull'          : 'hull',
-  'pbbs-isort-blockRadixSort'    : 'radix-1',
-  'pbbs-isort-blockRadixSort-1'  : 'radix-2',
-  'pbbs-knn-octTree2Neighbors'   : 'knn',
-  'pbbs-mis-ndMIS'               : 'mis',
-  #'pbbs-nbody-parallelBarnesHut' : 'nbody',
-  'pbbs-rdups-deterministicHash' : 'rdups',
-  'pbbs-sa-parallelRange'        : 'sarray',
-  'pbbs-st-ndST'                 : 'sptree',
-  #'cilk-cholesky'                : 'clsky',
-  'cilk-cilksort'                : 'cilksort',
-  'cilk-heat'                    : 'heat',
-  'cilk-knapsack'                : 'ksack',
-  'cilk-matmul'                  : 'matmul',
-}
+app_short_name_dict = OrderedDict([
+  ('pbbs-bfs-deterministicBFS'    , 'bfs-d'),
+  ('pbbs-bfs-ndBFS'               , 'bfs-nd'),
+  ('pbbs-dict-deterministicHash'  , 'dict'),
+  ('pbbs-knn-octTree2Neighbors'   , 'knn'),
+  ('pbbs-mis-ndMIS'               , 'mis'),
+  #('pbbs-nbody-parallelBarnesHut' , 'nbody)',
+  ('pbbs-isort-blockRadixSort'    , 'radix-1'),
+  ('pbbs-isort-blockRadixSort-1'  , 'radix-2'),
+  ('pbbs-rdups-deterministicHash' , 'rdups'),
+  ('pbbs-sa-parallelRange'        , 'sarray'),
+  ('pbbs-st-ndST'                 , 'sptree'),
+  ('pbbs-csort-quickSort'         , 'qsort'),
+  ('pbbs-csort-quickSort-1'       , 'qsort-1'),
+  ('pbbs-csort-quickSort-2'       , 'qsort-2'),
+  ('pbbs-csort-sampleSort'        , 'sampsort'),
+  ('pbbs-csort-sampleSort-1'      , 'sampsort-1'),
+  ('pbbs-csort-sampleSort-2'      , 'sampsort-2'),
+  #('pbbs-hull-quickHull'          , 'hull'),
+  #('cilk-cholesky'                : 'clsky)',
+  ('cilk-cilksort'                , 'cilksort'),
+  ('cilk-heat'                    , 'heat'),
+  ('cilk-knapsack'                , 'ksack'),
+  ('cilk-matmul'                  , 'matmul'),
+])
 
 app_list = app_short_name_dict.values()
 

@@ -75,7 +75,7 @@ def results_summary():
           if 'savings' in line[0]:
             stats['savings'].append( line[1] )
           elif 'steps' in line[0]:
-            stats['steps'].append( line[1] )
+            stats['steps'].append( int(line[1]) )
 
         app = re.sub("-parc", '', subfolder)
         app = re.sub("-small", '', app)
