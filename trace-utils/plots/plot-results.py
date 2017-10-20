@@ -74,7 +74,6 @@ def parse_savings( stat, df ):
       except:
         temp.append(0)
     data.append( temp )
-    print app,stat,temp
   return data
 
 #-------------------------------------------------------------------------

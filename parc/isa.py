@@ -1193,6 +1193,22 @@ def execute_stat( s, inst ):
     s.stat_inst_en[ stat_id ] = False
     s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
 
+  # For the wsrt runtime
+  if stat_en and stat_id == 8:
+    s.parallel_mode = True
+    s.parallel_section = s.parallel_section + 1
+    s.returns = 0
+    for i in range( 1, s.ncores ):
+      s.sim_ptr.states[i].parallel_mode = True
+      s.sim_ptr.states[i].parallel_section = s.sim_ptr.states[i].parallel_section + 1
+      s.sim_ptr.states[i].returns = 0
+
+  elif (not stat_en) and stat_id == 8:
+    s.parallel_mode = False
+    for i in range( 1, s.ncores ):
+      s.sim_ptr.states[i].parallel_mode = False
+
+  # For the spmd runtime
   if stat_en and stat_id == 6:
     s.parallel_mode = True
     s.parallel_section = s.parallel_section + 1

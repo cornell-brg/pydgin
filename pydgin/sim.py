@@ -462,6 +462,7 @@ class Sim( object ):
       for i in range( self.ncores ):
         self.states[i].core_type = core_type
         self.states[i].stats_core_type = stats_core_type
+        self.states[i].sim_ptr = self
 
       # set accel rf mode
 
