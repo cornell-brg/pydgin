@@ -89,10 +89,14 @@ def results_summary():
         out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-u','savings',stats['savings'][1]))
         out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-4','savings',stats['savings'][2]))
         out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-4','savings',stats['savings'][3]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-8','savings',stats['savings'][4]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-8','savings',stats['savings'][5]))
         out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-u','steps',stats['steps'][0]))
         out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-u','steps',stats['steps'][1]))
         out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-4','steps',stats['steps'][2]))
         out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-4','steps',stats['steps'][3]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-8','steps',stats['steps'][4]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-8','steps',stats['steps'][5]))
       except:
         print "{}: Trace file not present".format( subfolder )
         continue

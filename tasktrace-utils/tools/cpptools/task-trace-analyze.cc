@@ -38,7 +38,7 @@ typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS> G
 typedef boost::graph_traits< Graph >::vertex_descriptor Vertex_t;
 typedef boost::graph_traits< Graph >::edge_descriptor Edge_t;
 
-int g_num_contexts = 4;
+int g_num_contexts[] = { 4, 8 };
 
 //-------------------------------------------------------------------------
 // dump_stats()
@@ -166,7 +166,7 @@ std::map< int, std::vector< int > > asap_schedule( Graph& g ) {
 // bounded_greedy_schedule()
 //-------------------------------------------------------------------------
 
-std::map< int, std::vector< int > > bounded_greedy_schedule( Graph& g ) {
+std::map< int, std::vector< int > > bounded_greedy_schedule( Graph& g, const int& num_contexts ) {
 
   auto ubounded_schedule = asap_schedule( g );
 
@@ -183,14 +183,14 @@ std::map< int, std::vector< int > > bounded_greedy_schedule( Graph& g ) {
     int start_idx = 0;
     do {
 
-      int end_idx = ( ( start_idx + g_num_contexts ) < num_nodes )
-                    ? ( start_idx + g_num_contexts ) : num_nodes;
+      int end_idx = ( ( start_idx + num_contexts ) < num_nodes )
+                    ? ( start_idx + num_contexts ) : num_nodes;
 
       for ( int i = start_idx; i < end_idx; ++i ) {
         greedy_labels[ nodes[i] ] = label;
       }
 
-      start_idx += g_num_contexts;
+      start_idx += num_contexts;
       label += 1;
 
     } while ( start_idx < num_nodes );
@@ -318,6 +318,89 @@ std::tuple< int,int,int > min_pc( std::vector< std::deque< TraceEntry > > strand
   }
 }
 
+//------------------------------------------------------------------------
+// loop_analysis()
+//------------------------------------------------------------------------
+
+void
+loop_analysis( std::vector< std::deque< TraceEntry > > strands,
+               std::vector< std::vector< std::tuple< int,int,int > > >& per_region_stats,
+               const int& num_contexts,
+               int index ) {
+
+  int start_idx    = 0;
+  std::vector< int > unique_insts( 2, 0);
+  std::vector< int > total_insts( 2, 0 );
+  std::vector< int > total_steps( 2, 0 );
+
+  do {
+
+    int end_idx = ( ( start_idx + num_contexts ) < strands.size() )
+                  ? ( start_idx + num_contexts ) : strands.size();
+
+    std::vector< std::deque< TraceEntry > > bstrands( &strands[start_idx], &strands[end_idx] );
+
+    auto res0 = max_share( bstrands );
+    unique_insts[0] += std::get<0>( res0 );
+    total_insts[0]  += std::get<1>( res0 );
+    total_steps[0]  += std::get<2>( res0 );
+
+    auto res1 = min_pc( bstrands );
+    unique_insts[1] += std::get<0>( res1 );
+    total_insts[1]  += std::get<1>( res1 );
+    total_steps[1]  += std::get<2>( res1 );
+
+    start_idx += num_contexts;
+
+  } while ( start_idx < strands.size() );
+
+  per_region_stats[index].push_back( std::make_tuple( unique_insts[0], total_insts[0], total_steps[0] ) );
+  per_region_stats[index+1].push_back( std::make_tuple( unique_insts[1], total_insts[1], total_steps[1] ) );
+
+}
+
+//------------------------------------------------------------------------
+// task_analysis()
+//------------------------------------------------------------------------
+
+void
+task_analysis( std::map< int, std::vector< int > > schedule,
+               std::vector< TraceEntry > ptrace,
+               std::vector< std::vector< std::tuple< int,int,int > > >& per_region_stats,
+               int index ) {
+
+  std::vector< int > unique_insts( 2, 0);
+  std::vector< int > total_insts( 2, 0 );
+  std::vector< int > total_steps( 2, 0 );
+
+  for ( auto const& kv: schedule ) {
+    int num_tasks = kv.second.size();
+    std::vector< std::deque< TraceEntry > > strands( num_tasks );
+    int i = 0;
+    for ( auto const& node: kv.second ) {
+      for ( auto const& entry: ptrace ) {
+        if ( entry.tid == node ) {
+          strands[i].push_back( entry );
+        }
+      }
+      ++i;
+    }
+    auto res0 = max_share( strands );
+    unique_insts[0] += std::get<0>( res0 );
+    total_insts[0]  += std::get<1>( res0 );
+    total_steps[0]  += std::get<2>( res0 );
+
+    auto res1 = min_pc( strands );
+    unique_insts[1] += std::get<0>( res1 );
+    total_insts[1]  += std::get<1>( res1 );
+    total_steps[1]  += std::get<2>( res1 );
+  }
+
+  per_region_stats[index].push_back( std::make_tuple( unique_insts[0], total_insts[0], total_steps[0] ) );
+  per_region_stats[index+1].push_back( std::make_tuple( unique_insts[1], total_insts[1], total_steps[1] ) );
+
+}
+
 //-------------------------------------------------------------------------
 // main()
 //-------------------------------------------------------------------------
@@ -411,7 +494,7 @@ int main ( int argc, char* argv[] )
     //---------------------------------------------------------------------
 
     // Stats
-    std::vector< std::vector< std::tuple< int,int,int > > > per_region_stats( 4 );
+    std::vector< std::vector< std::tuple< int,int,int > > > per_region_stats( 6 );
 
     std::ofstream out;
     out.open( ( outdir + "/trace-analysis.txt" ).c_str() );
@@ -463,38 +546,13 @@ int main ( int argc, char* argv[] )
         // Bounded
         //-----------------------------------------------------------------
 
-        int start_idx    = 0;
-        std::vector< int > unique_insts( 2, 0);
-        std::vector< int > total_insts( 2, 0 );
-        std::vector< int > total_steps( 2, 0 );
-
-        do {
-
-          int end_idx = ( ( start_idx + g_num_contexts ) < strands.size() )
-                        ? ( start_idx + g_num_contexts ) : strands.size();
-
-          std::vector< std::deque< TraceEntry > > bstrands( &strands[start_idx], &strands[end_idx] );
-
-          auto res2 = max_share( bstrands );
-          unique_insts[0] += std::get<0>( res2 );
-          total_insts[0]  += std::get<1>( res2 );
-          total_steps[0]  += std::get<2>( res2 );
-
-          auto res3 = min_pc( bstrands );
-          unique_insts[1] += std::get<0>( res3 );
-          total_insts[1]  += std::get<1>( res3 );
-          total_steps[1]  += std::get<2>( res3 );
-
-          start_idx += g_num_contexts;
-
-        } while ( start_idx < strands.size() );
-
-        per_region_stats[2].push_back( std::make_tuple( unique_insts[0], total_insts[0], total_steps[0] ) );
-        per_region_stats[3].push_back( std::make_tuple( unique_insts[1], total_insts[1], total_steps[1] ) );
+        loop_analysis( strands, per_region_stats, g_num_contexts[0], 2 );
+        loop_analysis( strands, per_region_stats, g_num_contexts[1], 4 );
 
       }
       // Task-parallel region
       else {
+
         Graph tg( strand_ids.size() );
         for ( auto const& entry: graph ) {
           if ( entry.pid == region ) {
@@ -506,83 +564,29 @@ int main ( int argc, char* argv[] )
         // Unbounded
         //-----------------------------------------------------------------
 
-        auto ubounded_schedule = asap_schedule( tg );
-        print_schedule( ubounded_schedule );
-
-        std::vector< int > unique_insts( 2, 0);
-        std::vector< int > total_insts( 2, 0 );
-        std::vector< int > total_steps( 2, 0 );
-
-        for ( auto const& kv: ubounded_schedule ) {
-          int num_tasks = kv.second.size();
-          std::vector< std::deque< TraceEntry > > strands( num_tasks );
-          int i = 0;
-          for ( auto const& node: kv.second ) {
-            for ( auto const& entry: ptrace ) {
-              if ( entry.tid == node ) {
-                strands[i].push_back( entry );
-              }
-            }
-            ++i;
-          }
-          auto res0 = max_share( strands );
-          unique_insts[0] += std::get<0>( res0 );
-          total_insts[0]  += std::get<1>( res0 );
-          total_steps[0]  += std::get<2>( res0 );
-
-          auto res1 = min_pc( strands );
-          unique_insts[1] += std::get<0>( res1 );
-          total_insts[1]  += std::get<1>( res1 );
-          total_steps[1]  += std::get<2>( res1 );
-        }
-        per_region_stats[0].push_back( std::make_tuple( unique_insts[0], total_insts[0], total_steps[0] ) );
-        per_region_stats[1].push_back( std::make_tuple( unique_insts[1], total_insts[1], total_steps[1] ) );
+        auto unbounded_schedule = asap_schedule( tg );
+        task_analysis( unbounded_schedule, ptrace, per_region_stats, 0 );
 
         //-----------------------------------------------------------------
         // Bounded
         //-----------------------------------------------------------------
 
-        auto bounded_schedule = bounded_greedy_schedule( tg );
-        print_schedule( bounded_schedule );
+        auto bounded_schedule_4 = bounded_greedy_schedule( tg, g_num_contexts[0] );
+        task_analysis( bounded_schedule_4, ptrace, per_region_stats, 2 );
 
-        unique_insts.resize( 2 );
-        total_insts.resize( 2 );
-        total_steps.resize( 2 );
-
-        for ( auto const& kv: bounded_schedule ) {
-          int num_tasks = kv.second.size();
-          std::vector< std::deque< TraceEntry > > strands( num_tasks );
-          int i = 0;
-          for ( auto const& node: kv.second ) {
-            for ( auto const& entry: ptrace ) {
-              if ( entry.tid == node ) {
-                strands[i].push_back( entry );
-              }
-            }
-            ++i;
-          }
-          auto res0 = max_share( strands );
-          unique_insts[0] += std::get<0>( res0 );
-          total_insts[0]  += std::get<1>( res0 );
-          total_steps[0]  += std::get<2>( res0 );
-
-          auto res1 = min_pc( strands );
-          unique_insts[1] += std::get<0>( res1 );
-          total_insts[1]  += std::get<1>( res1 );
-          total_steps[1]  += std::get<2>( res1 );
-        }
-        per_region_stats[2].push_back( std::make_tuple( unique_insts[0], total_insts[0], total_steps[0] ) );
-        per_region_stats[3].push_back( std::make_tuple( unique_insts[1], total_insts[1], total_steps[1] ) );
-
+        auto bounded_schedule_8 = bounded_greedy_schedule( tg, g_num_contexts[1] );
+        task_analysis( bounded_schedule_4, ptrace, per_region_stats, 4 );
       }
     }
 
-    for ( int i = 0; i < 4; ++i ) {
+    for ( int i = 0; i < per_region_stats.size(); ++i ) {
       out << "//" << std::string( 72, '-' ) << std::endl;
       if      ( i == 0 ) { out << "// Unbounded max-share results " << std::endl; }
       else if ( i == 1 ) { out << "// Unbounded min-pc results " << std::endl; }
-      else if ( i == 2 ) { out << "// Bounded max-share results " << std::endl; }
-      else if ( i == 3 ) { out << "// Bounded min-pc results " << std::endl; }
+      else if ( i == 2 ) { out << "// Bounded-4 max-share results " << std::endl; }
+      else if ( i == 3 ) { out << "// Bounded-4 min-pc results " << std::endl; }
+      else if ( i == 4 ) { out << "// Bounded-8 max-share results " << std::endl; }
+      else if ( i == 5 ) { out << "// Bounded-8 min-pc results " << std::endl; }
       out << "//" << std::string( 72, '-' ) << std::endl << std::endl;
 
       int g_unique_insts = 0;
@@ -606,7 +610,6 @@ int main ( int argc, char* argv[] )
     }
 
     out.close();
-
   }
   catch ( const cxxopts::OptionException& e ) {
     std::cout << "error parsing options: " << e.what() << std::endl;
