@@ -49,10 +49,12 @@ configs = [
   'spmd-minpc',
   'wsrt-maxshare',
   'wsrt-minpc',
-  'task-maxshare-u',
-  'task-minpc-u',
+  #'task-maxshare-u',
+  #'task-minpc-u',
   'task-maxshare-4',
   'task-minpc-4',
+  'task-maxshare-8',
+  'task-minpc-8',
 ]
 
 file_list = [
