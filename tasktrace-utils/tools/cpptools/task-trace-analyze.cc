@@ -575,7 +575,7 @@ int main ( int argc, char* argv[] )
         task_analysis( bounded_schedule_4, ptrace, per_region_stats, 2 );
 
         auto bounded_schedule_8 = bounded_greedy_schedule( tg, g_num_contexts[1] );
-        task_analysis( bounded_schedule_4, ptrace, per_region_stats, 4 );
+        task_analysis( bounded_schedule_8, ptrace, per_region_stats, 4 );
       }
     }
 
