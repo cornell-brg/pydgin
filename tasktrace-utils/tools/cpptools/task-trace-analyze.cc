@@ -179,7 +179,6 @@ std::map< int, std::vector< int > > bounded_greedy_schedule( Graph& g, const int
   for ( auto& kv: ubounded_schedule ) {
     auto num_nodes = kv.second.size();
     auto nodes = kv.second;
-    std::cout << std::endl;
     int start_idx = 0;
     do {
 

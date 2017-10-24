@@ -626,6 +626,7 @@ def execute_jr( s, inst ):
   # shreesha: tasktrace
   # End of a parallel section
   if s.pc == s.parallel_section_ra:
+    s.parallel_section_counter = s.parallel_section_counter + 1
     s.parallel_section = False
     s.parallel_section_ra = 0
     s.curr_taskid = 0
