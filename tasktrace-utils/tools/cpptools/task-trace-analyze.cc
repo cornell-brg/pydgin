@@ -38,7 +38,7 @@ typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS> G
 typedef boost::graph_traits< Graph >::vertex_descriptor Vertex_t;
 typedef boost::graph_traits< Graph >::edge_descriptor Edge_t;
 
-int g_num_contexts[] = { 4, 8 };
+int g_num_contexts[] = { 8 };
 
 //-------------------------------------------------------------------------
 // dump_stats()
@@ -400,6 +400,184 @@ task_analysis( std::map< int, std::vector< int > > schedule,
 
 }
 
+//------------------------------------------------------------------------
+// compact_loop_analysis
+//------------------------------------------------------------------------
+
+void compact_loop_analysis(
+  std::vector< std::deque< TraceEntry > >& strands,
+  std::vector< std::vector< std::tuple< int,int,int > > >& per_region_stats,
+  int num_contexts,
+  int index )
+{
+
+  // all cores are initially available
+  std::vector< bool > core_active( num_contexts, false );
+
+  // per-core trace
+  std::vector< std::deque< TraceEntry > > core_trace( num_contexts );
+
+  int timestep = 0;
+  int total    = 0;
+  int unique   = 0;
+  int iter     = 0;
+  bool active  = false;
+
+  while ( ( iter < strands.size() ) || active ) {
+    // if a core is available assign an available strand to it
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( !core_active[i] && ( iter < strands.size() ) ) {
+        core_active[i] = true;
+        // extract the trace for the core
+        assert( core_trace[i].empty() );
+        for ( auto it = strands[iter].begin(); it != strands[iter].end(); ++it ) {
+          core_trace[i].push_back( *it );
+        }
+        total += core_trace[i].size();
+        iter += 1;
+      }
+    }
+
+    // process stuff in flight
+    std::vector< int > pc_list;
+    std::vector< int > unique_pc_list;
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( !core_trace[i].empty() && core_active[i] ) {
+        pc_list.push_back( core_trace[i].front().pc );
+        core_trace[i].pop_front();
+      }
+    }
+
+    // calculate redundancy
+    for ( auto pc: pc_list ) {
+      if ( std::find( unique_pc_list.begin(), unique_pc_list.end(), pc )
+           == unique_pc_list.end() ) {
+        unique_pc_list.push_back( pc );
+      }
+    }
+    unique += unique_pc_list.size();
+
+    // check if any traces have finished
+    active = false;
+    for ( int i = 0; i < num_contexts; ++i ) {
+      // finished the current node, schedule child if possible
+      if ( core_trace[i].empty() && core_active[i] ) {
+        core_active[i] = false;
+      }
+      active = active | core_active[i];
+    }
+
+    // advance time
+    timestep += 1;
+  }
+
+  per_region_stats[index].push_back( std::make_tuple( unique, total, timestep ) );
+
+}
+
+//------------------------------------------------------------------------
+// compact_task_analysis
+//------------------------------------------------------------------------
+
+void compact_task_analysis(
+  Graph& g,
+  std::vector< TraceEntry >& ptrace,
+  std::vector< std::vector< std::tuple< int,int,int > > >& per_region_stats,
+  int num_contexts,
+  int index )
+{
+
+  // initialze a node map
+  auto nodes = boost::vertices( g );
+  std::map< int,int > node_map;
+  for ( auto node = nodes.first; node != nodes.second; ++node ) {
+    auto in_degree = boost::in_degree( *node, g );
+    node_map[ *node ] = in_degree;
+  }
+
+  // all cores are initially available
+  std::vector< bool > core_active( num_contexts, false );
+
+  // queue of active nodes
+  std::deque< Vertex_t > active_nodes;
+
+  // per-core trace
+  std::vector< std::deque< TraceEntry > > core_trace( num_contexts );
+  std::vector< int >                      core_node( num_contexts );
+
+  // schedule the root node
+  active_nodes.push_back( *boost::vertices( g ).first );
+
+  int timestep = 0;
+  int total    = 0;
+  int unique   = 0;
+  bool active  = false;
+  while ( !active_nodes.empty() || active ) {
+    // if a core is available assign any ready node to it
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( !core_active[i] && !active_nodes.empty() ) {
+        auto node = active_nodes.front();
+        active_nodes.pop_front();
+        core_active[i] = true;
+        core_node[i] = node;
+        // extract the trace for the core
+        assert( core_trace[i].empty() );
+        for ( auto entry: ptrace ) {
+          if ( entry.tid == node ) {
+            core_trace[i].push_back( entry );
+          }
+        }
+        total += core_trace[i].size();
+      }
+    }
+
+    // process stuff in flight
+    std::vector< int > pc_list;
+    std::vector< int > unique_pc_list;
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( !core_trace[i].empty() && core_active[i] ) {
+        pc_list.push_back( core_trace[i].front().pc );
+        core_trace[i].pop_front();
+      }
+    }
+
+    // calculate redundancy
+    for ( auto pc: pc_list ) {
+      if ( std::find( unique_pc_list.begin(), unique_pc_list.end(), pc )
+           == unique_pc_list.end() ) {
+        unique_pc_list.push_back( pc );
+      }
+    }
+    unique += unique_pc_list.size();
+
+    // check if any traces have finished
+    active = false;
+    for ( int i = 0; i < num_contexts; ++i ) {
+      // finished the current node, schedule child if possible
+      if ( core_trace[i].empty() && core_active[i] ) {
+        core_active[i] = false;
+        auto node = core_node[i];
+        auto children = boost::out_edges( node, g );
+        for ( auto c = children.first; c != children.second; ++c ) {
+          auto child = boost::target( *c, g );
+          node_map[child] -= 1;
+          assert( node_map[child] >= 0 );
+          if ( node_map[child] == 0 ) {
+            active_nodes.push_back( child );
+          }
+        }
+      }
+      active = active | core_active[i];
+    }
+
+    // advance time
+    timestep += 1;
+  }
+
+  per_region_stats[index].push_back( std::make_tuple( unique, total, timestep-2 ) );
+
+}
+
 //-------------------------------------------------------------------------
 // main()
 //-------------------------------------------------------------------------
@@ -493,7 +671,7 @@ int main ( int argc, char* argv[] )
     //---------------------------------------------------------------------
 
     // Stats
-    std::vector< std::vector< std::tuple< int,int,int > > > per_region_stats( 6 );
+    std::vector< std::vector< std::tuple< int,int,int > > > per_region_stats( 3 );
 
     std::ofstream out;
     out.open( ( outdir + "/trace-analysis.txt" ).c_str() );
@@ -517,6 +695,7 @@ int main ( int argc, char* argv[] )
 
       // Data-parallel region
       if ( ptrace[0].ptype == 1 ) {
+
         // Data-structure to store strands
         std::vector< std::deque< TraceEntry > > strands( strand_ids.size() );
 
@@ -532,21 +711,28 @@ int main ( int argc, char* argv[] )
         }
 
         //-----------------------------------------------------------------
-        // Unbounded
+        // Unbounded analysis
+        //-----------------------------------------------------------------
+        // FIXME: NOTE: 10/25/2107
+        // Turning off unbounded analysis
+
+        //auto res0 = max_share( strands );
+        //per_region_stats[0].push_back( res0 );
+
+        //auto res1 = min_pc( strands );
+        //per_region_stats[1].push_back( res1 );
+
+        //-----------------------------------------------------------------
+        // Compact analysis
         //-----------------------------------------------------------------
 
-        auto res0 = max_share( strands );
-        per_region_stats[0].push_back( res0 );
-
-        auto res1 = min_pc( strands );
-        per_region_stats[1].push_back( res1 );
+        compact_loop_analysis( strands, per_region_stats, g_num_contexts[0], 0 );
 
         //-----------------------------------------------------------------
-        // Bounded
+        // Bounded analysis
         //-----------------------------------------------------------------
 
-        loop_analysis( strands, per_region_stats, g_num_contexts[0], 2 );
-        loop_analysis( strands, per_region_stats, g_num_contexts[1], 4 );
+        loop_analysis( strands, per_region_stats, g_num_contexts[0], 1 );
 
       }
       // Task-parallel region
@@ -560,32 +746,35 @@ int main ( int argc, char* argv[] )
         }
 
         //-----------------------------------------------------------------
-        // Unbounded
+        // Unbounded analysis
+        //-----------------------------------------------------------------
+        // FIXME: NOTE: 10/25/2107
+        // Turning off unbounded analysis
+
+        //auto unbounded_schedule = asap_schedule( tg );
+        //task_analysis( unbounded_schedule, ptrace, per_region_stats, 0 );
+
+        //-----------------------------------------------------------------
+        // Compact analysis
         //-----------------------------------------------------------------
 
-        auto unbounded_schedule = asap_schedule( tg );
-        task_analysis( unbounded_schedule, ptrace, per_region_stats, 0 );
+        compact_task_analysis( tg, ptrace, per_region_stats, g_num_contexts[0], 0 );
 
         //-----------------------------------------------------------------
-        // Bounded
+        // Bounded analysis
         //-----------------------------------------------------------------
 
-        auto bounded_schedule_4 = bounded_greedy_schedule( tg, g_num_contexts[0] );
-        task_analysis( bounded_schedule_4, ptrace, per_region_stats, 2 );
+        auto bounded_schedule = bounded_greedy_schedule( tg, g_num_contexts[0] );
+        task_analysis( bounded_schedule, ptrace, per_region_stats, 1 );
 
-        auto bounded_schedule_8 = bounded_greedy_schedule( tg, g_num_contexts[1] );
-        task_analysis( bounded_schedule_8, ptrace, per_region_stats, 4 );
       }
     }
 
     for ( int i = 0; i < per_region_stats.size(); ++i ) {
       out << "//" << std::string( 72, '-' ) << std::endl;
-      if      ( i == 0 ) { out << "// Unbounded max-share results " << std::endl; }
-      else if ( i == 1 ) { out << "// Unbounded min-pc results " << std::endl; }
-      else if ( i == 2 ) { out << "// Bounded-4 max-share results " << std::endl; }
-      else if ( i == 3 ) { out << "// Bounded-4 min-pc results " << std::endl; }
-      else if ( i == 4 ) { out << "// Bounded-8 max-share results " << std::endl; }
-      else if ( i == 5 ) { out << "// Bounded-8 min-pc results " << std::endl; }
+      if      ( i == 0 ) { out << "// Compact-8 results " << std::endl; }
+      else if ( i == 1 ) { out << "// Bounded-8 max-share results " << std::endl; }
+      else if ( i == 2 ) { out << "// Bounded-8 min-pc results " << std::endl; }
       out << "//" << std::string( 72, '-' ) << std::endl << std::endl;
 
       int g_unique_insts = 0;
