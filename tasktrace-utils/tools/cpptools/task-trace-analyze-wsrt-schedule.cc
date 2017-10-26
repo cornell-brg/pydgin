@@ -42,7 +42,7 @@ typedef boost::graph_traits< Graph >::vertex_descriptor Vertex_t;
 typedef boost::graph_traits< Graph >::edge_descriptor Edge_t;
 typedef boost::graph_traits< Graph >::vertex_iterator VertexIter;
 
-typedef std::vector< std::deque< std::tuple< int, Vertex_t > > > TaskQueue;
+//typedef std::vector< std::deque< std::tuple< int, Vertex_t > > > TaskQueue;
 
 int g_num_contexts[] = { 4, 8 };
 
@@ -243,10 +243,10 @@ int occupancy_based_victim( TaskQueue& task_queue, int id, int num_contexts ) {
 }
 
 //-------------------------------------------------------------------------
-// ws_schedule()
+// ws_schedule1()
 //-------------------------------------------------------------------------
 
-std::map< int, std::vector< int > > ws_schedule( Graph& g, const int& num_contexts ) {
+std::map< int, std::vector< int > > ws_schedule1( Graph& g, const int& num_contexts ) {
 
   std::map< int, std::vector< int > > schedule;
 
@@ -307,6 +307,125 @@ std::map< int, std::vector< int > > ws_schedule( Graph& g, const int& num_contex
   }
   return schedule;
 }
+
+//-------------------------------------------------------------------------
+// ws_schedule()
+//-------------------------------------------------------------------------
+
+typedef std::vector< std::deque< Vertex_t > > TaskQueue;
+
+void ws_schedule(
+  Graph& g,
+  std::vector< TraceEntry >& ptrace,
+  std::vector< std::vector< std::tuple< int,int,int > > >& per_region_stats,
+  int num_contexts,
+  int index )
+{
+
+  // initialze a node map
+  auto nodes = boost::vertices( g );
+  std::map< int,int > node_map;
+  for ( auto node = nodes.first; node != nodes.second; ++node ) {
+    auto in_degree = boost::in_degree( *node, g );
+    node_map[ *node ] = in_degree;
+  }
+
+  // all cores are initially available
+  std::vector< bool > core_active( num_contexts, false );
+
+  // distributed task-queues
+  TaskQueue task_queue( num_contexts );
+  TaskQueue next_queue( num_contexts );
+
+  // per-core trace
+  std::vector< std::deque< TraceEntry > > core_trace( num_contexts );
+  std::vector< Vertex_t > core_node( num_contexts );
+
+  // schedule the root node
+  task_queue[0].push_back( *boost::vertices( g ).first );
+
+  int timestep = 0;
+  int total    = 0;
+  int unique   = 0;
+
+  bool active  = false;
+  bool all_done = false;
+
+  while ( !all_done|| active ) {
+
+    std::vector< int > pc_list;
+    std::vector< int > unique_pc_list;
+
+    // iterate through each core
+    for ( int i = 0; i < num_contexts; ++i ) {
+
+      // check the local queue and see if the core has any work and if yes
+      // extract the trace and assign it to the current task execution
+      if ( !task_queue[i].empty() && !core_active[i] ) {
+        auto node = task_queue[i].front();
+        task_queue[i].pop_front();
+        core_active[i] = true;
+        core_node[i].push_front( node );
+        // extract the trace for the core
+        assert( core_trace[i].empty() );
+        for ( auto entry: ptrace ) {
+          if ( entry.tid == node ) {
+            core_trace[i].push_back( entry );
+          }
+        }
+        total += core_trace[i].size();
+      }
+      // steal
+      else if ( task_queue[i].empty() && !core_active[i] ) {
+        // select a victim
+        int victim = occupancy_based_victim( task_queue, i, num_contexts );
+        if ( !task_queue[victim].empty() ) {
+          auto node = task_queue[victim].back();
+          task_queue[victim].pop_back();
+          task_queue[i].push_front( node );
+          core_active[i] = true;
+          // extract the trace for the core
+          assert( core_trace[i].empty() );
+          for ( auto entry: ptrace ) {
+            if ( entry.tid == node ) {
+              core_trace[i].push_back( entry );
+            }
+          }
+          total += core_trace[i].size();
+        }
+      }
+
+      // execute
+      if ( !core_trace[i].empty() && core_active[i] ) {
+        pc_list.push_back( core_trace[i].front().pc );
+        core_trace[i].pop_front();
+        // schedule children
+        if ( core_trace[i].empty() ) {
+          core_active[i] = false;
+          auto node = core_node[i];
+          auto children = boost::out_edges( node, g );
+          for ( auto c = children.first; c != children.second; ++c ) {
+            auto child = boost::target( *c, g );
+            node_map[child] -= 1;
+            assert( node_map[child] >= 0 );
+            if ( node_map[child] == 0 ) {
+              active_nodes.push_back( child );
+            }
+          }
+        }
+      }
+
+    }
+
+    // advance time
+    timestep += 1;
+  }
+
+  per_region_stats[index].push_back( std::make_tuple( unique, total, timestep-2 ) );
+
+}
+
+
 
 //-------------------------------------------------------------------------
 // max_share()
