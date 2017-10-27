@@ -42,8 +42,6 @@ typedef boost::graph_traits< Graph >::vertex_descriptor Vertex_t;
 typedef boost::graph_traits< Graph >::edge_descriptor Edge_t;
 typedef boost::graph_traits< Graph >::vertex_iterator VertexIter;
 
-//typedef std::vector< std::deque< std::tuple< int, Vertex_t > > > TaskQueue;
-
 int g_num_contexts[] = { 4, 8 };
 
 //-------------------------------------------------------------------------
@@ -215,6 +213,44 @@ std::map< int, std::vector< int > > bounded_greedy_schedule( Graph& g, const int
 // utility functions for ws-scheduling
 //-------------------------------------------------------------------------
 
+struct Task{
+  int       core_id;
+  int       stack_idx;
+  Vertex_t  task_id;
+
+  Task()
+  { }
+
+  Task( int core_id, int stack_idx, Vertex_t task_id )
+    : core_id( core_id ), stack_idx( stack_idx ), task_id( task_id )
+  { }
+
+  void operator=( Task other )
+  {
+    core_id   = other.core_id;
+    stack_idx = other.stack_idx;
+    task_id   = other.task_id;
+  }
+};
+
+struct StackEntry {
+  int  join_counter;
+  Task continuation;
+
+  StackEntry( int join_counter, Task continuation )
+    : join_counter( join_counter ), continuation( continuation )
+  { }
+
+  void operator=( StackEntry other )
+  {
+    join_counter = other.join_counter;
+    continuation = other.continuation;
+  }
+};
+
+typedef std::vector< std::deque< Task > > TaskQueue;
+
+
 int random_victim( int id, int num_contexts ) {
   int ret = 0;
   do {
@@ -243,186 +279,204 @@ int occupancy_based_victim( TaskQueue& task_queue, int id, int num_contexts ) {
 }
 
 //-------------------------------------------------------------------------
-// ws_schedule1()
-//-------------------------------------------------------------------------
-
-std::map< int, std::vector< int > > ws_schedule1( Graph& g, const int& num_contexts ) {
-
-  std::map< int, std::vector< int > > schedule;
-
-  // create queues
-  TaskQueue curr_queue( num_contexts );
-  TaskQueue next_queue( num_contexts );
-
-  // insert root task in the first queue
-  curr_queue[0].push_back( std::make_tuple( 1, *( boost::vertices( g ).first ) ) );
-  bool all_done = false;
-
-  while ( !all_done ) {
-    all_done = true;
-    for ( int i = 0; i < num_contexts; ++i ) {
-      // if task queue is not empty
-      if ( !curr_queue[i].empty() ) {
-        auto res   = curr_queue[i].front();
-        auto round = std::get<0>( res );
-        auto node  = std::get<1>( res );
-        schedule[ round ].push_back( node );
-        curr_queue[i].pop_front();
-        std::cout << "Round: " << round << " Core: " << i << " processed node " << node << std::endl;
-        auto children = boost::out_edges( node, g );
-        if ( boost::out_degree( node, g ) > 1  || node == 0 ) {
-        for ( auto c = children.first; c != children.second; ++c ) {
-          int child = boost::target( *c, g );
-          curr_queue[i].push_front( std::make_tuple( round+1, child ) );
-          std::cout << "Core: " << i << " pushing node " << child << std::endl;
-        }
-        auto next = std::get<1>( curr_queue[i].front() );
-        curr_queue[i].pop_front();
-        next_queue[i].push_front( std::make_tuple( round+1, next ) );
-        }
-      }
-      // steal
-      else {
-        // select a victim
-        int victim = occupancy_based_victim( curr_queue, i, num_contexts );
-        std::cout << "Core " << i << ": selected victim Core:" << victim << std::endl;
-        if ( !curr_queue[victim].empty() ) {
-          auto node = curr_queue[victim].back();
-          curr_queue[victim].pop_back();
-          next_queue[i].push_front( node );
-          std::cout << "  stealing node:" << std::get<1>(node) << std::endl;
-        }
-      }
-    }
-    for ( int i = 0; i < num_contexts; ++i ) {
-      std::cout << "Next round Core" << i << ": [";
-      for ( auto itr = next_queue[i].begin(); itr != next_queue[i].end(); ++itr ) {
-        std::cout << std::get<1>(*itr) << ",";
-        curr_queue[i].push_front( *itr );
-      }
-      std::cout << "]" << std::endl;
-      next_queue[i] = {};
-      all_done = all_done & curr_queue[i].empty();
-    }
-  }
-  return schedule;
-}
-
-//-------------------------------------------------------------------------
 // ws_schedule()
 //-------------------------------------------------------------------------
-
-typedef std::vector< std::deque< Vertex_t > > TaskQueue;
 
 void ws_schedule(
   Graph& g,
   std::vector< TraceEntry >& ptrace,
-  std::vector< std::vector< std::tuple< int,int,int > > >& per_region_stats,
   int num_contexts,
-  int index )
+  std::vector< std::vector< std::tuple< int,int,int > > >& per_region_stats,
+  int index,
+  bool linetrace = false
+)
 {
 
-  // initialze a node map
-  auto nodes = boost::vertices( g );
-  std::map< int,int > node_map;
-  for ( auto node = nodes.first; node != nodes.second; ++node ) {
-    auto in_degree = boost::in_degree( *node, g );
-    node_map[ *node ] = in_degree;
+  std::map< Vertex_t, int > node_type;
+  for ( auto entry: ptrace ) {
+    node_type[entry.tid] = entry.stype;
   }
+  // sink node is special
+  auto num_nodes = boost::num_vertices( g );
+  node_type[ num_nodes-1 ] = 1;
 
   // all cores are initially available
   std::vector< bool > core_active( num_contexts, false );
 
-  // distributed task-queues
+  // per-core data-structures
   TaskQueue task_queue( num_contexts );
-  TaskQueue next_queue( num_contexts );
-
-  // per-core trace
   std::vector< std::deque< TraceEntry > > core_trace( num_contexts );
-  std::vector< Vertex_t > core_node( num_contexts );
+  std::vector< std::vector< StackEntry > > core_stack( num_contexts );
+
+  // linetrace
+  std::vector< Task > curr_task( num_contexts );
 
   // schedule the root node
-  task_queue[0].push_back( *boost::vertices( g ).first );
+  auto root = *boost::vertices( g ).first;
+  auto out_degree = boost::out_degree( root, g );
+  task_queue[0].push_back( Task( 0, -1, root ) );
 
-  int timestep = 0;
-  int total    = 0;
-  int unique   = 0;
+  int timesteps = 0;
+  int total     = 0;
+  int unique    = 0;
 
-  bool active  = false;
-  bool all_done = false;
+  bool queues_empty = false;
+  bool stacks_empty = false;
+  bool active       = true;
 
-  while ( !all_done|| active ) {
+  while ( !queues_empty || !stacks_empty ||  active ) {
 
-    std::vector< int > pc_list;
-    std::vector< int > unique_pc_list;
-
-    // iterate through each core
+    // If a core is idle and is waiting for it's children to return, check
+    // if the children are all done and execute the continuation
     for ( int i = 0; i < num_contexts; ++i ) {
-
-      // check the local queue and see if the core has any work and if yes
-      // extract the trace and assign it to the current task execution
-      if ( !task_queue[i].empty() && !core_active[i] ) {
-        auto node = task_queue[i].front();
-        task_queue[i].pop_front();
-        core_active[i] = true;
-        core_node[i].push_front( node );
-        // extract the trace for the core
-        assert( core_trace[i].empty() );
-        for ( auto entry: ptrace ) {
-          if ( entry.tid == node ) {
-            core_trace[i].push_back( entry );
-          }
-        }
-        total += core_trace[i].size();
-      }
-      // steal
-      else if ( task_queue[i].empty() && !core_active[i] ) {
-        // select a victim
-        int victim = occupancy_based_victim( task_queue, i, num_contexts );
-        if ( !task_queue[victim].empty() ) {
-          auto node = task_queue[victim].back();
-          task_queue[victim].pop_back();
-          task_queue[i].push_front( node );
+      if ( !core_stack[i].empty() && !core_active[i] ) {
+        auto stack = core_stack[i].back();
+        if ( stack.join_counter == 0 ) {
+          core_stack[i].pop_back();
           core_active[i] = true;
+          curr_task[i] = stack.continuation;
+          assert( stack.continuation.task_id != -1 );
+          assert( node_type[stack.continuation.task_id] == 1 );
           // extract the trace for the core
           assert( core_trace[i].empty() );
           for ( auto entry: ptrace ) {
-            if ( entry.tid == node ) {
+            if ( entry.tid == stack.continuation.task_id ) {
               core_trace[i].push_back( entry );
             }
           }
           total += core_trace[i].size();
         }
       }
+    }
 
-      // execute
+    // If a core is idle and has an item in it's task_queue, pop it and
+    // assign it to the core for execution.
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( !task_queue[i].empty() && !core_active[i] ) {
+        auto task = task_queue[i].back();
+        task_queue[i].pop_back();
+        auto out_degee = boost::out_degree( task.task_id, g );
+        core_active[i] = true;
+        curr_task[i] = task;
+        // extract the trace for the core
+        assert( core_trace[i].empty() );
+        for ( auto entry: ptrace ) {
+          if ( entry.tid == task.task_id ) {
+            core_trace[i].push_back( entry );
+          }
+        }
+        total += core_trace[i].size();
+      }
+    }
+
+    // If a core is idle and has no work, steal from another core
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( task_queue[i].empty() && !core_active[i] ) {
+        // select a victim
+        int victim = occupancy_based_victim( task_queue, i, num_contexts );
+        if ( !task_queue[victim].empty() ) {
+          auto task = task_queue[victim].front();
+          task_queue[victim].pop_front();
+          core_active[i] = true;
+          curr_task[i] = task;
+          // extract the trace for the core
+          assert( core_trace[i].empty() );
+          for ( auto entry: ptrace ) {
+            if ( entry.tid == task.task_id ) {
+              core_trace[i].push_back( entry );
+            }
+          }
+          total += core_trace[i].size();
+        }
+      }
+    }
+
+    // Process active cores
+    std::vector< int > pc_list;
+    std::vector< int > unique_pc_list;
+    for ( int i = 0; i < num_contexts; ++i ) {
       if ( !core_trace[i].empty() && core_active[i] ) {
         pc_list.push_back( core_trace[i].front().pc );
         core_trace[i].pop_front();
-        // schedule children
-        if ( core_trace[i].empty() ) {
-          core_active[i] = false;
-          auto node = core_node[i];
-          auto children = boost::out_edges( node, g );
+      }
+    }
+
+    // Calculate redundancy
+    for ( auto pc: pc_list ) {
+      if ( std::find( unique_pc_list.begin(), unique_pc_list.end(), pc )
+           == unique_pc_list.end() ) {
+        unique_pc_list.push_back( pc );
+      }
+    }
+    unique += unique_pc_list.size();
+
+    // Print linetrace
+    if ( linetrace ) {
+      for ( int i = 0; i < num_contexts; ++i ) {
+        if ( core_active[i] ) {
+          std::cout << curr_task[i].task_id << " | ";
+        }
+        else {
+          std::cout << " # | ";
+        }
+      }
+      std::cout << std::endl;
+    }
+
+    // Check if any traces have finished
+    active = false;
+    queues_empty = true;
+    stacks_empty = true;
+    for ( int i = 0; i < num_contexts; ++i ) {
+      // finished the current node, schedule child if possible
+      if ( core_trace[i].empty() && core_active[i] ) {
+        core_active[i] = false;
+        auto task = curr_task[i];
+        int join_counter = 0;
+        if ( boost::out_degree( task.task_id, g ) ) {
+          auto children = boost::out_edges( task.task_id, g );
+
+          // check to see if spawning a task
           for ( auto c = children.first; c != children.second; ++c ) {
             auto child = boost::target( *c, g );
-            node_map[child] -= 1;
-            assert( node_map[child] >= 0 );
-            if ( node_map[child] == 0 ) {
-              active_nodes.push_back( child );
+            if ( node_type[child] == 0 ) {
+              join_counter += 1;
+            }
+          }
+
+          // if children spawn, create a stack entry and push children to
+          // task queue
+          if ( join_counter != 0 ) {
+            core_stack[i].push_back( StackEntry( join_counter, Task( task.core_id, task.stack_idx, -1 ) ) );
+            auto stack_idx = core_stack[i].size() - 1;
+            for ( auto c = children.first; c != children.second; ++c ) {
+              auto child = boost::target( *c, g );
+              assert( node_type[child] == 0 );
+              task_queue[i].push_back( Task( i, stack_idx, child ) );
+            }
+          }
+          // if not spawning any child, notify parent
+          else if ( join_counter == 0 ) {
+            core_stack[ task.core_id ][ task.stack_idx ].join_counter -= 1;
+            if ( core_stack[ task.core_id ][ task.stack_idx ].join_counter == 0 ) {
+              // get the continuation
+              auto child = boost::target( *children.first, g );
+              core_stack[ task.core_id ][ task.stack_idx ].continuation.task_id = child;
             }
           }
         }
       }
-
+      active = active | core_active[i];
+      queues_empty = queues_empty & task_queue[i].empty();
+      stacks_empty = stacks_empty & core_stack[i].empty();
     }
 
     // advance time
-    timestep += 1;
+    timesteps += 1;
   }
 
-  per_region_stats[index].push_back( std::make_tuple( unique, total, timestep-2 ) );
-
+  per_region_stats[index].push_back( std::make_tuple( unique, total, timesteps ) );
+  per_region_stats[index+1].push_back( std::make_tuple( unique, total, timesteps ) );
 }
 
 
@@ -795,9 +849,7 @@ int main ( int argc, char* argv[] )
         //-----------------------------------------------------------------
 
         //auto bounded_schedule_4 = bounded_greedy_schedule( tg, g_num_contexts[0] );
-        auto bounded_schedule_4 = ws_schedule( tg, g_num_contexts[0] );
-        print_schedule( bounded_schedule_4 );
-        task_analysis( bounded_schedule_4, ptrace, per_region_stats, 2 );
+        ws_schedule( tg, ptrace, 4, per_region_stats, 2, true );
 
         //auto bounded_schedule_8 = bounded_greedy_schedule( tg, g_num_contexts[1] );
         //auto bounded_schedule_8 = ws_schedule( tg, g_num_contexts[1] );
