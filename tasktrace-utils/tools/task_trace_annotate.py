@@ -82,6 +82,7 @@ def annotate_trace( app, trace, metadata, outdir ):
   # the pc if the target corresponds to runtime functions
   for pc,tgt in zip(jal_df.pc.values,jal_df.dest.values):
     if tgt in runtime_dict.keys():
+      #if runtime_dict[tgt] == "run" or runtime_dict[tgt] == "run_and_wait":
       task_trace_df.loc[task_trace_df.pc == pc, "nan"] = runtime_dict[tgt]
 
   task_trace_df.to_csv(

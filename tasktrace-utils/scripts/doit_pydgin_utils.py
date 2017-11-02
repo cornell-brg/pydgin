@@ -321,7 +321,7 @@ def gen_trace_per_app( evaldict ):
         taskdict = { \
             'basename' : basename,
             'name'     : labeled_app,
-            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, analyze_cmd ],
+            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, annotate_cmd, graph_cmd ],
             'targets'  : targets,
             'task_dep' : [ 'runtime-md' ],
             'file_dep' : [ app_binary ],

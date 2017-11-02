@@ -198,19 +198,19 @@ class Sim( object ):
         # shreesha: is a task being executed, then dump trace
         if s.task_mode:
           self.task_trace_ctr = self.task_trace_ctr + 1
-          s.task_trace.append( [s.parallel_section_counter, s.parallel_section_type, s.curr_taskid, pc, s.strand_type])
+          s.strand_trace.append( [s.parallel_section_counter,s.curr_strand,pc,s.strand_type] )
           if self.task_trace_ctr == self.task_trace_dump_interval:
             self.task_trace_ctr = 0
-            for entry in s.task_trace:
+            for entry in s.strand_trace:
               for item in entry:
                 self.task_trace_writer.write("%x," % item)
               self.task_trace_writer.write("\n")
-            s.task_trace = []
-            for entry in s.task_graph:
+            s.strand_trace = []
+            for entry in s.strand_graph:
               for item in entry:
                 self.task_graph_writer.write("%s," % item)
               self.task_graph_writer.write("\n")
-            s.task_graph = []
+            s.strand_graph = []
 
         exec_fun( s, inst )
       except FatalError as error:
@@ -268,13 +268,13 @@ class Sim( object ):
     # shreesha: dump any remaining stuff
     if self.task_trace_dump:
       for state in self.states:
-        if state.task_trace:
-          for entry in state.task_trace:
+        if state.strand_trace:
+          for entry in state.strand_trace:
             for item in entry:
               self.task_trace_writer.write("%x," % item)
             self.task_trace_writer.write("\n")
-        if state.task_graph:
-          for entry in state.task_graph:
+        if state.strand_graph:
+          for entry in state.strand_graph:
             for item in entry:
               self.task_graph_writer.write("%s," % item)
             self.task_graph_writer.write("\n")
@@ -475,7 +475,7 @@ class Sim( object ):
               self.states[i].runtime_dict[addr] = name_list[x]
           task_runtime_md_file.close()
           self.task_trace_writer = open(self.outdir+"/task-trace.csv", "w")
-          self.task_trace_writer.write("pid,ptype,tid,pc,stype,nan\n")
+          self.task_trace_writer.write("pid,tid,pc,stype,nan\n")
           self.task_graph_writer = open(self.outdir+"/task-graph.csv", "w")
           self.task_graph_writer.write("pid,parent,child,nan\n")
 

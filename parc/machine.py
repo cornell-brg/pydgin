@@ -6,12 +6,12 @@ from pydgin.machine import Machine
 from pydgin.storage import RegisterFile
 
 #-----------------------------------------------------------------------
+# StrandStackEntry
 #-----------------------------------------------------------------------
 
-class ChildListStackEntry( object ):
+class StrandStackEntry( object ):
   def __init__( self ):
-    self.parent = 0
-    self.child_list = []
+    self.strand_list = []
 
 #-----------------------------------------------------------------------
 # State
@@ -84,39 +84,43 @@ class State( Machine ):
     self.stat_inst_num_insts = [ 0 ]     * 16
 
     # shreesha: task tracing
-    # child_list_stack -- [ChildListStackEntry]
-    self.child_list_stack = []
-    self.curr_child_list = []
-    # current strand type
     # 0 = child, 1 = continuation
     self.strand_type = 0
-    # current taskid
-    self.curr_taskid = 0
-    # global task-counter
-    self.task_counter = 0
-    # task queue to track the execution order
-    self.task_queue = []
+    # global strand count
+    self.g_strand_count = 0
+    # current strand
+    self.curr_strand = 0
+    # strand queue to track the execution order
+    self.strand_queue = []
+    # strand stack
+    # each entry of the stack corresponds to the strands that
+    # are the children of a spawn point for a given level in the dag
+    self.strand_stack = []
+    # corresponds to the strand that yielded
+    self.prev_strand_stack = []
+
     # flag to indicate runtime mode
     self.runtime_mode = False
     # runtime ras
     self.runtime_ras = []
+
     # flag to indicate task mode
     self.task_mode = False
     # task ras
     self.task_ras = []
-    # task graph
-    self.task_graph = []
-    # task trace
-    self.task_trace = []
+
+    # strand graph
+    self.strand_graph = []
+    # strand trace
+    self.strand_trace = []
+
     # task runtime addr,name dict
     self.runtime_dict = {}
+
     # parallel region
     self.parallel_section = False
     self.parallel_section_ra = 0
     self.parallel_section_counter = 0
-    # type = 0 for task-parallel
-    # type = 1 for data-parallel
-    self.parallel_section_type = 0
 
   def fetch_pc( self ):
     return self.pc

@@ -47,10 +47,6 @@ def draw_graph(graph,trace,outdir):
                              )
   parallel_regions = task_trace_df['pid'].unique()
   for region in parallel_regions:
-    region_type = task_trace_df[task_trace_df['pid']==region]['ptype'].unique()
-    # skip drawing the graph if the region type is data-parallel
-    if region_type == 1:
-      continue
     with open("%(outdir)s/graph-%(region)s.dot" % {'outdir':outdir,'region':region}, "w") as dot:
       dot.write("digraph G{\n")
       graph_df = task_graph_df[task_graph_df['pid']==region]

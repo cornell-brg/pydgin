@@ -8,7 +8,7 @@ from pydgin.utils import signed, sext_16, sext_8, trim_32, \
 
 from pydgin.misc import create_risc_decoder, FatalError
 
-from machine import ChildListStackEntry
+from machine import StrandStackEntry
 
 #=======================================================================
 # Register Definitions
@@ -576,10 +576,8 @@ def execute_jal( s, inst ):
   # runtime mode flag and record the return address if in task-mode and set
   # the task-mode to false.
   #
-  # NOTE: 09/29/2017
-  # Updates: If starting a new parallel section which is detected by the
-  # first call to run_and_wait or wait, clear the task queue and reset the
-  # task counter, current taskid
+  # If we see a run_and_wait or a wait for the very first time then we are
+  # starting a new parallel section
   if s.pc in s.runtime_dict.keys() and s.stat_inst_en[8]:
     if s.task_mode:
       s.task_mode = False
@@ -593,18 +591,7 @@ def execute_jal( s, inst ):
 #-----------------------------------------------------------------------
 # jr
 #-----------------------------------------------------------------------
-# If we are executing parallel calls, we need to treat jr as a branch
-# back to the top of the function and increment the work index. Only when
-# all the requested calls have been performed, we jump back to the return
-# address as normal. We differentiate this case from a nested function
-# call within a pcall by checking if $ra is set to a magic number. The
-# work index is assumed to be initialized in $a0.  We cannot guarantee
-# that the compiler will not overwrite $a0 inside the kernel, so we need
-# to initialize $a0 with the updated work index before looping back to
-# the start of the kernel.
-#
-# If all requested calls have been performed, we swap the active regfile
-# pointer to the scalar regfile and disable the XPC bit.
+
 def execute_jr( s, inst ):
 
   s.pc = s.rf[inst.rs]
@@ -613,8 +600,8 @@ def execute_jr( s, inst ):
   # Returning to runtime-mode
   if s.pc in s.runtime_ras:
     s.runtime_mode = True
-    s.task_mode = False
     s.runtime_ras.pop()
+    s.task_mode = False
 
   # shreesha: tasktrace
   # Returning to task-mode
@@ -629,9 +616,9 @@ def execute_jr( s, inst ):
     s.parallel_section_counter = s.parallel_section_counter + 1
     s.parallel_section = False
     s.parallel_section_ra = 0
-    s.curr_taskid = 0
-    s.task_counter = 0
-    s.task_queue = []
+    s.curr_strand = 0
+    s.g_strand_count = 0
+    assert len(s.strand_queue) == 0
 
 #-----------------------------------------------------------------------
 # jalr
@@ -647,8 +634,6 @@ def execute_jalr( s, inst ):
     s.runtime_mode = False
     s.task_mode = True
     s.runtime_ras.append( s.rf[inst.rd] )
-    if s.parallel_section_type:
-      s.curr_taskid = s.curr_taskid + 1
 
 #-----------------------------------------------------------------------
 # lui
@@ -1244,49 +1229,49 @@ def execute_stat( s, inst ):
     s.stat_inst_en[ stat_id ] = False
     s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
 
-  # shreesha: task-tracing
+  # shreesha: tasktrce
   # enq event
-  if stat_en and stat_id == 13 and s.stat_inst_en[8] and (not s.parallel_section_type):
-    s.task_counter = s.task_counter + 1
-    s.task_queue.append(s.task_counter)
-    if (not s.parallel_section_type):
-      s.curr_child_list.append(s.task_counter)
-      s.task_graph.append([s.parallel_section_counter,s.curr_taskid,s.task_counter])
+  if stat_en and stat_id == 13 and s.stat_inst_en[8]:
+    # create the child strand
+    s.g_strand_count = s.g_strand_count + 1
+    s.strand_graph.append([s.parallel_section_counter,s.curr_strand,s.g_strand_count])
+    s.strand_queue.append( s.g_strand_count )
+    # create the continuation strand
+    s.g_strand_count = s.g_strand_count + 1
+    s.strand_graph.append([s.parallel_section_counter,s.curr_strand,s.g_strand_count])
+    # update current strand
+    s.curr_strand = s.g_strand_count
   # deq event
-  elif stat_en and stat_id == 12 and s.stat_inst_en[8] and (not s.parallel_section_type):
-    s.curr_taskid = s.task_queue[-1]
-    s.task_queue.pop()
+  elif stat_en and stat_id == 12 and s.stat_inst_en[8]:
+    s.curr_strand = s.strand_queue[-1]
+    s.strand_stack[-1].strand_list.append( s.curr_strand )
+    s.strand_queue.pop()
     s.strand_type = 0
   # start of wait()
-  elif stat_en and stat_id == 3 and s.stat_inst_en[8] and (not s.parallel_section_type):
-    if (not s.parallel_section_type):
-      item = ChildListStackEntry()
-      item.parent = s.curr_taskid
-      item.child_list = s.curr_child_list
-      s.child_list_stack.append(item)
-      s.curr_child_list = []
+  elif stat_en and stat_id == 3 and s.stat_inst_en[8]:
+    s.prev_strand_stack.append( s.curr_strand )
+    if s.strand_stack:
+      s.strand_stack[-1].strand_list[-1] = s.curr_strand
+    # create a new strand stack entry
+    s.strand_stack.append( StrandStackEntry() )
   # end of wait()
-  elif (not stat_en) and stat_id == 3 and s.stat_inst_en[8] and (not s.parallel_section_type):
-    s.task_counter = s.task_counter + 1
-    s.curr_taskid = s.task_counter
+  elif (not stat_en) and stat_id == 3 and s.stat_inst_en[8]:
     s.strand_type = 1
-    if not s.parallel_section_type:
-      item = s.child_list_stack[-1]
-      for edge in item.child_list:
-        s.task_graph.append([s.parallel_section_counter,edge,s.curr_taskid])
-      s.child_list_stack.pop()
-      for entry in s.child_list_stack:
-        for i,edge in enumerate(entry.child_list):
-          if edge == item.parent:
-            entry.child_list[i] = s.curr_taskid
-  # end of a parallel section
-  elif stat_en and stat_id == 8:
-    s.parallel_section_counter = s.parallel_section_counter + 1
-    s.parallel_section_type = 0
-  # start of a data-parallel loop
-  elif stat_en and stat_id == 4:
-    s.parallel_section_type = 1
-    s.curr_taskid = 0
+    s.g_strand_count = s.g_strand_count + 1
+    # if the curr_strand == last strand seen then there was empty work
+    if s.curr_strand != s.prev_strand_stack[-1]:
+      s.curr_strand = s.g_strand_count
+      s.strand_graph.append([s.parallel_section_counter,s.prev_strand_stack[-1],s.g_strand_count])
+      prev_strand = s.prev_strand_stack[-1]
+      s.prev_strand_stack.pop()
+      curr_stack = s.strand_stack[-1]
+      s.strand_stack.pop()
+      for strand in curr_stack.strand_list:
+        s.strand_graph.append([s.parallel_section_counter,strand,s.curr_strand])
+      for entry in s.strand_stack:
+        for i,strand in enumerate(entry.strand_list):
+          if strand == prev_strand:
+            entry.strand_list[i] = s.curr_strand
 
 #-----------------------------------------------------------------------
 # hint_wl
