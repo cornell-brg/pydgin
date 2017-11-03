@@ -618,7 +618,10 @@ def execute_jr( s, inst ):
     s.parallel_section_ra = 0
     s.curr_strand = 0
     s.g_strand_count = 0
+    s.strand_type = 0
     assert len(s.strand_queue) == 0
+    assert len(s.strand_stack) == 0
+    assert len(s.prev_strand_stack) == 0
 
 #-----------------------------------------------------------------------
 # jalr
@@ -1272,6 +1275,12 @@ def execute_stat( s, inst ):
         for i,strand in enumerate(entry.strand_list):
           if strand == prev_strand:
             entry.strand_list[i] = s.curr_strand
+    elif s.curr_strand == s.prev_strand_stack[-1]:
+      # pop the empty strand_stack entry we created as we had no children
+      # that had to synchronize! Also, pop the strand that yielded as it
+      # has nothing to join
+      s.strand_stack.pop()
+      s.prev_strand_stack.pop()
 
 #-----------------------------------------------------------------------
 # hint_wl
