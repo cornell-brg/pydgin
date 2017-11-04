@@ -33,27 +33,30 @@ from doit_pydgin_utils import appdir, appinputdir
 # Use app_list to specify which of the apps in app_dict to actually sim
 
 app_list = [
+
   'px-fib',
   'ubmark-vvadd',
+
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc-mtpull',
   'pbbs-bfs-ndBFS-parc-mtpull',
   'pbbs-csort-quickSort-parc-mtpull',
   'pbbs-csort-sampleSort-parc-mtpull',
   'pbbs-dict-deterministicHash-parc-mtpull',
-  #'pbbs-hull-quickHull-parc-mtpull', -- can't support nested pfor within a task yet
+  'pbbs-hull-quickHull-parc-mtpull',
   'pbbs-isort-blockRadixSort-parc-mtpull',
   'pbbs-knn-octTree2Neighbors-parc-mtpull',
   'pbbs-mis-ndMIS-parc-mtpull',
-  #'pbbs-nbody-parallelBarnesHut-parc-mtpull',
+  'pbbs-nbody-parallelBarnesHut-parc-mtpull',
   'pbbs-rdups-deterministicHash-parc-mtpull',
   'pbbs-sa-parallelRange-parc-mtpull',
   'pbbs-st-ndST-parc-mtpull',
-  # cilk apps
-  #'cilk-cholesky-parc-mtpull', -- can't build task-graph correctly
+
+  # cilk apps : all kernels work!
+  'cilk-cholesky-parc-mtpull',
   'cilk-cilksort-parc-mtpull',
   'cilk-heat-parc-mtpull',
-  #'cilk-knapsack-parc-mtpull',
+  'cilk-knapsack-parc-mtpull',
   'cilk-matmul-parc-mtpull',
 ]
 

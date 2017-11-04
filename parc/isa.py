@@ -344,6 +344,10 @@ def execute_mtc0( s, inst ):
     s.stats_en = s.rf[inst.rt]
   elif inst.rd == reg_map['c0_staten']:
     s.stats_en = s.rf[inst.rt]
+    if s.stats_en == 1:
+      s.task_mode = True
+    elif s.stats_en == 0:
+      s.task_mode = False
 
   #elif inst.rd ==  2: pass
   #  if sink[ s.sink_ptr ] != s.rf[ inst.rt ]:
@@ -571,21 +575,14 @@ def execute_jal( s, inst ):
   s.rf[31] = s.pc + 4
   s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
   # shreesha: tasktrace
-  # if the target address belongs to one of the runtime-related
-  # functions (TaskGroup(), run(), wait(), run_and_wait()), then set the
-  # runtime mode flag and record the return address if in task-mode and set
-  # the task-mode to false.
-  #
-  # If we see a run_and_wait or a wait for the very first time then we are
-  # starting a new parallel section
-  if s.pc in s.runtime_dict.keys() and s.stat_inst_en[8]:
+  # if the target address belongs to one of the runtime-related functions
+  # (TaskGroup(), run(), wait(), run_and_wait(), init(), end()), then set
+  # the runtime mode flag and record the return address if in task-mode and
+  # set the task-mode to false.
+  if s.pc in s.runtime_dict.keys():
     if s.task_mode:
       s.task_mode = False
       s.task_ras.append( s.rf[31] )
-    if ((not s.parallel_section) \
-       and ( s.runtime_dict[s.pc] == "run_and_wait" or s.runtime_dict[s.pc] == "wait")):
-      s.parallel_section = True
-      s.parallel_section_ra = s.rf[31]
     s.runtime_mode = True
 
 #-----------------------------------------------------------------------
@@ -609,19 +606,6 @@ def execute_jr( s, inst ):
     s.task_mode = True
     s.task_ras.pop()
     s.runtime_mode = False
-
-  # shreesha: tasktrace
-  # End of a parallel section
-  if s.pc == s.parallel_section_ra:
-    s.parallel_section_counter = s.parallel_section_counter + 1
-    s.parallel_section = False
-    s.parallel_section_ra = 0
-    s.curr_strand = 0
-    s.g_strand_count = 0
-    s.strand_type = 0
-    assert len(s.strand_queue) == 0
-    assert len(s.strand_stack) == 0
-    assert len(s.prev_strand_stack) == 0
 
 #-----------------------------------------------------------------------
 # jalr
@@ -1281,6 +1265,12 @@ def execute_stat( s, inst ):
       # has nothing to join
       s.strand_stack.pop()
       s.prev_strand_stack.pop()
+  # task-scheduler end event
+  # End of a parallel section
+  elif (not stat_en) and stat_id == 8:
+    assert len(s.strand_queue) == 0
+    assert len(s.strand_stack) == 0
+    assert len(s.prev_strand_stack) == 0
 
 #-----------------------------------------------------------------------
 # hint_wl

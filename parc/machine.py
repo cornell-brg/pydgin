@@ -118,8 +118,6 @@ class State( Machine ):
     self.runtime_dict = {}
 
     # parallel region
-    self.parallel_section = False
-    self.parallel_section_ra = 0
     self.parallel_section_counter = 0
 
   def fetch_pc( self ):
