@@ -1228,12 +1228,32 @@ def execute_stat( s, inst ):
     s.strand_graph.append([s.parallel_section_counter,s.curr_strand,s.g_strand_count])
     # update current strand
     s.curr_strand = s.g_strand_count
+    # record stats
+    s.stats_on[13] = s.stat_num_insts
+  # end of enq event
+  elif (not stat_en) and stat_id == 13 and s.stat_inst_en[8]:
+    s.stats_counts[13] = s.stats_counts[13] + 1
+    s.stats_insts[13]  += s.stat_num_insts - s.stats_on[13]
   # deq event
   elif stat_en and stat_id == 12 and s.stat_inst_en[8]:
     s.curr_strand = s.strand_queue[-1]
     s.strand_stack[-1].strand_list.append( s.curr_strand )
     s.strand_queue.pop()
     s.strand_type = 0
+    # record stats
+    s.stats_on[12] = s.stat_num_insts
+  # end of deq event
+  elif (not stat_en) and stat_id == 12 and s.stat_inst_en[8]:
+    s.stats_counts[12] = s.stats_counts[12] + 1
+    s.stats_insts[12]  += s.stat_num_insts - s.stats_on[12]
+  # execute event
+  elif stat_en and stat_id == 10 and s.stat_inst_en[8]:
+    # record stats
+    s.stats_on[10] = s.stat_num_insts
+  # end of an execute event
+  elif (not stat_en) and stat_id == 10 and s.stat_inst_en[8]:
+    s.stats_counts[10] = s.stats_counts[10] + 1
+    s.stats_insts[10]  += s.stat_num_insts - s.stats_on[10]
   # start of wait()
   elif stat_en and stat_id == 3 and s.stat_inst_en[8]:
     s.prev_strand_stack.append( s.curr_strand )

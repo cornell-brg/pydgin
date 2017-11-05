@@ -120,5 +120,16 @@ class State( Machine ):
     # parallel region
     self.parallel_section_counter = 0
 
+    # stats region
+    # NOTE: At the moment, we allow for 16 named stats regions
+    #
+    # Stat regions of interest:
+    #   13 : local enqueue
+    #   12 : local dequeue
+    #   10 : task execution
+    self.stats_on     = [0]*16   # instructions count when stats was turned on
+    self.stats_insts  = [0]*16   # total number of dynamic instructions per-stats region
+    self.stats_counts = [0]*16   # total number of times each stats region was executed
+
   def fetch_pc( self ):
     return self.pc

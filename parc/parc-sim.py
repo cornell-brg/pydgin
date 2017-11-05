@@ -116,6 +116,18 @@ class ParcSim( Sim ):
         if state.stat_inst_num_insts[ j ] > 0:
           print "  Stat %d = %d" % ( j, state.stat_inst_num_insts[ j ] )
 
+      # shreesha: tasktrace
+      print "\nTASK RUNTIME STATS"
+      print "Num of local enqs: %d" % ( state.stats_counts[13] )
+      print "Num of dyn insts for local enqs: %d" % ( state.stats_insts[13] )
+      print "Avg. cost of a local enq: %f" % ( state.stats_insts[13] / float( state.stats_counts[13] ) )
+      print "Num of local deqs: %d" % ( state.stats_counts[12] )
+      print "Num of dyn insts for local deqs: %d" % ( state.stats_insts[12] )
+      print "Avg. cost of a local deq: %f" % ( state.stats_insts[12] / float( state.stats_counts[12] ) )
+      print "Num of Tasks: %d" % ( state.stats_counts[10] )
+      print "Num of dyn insts tasks: %d" % ( state.stats_insts[10] )
+      print "Avg. cost of a task execution: %f" % ( state.stats_insts[10] / float( state.stats_counts[10] ) )
+
 # this initializes similator and allows translation and python
 # interpretation
 
