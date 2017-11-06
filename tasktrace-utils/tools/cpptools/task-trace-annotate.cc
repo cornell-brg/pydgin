@@ -143,5 +143,6 @@ int main ( int argc, char* argv[] )
     }
     outfile << match << std::endl;
   }
+  outfile.close();
 
 }
