@@ -13,6 +13,7 @@ sys.path.extend(['../tools'])
 
 from task_regs import *
 from task_trace_annotate import *
+from disassemble import *
 from task_graph import *
 from task_trace_analysis import *
 
@@ -65,20 +66,23 @@ def get_labeled_apps(app_dict, app_list, app_group):
 #----------------------------------------------------------------------------
 
 def task_build_tools():
-  target   = evaldir + "/build-tools/task-trace-analyze"
+  target0  = evaldir + "/build-tools/task-trace-analyze"
+  target1  = evaldir + "/build-tools/task-trace-annotate"
   file_dep = get_files_in_dir( cpptoolsdir )
 
   action = ' '.join( [
     'cd {};'.format(tools_builddir),
     'g++ -O3 -o task-trace-analyze ',
-    '-I ../tools/cpptools {}/task-trace-analyze.cc -lpthread'.format(cpptoolsdir),
+    '-I ../tools/cpptools {}/task-trace-analyze.cc -lpthread;'.format(cpptoolsdir),
+    'g++ -O3 -o task-trace-annotate ',
+    '-I ../tools/cpptools {}/task-trace-annotate.cc -lpthread;'.format(cpptoolsdir),
   ] )
 
   taskdict = {
     'basename' : 'build-tools',
     'actions'  : [ (create_folder, [tools_builddir]), action ],
     'file_dep' : file_dep,
-    'targets'  : [ target ]
+    'targets'  : [ target0, target1 ]
   }
 
   return taskdict
@@ -280,15 +284,21 @@ def gen_trace_per_app( evaldict ):
         # Assemble command for task annotations
         #......................................
 
-        annotate_cmd = (
-          annotate_trace,
+        disassemble_cmd = (
+          disassemble,
           [
             "links/"+app,
-            "%(app_results_dir)s/task-trace.csv" % {'app_results_dir' : app_results_dir},
-            "links/"+app+".nm",
             "%(outdir)s" % {'outdir' : app_results_dir},
           ]
         )
+
+        annotate_cmd = ' '.join([
+          "{}/task-trace-annotate".format(tools_builddir),
+          " --trace {}/task-trace.csv".format(app_results_dir),
+          " --calls {}/jal.csv".format(app_results_dir),
+          " --runtime {}".format("links/"+app+".nm"),
+          " --outdir {}".format(app_results_dir),
+        ])
 
         #......................................
         # Assemble graph commands
@@ -321,7 +331,7 @@ def gen_trace_per_app( evaldict ):
         taskdict = { \
             'basename' : basename,
             'name'     : labeled_app,
-            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, annotate_cmd, graph_cmd ],
+            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, disassemble_cmd, annotate_cmd],
             'targets'  : targets,
             'task_dep' : [ 'runtime-md' ],
             'file_dep' : [ app_binary ],
