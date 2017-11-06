@@ -62,6 +62,7 @@ class Sim( object ):
     self.task_trace_dump = False
     self.task_trace_writer = None
     self.task_graph_writer = None
+    self.task_joins_writer = None
     self.task_trace_ctr = 0
     self.task_trace_dump_interval = 10000
     self.outdir = os.path.dirname(os.path.abspath( __file__ ))
@@ -211,6 +212,11 @@ class Sim( object ):
                 self.task_graph_writer.write("%s," % item)
               self.task_graph_writer.write("\n")
             s.strand_graph = []
+            for entry in s.strand_joins:
+              for item in entry:
+                self.task_joins_writer.write("%x," % item)
+              self.task_joins_writer.write("\n")
+            s.strand_joins = []
 
         exec_fun( s, inst )
       except FatalError as error:
@@ -273,13 +279,19 @@ class Sim( object ):
             for item in entry:
               self.task_trace_writer.write("%x," % item)
             self.task_trace_writer.write("\n")
+        self.task_trace_writer.close()
         if state.strand_graph:
           for entry in state.strand_graph:
             for item in entry:
               self.task_graph_writer.write("%s," % item)
             self.task_graph_writer.write("\n")
-        self.task_trace_writer.close()
         self.task_graph_writer.close()
+        if state.strand_joins:
+          for entry in state.strand_joins:
+            for item in entry:
+              self.task_joins_writer.write("%x," % item)
+            self.task_joins_writer.write("\n")
+        self.task_joins_writer.close()
 
     # show all stats
     for i, state in enumerate( self.states ):
@@ -477,7 +489,9 @@ class Sim( object ):
           self.task_trace_writer = open(self.outdir+"/task-trace.csv", "w")
           self.task_trace_writer.write("pid,tid,pc,stype,nan\n")
           self.task_graph_writer = open(self.outdir+"/task-graph.csv", "w")
-          self.task_graph_writer.write("pid,parent,child,nan\n")
+          self.task_graph_writer.write("pid,parent,child,edge,nan\n")
+          self.task_joins_writer = open(self.outdir+"/task-joins.csv", "w")
+          self.task_joins_writer.write("pid,parent,child,nan\n")
 
         except IOError:
           print "Could not open the task-runtime-md file %s" % task_runtime_md

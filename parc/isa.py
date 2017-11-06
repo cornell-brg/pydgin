@@ -1221,11 +1221,11 @@ def execute_stat( s, inst ):
   if stat_en and stat_id == 13 and s.stat_inst_en[8]:
     # create the child strand
     s.g_strand_count = s.g_strand_count + 1
-    s.strand_graph.append([s.parallel_section_counter,s.curr_strand,s.g_strand_count])
+    s.strand_graph.append([s.parallel_section_counter,s.curr_strand,s.g_strand_count,0])
     s.strand_queue.append( s.g_strand_count )
     # create the continuation strand
     s.g_strand_count = s.g_strand_count + 1
-    s.strand_graph.append([s.parallel_section_counter,s.curr_strand,s.g_strand_count])
+    s.strand_graph.append([s.parallel_section_counter,s.curr_strand,s.g_strand_count,1])
     # update current strand
     s.curr_strand = s.g_strand_count
     # record stats
@@ -1268,13 +1268,14 @@ def execute_stat( s, inst ):
     # if the curr_strand == last strand seen then there was empty work
     if s.curr_strand != s.prev_strand_stack[-1]:
       s.curr_strand = s.g_strand_count
-      s.strand_graph.append([s.parallel_section_counter,s.prev_strand_stack[-1],s.g_strand_count])
+      s.strand_graph.append([s.parallel_section_counter,s.prev_strand_stack[-1],s.g_strand_count,2])
+      s.strand_joins.append([s.parallel_section_counter,s.prev_strand_stack[-1],s.g_strand_count])
       prev_strand = s.prev_strand_stack[-1]
       s.prev_strand_stack.pop()
       curr_stack = s.strand_stack[-1]
       s.strand_stack.pop()
       for strand in curr_stack.strand_list:
-        s.strand_graph.append([s.parallel_section_counter,strand,s.curr_strand])
+        s.strand_graph.append([s.parallel_section_counter,strand,s.curr_strand,2])
       for entry in s.strand_stack:
         for i,strand in enumerate(entry.strand_list):
           if strand == prev_strand:

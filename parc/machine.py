@@ -113,6 +113,8 @@ class State( Machine ):
     self.strand_graph = []
     # strand trace
     self.strand_trace = []
+    # strand joins
+    self.strand_joins = []
 
     # task runtime addr,name dict
     self.runtime_dict = {}
