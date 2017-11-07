@@ -24,7 +24,7 @@ DOIT_CONFIG = {
 }
 
 #----------------------------------------------------------------------------
-# Tasks
+# strand trace analysis
 #----------------------------------------------------------------------------
 
 def task_pydgin_sims():
@@ -41,16 +41,23 @@ def task_pydgin_sims():
 
   yield gen_trace_per_app( evaldict )
 
-def task_pydgin_ksack():
+#----------------------------------------------------------------------------
+# serial runs
+#----------------------------------------------------------------------------
+
+def task_pydgin_serial_sims():
 
   evaldict = get_base_evaldict()
 
-  evaldict['basename']    = "sim-pydgin-ksack"
-  evaldict['resultsdir']  = "results-ksack"
+  evaldict['basename']    = "sim-pydgin-serial"
+  evaldict['resultsdir']  = "results-serial-tiny"
   evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
-  evaldict['app_group']   = ["small","mtpull"]
-  evaldict['app_list']    = ['cilk-knapsack-parc-mtpull']
+  evaldict['app_group']   = ["tiny"]
+  evaldict['app_list']    = app_serial_list
+  evaldict['serial']      = True
   evaldict['app_dict']    = app_dict
 
   yield gen_trace_per_app( evaldict )
+
+

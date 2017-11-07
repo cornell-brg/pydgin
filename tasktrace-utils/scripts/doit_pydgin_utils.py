@@ -145,9 +145,10 @@ def get_base_evaldict():
   resultsdir  = 'results'
   evaldict    = {}
 
-  evaldict['app_group'] = []  # Which group of apps to sim (e.g., ['scalar'])
-  evaldict['app_list']  = []  # List of apps to sim
-  evaldict['app_dict']  = {}  # Dict with app groups/opts to run
+  evaldict['app_group'] = []     # Which group of apps to sim (e.g., ['scalar'])
+  evaldict['app_list']  = []     # List of apps to sim
+  evaldict['app_dict']  = {}     # Dict with app groups/opts to run
+  evaldict['serial']    = False  # Dict with app groups/opts to run
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -183,7 +184,7 @@ def gen_trace_per_app( evaldict ):
 
   yield docstring_taskdict
 
-  pydgin_binary = "../../scripts/builds/pydgin-parc-nojit-debug"
+  pydgin_binary = "../../scripts/builds/pydgin-parc-jit"
   pydgin_opts   = " --ncores 1 --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel "
 
   # Create path to resultsdir inside evaldir
@@ -201,6 +202,7 @@ def gen_trace_per_app( evaldict ):
   app_dict  = evaldict["app_dict"]
   app_list  = evaldict["app_list"]
   app_group = evaldict["app_group"]
+  serial    = evaldict["serial"]
 
   for app in app_dict.keys():
     # Only sim the apps in app_list:
@@ -246,7 +248,7 @@ def gen_trace_per_app( evaldict ):
 
         # additional pydgin specifc options for task tracing
         extra_pydgin_opts = ""
-        if os.path.isfile("links/"+app+".nm"):
+        if os.path.isfile("links/"+app+".nm") and not serial:
           extra_pydgin_opts = " --task-runtime-md %(runtime_md)s " % { 'runtime_md' : "links/"+app+".nm"}
           extra_pydgin_opts = extra_pydgin_opts + "--outdir %(outdir)s " % { 'outdir' : app_results_dir }
 
@@ -330,6 +332,17 @@ def gen_trace_per_app( evaldict ):
           " --cores {}".format(g_num_cores)
         ])
 
+        #..........................
+        # check if running baseline
+        #..........................
+
+        if serial:
+          task_dep = [ 'link-apps' ]
+          actions  = [ (create_folder, [app_results_dir]), pydgin_cmd ]
+        else:
+          task_dep = [ 'runtime-md' ]
+          actions = [ (create_folder, [app_results_dir]), pydgin_cmd, disassemble_cmd, analyze_cmd ]
+
         #.......................
         # Build Task Dictionary
         #.......................
@@ -337,9 +350,9 @@ def gen_trace_per_app( evaldict ):
         taskdict = { \
             'basename' : basename,
             'name'     : labeled_app,
-            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, disassemble_cmd, analyze_cmd],
+            'actions'  : actions,
             'targets'  : targets,
-            'task_dep' : [ 'runtime-md' ],
+            'task_dep' : task_dep,
             'file_dep' : [ app_binary ],
             'uptodate' : [ True ], # Don't rebuild if targets exists
             'clean'    : [ 'rm -rf {}'.format(app_results_dir) ]
