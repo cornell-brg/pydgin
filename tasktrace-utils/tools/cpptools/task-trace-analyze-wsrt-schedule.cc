@@ -237,23 +237,6 @@ ws_schedule(
       }
     }
 
-    // Print linetrace
-    if ( linetrace ) {
-      for ( int i = 0; i < num_contexts; ++i ) {
-        if ( core_active[i] ) {
-          std::cout.width(5);
-          std::cout << std::right << curr_task[i];
-        }
-        else {
-          std::cout.width(5);
-          std::cout << std::right << "#";
-        }
-        std::cout.width(1);
-        std::cout << "|";
-      }
-      std::cout << std::endl;
-    }
-
     // Process active cores
     std::vector< int > pc_list;
     std::vector< int > unique_pc_list;
@@ -286,6 +269,23 @@ ws_schedule(
           }
         }
       }
+    }
+
+    // Print linetrace
+    if ( linetrace ) {
+      for ( int i = 0; i < num_contexts; ++i ) {
+        if ( core_active[i] ) {
+          std::cout.width(5);
+          std::cout << std::right << curr_task[i];
+        }
+        else {
+          std::cout.width(5);
+          std::cout << std::right << "#";
+        }
+        std::cout.width(1);
+        std::cout << "|";
+      }
+      std::cout << std::endl;
     }
 
     // Calculate redundancy
@@ -332,6 +332,196 @@ ws_schedule(
 }
 
 //-------------------------------------------------------------------------
+// level_schedule()
+//-------------------------------------------------------------------------
+
+std::tuple< int,int,int >
+level_schedule(
+  Graph& g,
+  std::vector< TraceEntry >& ptrace,
+  std::map<int,int>& join_constrs,
+  int num_contexts,
+  bool linetrace = false
+)
+{
+  // initialze a node map
+  auto nodes = boost::vertices( g );
+  std::map< int,int > node_map;
+  for ( auto node = nodes.first; node != nodes.second; ++node ) {
+    auto in_degree = boost::in_degree( *node, g );
+    node_map[ *node ] = in_degree;
+  }
+
+  // all cores are initially available
+  std::vector< bool > core_active( num_contexts, false );
+
+  // active nodes in the queue
+  std::deque< Vertex_t > active_nodes;
+
+  // per-core data-structures
+  std::vector< std::deque< Vertex_t > >   core_queue( num_contexts );
+  std::vector< std::deque< TraceEntry > > core_trace( num_contexts );
+  std::vector< std::vector< Vertex_t > >  core_stack( num_contexts );
+
+  // linetrace
+  std::vector< Vertex_t > curr_task( num_contexts );
+
+  // schedule the root node
+  auto root = *boost::vertices( g ).first;
+  auto out_degree = boost::out_degree( root, g );
+  active_nodes.push_back( root );
+
+  int timesteps = 0;
+  int total     = 0;
+  int unique    = 0;
+
+  bool queues_empty = false;
+  bool stacks_empty = false;
+  bool active       = true;
+
+  while ( !queues_empty || !stacks_empty ||  active ) {
+
+    // If a core is idle and is waiting for it's children to return, check
+    // if the children are all done and execute the continuation
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( !core_stack[i].empty() && !core_active[i] ) {
+        auto stack = core_stack[i].back();
+        //std::cout << "Checking for join of strand: " << stack << " which is: " << join_constrs[stack] << " c: " << node_map[ join_constrs[stack] ] << std::endl;
+        if ( node_map[ join_constrs[stack] ] == 0 ) {
+          core_stack[i].pop_back();
+          core_active[i] = true;
+          curr_task[i] = join_constrs[stack];
+          // extract the trace for the core
+          assert( core_trace[i].empty() );
+          for ( auto entry: ptrace ) {
+            if ( entry.tid == join_constrs[stack] ) {
+              core_trace[i].push_back( entry );
+            }
+          }
+          total += core_trace[i].size();
+        }
+      }
+    }
+
+    // If a core is idle and has an item in the active queue, pop it and
+    // assign it to the core for execution.
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( !active_nodes.empty() && !core_active[i] ) {
+        auto task = active_nodes.back();
+        active_nodes.pop_back();
+        core_active[i] = true;
+        curr_task[i] = task;
+        // extract the trace for the core
+        assert( core_trace[i].empty() );
+        for ( auto entry: ptrace ) {
+          if ( entry.tid == task ) {
+            core_trace[i].push_back( entry );
+          }
+        }
+        total += core_trace[i].size();
+      }
+    }
+
+    // Process active cores
+    std::vector< int > pc_list;
+    std::vector< int > unique_pc_list;
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( !core_trace[i].empty() && core_active[i] ) {
+        auto inst = core_trace[i].front();
+        core_trace[i].pop_front();
+        pc_list.push_back( inst.pc );
+        // instruction is spawning a node
+        if ( inst.spoint == 1 ) {
+          assert( boost::out_degree( inst.tid, g ) == 2 );
+          auto children = boost::out_edges( curr_task[i], g );
+          for ( auto c = children.first; c != children.second; ++c ) {
+            auto child = boost::target( *c, g );
+            node_map[ child ] -= 1;
+            // enqueue the child-strand in the task_queue
+            if ( g[*c] == 0 ) {
+              core_queue[i].push_back( child );
+            }
+            // retain the continuation
+            else if ( g[*c] == 1 ) {
+              for ( auto entry: ptrace ) {
+                if ( entry.tid == child ) {
+                  core_trace[i].push_back( entry );
+                  total += 1;
+                }
+              }
+              curr_task[i] = child;
+            }
+          }
+        }
+      }
+    }
+
+    // Print linetrace
+    if ( linetrace ) {
+      for ( int i = 0; i < num_contexts; ++i ) {
+        if ( core_active[i] ) {
+          std::cout.width(5);
+          std::cout << std::right << curr_task[i];
+        }
+        else {
+          std::cout.width(5);
+          std::cout << std::right << "#";
+        }
+        std::cout.width(1);
+        std::cout << "|";
+      }
+      std::cout << std::endl;
+    }
+
+    // Calculate redundancy
+    for ( auto pc: pc_list ) {
+      if ( std::find( unique_pc_list.begin(), unique_pc_list.end(), pc )
+           == unique_pc_list.end() ) {
+        unique_pc_list.push_back( pc );
+      }
+    }
+    unique += unique_pc_list.size();
+
+    // Check if any traces have finished
+    active = false;
+    stacks_empty = true;
+    for ( int i = 0; i < num_contexts; ++i ) {
+      // finished the current strand, hit a wait(), remember the stack
+      if ( core_trace[i].empty() && core_active[i] ) {
+        core_active[i] = false;
+        // if a wait point, push onto the stack
+        if ( join_constrs.count( curr_task[i] ) == 1 ) {
+          //std::cout << "core[" << i << "]: remembering yield point: " << curr_task[i] << std::endl;
+          core_stack[i].push_back( curr_task[i] );
+        }
+        if ( boost::out_degree( curr_task[i], g ) ) {
+          assert( boost::out_degree( curr_task[i], g ) == 1 );
+          auto children = boost::out_edges( curr_task[i], g );
+          auto child = boost::target( *children.first, g );
+          node_map[ child ] -= 1;
+          //std::cout << "core[" << i << "]: finished " << curr_task[i];
+          //std::cout << " child: " << child << " ready: " << node_map[ child ] << std::endl;
+        }
+        while ( !core_queue[i].empty() ) {
+          active_nodes.push_back( core_queue[i].back() );
+          core_queue[i].pop_back();
+        }
+      }
+      active = active | core_active[i];
+      stacks_empty = stacks_empty & core_stack[i].empty();
+    }
+    queues_empty = active_nodes.empty();
+
+    // advance time
+    timesteps += 1;
+  }
+
+  return std::make_tuple( unique, total, timesteps );
+}
+
+
+
+//-------------------------------------------------------------------------
 // main()
 //-------------------------------------------------------------------------
 
@@ -344,48 +534,109 @@ int main ( int argc, char* argv[] )
 
   cxxopts::Options options( argv[0], " - Options for trace analysis" );
 
-  options.positional_help( "trace graph joins outdir" );
+  options.positional_help( "trace graph joins calls runtime outdir" );
   options.add_options()
     ( "h, help", "Print help" )
     ( "trace", "Trace file <task-trace.csv>", cxxopts::value<std::string>() )
     ( "graph", "Graph file <task-graph.csv>", cxxopts::value<std::string>() )
     ( "joins", "Join constrains <task-joins.csv>", cxxopts::value<std::string>() )
+    ( "calls", "File with all call sites filtered <jal.csv>", cxxopts::value<std::string>() )
+    ( "runtime", "Runtime metadata file", cxxopts::value<std::string>() )
     ( "outdir", "Output directory", cxxopts::value<std::string>() )
+    ( "cores", "Number of cores", cxxopts::value<int>()->default_value("8") )
+    ( "linetrace", "Linetrace", cxxopts::value<int>()->default_value("0") )
     ;
 
-  const std::vector< std::string > positional_args = { "trace", "graph", "joins", "outdir" };
+  const std::vector< std::string > positional_args = { "trace", "graph", "joins", "calls", "runtime", "outdir" };
   options.parse_positional( positional_args );
   options.parse( argc, argv );
 
   if ( options.count( "help" ) || options.count( "trace" ) == 0 ||
        options.count( "graph" ) == 0 || options.count( "joins" ) == 0 ||
+       options.count( "calls" ) == 0 || options.count( "runtime" ) == 0 ||
        options.count( "outdir" ) == 0 ) {
     std::cout << options.help() << std::endl;
     return 0;
   }
 
-  std::string tracefile = options["trace"].as< std::string >();
-  std::string graphfile = options["graph"].as< std::string >();
-  std::string joinsfile = options["joins"].as< std::string >();
-  std::string outdir    = options["outdir"].as< std::string >();
+  std::string tracefile   = options["trace"].as< std::string >();
+  std::string graphfile   = options["graph"].as< std::string >();
+  std::string joinsfile   = options["joins"].as< std::string >();
+  std::string callsfile   = options["calls"].as< std::string >();
+  std::string runtimefile = options["runtime"].as< std::string >();
+  std::string outdir      = options["outdir"].as< std::string >();
+
+  g_num_contexts[0] = options["cores"].as< int >();
+  bool linetrace    = options["linetrace"].as< int >();
+
+  //---------------------------------------------------------------------
+  // Read the runtime metadata file
+  //---------------------------------------------------------------------
+
+  // Open the runtime metadata file
+  io::CSVReader<7> runtime_md( runtimefile.c_str() );
+  std::string col0, col1, col2, col3, col4, col5, col6;
+
+  // Dummy header
+  runtime_md.set_header( "col0", "col1", "col2", "col3", "col4", "col5", "col6" );
+
+  // Read the pc values
+  runtime_md.read_row( col0, col1, col2, col3, col4, col5, col6 );
+  std::vector<int> pc_values = {
+    std::stoi(col0), std::stoi(col1), std::stoi(col2), std::stoi(col3), std::stoi(col4), std::stoi(col5), std::stoi(col6)
+  };
+
+  // Read the function names
+  runtime_md.read_row( col0, col1, col2, col3, col4, col5, col6 );
+  std::vector< std::string > func_names = {
+    col0, col1, col2, col3, col4, col5, col6
+  };
+
+  //---------------------------------------------------------------------
+  // Read the calls csv file
+  //---------------------------------------------------------------------
+
+  // Open the jal file
+  io::CSVReader<3> calls_trace( callsfile.c_str() );
+  calls_trace.read_header( io::ignore_extra_column, "pc", "asm", "dest" );
+  std::string str0, str1, str2;
+
+  std::map<int,std::string> runtime_jal_pcs;
+  while ( calls_trace.read_row( str0, str1, str2 ) ) {
+    std::ptrdiff_t pos = std::distance( pc_values.begin(), std::find( pc_values.begin(), pc_values.end(), std::stoi( str2, 0, 16 ) ) );
+    if ( pos < pc_values.size() ) {
+      runtime_jal_pcs[std::stoi(str0,0,16)] = func_names[pos];
+    }
+  }
 
   //---------------------------------------------------------------------
   // Read the input tracefile
   //---------------------------------------------------------------------
 
   // Open the trace file
-  io::CSVReader<4> in_trace( tracefile.c_str() );
-  in_trace.read_header( io::ignore_extra_column, "pid", "tid", "pc", "spoint" );
+  io::CSVReader<3> in_trace( tracefile.c_str() );
+  in_trace.read_header( io::ignore_extra_column, "pid", "tid", "pc" );
 
-  std::string pid, tid, pc, spoint;
+  std::string pid, tid, pc;
   std::vector< int >   pregions;
   std::vector< TraceEntry > trace;
 
-  while ( in_trace.read_row( pid, tid, pc, spoint ) ) {
+  while ( in_trace.read_row( pid, tid, pc ) ) {
+
     // Collect unique parallel regions
     if ( std::find( pregions.begin(), pregions.end(), std::stoi( pid, 0, 16 ) )
           == pregions.end() ) {
       pregions.push_back( std::stoi( pid, 0, 16 ) );
+    }
+
+    // check for a match in spawn point
+    int tgt = std::stoi( pc, 0, 16 );
+    int match = 0;
+    for ( auto kv: runtime_jal_pcs ) {
+      if ( tgt == kv.first && kv.second == "run") {
+        match = 1;
+        break;
+      }
     }
 
     // Collect the trace
@@ -394,9 +645,10 @@ int main ( int argc, char* argv[] )
         std::stoi( pid,    0, 16 ),
         std::stoi( tid,    0, 16 ),
         std::stoi( pc,     0, 16 ),
-        std::stoi( spoint, 0, 16 )
+        match
       )
     );
+
   }
 
   assert( pregions.size() == 1 );
@@ -430,19 +682,29 @@ int main ( int argc, char* argv[] )
   }
 
   //---------------------------------------------------------------------
-  // Analysis
+  //  Analysis
   //---------------------------------------------------------------------
 
   std::ofstream out;
   out.open( ( outdir + "/trace-analysis.txt" ).c_str() );
 
-  auto res = ws_schedule( g, trace, join_constrs, g_num_contexts[0], true );
+  auto res0 = ws_schedule( g, trace, join_constrs, g_num_contexts[0], linetrace );
 
   out << "//" << std::string( 72, '-' ) << std::endl;
   out << "// Child-stealing with " << g_num_contexts[0] << " cores" << std::endl;
   out << "//" << std::string( 72, '-' ) << std::endl;
   out << std::endl;
-  dump_stats( out, std::get<0>( res ), std::get<1>( res ), std::get<2>( res ) );
+  dump_stats( out, std::get<0>( res0 ), std::get<1>( res0 ), std::get<2>( res0 ) );
+
+  std::cout << std::endl;
+
+  auto res1 = level_schedule( g, trace, join_constrs, g_num_contexts[0], linetrace );
+
+  out << "//" << std::string( 72, '-' ) << std::endl;
+  out << "// Level-by-level scheduling with " << g_num_contexts[0] << " cores" << std::endl;
+  out << "//" << std::string( 72, '-' ) << std::endl;
+  out << std::endl;
+  dump_stats( out, std::get<0>( res1 ), std::get<1>( res1 ), std::get<2>( res1 ) );
 
   out.close();
 
