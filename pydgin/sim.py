@@ -197,7 +197,7 @@ class Sim( object ):
                   pad( inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),
         # shreesha: is a task being executed, then dump trace
-        if s.task_mode:
+        if s.task_mode and self.task_trace_dump:
           self.task_trace_ctr = self.task_trace_ctr + 1
           s.strand_trace.append( [s.parallel_section_counter,s.curr_strand,pc,s.strand_type] )
           if self.task_trace_ctr == self.task_trace_dump_interval:
