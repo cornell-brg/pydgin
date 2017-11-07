@@ -30,6 +30,8 @@ appinputdir    = appdir  + '/inputs'             # App inputs directory
 cpptoolsdir    = scriptsdir + '/cpptools'        # C++ tools directory
 tools_builddir = evaldir + "/build-tools"        # Build dir for C++ tools
 
+g_num_cores = 4
+
 #----------------------------------------------------------------------------
 # get_labeled_apps()
 #----------------------------------------------------------------------------
@@ -66,14 +68,14 @@ def get_labeled_apps(app_dict, app_list, app_group):
 #----------------------------------------------------------------------------
 
 def task_build_tools():
-  target0  = evaldir + "/build-tools/task-trace-analyze"
+  target0  = evaldir + "/build-tools/task-trace-analyze-wsrt"
   target1  = evaldir + "/build-tools/task-trace-annotate"
   file_dep = get_files_in_dir( cpptoolsdir )
 
   action = ' '.join( [
     'cd {};'.format(tools_builddir),
-    'g++ -O3 -o task-trace-analyze ',
-    '-I ../tools/cpptools {}/task-trace-analyze.cc -lpthread;'.format(cpptoolsdir),
+    'g++ -O3 -o task-trace-analyze-wsrt ',
+    '-I ../tools/cpptools {}/task-trace-analyze-wsrt-schedule.cc -lpthread;'.format(cpptoolsdir),
     'g++ -O3 -o task-trace-annotate ',
     '-I ../tools/cpptools {}/task-trace-annotate.cc -lpthread;'.format(cpptoolsdir),
   ] )
@@ -82,7 +84,7 @@ def task_build_tools():
     'basename' : 'build-tools',
     'actions'  : [ (create_folder, [tools_builddir]), action ],
     'file_dep' : file_dep,
-    'targets'  : [ target0, target1 ]
+    'targets'  : [ target0 ]
   }
 
   return taskdict
@@ -181,7 +183,7 @@ def gen_trace_per_app( evaldict ):
 
   yield docstring_taskdict
 
-  pydgin_binary = "../../scripts/builds/pydgin-parc-jit"
+  pydgin_binary = "../../scripts/builds/pydgin-parc-nojit-debug"
   pydgin_opts   = " --ncores 1 --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel "
 
   # Create path to resultsdir inside evaldir
@@ -318,10 +320,14 @@ def gen_trace_per_app( evaldict ):
         #......................................
 
         analyze_cmd = ' '.join([
-          "{}/task-trace-analyze".format(tools_builddir),
+          "{}/task-trace-analyze-wsrt".format(tools_builddir),
           " --trace {}/task-trace.csv".format(app_results_dir),
           " --graph {}/task-graph.csv".format(app_results_dir),
+          " --joins {}/task-joins.csv".format(app_results_dir),
+          " --calls {}/jal.csv".format(app_results_dir),
+          " --runtime {}".format("links/"+app+".nm"),
           " --outdir {}".format(app_results_dir),
+          " --cores {}".format(g_num_cores)
         ])
 
         #.......................
@@ -331,7 +337,7 @@ def gen_trace_per_app( evaldict ):
         taskdict = { \
             'basename' : basename,
             'name'     : labeled_app,
-            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, disassemble_cmd, annotate_cmd],
+            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, disassemble_cmd, analyze_cmd],
             'targets'  : targets,
             'task_dep' : [ 'runtime-md' ],
             'file_dep' : [ app_binary ],
