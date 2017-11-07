@@ -137,6 +137,7 @@ ws_schedule(
   std::vector< TraceEntry >& ptrace,
   std::map<int,int>& join_constrs,
   int num_contexts,
+  bool min_pc_reconverge = false,
   bool linetrace = false
 )
 {
@@ -179,7 +180,6 @@ ws_schedule(
     for ( int i = 0; i < num_contexts; ++i ) {
       if ( !core_stack[i].empty() && !core_active[i] ) {
         auto stack = core_stack[i].back();
-        //std::cout << "Checking for join of strand: " << stack << " which is: " << join_constrs[stack] << " c: " << node_map[ join_constrs[stack] ] << std::endl;
         if ( node_map[ join_constrs[stack] ] == 0 ) {
           core_stack[i].pop_back();
           core_active[i] = true;
@@ -237,40 +237,6 @@ ws_schedule(
       }
     }
 
-    // Process active cores
-    std::vector< int > pc_list;
-    std::vector< int > unique_pc_list;
-    for ( int i = 0; i < num_contexts; ++i ) {
-      if ( !core_trace[i].empty() && core_active[i] ) {
-        auto inst = core_trace[i].front();
-        core_trace[i].pop_front();
-        pc_list.push_back( inst.pc );
-        // instruction is spawning a node
-        if ( inst.spoint == 1 ) {
-          assert( boost::out_degree( inst.tid, g ) == 2 );
-          auto children = boost::out_edges( curr_task[i], g );
-          for ( auto c = children.first; c != children.second; ++c ) {
-            auto child = boost::target( *c, g );
-            node_map[ child ] -= 1;
-            // enqueue the child-strand in the task_queue
-            if ( g[*c] == 0 ) {
-              task_queue[i].push_back( child );
-            }
-            // retain the continuation
-            else if ( g[*c] == 1 ) {
-              for ( auto entry: ptrace ) {
-                if ( entry.tid == child ) {
-                  core_trace[i].push_back( entry );
-                  total += 1;
-                }
-              }
-              curr_task[i] = child;
-            }
-          }
-        }
-      }
-    }
-
     // Print linetrace
     if ( linetrace ) {
       for ( int i = 0; i < num_contexts; ++i ) {
@@ -288,14 +254,92 @@ ws_schedule(
       std::cout << std::endl;
     }
 
-    // Calculate redundancy
-    for ( auto pc: pc_list ) {
-      if ( std::find( unique_pc_list.begin(), unique_pc_list.end(), pc )
-           == unique_pc_list.end() ) {
-        unique_pc_list.push_back( pc );
+    // Process active cores
+    std::vector< int > pc_list;
+    std::vector< int > unique_pc_list;
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( !core_trace[i].empty() && core_active[i] ) {
+        auto inst = core_trace[i].front();
+        pc_list.push_back( inst.pc );
       }
     }
-    unique += unique_pc_list.size();
+
+    // Calculate instruction redundancy
+    if ( min_pc_reconverge ) {
+      int min_pc = *std::min_element( pc_list.begin(), pc_list.end() );
+      for ( int i = 0; i < num_contexts; ++i ) {
+        if ( !core_trace[i].empty() && core_active[i] ) {
+          if ( core_trace[i].front().pc == min_pc ) {
+            auto inst = core_trace[i].front();
+            core_trace[i].pop_front();
+            // instruction is spawning a node
+            if ( inst.spoint == 1 ) {
+              assert( boost::out_degree( inst.tid, g ) == 2 );
+              auto children = boost::out_edges( curr_task[i], g );
+              for ( auto c = children.first; c != children.second; ++c ) {
+                auto child = boost::target( *c, g );
+                node_map[ child ] -= 1;
+                // enqueue the child-strand in the task_queue
+                if ( g[*c] == 0 ) {
+                  task_queue[i].push_back( child );
+                }
+                // retain the continuation
+                else if ( g[*c] == 1 ) {
+                  for ( auto entry: ptrace ) {
+                    if ( entry.tid == child ) {
+                      core_trace[i].push_back( entry );
+                      total += 1;
+                    }
+                  }
+                  curr_task[i] = child;
+                }
+              }
+            }
+          }
+        }
+      }
+      unique += 1;
+    }
+    // max-share
+    else {
+      for ( auto pc: pc_list ) {
+        if ( std::find( unique_pc_list.begin(), unique_pc_list.end(), pc )
+             == unique_pc_list.end() ) {
+          unique_pc_list.push_back( pc );
+        }
+      }
+      unique += unique_pc_list.size();
+
+      for ( int i = 0; i < num_contexts; ++i ) {
+        if ( !core_trace[i].empty() && core_active[i] ) {
+          auto inst = core_trace[i].front();
+          core_trace[i].pop_front();
+          // instruction is spawning a node
+          if ( inst.spoint == 1 ) {
+            assert( boost::out_degree( inst.tid, g ) == 2 );
+            auto children = boost::out_edges( curr_task[i], g );
+            for ( auto c = children.first; c != children.second; ++c ) {
+              auto child = boost::target( *c, g );
+              node_map[ child ] -= 1;
+              // enqueue the child-strand in the task_queue
+              if ( g[*c] == 0 ) {
+                task_queue[i].push_back( child );
+              }
+              // retain the continuation
+              else if ( g[*c] == 1 ) {
+                for ( auto entry: ptrace ) {
+                  if ( entry.tid == child ) {
+                    core_trace[i].push_back( entry );
+                    total += 1;
+                  }
+                }
+                curr_task[i] = child;
+              }
+            }
+          }
+        }
+      }
+    }
 
     // Check if any traces have finished
     active = false;
@@ -307,7 +351,6 @@ ws_schedule(
         core_active[i] = false;
         // if a wait point, push onto the stack
         if ( join_constrs.count( curr_task[i] ) == 1 ) {
-          //std::cout << "core[" << i << "]: remembering yield point: " << curr_task[i] << std::endl;
           core_stack[i].push_back( curr_task[i] );
         }
         if ( boost::out_degree( curr_task[i], g ) ) {
@@ -315,8 +358,6 @@ ws_schedule(
           auto children = boost::out_edges( curr_task[i], g );
           auto child = boost::target( *children.first, g );
           node_map[ child ] -= 1;
-          //std::cout << "core[" << i << "]: finished " << curr_task[i];
-          //std::cout << " child: " << child << " ready: " << node_map[ child ] << std::endl;
         }
       }
       active = active | core_active[i];
@@ -341,6 +382,7 @@ level_schedule(
   std::vector< TraceEntry >& ptrace,
   std::map<int,int>& join_constrs,
   int num_contexts,
+  bool min_pc_reconverge = false,
   bool linetrace = false
 )
 {
@@ -386,7 +428,6 @@ level_schedule(
     for ( int i = 0; i < num_contexts; ++i ) {
       if ( !core_stack[i].empty() && !core_active[i] ) {
         auto stack = core_stack[i].back();
-        //std::cout << "Checking for join of strand: " << stack << " which is: " << join_constrs[stack] << " c: " << node_map[ join_constrs[stack] ] << std::endl;
         if ( node_map[ join_constrs[stack] ] == 0 ) {
           core_stack[i].pop_back();
           core_active[i] = true;
@@ -422,40 +463,6 @@ level_schedule(
       }
     }
 
-    // Process active cores
-    std::vector< int > pc_list;
-    std::vector< int > unique_pc_list;
-    for ( int i = 0; i < num_contexts; ++i ) {
-      if ( !core_trace[i].empty() && core_active[i] ) {
-        auto inst = core_trace[i].front();
-        core_trace[i].pop_front();
-        pc_list.push_back( inst.pc );
-        // instruction is spawning a node
-        if ( inst.spoint == 1 ) {
-          assert( boost::out_degree( inst.tid, g ) == 2 );
-          auto children = boost::out_edges( curr_task[i], g );
-          for ( auto c = children.first; c != children.second; ++c ) {
-            auto child = boost::target( *c, g );
-            node_map[ child ] -= 1;
-            // enqueue the child-strand in the task_queue
-            if ( g[*c] == 0 ) {
-              core_queue[i].push_back( child );
-            }
-            // retain the continuation
-            else if ( g[*c] == 1 ) {
-              for ( auto entry: ptrace ) {
-                if ( entry.tid == child ) {
-                  core_trace[i].push_back( entry );
-                  total += 1;
-                }
-              }
-              curr_task[i] = child;
-            }
-          }
-        }
-      }
-    }
-
     // Print linetrace
     if ( linetrace ) {
       for ( int i = 0; i < num_contexts; ++i ) {
@@ -473,14 +480,92 @@ level_schedule(
       std::cout << std::endl;
     }
 
-    // Calculate redundancy
-    for ( auto pc: pc_list ) {
-      if ( std::find( unique_pc_list.begin(), unique_pc_list.end(), pc )
-           == unique_pc_list.end() ) {
-        unique_pc_list.push_back( pc );
+    // Process active cores
+    std::vector< int > pc_list;
+    std::vector< int > unique_pc_list;
+    for ( int i = 0; i < num_contexts; ++i ) {
+      if ( !core_trace[i].empty() && core_active[i] ) {
+        auto inst = core_trace[i].front();
+        pc_list.push_back( inst.pc );
       }
     }
-    unique += unique_pc_list.size();
+
+    // Calculate instruction redundancy
+    if ( min_pc_reconverge ) {
+      int min_pc = *std::min_element( pc_list.begin(), pc_list.end() );
+      for ( int i = 0; i < num_contexts; ++i ) {
+        if ( !core_trace[i].empty() && core_active[i] ) {
+          if ( core_trace[i].front().pc == min_pc ) {
+            auto inst = core_trace[i].front();
+            core_trace[i].pop_front();
+            // instruction is spawning a node
+            if ( inst.spoint == 1 ) {
+              assert( boost::out_degree( inst.tid, g ) == 2 );
+              auto children = boost::out_edges( curr_task[i], g );
+              for ( auto c = children.first; c != children.second; ++c ) {
+                auto child = boost::target( *c, g );
+                node_map[ child ] -= 1;
+                // enqueue the child-strand in the task_queue
+                if ( g[*c] == 0 ) {
+                  core_queue[i].push_back( child );
+                }
+                // retain the continuation
+                else if ( g[*c] == 1 ) {
+                  for ( auto entry: ptrace ) {
+                    if ( entry.tid == child ) {
+                      core_trace[i].push_back( entry );
+                      total += 1;
+                    }
+                  }
+                  curr_task[i] = child;
+                }
+              }
+            }
+          }
+        }
+      }
+      unique += 1;
+    }
+    // max-share
+    else {
+      for ( auto pc: pc_list ) {
+        if ( std::find( unique_pc_list.begin(), unique_pc_list.end(), pc )
+             == unique_pc_list.end() ) {
+          unique_pc_list.push_back( pc );
+        }
+      }
+      unique += unique_pc_list.size();
+
+      for ( int i = 0; i < num_contexts; ++i ) {
+        if ( !core_trace[i].empty() && core_active[i] ) {
+          auto inst = core_trace[i].front();
+          core_trace[i].pop_front();
+          // instruction is spawning a node
+          if ( inst.spoint == 1 ) {
+            assert( boost::out_degree( inst.tid, g ) == 2 );
+            auto children = boost::out_edges( curr_task[i], g );
+            for ( auto c = children.first; c != children.second; ++c ) {
+              auto child = boost::target( *c, g );
+              node_map[ child ] -= 1;
+              // enqueue the child-strand in the task_queue
+              if ( g[*c] == 0 ) {
+                core_queue[i].push_back( child );
+              }
+              // retain the continuation
+              else if ( g[*c] == 1 ) {
+                for ( auto entry: ptrace ) {
+                  if ( entry.tid == child ) {
+                    core_trace[i].push_back( entry );
+                    total += 1;
+                  }
+                }
+                curr_task[i] = child;
+              }
+            }
+          }
+        }
+      }
+    }
 
     // Check if any traces have finished
     active = false;
@@ -491,7 +576,6 @@ level_schedule(
         core_active[i] = false;
         // if a wait point, push onto the stack
         if ( join_constrs.count( curr_task[i] ) == 1 ) {
-          //std::cout << "core[" << i << "]: remembering yield point: " << curr_task[i] << std::endl;
           core_stack[i].push_back( curr_task[i] );
         }
         if ( boost::out_degree( curr_task[i], g ) ) {
@@ -499,8 +583,6 @@ level_schedule(
           auto children = boost::out_edges( curr_task[i], g );
           auto child = boost::target( *children.first, g );
           node_map[ child ] -= 1;
-          //std::cout << "core[" << i << "]: finished " << curr_task[i];
-          //std::cout << " child: " << child << " ready: " << node_map[ child ] << std::endl;
         }
         while ( !core_queue[i].empty() ) {
           active_nodes.push_back( core_queue[i].back() );
@@ -681,30 +763,64 @@ int main ( int argc, char* argv[] )
     join_constrs[ std::stoi( parent, 0, 16 ) ] = std::stoi( child,  0, 16 );
   }
 
-  //---------------------------------------------------------------------
-  //  Analysis
-  //---------------------------------------------------------------------
-
   std::ofstream out;
   out.open( ( outdir + "/trace-analysis.txt" ).c_str() );
 
-  auto res0 = ws_schedule( g, trace, join_constrs, g_num_contexts[0], linetrace );
+  //---------------------------------------------------------------------
+  //  Child-stealing no reconvergence
+  //---------------------------------------------------------------------
+
+  auto res0 = ws_schedule( g, trace, join_constrs, g_num_contexts[0], false, linetrace );
 
   out << "//" << std::string( 72, '-' ) << std::endl;
-  out << "// Child-stealing with " << g_num_contexts[0] << " cores" << std::endl;
+  out << "// Child-stealing " << g_num_contexts[0] << " cores" << std::endl;
   out << "//" << std::string( 72, '-' ) << std::endl;
   out << std::endl;
   dump_stats( out, std::get<0>( res0 ), std::get<1>( res0 ), std::get<2>( res0 ) );
 
   std::cout << std::endl;
 
-  auto res1 = level_schedule( g, trace, join_constrs, g_num_contexts[0], linetrace );
+  //---------------------------------------------------------------------
+  //  Child-stealing with reconvergence
+  //---------------------------------------------------------------------
+
+  auto res1 = ws_schedule( g, trace, join_constrs, g_num_contexts[0], true, linetrace );
 
   out << "//" << std::string( 72, '-' ) << std::endl;
-  out << "// Level-by-level scheduling with " << g_num_contexts[0] << " cores" << std::endl;
+  out << "// Child-stealing with min-pc " << g_num_contexts[0] << " cores" << std::endl;
   out << "//" << std::string( 72, '-' ) << std::endl;
   out << std::endl;
   dump_stats( out, std::get<0>( res1 ), std::get<1>( res1 ), std::get<2>( res1 ) );
+
+  std::cout << std::endl;
+
+  //---------------------------------------------------------------------
+  //  Level-by-Level no reconvergence
+  //---------------------------------------------------------------------
+
+  auto res2 = level_schedule( g, trace, join_constrs, g_num_contexts[0], false, linetrace );
+
+  out << "//" << std::string( 72, '-' ) << std::endl;
+  out << "// Level-by-level scheduling " << g_num_contexts[0] << " cores" << std::endl;
+  out << "//" << std::string( 72, '-' ) << std::endl;
+  out << std::endl;
+  dump_stats( out, std::get<0>( res2 ), std::get<1>( res2 ), std::get<2>( res2 ) );
+
+  std::cout << std::endl;
+
+  //---------------------------------------------------------------------
+  //  Level-by-Level with reconvergence
+  //---------------------------------------------------------------------
+
+  auto res3 = level_schedule( g, trace, join_constrs, g_num_contexts[0], true, linetrace );
+
+  out << "//" << std::string( 72, '-' ) << std::endl;
+  out << "// Level-by-level scheduling with min-pc " << g_num_contexts[0] << " cores" << std::endl;
+  out << "//" << std::string( 72, '-' ) << std::endl;
+  out << std::endl;
+  dump_stats( out, std::get<0>( res3 ), std::get<1>( res3 ), std::get<2>( res3 ) );
+
+  std::cout << std::endl;
 
   out.close();
 
