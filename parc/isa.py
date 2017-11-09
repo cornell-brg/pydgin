@@ -1194,26 +1194,42 @@ def execute_stat( s, inst ):
     s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
 
   # For the wsrt runtime
-  if stat_en and stat_id == 8:
+  # UPDATES: 11/8/2017
+  # Collect traces for analysis only when in the stats region
+  # NOTE: The start and end of a parallel section in wsrt occurs only on
+  # core0
+  if stat_en and stat_id == 8 and s.sim_ptr.states[0].stats_en:
     s.parallel_mode = True
-    s.parallel_section = s.parallel_section + 1
     s.returns = 0
-    for i in range( 1, s.ncores ):
-      s.sim_ptr.states[i].parallel_mode = True
-      s.sim_ptr.states[i].parallel_section = s.sim_ptr.states[i].parallel_section + 1
-      s.sim_ptr.states[i].returns = 0
-
-  elif (not stat_en) and stat_id == 8:
+    s.parallel_section = s.parallel_section + 1
+    s.stats_on[8] = s.sim_ptr.states[0].stat_num_insts
+#    for i in range( 1, s.ncores ):
+#      s.sim_ptr.states[i].parallel_mode = True
+#      s.sim_ptr.states[i].parallel_section = s.sim_ptr.states[i].parallel_section + 1
+#      s.sim_ptr.states[i].returns = 0
+  elif (not stat_en) and stat_id == 8 and s.sim_ptr.states[0].stats_en:
     s.parallel_mode = False
-    for i in range( 1, s.ncores ):
-      s.sim_ptr.states[i].parallel_mode = False
+    s.stats_counts[8] = s.stats_counts[8] + 1
+    s.stats_insts[8] += s.sim_ptr.states[0].stat_num_insts - s.stats_on[8]
+#    for i in range( 1, s.ncores ):
+#      s.sim_ptr.states[i].parallel_mode = False
+#      s.sim_ptr.states[i].stats_counts[8] += 1
+#      s.sim_ptr.states[i].stats_insts[8] += s.sim_ptr.states[0].stat_num_insts - s.stats_on[8]
 
   # For the spmd runtime
-  if stat_en and stat_id == 6:
+  # UPDATES: 11/8/2017
+  # Collect traces for analysis only when in the stats region
+  # NOTE: Since, the cores may or may not participate in a parallel region,
+  # the trace collection which is controlled by the parallel_mode knob uses
+  # the parallel_section count on core0 for all cores!
+  if stat_en and stat_id == 6 and s.sim_ptr.states[0].stats_en:
     s.parallel_mode = True
-    s.parallel_section = s.parallel_section + 1
     s.returns = 0
-  elif (not stat_en) and stat_id == 6:
+    s.stats_on[6] = s.sim_ptr.states[0].stat_num_insts
+    s.parallel_section = s.parallel_section + 1
+  elif (not stat_en) and stat_id == 6 and s.sim_ptr.states[0].stats_en:
+    s.stats_counts[6] = s.stats_counts[6] + 1
+    s.stats_insts[6]  += s.sim_ptr.states[0].stat_num_insts - s.stats_on[6]
     s.parallel_mode = False
 
 #-----------------------------------------------------------------------

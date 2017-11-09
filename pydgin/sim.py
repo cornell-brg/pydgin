@@ -206,7 +206,7 @@ class Sim( object ):
         # shreesha: dump trace in parallel mode
         if s.parallel_mode:
           self.trace_ctr = self.trace_ctr + 1
-          s.trace.append( [s.parallel_section, core_id, pc, s.returns] )
+          s.trace.append( [self.states[0].parallel_section, core_id, pc, s.returns] )
           if self.trace_ctr == self.trace_dump_interval:
             self.trace_ctr = 0
             for entry in s.trace:
@@ -226,6 +226,9 @@ class Sim( object ):
 
       s.num_insts += 1    # TODO: should this be done inside instruction definition?
       if s.stats_en: s.stat_num_insts += 1
+
+      # shreesha: collect instrs in serial region if stats has been enabled
+      if s.stats_en and ( not s.parallel_mode ): s.serial_insts += 1
 
       if s.debug.enabled( "insts" ):
         print

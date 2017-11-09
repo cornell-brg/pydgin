@@ -90,5 +90,18 @@ class State( Machine ):
     self.parallel_section = 0
     self.sim_ptr = None
 
+    # stats region
+    # NOTE: At the moment, we allow for 16 named stats regions
+    #
+    # Stat regions of interest:
+    #   6 : spmd region
+    #   8 : wsrt region
+
+    self.stats_on     = [0]*16   # instructions count when stats was turned on
+    self.stats_insts  = [0]*16   # total number of dynamic instructions per-stats region
+    self.stats_counts = [0]*16   # total number of times each stats region was executed
+
+    self.serial_insts = 0 # instructions count in serial section
+
   def fetch_pc( self ):
     return self.pc

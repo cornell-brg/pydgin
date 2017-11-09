@@ -116,6 +116,12 @@ class ParcSim( Sim ):
         if state.stat_inst_num_insts[ j ] > 0:
           print "  Stat %d = %d" % ( j, state.stat_inst_num_insts[ j ] )
 
+      print "  Num of insts in serial section: %d" % ( state.serial_insts )
+      print "  Num of spmd regions: %d" % ( state.stats_counts[6] )
+      print "  Num of insts in spmd regions: %d" % ( state.stats_insts[6] )
+      print "  Num of wsrt regions: %d" % ( state.stats_counts[8] )
+      print "  Num of insts in wsrt regions: %d" % ( state.stats_insts[8] )
+
 # this initializes similator and allows translation and python
 # interpretation
 
