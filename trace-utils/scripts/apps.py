@@ -35,22 +35,24 @@ from doit_pydgin_utils import appdir, appinputdir
 app_list = [
   'px-fib',
   'ubmark-vvadd',
+
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc-mtpull',
   'pbbs-bfs-ndBFS-parc-mtpull',
   'pbbs-csort-quickSort-parc-mtpull',
   'pbbs-csort-sampleSort-parc-mtpull',
   'pbbs-dict-deterministicHash-parc-mtpull',
-  #'pbbs-hull-quickHull-parc-mtpull', -- can't support nested pfor within a task yet
+  'pbbs-hull-quickHull-parc-mtpull',
   'pbbs-isort-blockRadixSort-parc-mtpull',
-  #'pbbs-knn-octTree2Neighbors-parc-mtpull', -- not working on wsrt
+  'pbbs-knn-octTree2Neighbors-parc-mtpull',
   'pbbs-mis-ndMIS-parc-mtpull',
   'pbbs-nbody-parallelBarnesHut-parc-mtpull',
   'pbbs-rdups-deterministicHash-parc-mtpull',
   'pbbs-sa-parallelRange-parc-mtpull',
   'pbbs-st-ndST-parc-mtpull',
+
   # cilk apps
-  #'cilk-cholesky-parc-mtpull', -- can't build task-graph correctly
+  'cilk-cholesky-parc-mtpull',
   'cilk-cilksort-parc-mtpull',
   'cilk-heat-parc-mtpull',
   'cilk-knapsack-parc-mtpull',
@@ -62,20 +64,18 @@ app_list_spmd = [
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc',
   'pbbs-bfs-ndBFS-parc',
-  #'pbbs-csort-quickSort-parc',
-  #'pbbs-csort-sampleSort-parc',
+  "pbbs-csort-quickSort-parc",
+  "pbbs-csort-sampleSort-parc",
   'pbbs-dict-deterministicHash-parc',
-  #'pbbs-hull-quickHull-parc-mtpull', -- can't support nested pfor within a task yet
+  'pbbs-hull-quickHull-parc'
   'pbbs-isort-blockRadixSort-parc',
   'pbbs-knn-octTree2Neighbors-parc',
   'pbbs-mis-ndMIS-parc',
-  #'pbbs-nbody-parallelBarnesHut-parc',
+  'pbbs-nbody-parallelBarnesHut-parc',
   'pbbs-rdups-deterministicHash-parc',
   'pbbs-sa-parallelRange-parc',
   'pbbs-st-ndST-parc',
 ]
-
-
 
 #----------------------------------------------------------------------------
 # Application Dictionary

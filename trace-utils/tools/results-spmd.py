@@ -84,10 +84,27 @@ def results_summary():
         if not app in app_short_name_dict.keys():
           continue
 
+        # Instruction redundancy
         out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'spmd-maxshare','savings',stats['savings'][0]))
         out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'spmd-minpc','savings',stats['savings'][1]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'spmd-maxshare','steps',stats['steps'][0]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'spmd-minpc','steps',stats['steps'][1]))
+
+        # Performance
+        res_file =  resultsdir_path + '/' + subfolder + '/' + subfolder + '.out'
+        cmd = 'grep -r -A 5 "Core 0 Instructions Executed in Stat Region" %(out)s' % { 'out' : res_file }
+        lines = execute( cmd )
+        total = 0
+        serial = 0
+        for line in lines.split('\n'):
+          if 'Stat Region' in line:
+            total = int(line.split()[-1])
+          elif 'serial' in line:
+            serial = int(line.split()[-1])
+
+        # Sanity check
+        print app, total, (serial+stats['steps'][0]), total- (serial+stats['steps'][0])
+
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'spmd-maxshare','steps',stats['steps'][0]+serial))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'spmd-minpc','steps',stats['steps'][1]+serial))
       except:
         print "{}: Trace file not present".format( subfolder )
         continue

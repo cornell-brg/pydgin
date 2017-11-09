@@ -20,11 +20,11 @@ app_short_name_dict = OrderedDict([
   ('pbbs-bfs-deterministicBFS'    , 'bfs-d'),
   ('pbbs-bfs-ndBFS'               , 'bfs-nd'),
   ('pbbs-dict-deterministicHash'  , 'dict'),
-  ('pbbs-knn-octTree2Neighbors'   , 'knn'),
+  #('pbbs-knn-octTree2Neighbors'   , 'knn'), didn't complete for wsrt
   ('pbbs-mis-ndMIS'               , 'mis'),
-  #('pbbs-nbody-parallelBarnesHut' , 'nbody)',
-  ('pbbs-isort-blockRadixSort'    , 'radix-1'),
-  ('pbbs-isort-blockRadixSort-1'  , 'radix-2'),
+  #('pbbs-nbody-parallelBarnesHut' , 'nbody'), looks like an outlier works but don't visualize
+  #('pbbs-isort-blockRadixSort'    , 'radix-1'), didn't complete for spmd
+  #('pbbs-isort-blockRadixSort-1'  , 'radix-2'), didn't complete for spmd
   ('pbbs-rdups-deterministicHash' , 'rdups'),
   ('pbbs-sa-parallelRange'        , 'sarray'),
   ('pbbs-st-ndST'                 , 'sptree'),
@@ -34,8 +34,8 @@ app_short_name_dict = OrderedDict([
   ('pbbs-csort-sampleSort'        , 'sampsort'),
   ('pbbs-csort-sampleSort-1'      , 'sampsort-1'),
   ('pbbs-csort-sampleSort-2'      , 'sampsort-2'),
-  #('pbbs-hull-quickHull'          , 'hull'),
-  #('cilk-cholesky'                : 'clsky)',
+  ('pbbs-hull-quickHull'          , 'hull'),
+  ('cilk-cholesky'                , 'clsky'),
   ('cilk-cilksort'                , 'cilksort'),
   ('cilk-heat'                    , 'heat'),
   ('cilk-knapsack'                , 'ksack'),
@@ -51,16 +51,16 @@ configs = [
   'wsrt-minpc',
   #'task-maxshare-u',
   #'task-minpc-u',
-  'task-maxshare-4',
-  'task-minpc-4',
-  'task-maxshare-8',
-  'task-minpc-8',
+  #'task-maxshare-4',
+  #'task-minpc-4',
+  #'task-maxshare-8',
+  #'task-minpc-8',
 ]
 
 file_list = [
   'results-spmd.csv',
   'results-wsrt.csv',
-  'results-task.csv',
+  #'results-task.csv',
 ]
 
 #-------------------------------------------------------------------------
@@ -127,8 +127,8 @@ def plot( df ):
   opts.data           = parse_savings( 'steps', df )
   opts.labels         = [app_list,configs]
   opts.legend_ncol    = len(configs)
-  opts.title          = "Steps"
-  opts.ylabel         = "Timesteps"
+  opts.title          = "Timesteps"
+  opts.ylabel         = "Dyn Insts"
   opts.rotate_labels  = True
   opts.colors         = brg_plot.colors['qualitative']
   opts.legend_enabled = False
