@@ -59,7 +59,7 @@ app_short_name_dict = {
 #-------------------------------------------------------------------------
 
 def results_summary():
-  resultsdir_path = '../results'
+  resultsdir_path = '../results-small'
   with open('results-task.csv', 'w') as out:
     out.write('app,config,stat,value\n')
     subfolders = os.listdir( resultsdir_path )
@@ -75,7 +75,9 @@ def results_summary():
           if 'savings' in line[0]:
             stats['savings'].append( line[1] )
           elif 'steps' in line[0]:
-            stats['steps'].append( line[1] )
+            stats['steps'].append( int(line[1]) )
+          elif 'total' in line[0]:
+            stats['total'].append( int(line[1]) )
 
         app = re.sub("-parc", '', subfolder)
         app = re.sub("-small", '', app)
@@ -85,18 +87,36 @@ def results_summary():
         if not app in app_short_name_dict.keys():
           continue
 
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-u','savings',stats['savings'][0]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-u','savings',stats['savings'][1]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-4','savings',stats['savings'][2]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-4','savings',stats['savings'][3]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-8','savings',stats['savings'][4]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-8','savings',stats['savings'][5]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-u','steps',stats['steps'][0]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-u','steps',stats['steps'][1]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-4','steps',stats['steps'][2]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-4','steps',stats['steps'][3]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-maxshare-8','steps',stats['steps'][4]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task-minpc-8','steps',stats['steps'][5]))
+        # Instruction redundancy
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task1-maxshare','savings',stats['savings'][0]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task1-minpc','savings',stats['savings'][1]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task2-maxshare','savings',stats['savings'][2]))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task2-minpc','savings',stats['savings'][3]))
+
+        # Performance
+        res_file =  resultsdir_path + '/' + subfolder + '/' + subfolder + '.out'
+
+        cmd = 'grep -r -A 10 "Core 0 Instructions Executed in Stat Region" %(out)s' % { 'out' : res_file }
+        lines = execute( cmd )
+        total = 0
+        serial = 0
+        runtime = 0
+        for line in lines.split('\n'):
+          if 'Stat Region' in line:
+            total = int(line.split()[-1])
+          elif 'serial' in line:
+            serial = int(line.split()[-1])
+          elif 'runtime' in line:
+            runtime = int(line.split()[-1])
+
+        # Sanity check
+        print app, total, serial+runtime+stats['total'][0], total- (serial+runtime+stats['total'][0])
+
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task1-maxshare','steps',stats['steps'][0]+serial))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task1-minpc','steps',stats['steps'][1]+serial))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task2-maxshare','steps',stats['steps'][2]+serial))
+        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'task2-minpc','steps',stats['steps'][3]+serial))
+
       except:
         print "{}: Trace file not present".format( subfolder )
         continue
