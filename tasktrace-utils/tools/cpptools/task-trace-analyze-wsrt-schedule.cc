@@ -45,29 +45,21 @@ int g_num_contexts[] = { 4, 8 };
 //-------------------------------------------------------------------------
 
 void dump_stats( std::ostream& out, const int& unique_insts,
-                 const int& total_insts, const int& steps )
+                 const int& total_insts, const int& steps, const int& region,
+                 bool summary = false )
 {
-  out << "Overall stats:" << std::endl;
+  if ( summary ) {
+    out << "Overall stats:" << std::endl;
+  } else {
+    out << "Parallel region " << region << ":" << std::endl;
+  }
+
   out << "  unique    insts: " << unique_insts << std::endl;
   out << "  total     insts: " << total_insts << std::endl;
   out << "  redundant insts: " << ( total_insts - unique_insts ) << std::endl;
   out << "          savings: " << (static_cast<float>( total_insts - unique_insts )/( total_insts ) )*100 << "%" << std::endl;
   out << "  total     steps: " << steps << std::endl;
   out << std::endl;
-}
-
-//-------------------------------------------------------------------------
-// print_schedule
-//-------------------------------------------------------------------------
-
-void print_schedule( const std::map< int, std::vector<int> >& schedule ) {
-  for ( auto& kv: schedule ) {
-    std::cout << "Level: " << kv.first << "; nodes: [";
-    for ( auto& node: kv.second ) {
-      std::cout << node << ",";
-    }
-    std::cout << "]" << std::endl;
-  }
 }
 
 //-------------------------------------------------------------------------
@@ -91,6 +83,51 @@ std::ostream& operator<< ( std::ostream& o, const TraceEntry& e )
 {
   o << std::hex << "[" << e.pid << "," << e.tid << ","
     << e.pc << "," << e.spoint << "]" << std::endl;
+  return o;
+}
+
+//-------------------------------------------------------------------------
+// GraphEntry
+//-------------------------------------------------------------------------
+// Struct to represent an entry in the graph csv file
+
+struct GraphEntry {
+  int pid;
+  int parent;
+  int child;
+  int edge;
+
+  GraphEntry( int pid, int parent, int child, int edge )
+    : pid( pid ), parent( parent ), child( child ), edge( edge )
+  { }
+};
+
+// Helper function to print the struct
+std::ostream& operator<< ( std::ostream& o, const GraphEntry& e )
+{
+  o << "[" << e.pid << "," << e.parent << "," << e.child << "," << e.edge << "]" << std::endl;
+  return o;
+}
+
+//-------------------------------------------------------------------------
+// JoinsEntry
+//-------------------------------------------------------------------------
+// Struct to represent an entry in the joins csv file
+
+struct JoinsEntry {
+  int pid;
+  int parent;
+  int child;
+
+  JoinsEntry( int pid, int parent, int child )
+    : pid( pid ), parent( parent ), child( child )
+  { }
+};
+
+// Helper function to print the struct
+std::ostream& operator<< ( std::ostream& o, const JoinsEntry& e )
+{
+  o << "[" << e.pid << "," << e.parent << "," << e.child << "]" << std::endl;
   return o;
 }
 
@@ -131,16 +168,19 @@ int occupancy_based_victim( TaskQueue& task_queue, int id, int num_contexts ) {
 // ws_schedule()
 //-------------------------------------------------------------------------
 
-std::tuple< int,int,int >
+void
 ws_schedule(
   Graph& g,
   std::vector< TraceEntry >& ptrace,
   std::map<int,int>& join_constrs,
   int num_contexts,
+  std::vector< std::vector< std::tuple< int,int,int > > >& per_region_stats,
+  int index,
   bool min_pc_reconverge = false,
   bool linetrace = false
 )
 {
+
   // initialze a node map
   auto nodes = boost::vertices( g );
   std::map< int,int > node_map;
@@ -161,6 +201,7 @@ ws_schedule(
   std::vector< Vertex_t > curr_task( num_contexts );
 
   // schedule the root node
+
   auto root = *boost::vertices( g ).first;
   auto out_degree = boost::out_degree( root, g );
   task_queue[0].push_back( root );
@@ -369,23 +410,26 @@ ws_schedule(
     timesteps += 1;
   }
 
-  return std::make_tuple( unique, total, timesteps );
+  per_region_stats[index].push_back( std::make_tuple( unique, total, timesteps ) );
 }
 
 //-------------------------------------------------------------------------
 // level_schedule()
 //-------------------------------------------------------------------------
 
-std::tuple< int,int,int >
+void
 level_schedule(
   Graph& g,
-  std::vector< TraceEntry >& ptrace,
+  std::vector< TraceEntry > ptrace,
   std::map<int,int>& join_constrs,
   int num_contexts,
+  std::vector< std::vector< std::tuple< int,int,int > > >& per_region_stats,
+  int index,
   bool min_pc_reconverge = false,
   bool linetrace = false
 )
 {
+
   // initialze a node map
   auto nodes = boost::vertices( g );
   std::map< int,int > node_map;
@@ -598,10 +642,8 @@ level_schedule(
     timesteps += 1;
   }
 
-  return std::make_tuple( unique, total, timesteps );
+  per_region_stats[index].push_back( std::make_tuple( unique, total, timesteps ) );
 }
-
-
 
 //-------------------------------------------------------------------------
 // main()
@@ -733,8 +775,6 @@ int main ( int argc, char* argv[] )
 
   }
 
-  assert( pregions.size() == 1 );
-
   //---------------------------------------------------------------------
   // Read the input graphfile
   //---------------------------------------------------------------------
@@ -744,10 +784,17 @@ int main ( int argc, char* argv[] )
 
   std::string parent, child, edge;
 
-  Graph g;
+  std::vector< GraphEntry > graph;
   while ( in_graph.read_row( pid, parent, child, edge ) ) {
-    // NOTE: In pydgin/sim.py I dump the task graph as an int
-    boost::add_edge( std::stoi( parent, 0 ), std::stoi( child,  0 ), std::stoi( edge,  0 ), g );
+    graph.push_back(
+      // NOTE: In pydgin/sim.py I dump the task graph as an int
+      GraphEntry(
+        std::stoi( pid,    0 ),
+        std::stoi( parent, 0 ),
+        std::stoi( child,  0 ),
+        std::stoi( edge,   0 )
+      )
+    );
   }
 
   //---------------------------------------------------------------------
@@ -757,70 +804,152 @@ int main ( int argc, char* argv[] )
   io::CSVReader<3> in_joins( joinsfile.c_str() );
   in_joins.read_header( io::ignore_extra_column, "pid", "parent", "child" );
 
-  std::map<int,int> join_constrs;
+  std::vector< JoinsEntry > joins;
 
   while ( in_joins.read_row( pid, parent, child ) ) {
-    join_constrs[ std::stoi( parent, 0, 16 ) ] = std::stoi( child,  0, 16 );
+    joins.push_back(
+      JoinsEntry(
+        std::stoi( pid,    0, 16 ),
+        std::stoi( parent, 0, 16 ),
+        std::stoi( child,  0, 16 )
+      )
+    );
   }
+
+  //---------------------------------------------------------------------
+  // Analysis
+  //---------------------------------------------------------------------
+
+  // Stats
+  std::vector< std::vector< std::tuple< int,int,int > > > per_region_stats( 4 );
 
   std::ofstream out;
   out.open( ( outdir + "/trace-analysis.txt" ).c_str() );
 
+  // Loop through for each parallel region
+  for ( auto const& region: pregions ) {
+
+    // Collect the trace entries in a given parallel region
+    std::vector< TraceEntry > ptrace;
+    std::vector< int > vertices;
+    for ( auto const& entry: trace ) {
+      if ( entry.pid == region ) {
+        // Collect unique nodes in the region
+        if ( std::find( vertices.begin(), vertices.end(), entry.tid ) == vertices.end() ) {
+          vertices.push_back( entry.tid );
+        }
+        // Collect unique strand ids
+        ptrace.push_back( entry );
+      }
+    }
+
+    // Extract the task graph
+    Graph g;
+    // Add edges
+    for ( auto const& entry: graph ) {
+      if ( entry.pid == region ) {
+        boost::add_edge( entry.parent, entry.child, entry.edge, g );
+      }
+    }
+
+    // Extract the join constraints
+    std::map<int,int> join_constrs;
+
+    for ( auto const& entry: joins ) {
+      if ( entry.pid == region ) {
+        join_constrs[ entry.parent ] = entry.child;
+      }
+    }
+
+    //-------------------------------------------------------------------
+    //  Child-stealing no reconvergence
+    //-------------------------------------------------------------------
+
+    if ( vertices.size() == 1 ) {
+      per_region_stats[0].push_back( std::make_tuple( ptrace.size(), ptrace.size(), ptrace.size() ) );
+    } else {
+      ws_schedule( g, ptrace, join_constrs, g_num_contexts[0], per_region_stats, 0, false, linetrace );
+    }
+
+    if ( linetrace ) {
+      std::cout << std::endl;
+    }
+
+    //-----------------------------------------------------------------
+    //  Child-stealing with reconvergence
+    //-----------------------------------------------------------------
+
+    if ( vertices.size() == 1 ) {
+      per_region_stats[1].push_back( std::make_tuple( ptrace.size(), ptrace.size(), ptrace.size() ) );
+    } else {
+      ws_schedule( g, ptrace, join_constrs, g_num_contexts[0], per_region_stats, 1, true, linetrace );
+    }
+
+    if ( linetrace ) {
+      std::cout << std::endl;
+    }
+
+    //-------------------------------------------------------------------
+    //  Level-by-Level no reconvergence
+    //-------------------------------------------------------------------
+
+    if ( vertices.size() == 1 ) {
+      per_region_stats[2].push_back( std::make_tuple( ptrace.size(), ptrace.size(), ptrace.size() ) );
+    } else {
+      level_schedule( g, ptrace, join_constrs, g_num_contexts[0], per_region_stats, 2, false, linetrace );
+    }
+
+    if ( linetrace ) {
+      std::cout << std::endl;
+    }
+
+    //-------------------------------------------------------------------
+    //  Level-by-Level with reconvergence
+    //-------------------------------------------------------------------
+
+    if ( vertices.size() == 1 ) {
+      per_region_stats[3].push_back( std::make_tuple( ptrace.size(), ptrace.size(), ptrace.size() ) );
+    } else {
+      level_schedule( g, ptrace, join_constrs, g_num_contexts[0], per_region_stats, 3, true, linetrace );
+    }
+
+    if ( linetrace ) {
+      std::cout << std::endl;
+    }
+
+  }
+
   //---------------------------------------------------------------------
-  //  Child-stealing no reconvergence
+  // Dump Stats
   //---------------------------------------------------------------------
 
-  auto res0 = ws_schedule( g, trace, join_constrs, g_num_contexts[0], false, linetrace );
+  for ( int i = 0; i < per_region_stats.size(); ++i ) {
+    out << "//" << std::string( 72, '-' ) << std::endl;
+    if      ( i == 0 ) { out << "// Child-stealing " << g_num_contexts[0] << " cores" << std::endl; }
+    else if ( i == 1 ) { out << "// Child-stealing with min-pc" << g_num_contexts[0] << " cores" << std::endl; }
+    else if ( i == 2 ) { out << "// Level-by-level scheduling " << g_num_contexts[0] << " cores" << std::endl; }
+    else if ( i == 3 ) { out << "// Level-by-level scheduling with min-pc " << g_num_contexts[0] << " cores" << std::endl; }
+    out << "//" << std::string( 72, '-' ) << std::endl << std::endl;
 
-  out << "//" << std::string( 72, '-' ) << std::endl;
-  out << "// Child-stealing " << g_num_contexts[0] << " cores" << std::endl;
-  out << "//" << std::string( 72, '-' ) << std::endl;
-  out << std::endl;
-  dump_stats( out, std::get<0>( res0 ), std::get<1>( res0 ), std::get<2>( res0 ) );
+    int g_unique_insts = 0;
+    int g_total_insts  = 0;
+    int g_total_steps  = 0;
 
-  std::cout << std::endl;
+    for ( int region = 0; region < pregions.size(); ++region ) {
 
-  //---------------------------------------------------------------------
-  //  Child-stealing with reconvergence
-  //---------------------------------------------------------------------
+      int unique_insts = std::get<0>( per_region_stats[i][region] );
+      int total_insts  = std::get<1>( per_region_stats[i][region] );
+      int total_steps  = std::get<2>( per_region_stats[i][region] );
 
-  auto res1 = ws_schedule( g, trace, join_constrs, g_num_contexts[0], true, linetrace );
+      g_unique_insts += unique_insts;
+      g_total_insts  += total_insts;
+      g_total_steps  += total_steps;
 
-  out << "//" << std::string( 72, '-' ) << std::endl;
-  out << "// Child-stealing with min-pc " << g_num_contexts[0] << " cores" << std::endl;
-  out << "//" << std::string( 72, '-' ) << std::endl;
-  out << std::endl;
-  dump_stats( out, std::get<0>( res1 ), std::get<1>( res1 ), std::get<2>( res1 ) );
+      dump_stats( out, unique_insts, total_insts, total_steps, region+1 );
+    }
 
-  std::cout << std::endl;
-
-  //---------------------------------------------------------------------
-  //  Level-by-Level no reconvergence
-  //---------------------------------------------------------------------
-
-  auto res2 = level_schedule( g, trace, join_constrs, g_num_contexts[0], false, linetrace );
-
-  out << "//" << std::string( 72, '-' ) << std::endl;
-  out << "// Level-by-level scheduling " << g_num_contexts[0] << " cores" << std::endl;
-  out << "//" << std::string( 72, '-' ) << std::endl;
-  out << std::endl;
-  dump_stats( out, std::get<0>( res2 ), std::get<1>( res2 ), std::get<2>( res2 ) );
-
-  std::cout << std::endl;
-
-  //---------------------------------------------------------------------
-  //  Level-by-Level with reconvergence
-  //---------------------------------------------------------------------
-
-  auto res3 = level_schedule( g, trace, join_constrs, g_num_contexts[0], true, linetrace );
-
-  out << "//" << std::string( 72, '-' ) << std::endl;
-  out << "// Level-by-level scheduling with min-pc " << g_num_contexts[0] << " cores" << std::endl;
-  out << "//" << std::string( 72, '-' ) << std::endl;
-  out << std::endl;
-  dump_stats( out, std::get<0>( res3 ), std::get<1>( res3 ), std::get<2>( res3 ) );
-
-  std::cout << std::endl;
+    dump_stats( out, g_unique_insts, g_total_insts, g_total_steps, 0, true );
+  }
 
   out.close();
 

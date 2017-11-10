@@ -197,7 +197,7 @@ class Sim( object ):
                   pad( inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),
         # shreesha: is a task being executed, then dump trace
-        if s.task_mode and self.task_trace_dump:
+        if self.task_trace_dump and s.parallel_mode and s.task_mode:
           self.task_trace_ctr = self.task_trace_ctr + 1
           s.strand_trace.append( [s.parallel_section_counter,s.curr_strand,pc,s.strand_type] )
           if self.task_trace_ctr == self.task_trace_dump_interval:
@@ -230,6 +230,10 @@ class Sim( object ):
 
       s.num_insts += 1    # TODO: should this be done inside instruction definition?
       if s.stats_en: s.stat_num_insts += 1
+
+      # shreesha: collect instrs in serial region if stats has been enabled
+      if s.stats_en and ( not s.parallel_mode ): s.serial_insts += 1
+      if s.stats_en and s.parallel_mode and s.runtime_mode: s.runtime_insts += 1
 
       if s.debug.enabled( "insts" ):
         print

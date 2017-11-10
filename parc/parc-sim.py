@@ -118,6 +118,9 @@ class ParcSim( Sim ):
 
       # shreesha: tasktrace
       print "\nTASK RUNTIME STATS"
+      print "Num insts in serial section: ", state.serial_insts
+      print "Num insts in runtime mode: ", state.runtime_insts
+      print "Num of wsrt regions: ", state.parallel_section_counter
       if state.stats_counts[13]:
         print "Num of local enqs: %d" % ( state.stats_counts[13] )
         print "Num of dyn insts for local enqs: %d" % ( state.stats_insts[13] )
@@ -126,10 +129,13 @@ class ParcSim( Sim ):
         print "Num of local deqs: %d" % ( state.stats_counts[12] )
         print "Num of dyn insts for local deqs: %d" % ( state.stats_insts[12] )
         print "Avg. cost of a local deq: %f" % ( state.stats_insts[12] / float( state.stats_counts[12] ) )
-      if state.stats_counts[10]:
-        print "Num of Tasks: %d" % ( state.stats_counts[10] )
-        print "Num of dyn insts tasks: %d" % ( state.stats_insts[10] )
-        print "Avg. cost of a task execution: %f" % ( state.stats_insts[10] / float( state.stats_counts[10] ) )
+        # NOTE: To estimate the work per-task the ( total - serial - runtime )
+        # term gives the total instructions for work and we divide that by
+        # either number of tasks enqueued/dequeued
+        print "Num of Tasks: %d" % ( state.stats_counts[12] )
+        num_work_insts = state.stat_num_insts - state.serial_insts - state.runtime_insts
+        print "Num of dyn insts tasks: %d" % ( num_work_insts )
+        print "Avg. cost of a task execution: %f" % ( num_work_insts / float( state.stats_counts[12] ) )
 
 # this initializes similator and allows translation and python
 # interpretation

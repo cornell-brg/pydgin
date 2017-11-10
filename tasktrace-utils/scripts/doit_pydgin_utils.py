@@ -341,7 +341,7 @@ def gen_trace_per_app( evaldict ):
           actions  = [ (create_folder, [app_results_dir]), pydgin_cmd ]
         else:
           task_dep = [ 'runtime-md' ]
-          actions = [ (create_folder, [app_results_dir]), pydgin_cmd, disassemble_cmd, analyze_cmd ]
+          actions = [ (create_folder, [app_results_dir]), pydgin_cmd, graph_cmd, disassemble_cmd, analyze_cmd ]
 
         #.......................
         # Build Task Dictionary

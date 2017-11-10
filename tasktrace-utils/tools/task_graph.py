@@ -11,6 +11,7 @@ import os
 import sys
 import subprocess
 import pandas as pd
+import networkx as nx
 
 #-------------------------------------------------------------------------
 # Utility Functions
@@ -36,7 +37,7 @@ g_node_attributes = [
 # draw_graph()
 #-------------------------------------------------------------------------
 
-def draw_graph(graph,trace,outdir):
+def draw_graph(graph,trace,outdir,draw=False):
   task_graph_df = pd.read_csv(graph)
   task_trace_df = pd.read_csv(trace,
                               converters = {
@@ -47,16 +48,41 @@ def draw_graph(graph,trace,outdir):
                              )
   parallel_regions = task_trace_df['pid'].unique()
   for region in parallel_regions:
-    with open("%(outdir)s/graph-%(region)s.dot" % {'outdir':outdir,'region':region}, "w") as dot:
+    if draw:
+      with open("%(outdir)s/graph-%(region)s.dot" % {'outdir':outdir,'region':region}, "w") as dot:
+        graph_df = task_graph_df[task_graph_df['pid']==region]
+        edges_list = graph_df[['parent','child']].values.tolist()
+
+        if len( edges_list ) != 0:
+          # sanity checks
+          tg = nx.Graph()
+          tg.add_edges_from(edges_list)
+          # check that it is a connected DAG
+          assert( nx.is_connected(tg) )
+          # check for self-loops
+          assert( nx.number_of_selfloops(tg) == 0 )
+
+        dot.write("digraph G{\n")
+        for edge in edges_list:
+          dot.write("  %(p)s->%(c)s;\n" % {'p':edge[0],'c':edge[1]})
+        trace_df = task_trace_df[task_trace_df['pid']==region]
+        nodes_df = trace_df[['tid','stype']]
+        nodes_list = nodes_df.drop_duplicates(subset='tid',keep='last').values.tolist()
+        for node in nodes_list:
+          dot.write("  %(node)s %(attr)s\n" % {'node':node[0],'attr':g_node_attributes[node[1]]})
+        dot.write("}")
+      execute("cd %(outdir)s && dot -Tpdf -o graph-%(region)s.pdf graph-%(region)s.dot" % {'outdir':outdir,'region':region})
+    else:
       graph_df = task_graph_df[task_graph_df['pid']==region]
       edges_list = graph_df[['parent','child']].values.tolist()
-      dot.write("digraph G{\n")
-      for edge in edges_list:
-        dot.write("  %(p)s->%(c)s;\n" % {'p':edge[0],'c':edge[1]})
-      trace_df = task_trace_df[task_trace_df['pid']==region]
-      nodes_df = trace_df[['tid','stype']]
-      nodes_list = nodes_df.drop_duplicates(subset='tid',keep='last').values.tolist()
-      for node in nodes_list:
-        dot.write("  %(node)s %(attr)s\n" % {'node':node[0],'attr':g_node_attributes[node[1]]})
-      dot.write("}")
-    execute("cd %(outdir)s && dot -Tpdf -o graph-%(region)s.pdf graph-%(region)s.dot" % {'outdir':outdir,'region':region})
+
+      if len( edges_list ) != 0:
+        # sanity checks
+        tg = nx.Graph()
+        tg.add_edges_from(edges_list)
+        # check that it is a connected DAG
+        assert( nx.is_connected(tg) )
+        # check for self-loops
+        assert( nx.number_of_selfloops(tg) == 0 )
+
+

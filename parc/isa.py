@@ -617,7 +617,7 @@ def execute_jalr( s, inst ):
   # check if we are in runtime mode and that stat instruction code for
   # executing a task has been set, if this is true then we are executing in
   # task mode, record where we entered the task mode & reset runtime mode
-  if s.runtime_mode and s.stat_inst_en[10] and s.stat_inst_en[8]:
+  if s.runtime_mode and s.stat_inst_en[10] and s.parallel_mode:
     s.runtime_mode = False
     s.task_mode = True
     s.runtime_ras.append( s.rf[inst.rd] )
@@ -1218,7 +1218,7 @@ def execute_stat( s, inst ):
 
   # shreesha: tasktrce
   # enq event
-  if stat_en and stat_id == 13 and s.stat_inst_en[8]:
+  if stat_en and stat_id == 13 and s.parallel_mode:
     # create the child strand
     s.g_strand_count = s.g_strand_count + 1
     s.strand_graph.append([s.parallel_section_counter,s.curr_strand,s.g_strand_count,0])
@@ -1231,11 +1231,12 @@ def execute_stat( s, inst ):
     # record stats
     s.stats_on[13] = s.stat_num_insts
   # end of enq event
-  elif (not stat_en) and stat_id == 13 and s.stat_inst_en[8]:
+  elif (not stat_en) and stat_id == 13 and s.parallel_mode:
     s.stats_counts[13] = s.stats_counts[13] + 1
     s.stats_insts[13]  += s.stat_num_insts - s.stats_on[13]
+
   # deq event
-  elif stat_en and stat_id == 12 and s.stat_inst_en[8]:
+  elif stat_en and stat_id == 12 and s.parallel_mode:
     s.curr_strand = s.strand_queue[-1]
     s.strand_stack[-1].strand_list.append( s.curr_strand )
     s.strand_queue.pop()
@@ -1243,26 +1244,28 @@ def execute_stat( s, inst ):
     # record stats
     s.stats_on[12] = s.stat_num_insts
   # end of deq event
-  elif (not stat_en) and stat_id == 12 and s.stat_inst_en[8]:
+  elif (not stat_en) and stat_id == 12 and s.parallel_mode:
     s.stats_counts[12] = s.stats_counts[12] + 1
     s.stats_insts[12]  += s.stat_num_insts - s.stats_on[12]
+
   # execute event
-  elif stat_en and stat_id == 10 and s.stat_inst_en[8]:
+  elif stat_en and stat_id == 10 and s.parallel_mode:
     # record stats
     s.stats_on[10] = s.stat_num_insts
   # end of an execute event
-  elif (not stat_en) and stat_id == 10 and s.stat_inst_en[8]:
+  elif (not stat_en) and stat_id == 10 and s.parallel_mode:
     s.stats_counts[10] = s.stats_counts[10] + 1
     s.stats_insts[10]  += s.stat_num_insts - s.stats_on[10]
+
   # start of wait()
-  elif stat_en and stat_id == 3 and s.stat_inst_en[8]:
+  elif stat_en and stat_id == 3 and s.parallel_mode:
     s.prev_strand_stack.append( s.curr_strand )
     if s.strand_stack:
       s.strand_stack[-1].strand_list[-1] = s.curr_strand
     # create a new strand stack entry
     s.strand_stack.append( StrandStackEntry() )
   # end of wait()
-  elif (not stat_en) and stat_id == 3 and s.stat_inst_en[8]:
+  elif (not stat_en) and stat_id == 3 and s.parallel_mode:
     s.strand_type = 1
     s.g_strand_count = s.g_strand_count + 1
     # if the curr_strand == last strand seen then there was empty work
@@ -1286,9 +1289,18 @@ def execute_stat( s, inst ):
       # has nothing to join
       s.strand_stack.pop()
       s.prev_strand_stack.pop()
+
   # task-scheduler end event
+  # Start of a parallel section
+  elif stat_en and stat_id == 8 and s.stats_en:
+    s.curr_strand = 0
+    s.g_strand_count = 0
+    s.parallel_section_counter += 1
+    s.parallel_mode = True
   # End of a parallel section
-  elif (not stat_en) and stat_id == 8:
+  elif (not stat_en) and stat_id == 8 and s.stats_en:
+    s.parallel_mode = False
+    s.strand_type = 0
     assert len(s.strand_queue) == 0
     assert len(s.strand_stack) == 0
     assert len(s.prev_strand_stack) == 0
