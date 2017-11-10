@@ -59,7 +59,7 @@ app_short_name_dict = {
 #-------------------------------------------------------------------------
 
 def results_summary():
-  resultsdir_path = '../results-small-wsrt'
+  resultsdir_path = '../results-small-wsrt-8'
   with open('results-wsrt.csv', 'w') as out:
     out.write('app,config,stat,value\n')
     subfolders = os.listdir( resultsdir_path )

@@ -92,14 +92,19 @@ file_list = [
 # parse
 #-------------------------------------------------------------------------
 
-def parse_savings( stat, df ):
+def parse_savings( stat, df, base_df=None ):
   data = []
   for app in app_list:
+    if stat == 'steps':
+      ts, = base_df[(base_df.app == app_normalize_map[app]) & (base_df.config == 'serial') & (base_df.stat == stat)]['value']
     temp = []
     for config in configs:
       try:
         val, = df[(df.config == config) & (df.app == app) & (df.stat == stat)]['value']
-        temp.append(val)
+        if stat == 'steps':
+          temp.append(ts/float(val))
+        else:
+          temp.append(val)
       except:
         temp.append(0)
     data.append( temp )
@@ -149,7 +154,10 @@ def plot( df ):
   brg_plot.add_plot( opts )
 
   # 2. plot the performance
-  opts.data           = parse_savings( 'steps', df )
+  # make a copy of the baseline data used for normalization
+  base_df = df[df.config == "serial"].copy()
+
+  opts.data           = parse_savings( 'steps', df, base_df )
   opts.labels         = [app_list,configs]
   opts.legend_ncol    = len(configs)
   opts.title          = "Timesteps"
