@@ -98,7 +98,6 @@ def task_link_apps():
 
   taskdict = { \
     'basename' : 'link-apps',
-    'task_dep' : [ 'build-tools' ],
     'actions'  : [ action ],
     'uptodate' : [ False ], # always re-execute
     'doc'      : os.path.basename(__file__).rstrip('c'),

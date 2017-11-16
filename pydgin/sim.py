@@ -58,13 +58,6 @@ class Sim( object ):
     self.ncores = 1
     self.core_switch_ival = 1
     self.pkernel_bin = None
-    # shreesha: trace state
-    self.enable_switch_cores = False
-    self.trace_dump = False
-    self.trace_writer = None
-    self.trace_ctr = 0
-    self.trace_dump_interval = 50000
-    self.outdir = os.path.dirname(os.path.abspath( __file__ ))
 
   #-----------------------------------------------------------------------
   # decode
@@ -120,14 +113,6 @@ class Sim( object ):
     --pkernel <f>   Load pkernel binary
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
-
-    --enable-switch-cores
-                    Enable switching cores
-    --enable-trace  Enable tracing
-    --trace-dump-interval <n>
-                    Dump trace at the end of an interval
-    --outdir        Output directory
-
   """
 
   #-----------------------------------------------------------------------
@@ -157,7 +142,6 @@ class Sim( object ):
 
     core_id = 0
     tick_ctr = 0
-    # shreesha: trace
     s = self.states[ core_id ]
 
     # use proc 0 to determine if should be running
@@ -203,18 +187,6 @@ class Sim( object ):
 
         exec_fun( s, inst )
 
-        # shreesha: dump trace in parallel mode
-        if s.parallel_mode:
-          self.trace_ctr = self.trace_ctr + 1
-          s.trace.append( [self.states[0].parallel_section, core_id, pc, s.returns] )
-          if self.trace_ctr == self.trace_dump_interval:
-            self.trace_ctr = 0
-            for entry in s.trace:
-              for item in entry:
-                self.trace_writer.write("%x," % item)
-              self.trace_writer.write("\n")
-            s.trace = []
-
       except FatalError as error:
         print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
         print "Exception message: %s" % error.msg
@@ -241,40 +213,17 @@ class Sim( object ):
         print "Reached the max_insts (%d), exiting." % max_insts
         break
 
-      # check if the switching interval is reached
-      if self.ncores > 1 and tick_ctr % self.core_switch_ival == 0 and self.enable_switch_cores:
+      # switch the core
+      if self.ncores > 1:
         core_id = ( core_id + 1 ) % self.ncores
-        if self.ncores > 1:
-          core_id = hint( core_id, promote=True )
-          # here, we try switching until we find a core that's running.
-          # this is an optimization when cores call the exit syscall and
-          # no longer need to be ticked
-          while True:
-            s       = self.states[ core_id ]
-            if s.running:
-              break
-
-        jitdriver.can_enter_jit(
-          pc        = s.fetch_pc(),
-          core_id   = core_id,
-          tick_ctr  = tick_ctr,
-          max_insts = max_insts,
-          state     = s,
-          sim       = self,
-        )
-
-      elif s.fetch_pc() <= old:
-        # experiment with switching core id here
-        if self.ncores > 1:
-          core_id = hint( core_id, promote=True )
-          # here, we try switching until we find a core that's running.
-          # this is an optimization when cores call the exit syscall and
-          # no longer need to be ticked
-          while True:
-            core_id = self.next_core_id( core_id )
-            s       = self.states[ core_id ]
-            if s.running:
-              break
+        core_id = hint( core_id, promote=True )
+        # here, we try switching until we find a core that's running.
+        # this is an optimization when cores call the exit syscall and
+        # no longer need to be ticked
+        while True:
+          s       = self.states[ core_id ]
+          if s.running:
+            break
 
         jitdriver.can_enter_jit(
           pc        = s.fetch_pc(),
@@ -287,16 +236,6 @@ class Sim( object ):
 
     print '\nDONE! Status =', s.status
     print 'Total Ticks Simulated = %d' % tick_ctr
-
-    # shreesha: dump any remaining stuff
-    if self.trace_dump:
-      for state in self.states:
-        if len(state.trace) != 0:
-          for entry in state.trace:
-            for item in entry:
-              self.trace_writer.write("%x," % item)
-            self.trace_writer.write("\n")
-      self.trace_writer.close()
 
     # show all stats
     for i, state in enumerate( self.states ):
@@ -341,10 +280,6 @@ class Sim( object ):
                            "--pkernel",
                            "--core-type",
                            "--stats-core-type",
-                           "--enable-trace",
-                           "--enable-switch-cores",
-                           "--trace-dump-interval",
-                           "--outdir"
                          ]
 
       # go through the args one by one and parse accordingly
@@ -418,18 +353,6 @@ class Sim( object ):
           elif prev_token == "--stats-core-type":
             stats_core_type = int( token )
 
-          elif prev_token == "--enable-switch-cores":
-            self.enable_switch_cores = True
-
-          elif prev_token == "--enable-trace":
-            self.trace_dump = True
-
-          elif prev_token == "--outdir":
-            self.outdir = token
-
-          elif prev_token == "--trace-dump-interval":
-            self.trace_dump_interval = int( token )
-
           prev_token = ""
 
       if filename_idx == 0:
@@ -480,16 +403,6 @@ class Sim( object ):
       # Close after loading
 
       exe_file.close()
-
-      # shreesha: trace
-      if self.trace_dump:
-        try:
-          self.trace_writer = open(self.outdir+"/trace.csv", "w")
-          self.trace_writer.write("pid,cid,pc,ret_cnt,nan\n")
-
-        except IOError:
-          print "Could not open the trace.csv"
-          return 1
 
       # Execute the program
 
