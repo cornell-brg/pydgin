@@ -253,6 +253,7 @@ encodings = [
   ['psync',    '111100_00000_00000_00000_00000_000000'],
   ['mtx',      '010010_xxxxx_xxxxx_00000_xxxxx_xxxxxx'],
   ['mfx',      '010010_xxxxx_xxxxx_00001_xxxxx_xxxxxx'],
+  ['mtxr',     '010010_xxxxx_xxxxx_00010_xxxxx_xxxxxx'],
   #---------------------------------------------------------------------
   # Misc
   #---------------------------------------------------------------------
@@ -344,6 +345,8 @@ def execute_mtc0( s, inst ):
     s.stats_en = s.rf[inst.rt]
   elif inst.rd == reg_map['c0_staten']:
     s.stats_en = s.rf[inst.rt]
+  elif inst.rd == reg_map['c0_tidmask']:
+    pass
 
   #elif inst.rd ==  2: pass
   #  if sink[ s.sink_ptr ] != s.rf[ inst.rt ]:
@@ -1166,6 +1169,24 @@ def execute_mtx( s, inst ):
 # Move a value from the accelerator regfile to the scalar regfile.
 def execute_mfx( s, inst ):
   s.scalar_rf[inst.rt] = s.xpc_rf[inst.rs]
+  s.pc += 4
+
+#-------------------------------------------------------------------------
+# mtxr
+#-------------------------------------------------------------------------
+# shreesha: 11/17/2017
+# NOTE: HACK
+# using mtxr as an instruction to broadcast the in_use bits which is called
+# in the spawn_group function
+#
+# shamt = nthreads
+# rs = address
+
+def execute_mtxr( s, inst ):
+  base = s.rf[inst.rs]
+  for i in range( 1, s.rf[inst.shamt] ):
+    offset = i * 4
+    s.mem.write( base+offset, 4, 1 )
   s.pc += 4
 
 #-----------------------------------------------------------------------
