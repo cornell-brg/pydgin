@@ -218,8 +218,6 @@ def gen_trace_per_app( evaldict ):
 
         # additional pydgin specifc options for task tracing
         extra_pydgin_opts = ""
-        extra_pydgin_opts = " --enable-trace 1 --enable-switch-cores 1 "
-        extra_pydgin_opts = extra_pydgin_opts + "--outdir %(outdir)s " % { 'outdir' : app_results_dir }
 
         pydgin_cmd = ' '.join([
           # pydgin binary
@@ -257,7 +255,7 @@ def gen_trace_per_app( evaldict ):
         taskdict = { \
             'basename' : basename,
             'name'     : labeled_app,
-            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd, analyze_cmd],
+            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd],
             'targets'  : targets,
             'task_dep' : [ 'link-apps' ],
             'file_dep' : [ app_binary ],
