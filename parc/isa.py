@@ -346,7 +346,7 @@ def execute_mtc0( s, inst ):
   elif inst.rd == reg_map['c0_staten']:
     s.stats_en = s.rf[inst.rt]
   elif inst.rd == reg_map['c0_tidmask']:
-    pass
+    s.sim_ptr.active_cores = s.rf[inst.rt]
 
   #elif inst.rd ==  2: pass
   #  if sink[ s.sink_ptr ] != s.rf[ inst.rt ]:
@@ -854,8 +854,11 @@ def execute_xloop( s, inst ):
 # stop
 #-----------------------------------------------------------------------
 def execute_stop( s, inst ):
-  print 'WARNING: stop implemented as noop!'
-  s.pc += 4
+  if s.sim_ptr.barrier_count != s.sim_ptr.active_cores and not s.stop:
+    s.sim_ptr.barrier_count += 1
+    s.stop = True
+  elif s.sim_ptr.barrier_count == s.sim_ptr.active_cores:
+    s.pc += 4
 
 #-----------------------------------------------------------------------
 # utidx
@@ -1151,8 +1154,13 @@ def execute_pcallrx( s, inst ):
 #-------------------------------------------------------------------------
 # psync
 #-------------------------------------------------------------------------
-# Treat as a nop for serial semantics of pcall.
+# shreesha: HACK to clear hardware barrier semantics and is probably only
+# required for pydgin
+
 def execute_psync( s, inst ):
+  for i in range( s.sim_ptr.active_cores ):
+    s.sim_ptr.states[i].stop = False
+  s.sim_ptr.barrier_count = 0
   s.pc += 4
 
 #-------------------------------------------------------------------------

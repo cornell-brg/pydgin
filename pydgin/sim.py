@@ -58,6 +58,8 @@ class Sim( object ):
     self.ncores = 1
     self.core_switch_ival = 1
     self.pkernel_bin = None
+    self.barrier_count = 0
+    self.active_cores = 0
 
   #-----------------------------------------------------------------------
   # decode
