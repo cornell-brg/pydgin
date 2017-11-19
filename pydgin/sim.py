@@ -63,6 +63,11 @@ class Sim( object ):
     self.barrier_count = 0
     self.active_cores = 0
     self.linetrace = False
+    self.analysis = False
+    self.reconvergence = 0
+    self.active = None
+    self.unique_insts = 0
+    self.total_insts = 0
 
   #-----------------------------------------------------------------------
   # decode
@@ -119,6 +124,9 @@ class Sim( object ):
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
     --linetrace     Turn on linetrace for parallel mode
+    --analysis      Use the options below
+        0 No reconvergence
+        1 Min-pc, opportunistic
   """
 
   #-----------------------------------------------------------------------
@@ -205,6 +213,18 @@ class Sim( object ):
       s.num_insts += 1    # TODO: should this be done inside instruction definition?
       if s.stats_en: s.stat_num_insts += 1
 
+      # shreesha: analysis implementation
+      if self.analysis and s.core_id == self.ncores-1 and self.states[0].parallel_mode:
+        pc_list = []
+        # No reconvergence
+        if self.reconvergence == 0:
+          for i in range( self.ncores ):
+            if self.states[i].pc not in pc_list and self.active[i]:
+              pc_list.append( self.states[i].pc )
+            if self.active[i]:
+              self.total_insts += 1
+          self.unique_insts += len( pc_list )
+
       if self.linetrace and s.core_id == self.ncores-1 and self.states[0].parallel_mode:
         for i in range( self.ncores ):
           print pad( "%x |" % self.states[0].pc, 8, " ", False ),
@@ -247,6 +267,11 @@ class Sim( object ):
 
     print '\nDONE! Status =', s.status
     print 'Total Ticks Simulated = %d' % tick_ctr
+    print 'Unique Insts in parallel regions = %d' % self.unique_insts
+    print 'Total Insts in parallel regions = %d' % self.total_insts
+    redundant_insts = ( self.total_insts - self.unique_insts )
+    print 'Redundant Insts in parallel regions = %d' % redundant_insts
+    print 'Potential savings in parallel regions = %f' % ( 100*redundant_insts / float( self.total_insts ) )
 
     # show all stats
     for i, state in enumerate( self.states ):
@@ -292,6 +317,7 @@ class Sim( object ):
                            "--core-type",
                            "--stats-core-type",
                            "--linetrace",
+                           "--analysis"
                          ]
 
       # go through the args one by one and parse accordingly
@@ -355,6 +381,7 @@ class Sim( object ):
 
           elif prev_token == "--ncores":
             self.ncores = int( token )
+            self.active = [False] * int( token )
 
           elif prev_token == "--core-switch-ival":
             self.core_switch_ival = int( token )
@@ -367,6 +394,10 @@ class Sim( object ):
 
           elif prev_token == "--stats-core-type":
             stats_core_type = int( token )
+
+          elif prev_token == "--analysis":
+            self.analysis = True
+            self.reconvergence = int( token )
 
           prev_token = ""
 
