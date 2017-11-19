@@ -65,7 +65,6 @@ class Sim( object ):
     self.linetrace = False
     self.analysis = False
     self.reconvergence = 0
-    self.active = None
     self.unique_insts = 0
     self.total_insts = 0
 
@@ -190,16 +189,17 @@ class Sim( object ):
         inst_bits = mem.iread( pc, 4 )
 
       try:
-        inst, exec_fun = self.decode( inst_bits )
+        if s.active:
+          inst, exec_fun = self.decode( inst_bits )
 
-        if s.debug.enabled( "insts" ):
-          print "c%s %s %s %s" % (
-                  core_id,
-                  pad_hex( inst_bits ),
-                  pad( inst.str, 12 ),
-                  pad( "%d" % s.num_insts, 8 ), ),
+          if s.debug.enabled( "insts" ):
+            print "c%s %s %s %s" % (
+                    core_id,
+                    pad_hex( inst_bits ),
+                    pad( inst.str, 12 ),
+                    pad( "%d" % s.num_insts, 8 ), ),
 
-        exec_fun( s, inst )
+          exec_fun( s, inst )
 
       except FatalError as error:
         print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
@@ -208,26 +208,43 @@ class Sim( object ):
 
       # this is the simulator's tick counter, which is total number of
       # ticks across different cores simulated
-      tick_ctr += 1
+      #tick_ctr += 1
 
       s.num_insts += 1    # TODO: should this be done inside instruction definition?
       if s.stats_en: s.stat_num_insts += 1
 
       # shreesha: analysis implementation
-      if self.analysis and s.core_id == self.ncores-1 and self.states[0].parallel_mode:
-        pc_list = []
+      if self.analysis and tick_ctr % self.ncores == 0 and self.states[0].parallel_mode:
         # No reconvergence
         if self.reconvergence == 0:
+          pc_list = []
           for i in range( self.ncores ):
-            if self.states[i].pc not in pc_list and self.active[i]:
+            if self.states[i].pc not in pc_list and self.states[i].active:
               pc_list.append( self.states[i].pc )
-            if self.active[i]:
+            if self.states[i].active:
               self.total_insts += 1
           self.unique_insts += len( pc_list )
+        # Min-pc, opportunisitic reconvergence
+        elif self.reconvergence == 1:
+          # find the minimum-pc
+          min_pc = sys.maxint
+          for i in range( self.ncores ):
+            if self.states[i].pc <= min_pc:
+              min_pc = self.states[i].pc
+          # advance only the min-pc candidates
+          for i in range( self.ncores ):
+            if self.states[i].pc == min_pc:
+              self.states[i].active = True
+            else:
+              self.states[i].active = False
+            if self.states[i].active:
+              self.total_insts += 1
+          self.unique_insts += 1
 
-      if self.linetrace and s.core_id == self.ncores-1 and self.states[0].parallel_mode:
+      # shreesha: linetrace support
+      if self.linetrace and tick_ctr % self.ncores == 0 and self.states[0].parallel_mode:
         for i in range( self.ncores ):
-          print pad( "%x |" % self.states[0].pc, 8, " ", False ),
+          print pad( "%x |" % self.states[i].pc, 8, " ", False ),
         print
 
       # shreesha: collect instrs in serial region if stats has been enabled
@@ -246,13 +263,14 @@ class Sim( object ):
 
       # switch the core
       if self.ncores > 1:
-        core_id = ( core_id + 1 ) % self.ncores
         core_id = hint( core_id, promote=True )
         # here, we try switching until we find a core that's running.
         # this is an optimization when cores call the exit syscall and
         # no longer need to be ticked
         while True:
-          s       = self.states[ core_id ]
+          core_id = self.next_core_id( core_id )
+          s = self.states[ core_id ]
+          tick_ctr += 1
           if s.running:
             break
 
@@ -271,7 +289,8 @@ class Sim( object ):
     print 'Total Insts in parallel regions = %d' % self.total_insts
     redundant_insts = ( self.total_insts - self.unique_insts )
     print 'Redundant Insts in parallel regions = %d' % redundant_insts
-    print 'Potential savings in parallel regions = %f' % ( 100*redundant_insts / float( self.total_insts ) )
+    if self.total_insts:
+      print 'Potential savings in parallel regions = %f' % ( 100*redundant_insts / float( self.total_insts ) )
 
     # show all stats
     for i, state in enumerate( self.states ):
@@ -381,7 +400,6 @@ class Sim( object ):
 
           elif prev_token == "--ncores":
             self.ncores = int( token )
-            self.active = [False] * int( token )
 
           elif prev_token == "--core-switch-ival":
             self.core_switch_ival = int( token )

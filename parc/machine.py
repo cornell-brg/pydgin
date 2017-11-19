@@ -90,6 +90,7 @@ class State( Machine ):
     self.parallel_section = 0
     self.sim_ptr = None
     self.stop = False
+    self.active = True
 
     # stats region
     # NOTE: At the moment, we allow for 16 named stats regions
