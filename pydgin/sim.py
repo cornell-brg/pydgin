@@ -58,8 +58,11 @@ class Sim( object ):
     self.ncores = 1
     self.core_switch_ival = 1
     self.pkernel_bin = None
+
+    # shreesha: adding extra stuff here
     self.barrier_count = 0
     self.active_cores = 0
+    self.linetrace = False
 
   #-----------------------------------------------------------------------
   # decode
@@ -115,6 +118,7 @@ class Sim( object ):
     --pkernel <f>   Load pkernel binary
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
+    --linetrace     Turn on linetrace for parallel mode
   """
 
   #-----------------------------------------------------------------------
@@ -201,6 +205,11 @@ class Sim( object ):
       s.num_insts += 1    # TODO: should this be done inside instruction definition?
       if s.stats_en: s.stat_num_insts += 1
 
+      if self.linetrace and s.core_id == self.ncores-1 and self.states[0].parallel_mode:
+        for i in range( self.ncores ):
+          print pad( "%x |" % self.states[0].pc, 8, " ", False ),
+        print
+
       # shreesha: collect instrs in serial region if stats has been enabled
       if s.stats_en and ( not s.parallel_mode ): s.serial_insts += 1
 
@@ -282,6 +291,7 @@ class Sim( object ):
                            "--pkernel",
                            "--core-type",
                            "--stats-core-type",
+                           "--linetrace",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -307,6 +317,9 @@ class Sim( object ):
             if not Debug.global_enabled:
               print "WARNING: debugs are not enabled for this translation. " + \
                     "To allow debugs, translate with --debug option."
+
+          elif token == "--linetrace":
+            self.linetrace = True
 
           elif token in tokens_with_args:
             prev_token = token
