@@ -1248,7 +1248,11 @@ def execute_stat( s, inst ):
     s.returns = 0
     s.stats_on[6] = s.sim_ptr.states[0].stat_num_insts
     s.parallel_section = s.parallel_section + 1
+    if s.core_id == 0:
+      print "Start parallel section:", s.parallel_section
   elif (not stat_en) and stat_id == 6 and s.sim_ptr.states[0].stats_en:
+    if s.core_id == 0:
+      print "End parallel section:", s.parallel_section
     s.stats_counts[6] = s.stats_counts[6] + 1
     s.stats_insts[6]  += s.sim_ptr.states[0].stat_num_insts - s.stats_on[6]
     s.parallel_mode = False

@@ -214,25 +214,27 @@ class Sim( object ):
       if s.stats_en: s.stat_num_insts += 1
 
       # shreesha: analysis implementation
-      if self.analysis and tick_ctr % self.ncores == 0 and self.states[0].parallel_mode:
+      if self.analysis and s.core_id == self.active_cores-1 and self.states[0].parallel_mode:
+
         # No reconvergence
         if self.reconvergence == 0:
           pc_list = []
-          for i in range( self.ncores ):
+          for i in range( self.active_cores ):
             if self.states[i].pc not in pc_list and self.states[i].active:
               pc_list.append( self.states[i].pc )
             if self.states[i].active:
               self.total_insts += 1
           self.unique_insts += len( pc_list )
+
         # Min-pc, opportunisitic reconvergence
         elif self.reconvergence == 1:
           # find the minimum-pc
           min_pc = sys.maxint
-          for i in range( self.ncores ):
+          for i in range( self.active_cores ):
             if self.states[i].pc <= min_pc:
               min_pc = self.states[i].pc
           # advance only the min-pc candidates
-          for i in range( self.ncores ):
+          for i in range( self.active_cores ):
             if self.states[i].pc == min_pc:
               self.states[i].active = True
             else:
@@ -242,9 +244,12 @@ class Sim( object ):
           self.unique_insts += 1
 
       # shreesha: linetrace support
-      if self.linetrace and tick_ctr % self.ncores == 0 and self.states[0].parallel_mode:
+      if self.linetrace and s.core_id == self.ncores - 1 and self.states[0].parallel_mode:
         for i in range( self.ncores ):
-          print pad( "%x |" % self.states[i].pc, 8, " ", False ),
+          if self.states[i].active:
+            print pad( "%x |" % self.states[i].pc, 8, " ", False ),
+          else:
+            print pad( " |" % self.states[i].pc, 8, " ", False ),
         print
 
       # shreesha: collect instrs in serial region if stats has been enabled
