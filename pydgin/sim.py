@@ -155,66 +155,63 @@ class Sim( object ):
 
     core_id = 0
     tick_ctr = 0
-    s = self.states[ core_id ]
 
     # use proc 0 to determine if should be running
     while self.states[0].running:
 
-      jitdriver.jit_merge_point(
-        pc        = s.fetch_pc(),
-        core_id   = core_id,
-        tick_ctr  = tick_ctr,
-        max_insts = max_insts,
-        state     = s,
-        sim       = self,
-      )
+      for core_id in xrange( self.ncores ):
+        s = self.states[ core_id ]
 
-      # constant-fold pc and mem
-      pc = hint( s.fetch_pc(), promote=True )
-      old = pc
-      # should be safe to constant fold memory
-      mem = hint( s.mem, promote=True )
-
-      if s.debug.enabled( "insts" ):
-        print pad( "%x" % pc, 8, " ", False ),
-
-      # the print statement in memcheck conflicts with @elidable in iread.
-      # So we use normal read if memcheck is enabled which includes the
-      # memory checks
-
-      if s.debug.enabled( "memcheck" ):
-        inst_bits = mem.read( pc, 4 )
-      else:
-        # we use trace elidable iread instead of just read
-        inst_bits = mem.iread( pc, 4 )
-
-      try:
         if s.active:
-          inst, exec_fun = self.decode( inst_bits )
+          # constant-fold pc and mem
+          pc = hint( s.fetch_pc(), promote=True )
+          old = pc
+          # should be safe to constant fold memory
+          mem = hint( s.mem, promote=True )
 
           if s.debug.enabled( "insts" ):
-            print "c%s %s %s %s" % (
-                    core_id,
-                    pad_hex( inst_bits ),
-                    pad( inst.str, 12 ),
-                    pad( "%d" % s.num_insts, 8 ), ),
+            print pad( "%x" % pc, 8, " ", False ),
 
-          exec_fun( s, inst )
+          # fetch
+          inst_bits = mem.iread( pc, 4 )
 
-      except FatalError as error:
-        print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
-        print "Exception message: %s" % error.msg
-        break
+          try:
+            inst, exec_fun = self.decode( inst_bits )
 
-      # this is the simulator's tick counter, which is total number of
-      # ticks across different cores simulated
-      #tick_ctr += 1
+            if s.debug.enabled( "insts" ):
+              print "c%s %s %s %s" % (
+                      core_id,
+                      pad_hex( inst_bits ),
+                      pad( inst.str, 12 ),
+                      pad( "%d" % s.num_insts, 8 ), ),
 
-      s.num_insts += 1    # TODO: should this be done inside instruction definition?
-      if s.stats_en: s.stat_num_insts += 1
+            exec_fun( s, inst )
+
+          except FatalError as error:
+            print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
+            print "Exception message: %s" % error.msg
+            break
+
+          s.num_insts += 1
+          if s.stats_en: s.stat_num_insts += 1
+
+          # shreesha: collect instrs in serial region if stats has been enabled
+          if s.stats_en and ( not s.parallel_mode ): s.serial_insts += 1
+
+          if s.debug.enabled( "insts" ):
+            print
+          if s.debug.enabled( "regdump" ):
+            s.rf.print_regs( per_row=4 )
+
+          # check if we have reached the end of the maximum instructions and
+          # exit if necessary
+          if max_insts != 0 and s.num_insts >= max_insts:
+            print "Reached the max_insts (%d), exiting." % max_insts
+            break
+
 
       # shreesha: analysis implementation
-      if self.analysis and s.core_id == self.active_cores-1:
+      if self.analysis:
         parallel_mode = False
         for i in range( self.active_cores ):
           parallel_mode |= self.states[i].parallel_mode
@@ -254,7 +251,7 @@ class Sim( object ):
             if unique: self.unique_insts += 1
 
       # shreesha: linetrace
-      if self.linetrace and s.core_id == self.active_cores-1:
+      if self.linetrace:
         parallel_mode = False
         for i in range( self.active_cores ):
           parallel_mode |= self.states[i].parallel_mode
@@ -267,43 +264,7 @@ class Sim( object ):
               print pad( " |" % self.states[i].pc, 8, " ", False ),
           print
 
-      # shreesha: collect instrs in serial region if stats has been enabled
-      if s.stats_en and ( not s.parallel_mode ): s.serial_insts += 1
-
-      if s.debug.enabled( "insts" ):
-        print
-      if s.debug.enabled( "regdump" ):
-        s.rf.print_regs( per_row=4 )
-
-      # check if we have reached the end of the maximum instructions and
-      # exit if necessary
-      if max_insts != 0 and s.num_insts >= max_insts:
-        print "Reached the max_insts (%d), exiting." % max_insts
-        break
-
-      # switch the core
-      if self.ncores > 1:
-        core_id = hint( core_id, promote=True )
-        # here, we try switching until we find a core that's running.
-        # this is an optimization when cores call the exit syscall and
-        # no longer need to be ticked
-        while True:
-          core_id = self.next_core_id( core_id )
-          s = self.states[ core_id ]
-          tick_ctr += 1
-          if s.running:
-            break
-
-        jitdriver.can_enter_jit(
-          pc        = s.fetch_pc(),
-          core_id   = core_id,
-          tick_ctr  = tick_ctr,
-          max_insts = max_insts,
-          state     = s,
-          sim       = self,
-        )
-
-    print '\nDONE! Status =', s.status
+    print '\nDONE! Status =', self.states[0].status
     print 'Total Ticks Simulated = %d' % tick_ctr
     print 'Unique Insts in parallel regions = %d' % self.unique_insts
     print 'Total Insts in parallel regions = %d' % self.total_insts
@@ -420,6 +381,7 @@ class Sim( object ):
 
           elif prev_token == "--ncores":
             self.ncores = int( token )
+            self.active_cores = self.ncores
 
           elif prev_token == "--core-switch-ival":
             self.core_switch_ival = int( token )

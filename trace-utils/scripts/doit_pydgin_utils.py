@@ -217,7 +217,7 @@ def gen_trace_per_app( evaldict ):
         #........................
 
         # additional pydgin specifc options for task tracing
-        extra_pydgin_opts = " --analysis 1 "
+        extra_pydgin_opts = " --analysis 0 "
 
         pydgin_cmd = ' '.join([
           # pydgin binary
