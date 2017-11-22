@@ -110,21 +110,21 @@ def syscall_parc( s, arg0, arg1, arg2 ):
   # check if pkernel is enabled
   if s.pkernel:
     # shreesha: implement the sendam syscall emulation
-    if syscall_number == 4001:
-      sim = s.sim_ptr
-      # copy the gp and set the pc for non-worker cores
-      for i in range( 1, sim.ncores ):
-        sim.states[i].rf[ gp ] = s.rf[ gp ]
-        sim.states[i].pc       = arg1
-      return 0, 0
-    else:
-      # store current pc in epc
-      s.epc = s.pc
-      # we just handle syscalls in the pkernel using the exception handler
-      # in the memory
-      # hack: using except_addr - 4 because the instruction increments this
-      s.pc  = s.except_addr - 4
-      raise NoopSyscall
+    #if syscall_number == 4001:
+    #  sim = s.sim_ptr
+    #  # copy the gp and set the pc for non-worker cores
+    #  for i in range( 1, sim.ncores ):
+    #    sim.states[i].rf[ gp ] = s.rf[ gp ]
+    #    sim.states[i].pc       = arg1
+    #  return 0, 0
+    #else:
+    # store current pc in epc
+    s.epc = s.pc
+    # we just handle syscalls in the pkernel using the exception handler
+    # in the memory
+    # hack: using except_addr - 4 because the instruction increments this
+    s.pc  = s.except_addr - 4
+    raise NoopSyscall
 
   else:
     # non-pkernel currently only knows about syscall_numcores

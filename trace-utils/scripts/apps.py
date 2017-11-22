@@ -64,17 +64,15 @@ app_list_spmd = [
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc',
   'pbbs-bfs-ndBFS-parc',
-  #"pbbs-csort-quickSort-parc", -- no parallelization but works so dont run it
-  #"pbbs-csort-sampleSort-parc", -- doesn't work on tiny/small
   'pbbs-dict-deterministicHash-parc',
   'pbbs-hull-quickHull-parc',
-  #'pbbs-isort-blockRadixSort-parc', -- doesn't work on tiny/small
+  #'pbbs-isort-blockRadixSort-parc', -- figure out the issue here!
   'pbbs-knn-octTree2Neighbors-parc',
-  #'pbbs-mis-ndMIS-parc', -- deadlock?
+  'pbbs-mis-ndMIS-parc', # -- deadlock?
   'pbbs-nbody-parallelBarnesHut-parc',
   'pbbs-rdups-deterministicHash-parc',
   'pbbs-sa-parallelRange-parc',
-  #'pbbs-st-ndST-parc', -- deadlock?
+  'pbbs-st-ndST-parc', # -- deadlock?
 ]
 
 #----------------------------------------------------------------------------

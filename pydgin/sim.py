@@ -67,6 +67,7 @@ class Sim( object ):
     self.reconvergence = 0
     self.unique_insts = 0
     self.total_insts = 0
+    self.total_steps = 0
 
   #-----------------------------------------------------------------------
   # decode
@@ -159,10 +160,12 @@ class Sim( object ):
     # use proc 0 to determine if should be running
     while self.states[0].running:
 
+      active = False
       for core_id in xrange( self.ncores ):
         s = self.states[ core_id ]
 
         if s.active:
+          active |= True
           # constant-fold pc and mem
           pc = hint( s.fetch_pc(), promote=True )
           old = pc
@@ -209,6 +212,19 @@ class Sim( object ):
             print "Reached the max_insts (%d), exiting." % max_insts
             break
 
+      if not active:
+        print "Something wrong no cores are active!"
+        break
+
+      # check if the count of the barrier is equal to the number of active
+      # cores, reset the hardware barrier
+      if self.barrier_count == self.active_cores:
+        for i in xrange( self.active_cores ):
+          if not self.states[i].active:
+            self.states[i].active = True
+
+      # count steps in stats region
+      if self.states[0].stats_en: self.total_steps += 1
 
       # shreesha: analysis implementation
       if self.analysis:
@@ -268,6 +284,7 @@ class Sim( object ):
     print 'Total Ticks Simulated = %d' % tick_ctr
     print 'Unique Insts in parallel regions = %d' % self.unique_insts
     print 'Total Insts in parallel regions = %d' % self.total_insts
+    print 'Total steps in stats region = %d' % self.total_steps
     redundant_insts = ( self.total_insts - self.unique_insts )
     print 'Redundant Insts in parallel regions = %d' % redundant_insts
     if self.total_insts:
