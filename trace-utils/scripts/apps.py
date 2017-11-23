@@ -72,7 +72,7 @@ app_list_spmd = [
   'pbbs-nbody-parallelBarnesHut-parc',
   'pbbs-rdups-deterministicHash-parc',
   'pbbs-sa-parallelRange-parc',
-  'pbbs-st-ndST-parc', # -- deadlock?
+  #'pbbs-st-ndST-parc', # -- deadlock? -- still not working
 ]
 
 #----------------------------------------------------------------------------

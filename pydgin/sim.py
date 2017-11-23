@@ -30,6 +30,78 @@ def jitpolicy(driver):
   return JitPolicy()
 
 #-------------------------------------------------------------------------
+# Round-robin + Min-pc arbiter
+#-------------------------------------------------------------------------
+
+class RoundRobinMinPCArbiter():
+
+  def __init__( s ):
+    s.top_priority = 0
+    s.switch_interval = 0
+
+  def set_state( s, active_cores ):
+    s.switch_interval = active_cores + 1
+    s.top_priority = 0
+
+  def advance_pcs( s, sim ):
+    # find the minimum-pc
+    min_pc = sys.maxint
+    pc_list = []
+    for i in range( sim.active_cores ):
+      if sim.states[i].pc < min_pc and sim.states[i].parallel_mode:
+        min_pc = sim.states[i].pc
+      elif not sim.states[i].parallel_mode and not sim.states[i].stop:
+        sim.states[i].active = True
+      pc_list.append( sim.states[i].pc )
+
+    # advance matching min-pcs
+    if s.switch_interval == sim.active_cores:
+      next_pc = sim.states[s.top_priority].pc
+      if sim.states[s.top_priority].parallel_mode:
+        s.top_priority = 0 if s.top_priority == sim.active_cores-1 else s.top_priority+1
+        min_pc = next_pc
+
+    #print "[",
+    #for x in pc_list:
+    #  print hex(x), ",",
+    #print "] min_pc: ", hex(min_pc)
+
+    for i in range( sim.active_cores ):
+      if sim.states[i].pc == min_pc and sim.states[i].parallel_mode:
+        sim.states[i].active = True
+        sim.total_insts += 1
+      elif sim.states[i].parallel_mode:
+        sim.states[i].active = False
+    sim.unique_insts += 1
+    s.switch_interval -= 1
+    if s.switch_interval == 0:
+      s.switch_interval = sim.active_cores + 1
+
+    # no divergence
+    #if len( pc_list ) == 1:
+    #  sim.total_insts += sim.active_cores
+    #  sim.unique_insts += 1
+    ## divergence
+    #else:
+    #  # advance matching min-pcs
+    #  if s.switch_interval > sim.active_cores:
+    #    for i in range( sim.active_cores ):
+    #      if sim.states[i].pc == min_pc:
+    #        sim.states[i].active = True
+    #        sim.total_insts += 1
+    #    s.switch_interval -= 1
+    #    sim.unique_insts += 1
+    #  # round-robin arbitrate
+    #  # NOTE: I am not sure if this is a good policy...
+    #  else:
+    #    sim.states[s.top_priority].active = True
+    #    sim.unique_insts += 1
+    #    sim.total_insts += 1
+    #    s.top_priority = 0 if s.top_priority == sim.active_cores-1 else s.top_priority+1
+    #    if s.switch_interval == 0:
+    #      s.switch_interval = sim.active_cores + 1
+
+#-------------------------------------------------------------------------
 # Sim
 #-------------------------------------------------------------------------
 # Abstract simulator class
@@ -68,6 +140,8 @@ class Sim( object ):
     self.unique_insts = 0
     self.total_insts = 0
     self.total_steps = 0
+    self.arbiter = RoundRobinMinPCArbiter()
+    self.switch_pc_interval = 0
 
   #-----------------------------------------------------------------------
   # decode
@@ -161,16 +235,18 @@ class Sim( object ):
     while self.states[0].running:
 
       active = False
+      for i in xrange( self.ncores ):
+        active |= self.states[i].active
+      if not active:
+        print "Something wrong no cores are active!"
+        raise AssertionError
+
       for core_id in xrange( self.ncores ):
         s = self.states[ core_id ]
 
         if s.active:
-          active |= True
-          # constant-fold pc and mem
-          pc = hint( s.fetch_pc(), promote=True )
-          old = pc
-          # should be safe to constant fold memory
-          mem = hint( s.mem, promote=True )
+          pc = s.fetch_pc()
+          mem = s.mem
 
           if s.debug.enabled( "insts" ):
             print pad( "%x" % pc, 8, " ", False ),
@@ -212,17 +288,6 @@ class Sim( object ):
             print "Reached the max_insts (%d), exiting." % max_insts
             break
 
-      if not active:
-        print "Something wrong no cores are active!"
-        break
-
-      # check if the count of the barrier is equal to the number of active
-      # cores, reset the hardware barrier
-      if self.barrier_count == self.active_cores:
-        for i in xrange( self.active_cores ):
-          if not self.states[i].active:
-            self.states[i].active = True
-
       # count steps in stats region
       if self.states[0].stats_en: self.total_steps += 1
 
@@ -246,25 +311,15 @@ class Sim( object ):
             self.unique_insts += len( pc_list )
 
           # Min-pc, opportunisitic reconvergence
-          # NOTE: Only consider cores in the parallel region
           elif self.reconvergence == 1:
-            # find the minimum-pc
-            min_pc = sys.maxint
-            for i in range( self.active_cores ):
-              if self.states[i].pc <= min_pc and self.states[i].parallel_mode:
-                min_pc = self.states[i].pc
-            # advance only the min-pc candidates
-            unique = False
-            for i in range( self.active_cores ):
-              if self.states[i].parallel_mode:
-                if self.states[i].pc == min_pc:
-                  self.states[i].active = True
-                  unique = True
-                else:
-                  self.states[i].active = False
-                if self.states[i].active:
-                  self.total_insts += 1
-            if unique: self.unique_insts += 1
+            self.arbiter.advance_pcs( self )
+
+      # check if the count of the barrier is equal to the number of active
+      # cores, reset the hardware barrier
+      if self.barrier_count == self.active_cores:
+        for i in xrange( self.active_cores ):
+          if not self.states[i].active:
+            self.states[i].active = True
 
       # shreesha: linetrace
       if self.linetrace:
@@ -274,6 +329,7 @@ class Sim( object ):
 
         if parallel_mode:
           for i in range( self.ncores ):
+            #print pad( "%x %d |" % ( self.states[i].pc, self.states[i].active ), 8, " ", False ),
             if self.states[i].active and self.states[i].parallel_mode:
               print pad( "%x |" % self.states[i].pc, 8, " ", False ),
             else:
@@ -399,6 +455,8 @@ class Sim( object ):
           elif prev_token == "--ncores":
             self.ncores = int( token )
             self.active_cores = self.ncores
+            self.arbiter.set_state( self.ncores )
+            self.switch_pc_interval = self.ncores
 
           elif prev_token == "--core-switch-ival":
             self.core_switch_ival = int( token )
