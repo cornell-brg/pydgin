@@ -40,66 +40,35 @@ class RoundRobinMinPCArbiter():
     s.switch_interval = 0
 
   def set_state( s, active_cores ):
-    s.switch_interval = active_cores + 1
+    s.switch_interval = active_cores
     s.top_priority = 0
 
   def advance_pcs( s, sim ):
-    # find the minimum-pc
+
     min_pc = sys.maxint
-    pc_list = []
-    for i in range( sim.active_cores ):
-      if sim.states[i].pc < min_pc and sim.states[i].parallel_mode:
-        min_pc = sim.states[i].pc
-      elif not sim.states[i].parallel_mode and not sim.states[i].stop:
-        sim.states[i].active = True
-      pc_list.append( sim.states[i].pc )
 
-    # advance matching min-pcs
-    if s.switch_interval == sim.active_cores:
-      next_pc = sim.states[s.top_priority].pc
-      if sim.states[s.top_priority].parallel_mode:
-        s.top_priority = 0 if s.top_priority == sim.active_cores-1 else s.top_priority+1
-        min_pc = next_pc
-
-    #print "[",
-    #for x in pc_list:
-    #  print hex(x), ",",
-    #print "] min_pc: ", hex(min_pc)
+    # Select the minimum-pc
+    if s.switch_interval == 0:
+      for i in range( sim.active_cores ):
+        if sim.states[i].pc < min_pc:
+          min_pc = sim.states[i].pc
+      s.switch_interval = sim.active_cores + 1
+    # Round-robin arbitration
+    else:
+      min_pc = sim.states[s.top_priority].pc
+      s.top_priority = 0 if s.top_priority == sim.active_cores-1 else s.top_priority+1
 
     for i in range( sim.active_cores ):
-      if sim.states[i].pc == min_pc and sim.states[i].parallel_mode:
+      # advance pcs that match the min-pc and make sure to not activate
+      # cores that have reached the barrier
+      if sim.states[i].pc == min_pc and not sim.states[i].stop:
         sim.states[i].active = True
         sim.total_insts += 1
-      elif sim.states[i].parallel_mode:
+      else:
         sim.states[i].active = False
+
     sim.unique_insts += 1
     s.switch_interval -= 1
-    if s.switch_interval == 0:
-      s.switch_interval = sim.active_cores + 1
-
-    # no divergence
-    #if len( pc_list ) == 1:
-    #  sim.total_insts += sim.active_cores
-    #  sim.unique_insts += 1
-    ## divergence
-    #else:
-    #  # advance matching min-pcs
-    #  if s.switch_interval > sim.active_cores:
-    #    for i in range( sim.active_cores ):
-    #      if sim.states[i].pc == min_pc:
-    #        sim.states[i].active = True
-    #        sim.total_insts += 1
-    #    s.switch_interval -= 1
-    #    sim.unique_insts += 1
-    #  # round-robin arbitrate
-    #  # NOTE: I am not sure if this is a good policy...
-    #  else:
-    #    sim.states[s.top_priority].active = True
-    #    sim.unique_insts += 1
-    #    sim.total_insts += 1
-    #    s.top_priority = 0 if s.top_priority == sim.active_cores-1 else s.top_priority+1
-    #    if s.switch_interval == 0:
-    #      s.switch_interval = sim.active_cores + 1
 
 #-------------------------------------------------------------------------
 # Sim
@@ -236,7 +205,10 @@ class Sim( object ):
 
       active = False
       for i in xrange( self.ncores ):
-        active |= self.states[i].active
+        if not self.states[i].stop:
+          active |= self.states[i].active
+        else:
+          active |= True
       if not active:
         print "Something wrong no cores are active!"
         raise AssertionError

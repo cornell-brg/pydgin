@@ -68,11 +68,11 @@ app_list_spmd = [
   'pbbs-hull-quickHull-parc',
   #'pbbs-isort-blockRadixSort-parc', -- figure out the issue here!
   'pbbs-knn-octTree2Neighbors-parc',
-  'pbbs-mis-ndMIS-parc', # -- deadlock?
+  'pbbs-mis-ndMIS-parc',
   'pbbs-nbody-parallelBarnesHut-parc',
   'pbbs-rdups-deterministicHash-parc',
   'pbbs-sa-parallelRange-parc',
-  #'pbbs-st-ndST-parc', # -- deadlock? -- still not working
+  'pbbs-st-ndST-parc',
 ]
 
 #----------------------------------------------------------------------------
