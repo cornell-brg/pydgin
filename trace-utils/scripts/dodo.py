@@ -32,10 +32,10 @@ def task_pydgin_sims_wsrt():
   evaldict = get_base_evaldict()
 
   evaldict['basename']    = "sim-pydgin-wsrt"
-  evaldict['resultsdir']  = "results-small-wsrt"
+  evaldict['resultsdir']  = "results-tiny-wsrt"
   evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
-  evaldict['app_group']   = ["small","mtpull"]
+  evaldict['app_group']   = ["tiny","mtpull"]
   evaldict['app_list']    = app_list
   evaldict['app_dict']    = app_dict
 

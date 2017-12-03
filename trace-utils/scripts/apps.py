@@ -49,7 +49,7 @@ app_list = [
   'pbbs-rdups-deterministicHash-parc-mtpull',
   'pbbs-sa-parallelRange-parc-mtpull',
   'pbbs-st-ndST-parc-mtpull',
-  #'pbbs-isort-blockRadixSort-parc-mtpull',
+  #'pbbs-isort-blockRadixSort-parc-mtpull', #-- not sure about this yet
 
   # cilk apps
   #'cilk-cholesky-parc-mtpull', #-- min-pc: out-of-mem assertions from the app kernel

@@ -92,6 +92,19 @@ class State( Machine ):
     self.stop = False
     self.active = True
 
+    # flag to indicate runtime mode
+    self.runtime_mode = False
+    # runtime ras
+    self.runtime_ras = []
+
+    # flag to indicate task mode
+    self.task_mode = False
+    # task ras
+    self.task_ras = []
+
+    # runtime addr,name dict
+    self.runtime_dict = {}
+
     # stats region
     # NOTE: At the moment, we allow for 16 named stats regions
     #
@@ -103,7 +116,9 @@ class State( Machine ):
     self.stats_insts  = [0]*16   # total number of dynamic instructions per-stats region
     self.stats_counts = [0]*16   # total number of times each stats region was executed
 
-    self.serial_insts = 0 # instructions count in serial section
+    self.serial_insts = 0   # instructions count in serial section
+    self.runtime_insts = 0  # instructions count in the runtime section
+    self.work_insts = 0     # instructions count in the user code/tasks
 
   def fetch_pc( self ):
     return self.pc

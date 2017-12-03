@@ -106,6 +106,24 @@ def task_link_apps():
   return taskdict
 
 #----------------------------------------------------------------------------
+# task_runtime_md()
+#----------------------------------------------------------------------------
+
+def task_runtime_md():
+
+  action = '../tools/parse-runtime-symbols links'
+
+  taskdict = {
+    'basename' : 'runtime-md',
+    'actions'  : [ action ],
+    'task_dep' : [ 'link-apps' ],
+    'uptodate' : [ False ], # always re-execute
+    'doc'      : os.path.basename(__file__).rstrip('c'),
+  }
+
+  return taskdict
+
+#----------------------------------------------------------------------------
 # get_base_evaldict()
 #----------------------------------------------------------------------------
 
@@ -217,7 +235,8 @@ def gen_trace_per_app( evaldict ):
         #........................
 
         # additional pydgin specifc options for task tracing
-        extra_pydgin_opts = " --analysis 1 "
+        extra_pydgin_opts = "--runtime-md %(runtime_md)s " % { 'runtime_md' : 'links/'+app+'.nm'}
+        extra_pydgin_opts += "--analysis 0 "
 
         pydgin_cmd = ' '.join([
           # pydgin binary
@@ -257,7 +276,7 @@ def gen_trace_per_app( evaldict ):
             'name'     : labeled_app,
             'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd],
             'targets'  : targets,
-            'task_dep' : [ 'link-apps' ],
+            'task_dep' : [ 'runtime-md' ],
             'file_dep' : [ app_binary ],
             'uptodate' : [ True ], # Don't rebuild if targets exists
             'clean'    : [ 'rm -rf {}'.format(app_results_dir) ]

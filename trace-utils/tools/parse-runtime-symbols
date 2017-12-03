@@ -46,13 +46,15 @@ g_runtime_funcs = {
   "run_and_wait" : "wsrt::TaskGroup::run_and_wait",
   "wait"         : "wsrt::TaskGroup::wait()", 
   "TaskGroup"    : "wsrt::TaskGroup::TaskGroup()",
+  "init"         : "wsrt::task_scheduler_init()",
+  "end"          : "wsrt::task_scheduler_end()",
 }
 
 #-------------------------------------------------------------------------
 # inspect_app
 #-------------------------------------------------------------------------
 
-maven_nm_cmd = "maven-nm -C --radix=d %(app)s | grep Task"
+maven_nm_cmd = "maven-nm -C --radix=d %(app)s | grep wsrt"
 
 def inspect_app( app_kernel ):
   app = os.path.dirname(os.path.abspath(__file__)) + "/../scripts/links/" + app_kernel

@@ -345,6 +345,10 @@ def execute_mtc0( s, inst ):
     s.stats_en = s.rf[inst.rt]
   elif inst.rd == reg_map['c0_staten']:
     s.stats_en = s.rf[inst.rt]
+    if s.stats_en == 1:
+      s.task_mode = True
+    elif s.stats_en == 0:
+      s.task_mode = False
   elif inst.rd == reg_map['c0_tidmask']:
     s.sim_ptr.active_cores = s.rf[inst.rt]
     s.sim_ptr.arbiter.set_state( s.rf[inst.rt] )
@@ -577,25 +581,38 @@ def execute_jal( s, inst ):
   s.rf[31] = s.pc + 4
   s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
   s.returns = s.returns + 1
+  # shreesha: tasktrace
+  # if the target address belongs to one of the runtime-related functions
+  # (TaskGroup(), run(), wait(), run_and_wait(), init(), end()), then set
+  # the runtime mode flag and record the return address if in task-mode and
+  # set the task-mode to false.
+  if s.pc in s.runtime_dict.keys():
+    if s.task_mode:
+      s.task_mode = False
+      s.task_ras.append( s.rf[31] )
+    s.runtime_mode = True
 
 #-----------------------------------------------------------------------
 # jr
 #-----------------------------------------------------------------------
-# If we are executing parallel calls, we need to treat jr as a branch
-# back to the top of the function and increment the work index. Only when
-# all the requested calls have been performed, we jump back to the return
-# address as normal. We differentiate this case from a nested function
-# call within a pcall by checking if $ra is set to a magic number. The
-# work index is assumed to be initialized in $a0.  We cannot guarantee
-# that the compiler will not overwrite $a0 inside the kernel, so we need
-# to initialize $a0 with the updated work index before looping back to
-# the start of the kernel.
-#
-# If all requested calls have been performed, we swap the active regfile
-# pointer to the scalar regfile and disable the XPC bit.
+
 def execute_jr( s, inst ):
   s.pc = s.rf[inst.rs]
   s.returns = s.returns - 1
+
+  # shreesha: tasktrace
+  # Returning to runtime-mode
+  if s.pc in s.runtime_ras:
+    s.runtime_mode = True
+    s.runtime_ras.pop()
+    s.task_mode = False
+
+  # shreesha: tasktrace
+  # Returning to task-mode
+  if s.pc in s.task_ras:
+    s.task_mode = True
+    s.task_ras.pop()
+    s.runtime_mode = False
 
 #-----------------------------------------------------------------------
 # jalr
@@ -604,6 +621,14 @@ def execute_jalr( s, inst ):
   s.rf[inst.rd] = s.pc + 4
   s.pc = s.rf[inst.rs]
   s.returns = s.returns + 1
+  # shreesha: tasktrace
+  # check if we are in runtime mode and that stat instruction code for
+  # executing a task has been set, if this is true then we are executing in
+  # task mode, record where we entered the task mode & reset runtime mode
+  if s.runtime_mode and s.stat_inst_en[10] and s.parallel_mode:
+    s.runtime_mode = False
+    s.task_mode = True
+    s.runtime_ras.append( s.rf[inst.rd] )
 
 #-----------------------------------------------------------------------
 # lui
@@ -1240,9 +1265,13 @@ def execute_stat( s, inst ):
     s.stats_on[8] = s.sim_ptr.states[0].stat_num_insts
     if s.core_id == 0:
       print "Start parallel section:", s.parallel_section, s.num_insts
+    else:
+      s.runtime_mode = True
   elif (not stat_en) and stat_id == 8 and s.sim_ptr.states[0].stats_en:
     if s.core_id == 0:
       print "End parallel section:", s.parallel_section, s.num_insts
+    else:
+      s.runtime_mode = False
     s.parallel_mode = False
     s.stats_counts[8] = s.stats_counts[8] + 1
     s.stats_insts[8] += s.sim_ptr.states[0].stat_num_insts - s.stats_on[8]

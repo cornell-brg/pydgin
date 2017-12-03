@@ -181,6 +181,7 @@ class Sim( object ):
     --analysis      Use the options below
         0 No reconvergence
         1 Min-pc, opportunistic
+    --runtime-md    Runtime metadata used in analysis
   """
 
   #-----------------------------------------------------------------------
@@ -214,6 +215,7 @@ class Sim( object ):
     # use proc 0 to determine if should be running
     while self.states[0].running:
 
+      # NOTE: Fix this assertion to be more useful
       active = False
       for i in xrange( self.ncores ):
         if not self.states[i].stop:
@@ -259,6 +261,7 @@ class Sim( object ):
 
           # shreesha: collect instrs in serial region if stats has been enabled
           if s.stats_en and ( not s.parallel_mode ): s.serial_insts += 1
+          if s.parallel_mode and s.runtime_mode: s.runtime_insts += 1
 
           if s.debug.enabled( "insts" ):
             print
@@ -348,6 +351,8 @@ class Sim( object ):
       core_type          = 0
       stats_core_type    = 0
       accel_rf           = False
+      # shreesha: runtime metadata
+      runtime_md         = None
 
       # we're using a mini state machine to parse the args
 
@@ -366,7 +371,8 @@ class Sim( object ):
                            "--core-type",
                            "--stats-core-type",
                            "--linetrace",
-                           "--analysis"
+                           "--analysis",
+                           "--runtime-md",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -450,6 +456,9 @@ class Sim( object ):
             self.analysis = True
             self.reconvergence = int( token )
 
+          elif prev_token == "--runtime-md":
+            runtime_md = token
+
           prev_token = ""
 
       if filename_idx == 0:
@@ -500,6 +509,20 @@ class Sim( object ):
       # Close after loading
 
       exe_file.close()
+
+      # shreesha: runtime metadata
+      if runtime_md:
+        try:
+          runtime_md_file = open( runtime_md, 'rb' )
+          addr_list    = [ int(n) for n in runtime_md_file.readline().strip().split(",") ]
+          name_list    = runtime_md_file.readline().strip().split(",")
+          for i in range( self.ncores ):
+            for x,addr in enumerate(addr_list):
+              self.states[i].runtime_dict[addr] = name_list[x]
+          runtime_md_file.close()
+        except IOError:
+          print "Could not open the runtime-md file %s " % runtime_md
+          return 1
 
       # Execute the program
 

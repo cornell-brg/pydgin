@@ -121,6 +121,7 @@ class ParcSim( Sim ):
       print "  Num of insts in spmd regions: %d" % ( state.stats_insts[6] )
       print "  Num of wsrt regions: %d" % ( state.stats_counts[8] )
       print "  Num of insts in wsrt regions: %d" % ( state.stats_insts[8] )
+      print "  Num of insts in runtime mode: ", state.runtime_insts
 
 # this initializes similator and allows translation and python
 # interpretation
