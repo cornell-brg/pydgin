@@ -43,16 +43,16 @@ app_list = [
   'pbbs-csort-sampleSort-parc-mtpull',
   'pbbs-dict-deterministicHash-parc-mtpull',
   'pbbs-hull-quickHull-parc-mtpull',
-  #'pbbs-isort-blockRadixSort-parc-mtpull',
-  #'pbbs-knn-octTree2Neighbors-parc-mtpull',
+  #'pbbs-knn-octTree2Neighbors-parc-mtpull', #-- min-pc: std::bad_alloc assertion
   'pbbs-mis-ndMIS-parc-mtpull',
-  #'pbbs-nbody-parallelBarnesHut-parc-mtpull',
+  #'pbbs-nbody-parallelBarnesHut-parc-mtpull', #-- exception in pydgin!
   'pbbs-rdups-deterministicHash-parc-mtpull',
   'pbbs-sa-parallelRange-parc-mtpull',
   'pbbs-st-ndST-parc-mtpull',
+  #'pbbs-isort-blockRadixSort-parc-mtpull',
 
   # cilk apps
-  'cilk-cholesky-parc-mtpull',
+  #'cilk-cholesky-parc-mtpull', #-- min-pc: out-of-mem assertions from the app kernel
   'cilk-cilksort-parc-mtpull',
   'cilk-heat-parc-mtpull',
   'cilk-knapsack-parc-mtpull',
@@ -66,13 +66,13 @@ app_list_spmd = [
   'pbbs-bfs-ndBFS-parc',
   'pbbs-dict-deterministicHash-parc',
   'pbbs-hull-quickHull-parc',
-  #'pbbs-isort-blockRadixSort-parc', -- figure out the issue here!
   'pbbs-knn-octTree2Neighbors-parc',
   'pbbs-mis-ndMIS-parc',
   'pbbs-nbody-parallelBarnesHut-parc',
   'pbbs-rdups-deterministicHash-parc',
   'pbbs-sa-parallelRange-parc',
   'pbbs-st-ndST-parc',
+  #'pbbs-isort-blockRadixSort-parc', -- figure out the issue here!
 ]
 
 #----------------------------------------------------------------------------

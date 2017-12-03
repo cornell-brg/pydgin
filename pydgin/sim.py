@@ -52,11 +52,22 @@ class RoundRobinMinPCArbiter():
       for i in range( sim.active_cores ):
         if sim.states[i].pc < min_pc:
           min_pc = sim.states[i].pc
+      #print "Selecting MIN-PC"
       s.switch_interval = sim.active_cores + 1
     # Round-robin arbitration
     else:
+      #print "Selecting by being FAIR", s.top_priority
       min_pc = sim.states[s.top_priority].pc
       s.top_priority = 0 if s.top_priority == sim.active_cores-1 else s.top_priority+1
+
+    #pc_list = []
+    #for i in range( sim.active_cores ):
+    #  pc_list.append( sim.states[i].pc )
+
+    #print "[",
+    #for x in pc_list:
+    #  print hex(x), ",",
+    #print "] min_pc: ", hex(min_pc)
 
     for i in range( sim.active_cores ):
       # advance pcs that match the min-pc and make sure to not activate
@@ -264,27 +275,20 @@ class Sim( object ):
       if self.states[0].stats_en: self.total_steps += 1
 
       # shreesha: analysis implementation
-      if self.analysis:
-        parallel_mode = False
+      # No reconvergence
+      if self.reconvergence == 0:
+        pc_list = []
         for i in range( self.active_cores ):
-          parallel_mode |= self.states[i].parallel_mode
+          if self.states[i].parallel_mode:
+            if self.states[i].pc not in pc_list and self.states[i].active:
+              pc_list.append( self.states[i].pc )
+            if self.states[i].active:
+              self.total_insts += 1
+        self.unique_insts += len( pc_list )
 
-        if parallel_mode:
-          # No reconvergence
-          # NOTE: Only consider cores in the parallel region
-          if self.reconvergence == 0:
-            pc_list = []
-            for i in range( self.active_cores ):
-              if self.states[i].parallel_mode:
-                if self.states[i].pc not in pc_list and self.states[i].active:
-                  pc_list.append( self.states[i].pc )
-                if self.states[i].active:
-                  self.total_insts += 1
-            self.unique_insts += len( pc_list )
-
-          # Min-pc, opportunisitic reconvergence
-          elif self.reconvergence == 1:
-            self.arbiter.advance_pcs( self )
+      # Min-pc, opportunisitic reconvergence
+      elif self.reconvergence == 1:
+        self.arbiter.advance_pcs( self )
 
       # check if the count of the barrier is equal to the number of active
       # cores, reset the hardware barrier

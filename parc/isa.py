@@ -1239,10 +1239,10 @@ def execute_stat( s, inst ):
     s.parallel_section = s.parallel_section + 1
     s.stats_on[8] = s.sim_ptr.states[0].stat_num_insts
     if s.core_id == 0:
-      print "Start parallel section:", s.parallel_section
+      print "Start parallel section:", s.parallel_section, s.num_insts
   elif (not stat_en) and stat_id == 8 and s.sim_ptr.states[0].stats_en:
     if s.core_id == 0:
-      print "End parallel section:", s.parallel_section
+      print "End parallel section:", s.parallel_section, s.num_insts
     s.parallel_mode = False
     s.stats_counts[8] = s.stats_counts[8] + 1
     s.stats_insts[8] += s.sim_ptr.states[0].stat_num_insts - s.stats_on[8]
