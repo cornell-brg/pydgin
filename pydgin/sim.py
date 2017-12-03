@@ -30,10 +30,10 @@ def jitpolicy(driver):
   return JitPolicy()
 
 #-------------------------------------------------------------------------
-# Round-robin + Min-pc arbiter
+# ReconvergenceManager
 #-------------------------------------------------------------------------
 
-class RoundRobinMinPCArbiter():
+class ReconvergenceManager():
 
   def __init__( s ):
     s.top_priority = 0
@@ -43,43 +43,66 @@ class RoundRobinMinPCArbiter():
     s.switch_interval = active_cores
     s.top_priority = 0
 
+  #-----------------------------------------------------------------------
+  # advance_pcs
+  #-----------------------------------------------------------------------
+
   def advance_pcs( s, sim ):
 
-    min_pc = sys.maxint
+    #---------------------------------------------------------------------
+    # No reconvergence
+    #---------------------------------------------------------------------
 
-    # Select the minimum-pc
-    if s.switch_interval == 0:
+    if sim.reconvergence == 0:
+      pc_list = []
       for i in range( sim.active_cores ):
-        if sim.states[i].pc < min_pc:
-          min_pc = sim.states[i].pc
-      #print "Selecting MIN-PC"
-      s.switch_interval = sim.active_cores + 1
-    # Round-robin arbitration
-    else:
-      #print "Selecting by being FAIR", s.top_priority
-      min_pc = sim.states[s.top_priority].pc
-      s.top_priority = 0 if s.top_priority == sim.active_cores-1 else s.top_priority+1
+        if sim.states[i].parallel_mode:
+          if sim.states[i].pc not in pc_list and sim.states[i].active:
+            pc_list.append( sim.states[i].pc )
+          if sim.states[i].active:
+            sim.total_insts += 1
+      sim.unique_insts += len( pc_list )
 
-    #pc_list = []
-    #for i in range( sim.active_cores ):
-    #  pc_list.append( sim.states[i].pc )
+    #---------------------------------------------------------------------
+    # Round-Robin + Min-PC hybrid reconvergence
+    #---------------------------------------------------------------------
 
-    #print "[",
-    #for x in pc_list:
-    #  print hex(x), ",",
-    #print "] min_pc: ", hex(min_pc)
+    elif sim.reconvergence == 1:
 
-    for i in range( sim.active_cores ):
-      # advance pcs that match the min-pc and make sure to not activate
-      # cores that have reached the barrier
-      if sim.states[i].pc == min_pc and not sim.states[i].stop:
-        sim.states[i].active = True
-        sim.total_insts += 1
+      min_pc = sys.maxint
+
+      # Select the minimum-pc
+      if s.switch_interval == 0:
+        for i in range( sim.active_cores ):
+          if sim.states[i].pc < min_pc:
+            min_pc = sim.states[i].pc
+        #print "Selecting MIN-PC"
+        s.switch_interval = sim.active_cores + 1
+      # Round-robin arbitration
       else:
-        sim.states[i].active = False
+        #print "Selecting by being FAIR", s.top_priority
+        min_pc = sim.states[s.top_priority].pc
+        s.top_priority = 0 if s.top_priority == sim.active_cores-1 else s.top_priority+1
 
-    sim.unique_insts += 1
-    s.switch_interval -= 1
+      #pc_list = []
+      #for i in range( sim.active_cores ):
+      #  pc_list.append( sim.states[i].pc )
+      #print "[",
+      #for x in pc_list:
+      #  print hex(x), ",",
+      #print "] min_pc: ", hex(min_pc)
+
+      for i in range( sim.active_cores ):
+        # advance pcs that match the min-pc and make sure to not activate
+        # cores that have reached the barrier
+        if sim.states[i].pc == min_pc and not sim.states[i].stop:
+          sim.states[i].active = True
+          sim.total_insts += 1
+        else:
+          sim.states[i].active = False
+
+      sim.unique_insts += 1
+      s.switch_interval -= 1
 
 #-------------------------------------------------------------------------
 # Sim
@@ -120,8 +143,7 @@ class Sim( object ):
     self.unique_insts = 0
     self.total_insts = 0
     self.total_steps = 0
-    self.arbiter = RoundRobinMinPCArbiter()
-    self.switch_pc_interval = 0
+    self.reconvergence_manager = ReconvergenceManager()
 
   #-----------------------------------------------------------------------
   # decode
@@ -277,21 +299,8 @@ class Sim( object ):
       # count steps in stats region
       if self.states[0].stats_en: self.total_steps += 1
 
-      # shreesha: analysis implementation
-      # No reconvergence
-      if self.reconvergence == 0:
-        pc_list = []
-        for i in range( self.active_cores ):
-          if self.states[i].parallel_mode:
-            if self.states[i].pc not in pc_list and self.states[i].active:
-              pc_list.append( self.states[i].pc )
-            if self.states[i].active:
-              self.total_insts += 1
-        self.unique_insts += len( pc_list )
-
-      # Min-pc, opportunisitic reconvergence
-      elif self.reconvergence == 1:
-        self.arbiter.advance_pcs( self )
+      # shreesha: reconvergence
+      self.reconvergence_manager.advance_pcs( self )
 
       # check if the count of the barrier is equal to the number of active
       # cores, reset the hardware barrier
@@ -437,8 +446,7 @@ class Sim( object ):
           elif prev_token == "--ncores":
             self.ncores = int( token )
             self.active_cores = self.ncores
-            self.arbiter.set_state( self.ncores )
-            self.switch_pc_interval = self.ncores
+            self.reconvergence_manager.set_state( self.ncores )
 
           elif prev_token == "--core-switch-ival":
             self.core_switch_ival = int( token )

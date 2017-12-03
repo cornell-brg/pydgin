@@ -351,8 +351,7 @@ def execute_mtc0( s, inst ):
       s.task_mode = False
   elif inst.rd == reg_map['c0_tidmask']:
     s.sim_ptr.active_cores = s.rf[inst.rt]
-    s.sim_ptr.arbiter.set_state( s.rf[inst.rt] )
-    s.sim_ptr.switch_pc_interval = s.rf[inst.rt]
+    s.sim_ptr.reconvergence_manager.set_state( s.rf[inst.rt] )
     print "Active cores", s.rf[inst.rt]
 
   #elif inst.rd ==  2: pass
