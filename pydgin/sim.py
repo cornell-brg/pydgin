@@ -32,6 +32,7 @@ def jitpolicy(driver):
 #-------------------------------------------------------------------------
 # ReconvergenceManager
 #-------------------------------------------------------------------------
+# NOTE: By default there is always fetch combining turned on
 
 class ReconvergenceManager():
 
@@ -54,55 +55,93 @@ class ReconvergenceManager():
     #---------------------------------------------------------------------
 
     if sim.reconvergence == 0:
-      pc_list = []
-      for i in range( sim.active_cores ):
-        if sim.states[i].parallel_mode:
-          if sim.states[i].pc not in pc_list and sim.states[i].active:
-            pc_list.append( sim.states[i].pc )
-          if sim.states[i].active:
-            sim.total_insts += 1
-      sim.unique_insts += len( pc_list )
+      # Max instruction bw
+      if sim.inst_ports == sim.ncores:
+        pc_list = []
+        for i in range( sim.active_cores ):
+          if sim.states[i].parallel_mode:
+            if sim.states[i].pc not in pc_list and sim.states[i].active:
+              pc_list.append( sim.states[i].pc )
+            if sim.states[i].active:
+              sim.total_insts += 1
+        sim.unique_insts += len( pc_list )
+      # Instruction port sharing
+      else:
+        next_pc = 0
+        scheduled_list = []
+        # round-robin for given port bandwidth
+        for i in xrange( sim.inst_ports ):
+          next_pc = sim.states[s.top_priority].pc
+          for core in range( sim.ncores ):
+            if sim.states[core].pc == next_pc and not sim.states[core].stop:
+              sim.states[core].active = True
+              sim.total_insts += 1
+              scheduled_list.append( core )
+            elif core not in scheduled_list:
+              sim.states[core].active = False
+
+          sim.unique_insts += 1
+
+          # update priority
+          if len( scheduled_list ) == sim.ncores:
+            s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+            break
+          else:
+            while True:
+              s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+              if s.top_priority not in scheduled_list:
+                break
 
     #---------------------------------------------------------------------
     # Round-Robin + Min-PC hybrid reconvergence
     #---------------------------------------------------------------------
+    # FIXME: Add instruction port modeling
 
     elif sim.reconvergence == 1:
 
-      min_pc = sys.maxint
+      scheduled_list = []
+      for port in xrange( sim.inst_ports ):
+        min_pc = sys.maxint
+        update_priority = False
 
-      # Select the minimum-pc
-      if s.switch_interval == 0:
-        for i in range( sim.active_cores ):
-          if sim.states[i].pc < min_pc:
-            min_pc = sim.states[i].pc
-        #print "Selecting MIN-PC"
-        s.switch_interval = sim.active_cores + 1
-      # Round-robin arbitration
-      else:
-        #print "Selecting by being FAIR", s.top_priority
-        min_pc = sim.states[s.top_priority].pc
-        s.top_priority = 0 if s.top_priority == sim.active_cores-1 else s.top_priority+1
+        # Select the minimum-pc by considering only active cores
+        if s.switch_interval == 0:
+          for core in range( sim.active_cores ):
+            if sim.states[core].pc < min_pc and core not in scheduled_list:
+              min_pc = sim.states[core].pc
+          s.switch_interval = sim.ncores + 1
 
-      #pc_list = []
-      #for i in range( sim.active_cores ):
-      #  pc_list.append( sim.states[i].pc )
-      #print "[",
-      #for x in pc_list:
-      #  print hex(x), ",",
-      #print "] min_pc: ", hex(min_pc)
-
-      for i in range( sim.active_cores ):
-        # advance pcs that match the min-pc and make sure to not activate
-        # cores that have reached the barrier
-        if sim.states[i].pc == min_pc and not sim.states[i].stop:
-          sim.states[i].active = True
-          sim.total_insts += 1
+        # Round-robin arbitration
         else:
-          sim.states[i].active = False
+          while True:
+            # NOTE: if selecting an already scheduled core, update priority
+            if s.top_priority not in scheduled_list:
+              min_pc = sim.states[s.top_priority].pc
+              update_priority = True
+              break
+            s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
 
-      sim.unique_insts += 1
-      s.switch_interval -= 1
+        # loop through all the cores
+        for core in range( sim.ncores ):
+          # advance pcs that match the min-pc and make sure to not activate
+          # cores that have reached the barrier
+          if sim.states[core].pc == min_pc and not sim.states[core].stop:
+            sim.states[core].active = True
+            sim.total_insts += 1
+            scheduled_list.append( core )
+          elif core not in scheduled_list:
+            sim.states[core].active = False
+
+        sim.unique_insts += 1
+        s.switch_interval -= 1
+
+        # update priority
+        if len( scheduled_list ) == sim.ncores:
+          if update_priority:
+            s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+          break
+        elif update_priority:
+          s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
 
 #-------------------------------------------------------------------------
 # Sim
@@ -138,12 +177,12 @@ class Sim( object ):
     self.barrier_count = 0
     self.active_cores = 0
     self.linetrace = False
-    self.analysis = False
     self.reconvergence = 0
     self.unique_insts = 0
     self.total_insts = 0
     self.total_steps = 0
     self.reconvergence_manager = ReconvergenceManager()
+    self.inst_ports = 0
 
   #-----------------------------------------------------------------------
   # decode
@@ -204,6 +243,7 @@ class Sim( object ):
         0 No reconvergence
         1 Min-pc, opportunistic
     --runtime-md    Runtime metadata used in analysis
+    --inst-ports    Number of instruction ports (bandwidth)
   """
 
   #-----------------------------------------------------------------------
@@ -311,17 +351,13 @@ class Sim( object ):
 
       # shreesha: linetrace
       if self.linetrace:
-        parallel_mode = False
-        for i in range( self.active_cores ):
-          parallel_mode |= self.states[i].parallel_mode
-
-        if parallel_mode:
+        if self.states[0].parallel_mode:
           for i in range( self.ncores ):
             #print pad( "%x %d |" % ( self.states[i].pc, self.states[i].active ), 8, " ", False ),
-            if self.states[i].active and self.states[i].parallel_mode:
-              print pad( "%x |" % self.states[i].pc, 8, " ", False ),
+            if self.states[i].active:
+              print pad( "%x |" % self.states[i].pc, 9, " ", False ),
             else:
-              print pad( " |" % self.states[i].pc, 8, " ", False ),
+              print pad( " |" % self.states[i].pc, 9, " ", False ),
           print
 
     print '\nDONE! Status =', self.states[0].status
@@ -382,6 +418,7 @@ class Sim( object ):
                            "--linetrace",
                            "--analysis",
                            "--runtime-md",
+                           "--inst-ports",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -461,11 +498,13 @@ class Sim( object ):
             stats_core_type = int( token )
 
           elif prev_token == "--analysis":
-            self.analysis = True
             self.reconvergence = int( token )
 
           elif prev_token == "--runtime-md":
             runtime_md = token
+
+          elif prev_token == "--inst-ports":
+            self.inst_ports = int(token)
 
           prev_token = ""
 
@@ -531,6 +570,10 @@ class Sim( object ):
         except IOError:
           print "Could not open the runtime-md file %s " % runtime_md
           return 1
+
+      # shreesha: default number of instruction ports
+      if self.inst_ports == 0:
+        self.inst_ports = self.ncores
 
       # Execute the program
 

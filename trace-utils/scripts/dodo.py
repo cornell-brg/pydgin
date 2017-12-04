@@ -38,7 +38,11 @@ def task_pydgin_sims_wsrt():
   evaldict['app_group']   = ["small","mtpull"]
   evaldict['app_list']    = app_list
   evaldict['app_dict']    = app_dict
+
   evaldict['runtime']     = True
+
+  evaldict['inst_ports']  = 2
+  evaldict['analysis']    = 1
 
   yield gen_trace_per_app( evaldict )
 

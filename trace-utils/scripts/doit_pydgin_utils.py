@@ -135,10 +135,13 @@ def get_base_evaldict():
   resultsdir  = 'results'
   evaldict    = {}
 
-  evaldict['app_group'] = []    # Which group of apps to sim (e.g., ['scalar'])
-  evaldict['app_list']  = []    # List of apps to sim
-  evaldict['app_dict']  = {}    # Dict with app groups/opts to run
-  evaldict['runtime']   = False # Do not pass runtime-md flag
+  evaldict['app_group']  = []    # Which group of apps to sim (e.g., ['scalar'])
+  evaldict['app_list']   = []    # List of apps to sim
+  evaldict['app_dict']   = {}    # Dict with app groups/opts to run
+  evaldict['runtime']    = False # Do not pass runtime-md flag
+  evaldict['inst_ports'] = 4     # Number of ports for instruction fetch
+  evaldict['analysis']   = 0     # Reconvergence analysis type
+  evaldict['linetrace']  = False # Linetrace enable flag
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -193,6 +196,9 @@ def gen_trace_per_app( evaldict ):
   app_list        = evaldict["app_list"]
   app_group       = evaldict["app_group"]
   runtime_md_flag = evaldict["runtime"]
+  inst_ports      = evaldict["inst_ports"]
+  analysis        = evaldict["analysis"]
+  linetrace       = evaldict["linetrace"]
 
   for app in app_dict.keys():
     # Only sim the apps in app_list:
@@ -240,7 +246,10 @@ def gen_trace_per_app( evaldict ):
         extra_pydgin_opts = ""
         if runtime_md_flag:
           extra_pydgin_opts += "--runtime-md %(runtime_md)s " % { 'runtime_md' : 'links/'+app+'.nm'}
-        extra_pydgin_opts += "--analysis 1 "
+        if linetrace:
+          extra_pydgin_opts += "--linetrace "
+        extra_pydgin_opts += "--analysis %(analysis)s " % { 'analysis' : analysis }
+        extra_pydgin_opts += "--inst-ports %(inst_ports)s " % { 'inst_ports' : inst_ports }
 
         pydgin_cmd = ' '.join([
           # pydgin binary
