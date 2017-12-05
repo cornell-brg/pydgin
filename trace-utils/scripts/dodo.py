@@ -40,8 +40,10 @@ def task_pydgin_sims_wsrt():
   evaldict['app_dict']    = app_dict
 
   evaldict['runtime']     = True
+  evaldict['linetrace']   = True
+  evaldict['color']       = True
 
-  evaldict['inst_ports']  = 2
+  evaldict['inst_ports']  = 4
   evaldict['analysis']    = 1
 
   yield gen_trace_per_app( evaldict )

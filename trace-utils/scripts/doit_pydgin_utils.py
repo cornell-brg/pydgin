@@ -142,6 +142,7 @@ def get_base_evaldict():
   evaldict['inst_ports'] = 4     # Number of ports for instruction fetch
   evaldict['analysis']   = 0     # Reconvergence analysis type
   evaldict['linetrace']  = False # Linetrace enable flag
+  evaldict['color']      = False # Linetrace colors enable flag
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -199,6 +200,7 @@ def gen_trace_per_app( evaldict ):
   inst_ports      = evaldict["inst_ports"]
   analysis        = evaldict["analysis"]
   linetrace       = evaldict["linetrace"]
+  color           = evaldict["color"]
 
   for app in app_dict.keys():
     # Only sim the apps in app_list:
@@ -244,10 +246,14 @@ def gen_trace_per_app( evaldict ):
 
         # additional pydgin specifc options for task tracing
         extra_pydgin_opts = ""
+
         if runtime_md_flag:
           extra_pydgin_opts += "--runtime-md %(runtime_md)s " % { 'runtime_md' : 'links/'+app+'.nm'}
         if linetrace:
           extra_pydgin_opts += "--linetrace "
+        if color:
+          extra_pydgin_opts += "--color "
+
         extra_pydgin_opts += "--analysis %(analysis)s " % { 'analysis' : analysis }
         extra_pydgin_opts += "--inst-ports %(inst_ports)s " % { 'inst_ports' : inst_ports }
 

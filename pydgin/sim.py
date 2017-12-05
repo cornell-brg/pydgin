@@ -6,8 +6,6 @@
 
 import os
 import sys
-import pickle
-import csv
 
 # ensure we know where the pypy source code is
 # XXX: removed the dependency to PYDGIN_PYPY_SRC_DIR because rpython
@@ -28,6 +26,22 @@ from pydgin.jit   import JitDriver, hint, set_user_param, set_param, \
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
   return JitPolicy()
+
+#-------------------------------------------------------------------------
+# colors
+#-------------------------------------------------------------------------
+# Ref1: http://ozzmaker.com/add-colour-to-text-in-python/
+# Ref2: http://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html#colors
+
+class colors():
+  red    = '\033[31m'
+  green  = '\033[32m'
+  yellow = '\033[33m'
+  blue   = '\033[34m'
+  purple = '\033[35m'
+  cyan   = '\033[36m'
+  white  = '\033[37m'
+  end    = '\033[0m'
 
 #-------------------------------------------------------------------------
 # ReconvergenceManager
@@ -177,6 +191,7 @@ class Sim( object ):
     self.barrier_count = 0
     self.active_cores = 0
     self.linetrace = False
+    self.color = False
     self.reconvergence = 0
     self.unique_insts = 0
     self.total_insts = 0
@@ -239,6 +254,7 @@ class Sim( object ):
     --jit <flags>   Set flags to tune the JIT (see
                     rpython.rlib.jit.PARAMETER_DOCS)
     --linetrace     Turn on linetrace for parallel mode
+    --color         Turn on color for linetraces
     --analysis      Use the options below
         0 No reconvergence
         1 Min-pc, opportunistic
@@ -351,13 +367,21 @@ class Sim( object ):
 
       # shreesha: linetrace
       if self.linetrace:
-        if self.states[0].parallel_mode:
+        if self.states[0].stats_en:
           for i in range( self.ncores ):
-            #print pad( "%x %d |" % ( self.states[i].pc, self.states[i].active ), 8, " ", False ),
             if self.states[i].active:
-              print pad( "%x |" % self.states[i].pc, 9, " ", False ),
+              if self.color and self.states[i].runtime_mode:
+                print colors.yellow + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              elif self.color and self.states[i].task_mode:
+                print colors.green + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              elif self.color and not self.states[i].parallel_mode and i ==0 :
+                print colors.white + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              elif self.color and not self.states[i].parallel_mode:
+                print colors.blue + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              else:
+                print pad( "%x |" % self.states[i].pc, 9, " ", False ),
             else:
-              print pad( " |" % self.states[i].pc, 9, " ", False ),
+              print pad( " |", 9, " ", False ),
           print
 
     print '\nDONE! Status =', self.states[0].status
@@ -416,6 +440,7 @@ class Sim( object ):
                            "--core-type",
                            "--stats-core-type",
                            "--linetrace",
+                           "--color",
                            "--analysis",
                            "--runtime-md",
                            "--inst-ports",
@@ -447,6 +472,9 @@ class Sim( object ):
 
           elif token == "--linetrace":
             self.linetrace = True
+
+          elif token == "--color":
+            self.color = True
 
           elif token in tokens_with_args:
             prev_token = token
