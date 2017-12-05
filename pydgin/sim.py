@@ -370,14 +370,14 @@ class Sim( object ):
         if self.states[0].stats_en:
           for i in range( self.ncores ):
             if self.states[i].active:
-              if self.color and self.states[i].runtime_mode:
-                print colors.yellow + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-              elif self.color and self.states[i].task_mode:
-                print colors.green + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-              elif self.color and not self.states[i].parallel_mode and i ==0 :
+              if self.color and not self.states[i].parallel_mode and i ==0 :
                 print colors.white + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
               elif self.color and not self.states[i].parallel_mode:
                 print colors.blue + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              elif self.color and self.states[i].runtime_mode:
+                print colors.yellow + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              elif self.color and self.states[i].task_mode:
+                print colors.green + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
               else:
                 print pad( "%x |" % self.states[i].pc, 9, " ", False ),
             else:
