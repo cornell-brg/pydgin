@@ -42,8 +42,7 @@ def task_pydgin_sims_wsrt():
   evaldict['runtime']     = True
   evaldict['linetrace']   = True
   evaldict['color']       = True
-
-  evaldict['inst_ports']  = 1
+  evaldict['inst_ports']  = 4
   evaldict['analysis']    = 1
 
   yield gen_trace_per_app( evaldict )
@@ -59,5 +58,11 @@ def task_pydgin_sims_spmd():
   evaldict['app_group']   = ["small","mt"]
   evaldict['app_list']    = app_list_spmd
   evaldict['app_dict']    = app_dict
+
+  evaldict['runtime']     = True
+  evaldict['linetrace']   = True
+  evaldict['color']       = True
+  evaldict['inst_ports']  = 1
+  evaldict['analysis']    = 1
 
   yield gen_trace_per_app( evaldict )

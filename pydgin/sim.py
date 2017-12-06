@@ -73,11 +73,10 @@ class ReconvergenceManager():
       if sim.inst_ports == sim.ncores:
         pc_list = []
         for i in range( sim.active_cores ):
-          if sim.states[i].parallel_mode:
-            if sim.states[i].pc not in pc_list and sim.states[i].active:
-              pc_list.append( sim.states[i].pc )
-            if sim.states[i].active:
-              sim.total_insts += 1
+          if sim.states[i].pc not in pc_list and sim.states[i].active:
+            pc_list.append( sim.states[i].pc )
+          if sim.states[i].active:
+            sim.total_insts += 1
         sim.unique_insts += len( pc_list )
       # Instruction port sharing
       else:
@@ -338,8 +337,9 @@ class Sim( object ):
           if s.stats_en: s.stat_num_insts += 1
 
           # shreesha: collect instrs in serial region if stats has been enabled
-          if s.stats_en and ( not s.parallel_mode ): s.serial_insts += 1
-          if s.parallel_mode and s.runtime_mode: s.runtime_insts += 1
+          parallel_mode = s.wsrt_mode or s.spmd_mode
+          if s.stats_en and ( not parallel_mode ): s.serial_insts += 1
+          if parallel_mode and s.runtime_mode: s.runtime_insts += 1
 
           if s.debug.enabled( "insts" ):
             print
@@ -370,14 +370,23 @@ class Sim( object ):
         if self.states[0].stats_en:
           for i in range( self.ncores ):
             if self.states[i].active:
-              if self.color and not self.states[i].parallel_mode and i ==0 :
+              parallel_mode = self.states[i].wsrt_mode or self.states[i].spmd_mode
+              # core0 in serial section
+              if self.color and not parallel_mode and i ==0 :
                 print colors.white + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-              elif self.color and not self.states[i].parallel_mode:
+              # others in bthread control function
+              elif self.color and not parallel_mode:
                 print colors.blue + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-              elif self.color and self.states[i].runtime_mode:
-                print colors.yellow + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-              elif self.color and self.states[i].task_mode:
+              # cores in spmd region
+              elif self.color and self.states[i].spmd_mode:
+                print colors.purple + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              # cores executing tasks in wsrt region
+              elif self.color and self.states[i].task_mode and parallel_mode:
                 print colors.green + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              # cores executing runtime function in wsrt region
+              elif self.color and self.states[i].runtime_mode and parallel_mode:
+                print colors.yellow + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              # No color requested
               else:
                 print pad( "%x |" % self.states[i].pc, 9, " ", False ),
             else:

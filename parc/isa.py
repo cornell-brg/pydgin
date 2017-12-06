@@ -624,7 +624,7 @@ def execute_jalr( s, inst ):
   # check if we are in runtime mode and that stat instruction code for
   # executing a task has been set, if this is true then we are executing in
   # task mode, record where we entered the task mode & reset runtime mode
-  if s.runtime_mode and s.stat_inst_en[10] and s.parallel_mode:
+  if s.runtime_mode and s.stat_inst_en[10] and s.wsrt_mode:
     s.runtime_mode = False
     s.task_mode = True
     s.runtime_ras.append( s.rf[inst.rd] )
@@ -1253,12 +1253,8 @@ def execute_stat( s, inst ):
     s.stat_inst_num_insts[ stat_id ] += s.num_insts - s.stat_inst_begin[ stat_id ]
 
   # For the wsrt runtime
-  # UPDATES: 11/8/2017
-  # Collect traces for analysis only when in the stats region
-  # NOTE: The start and end of a parallel section in wsrt occurs only on
-  # core0
   if stat_en and stat_id == 8 and s.sim_ptr.states[0].stats_en:
-    s.parallel_mode = True
+    s.wsrt_mode = True
     s.returns = 0
     s.parallel_section = s.parallel_section + 1
     s.stats_on[8] = s.sim_ptr.states[0].stat_num_insts
@@ -1271,18 +1267,13 @@ def execute_stat( s, inst ):
       print "End parallel section:", s.parallel_section, s.num_insts
     else:
       s.runtime_mode = False
-    s.parallel_mode = False
+    s.wsrt_mode = False
     s.stats_counts[8] = s.stats_counts[8] + 1
     s.stats_insts[8] += s.sim_ptr.states[0].stat_num_insts - s.stats_on[8]
 
   # For the spmd runtime
-  # UPDATES: 11/8/2017
-  # Collect traces for analysis only when in the stats region
-  # NOTE: Since, the cores may or may not participate in a parallel region,
-  # the trace collection which is controlled by the parallel_mode knob uses
-  # the parallel_section count on core0 for all cores!
   if stat_en and stat_id == 6 and s.sim_ptr.states[0].stats_en:
-    s.parallel_mode = True
+    s.spmd_mode = True
     s.returns = 0
     s.stats_on[6] = s.sim_ptr.states[0].stat_num_insts
     s.parallel_section = s.parallel_section + 1
@@ -1293,7 +1284,7 @@ def execute_stat( s, inst ):
       print "End parallel section:", s.parallel_section
     s.stats_counts[6] = s.stats_counts[6] + 1
     s.stats_insts[6]  += s.sim_ptr.states[0].stat_num_insts - s.stats_on[6]
-    s.parallel_mode = False
+    s.spmd_mode = False
 
 #-----------------------------------------------------------------------
 # hint_wl
