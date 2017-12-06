@@ -131,7 +131,7 @@ def get_base_evaldict():
 
   # Default task options
   doc         = 'Basic configuration'
-  basename    = 'basname'
+  basename    = 'unnamed'
   resultsdir  = 'results'
   evaldict    = {}
 
@@ -139,6 +139,7 @@ def get_base_evaldict():
   evaldict['app_list']   = []    # List of apps to sim
   evaldict['app_dict']   = {}    # Dict with app groups/opts to run
   evaldict['runtime']    = False # Do not pass runtime-md flag
+  evaldict['ncores']     = 4     # Number of cores to simulate
   evaldict['inst_ports'] = 4     # Number of ports for instruction fetch
   evaldict['analysis']   = 0     # Reconvergence analysis type
   evaldict['linetrace']  = False # Linetrace enable flag
@@ -178,8 +179,10 @@ def gen_trace_per_app( evaldict ):
 
   yield docstring_taskdict
 
+  ncores = evaldict["ncores"]
+
   pydgin_binary = "../../scripts/builds/pydgin-parc-nojit-debug"
-  pydgin_opts   = " --ncores 4 --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel "
+  pydgin_opts   = " --ncores %(ncores)s --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel " % { 'ncores' : ncores }
 
   # Create path to resultsdir inside evaldir
   resultsdir_path = evaldir + '/' + resultsdir

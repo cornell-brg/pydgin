@@ -24,45 +24,84 @@ DOIT_CONFIG = {
 }
 
 #----------------------------------------------------------------------------
-# Tasks
+# wsrt tasks
 #----------------------------------------------------------------------------
+# Tasks are named using the following notation:
+#
+#   basename-Nc-Mp-Or
+#     where N = num of cores; M = number of ports; O = reconvergence scheme
+#     NOTE: see pydgin binary options for reconvergence options
+#
+# TBD: The tasks below work decently fine but may need to extend this and
+# make it more elegant
 
 def task_pydgin_sims_wsrt():
 
-  evaldict = get_base_evaldict()
+  ncores = 4
+  for ports in range( 1, ncores+1 ):
+    for analysis in range( 2 ):
+      # get an evaluation dictionary
+      evaldict = get_base_evaldict()
 
-  evaldict['basename']    = "sim-pydgin-wsrt"
-  evaldict['resultsdir']  = "results-small-wsrt"
-  evaldict['doc']         = os.path.basename(__file__).rstrip('c')
+      # task info
+      evaldict['basename']    = "sim-pydgin-wsrt-%dc-%dp-%dr" % ( ncores, ports, analysis )
+      evaldict['resultsdir']  = "results-small-wsrt-%dc-%dp-%dr" % ( ncores, ports, analysis )
+      evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
-  evaldict['app_group']   = ["small","mtpull"]
-  evaldict['app_list']    = app_list
-  evaldict['app_dict']    = app_dict
+      # kernels to run with options
+      evaldict['app_group']   = ["small","mtpull"]
+      evaldict['app_list']    = app_list
+      evaldict['app_dict']    = app_dict
 
-  evaldict['runtime']     = True
-  evaldict['linetrace']   = True
-  evaldict['color']       = True
-  evaldict['inst_ports']  = 4
-  evaldict['analysis']    = 1
+      # pydgin options
+      evaldict['runtime']     = True      # provide runtime metadata
+      evaldict['ncores']      = ncores    # number of cores to simulate
+      evaldict['inst_ports']  = ports     # instruction port bw
+      evaldict['analysis']    = analysis  # type of reconvergence scheme
 
-  yield gen_trace_per_app( evaldict )
+      # debug options
+      #evaldict['linetrace']   = True
+      #evaldict['color']       = True
+
+      yield gen_trace_per_app( evaldict )
+
+#----------------------------------------------------------------------------
+# spmd tasks
+#----------------------------------------------------------------------------
+# Tasks are named using the following notation:
+#
+#   basename-Nc-Mp-Or
+#     where N = num of cores; M = number of ports; O = reconvergence scheme
+#     NOTE: see pydgin binary options for reconvergence options
+#
+# TBD: The tasks below work decently fine but may need to extend this and
+# make it more elegant
 
 def task_pydgin_sims_spmd():
 
-  evaldict = get_base_evaldict()
+  ncores = 4
+  for ports in range( 1, ncores+1 ):
+    for analysis in range( 2 ):
+      # get an evaluation dictionary
+      evaldict = get_base_evaldict()
 
-  evaldict['basename']    = "sim-pydgin-spmd"
-  evaldict['resultsdir']  = "results-small-spmd"
-  evaldict['doc']         = os.path.basename(__file__).rstrip('c')
+      # task info
+      evaldict['basename']    = "sim-pydgin-spmd-%dc-%dp-%dr" % ( ncores, ports, analysis )
+      evaldict['resultsdir']  = "results-small-spmd-%dc-%dp-%dr" % ( ncores, ports, analysis )
+      evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
-  evaldict['app_group']   = ["small","mt"]
-  evaldict['app_list']    = app_list_spmd
-  evaldict['app_dict']    = app_dict
+      # kernels to run with options
+      evaldict['app_group']   = ["small","mt"]
+      evaldict['app_list']    = app_list_spmd
+      evaldict['app_dict']    = app_dict
 
-  evaldict['runtime']     = True
-  evaldict['linetrace']   = True
-  evaldict['color']       = True
-  evaldict['inst_ports']  = 1
-  evaldict['analysis']    = 1
+      # pydgin options
+      evaldict['ncores']      = ncores    # number of cores to simulate
+      evaldict['inst_ports']  = ports     # instruction port bw
+      evaldict['analysis']    = analysis  # type of reconvergence scheme
 
-  yield gen_trace_per_app( evaldict )
+      # debug options
+      #evaldict['linetrace']   = True
+      #evaldict['color']       = True
+
+      yield gen_trace_per_app( evaldict )
