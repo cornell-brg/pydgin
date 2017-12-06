@@ -61,6 +61,7 @@ app_list = [
 
 app_list_spmd = [
   'ubmark-vvadd',
+  'ubmark-bin-search',
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc',
   'pbbs-bfs-ndBFS-parc',
@@ -91,6 +92,11 @@ app_dict = {
                               'mt' : [ '--impl mt' ],
                               'mtpull' : [ '--impl mtpull', ]
                             },
+
+    'ubmark-bin-search'   : { 'mt'     : [ '--impl mt ', ],
+                              'mtpull' : [ '--impl mtpull '],
+                              'scalar' : [ '--impl scalar ', ] },
+
     'px-fib'              : { 'mtpull' : [ '--impl mt --n 15', ] },
     'bilateral'           : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
@@ -138,9 +144,6 @@ app_dict = {
                               'scalar' : [ '--impl scalar --warmup', ] },
 
     'rsort'               : { 'mt'     : [ '--impl mt --warmup', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
-
-    'ubmark-bin-search'   : { 'mt'     : [ '--impl mt --warmup', ],
                               'scalar' : [ '--impl scalar --warmup', ] },
 
     'ubmark-masked-filter': { 'mt'     : [ '--impl mt --warmup', ],

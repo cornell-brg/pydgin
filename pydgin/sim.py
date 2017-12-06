@@ -69,41 +69,52 @@ class ReconvergenceManager():
     #---------------------------------------------------------------------
 
     if sim.reconvergence == 0:
-      # Max instruction bw
-      if sim.inst_ports == sim.ncores:
-        pc_list = []
-        for i in range( sim.active_cores ):
-          if sim.states[i].pc not in pc_list and sim.states[i].active:
-            pc_list.append( sim.states[i].pc )
-          if sim.states[i].active:
-            sim.total_insts += 1
-        sim.unique_insts += len( pc_list )
-      # Instruction port sharing
-      else:
-        next_pc = 0
-        scheduled_list = []
-        # round-robin for given port bandwidth
-        for i in xrange( sim.inst_ports ):
-          next_pc = sim.states[s.top_priority].pc
-          for core in range( sim.ncores ):
-            if sim.states[core].pc == next_pc and not sim.states[core].stop:
-              sim.states[core].active = True
-              sim.total_insts += 1
-              scheduled_list.append( core )
-            elif core not in scheduled_list:
-              sim.states[core].active = False
-
+      next_pc = 0
+      scheduled_list = []
+      # round-robin for given port bandwidth
+      for i in xrange( sim.inst_ports ):
+        next_pc = sim.states[s.top_priority].pc
+        # collect stats
+        if sim.states[s.top_priority].spmd_mode:
+          sim.unique_spmd += 1
           sim.unique_insts += 1
+        elif sim.states[s.top_priority].wsrt_mode and sim.states[s.top_priority].task_mode:
+          sim.unique_task += 1
+          sim.unique_insts += 1
+        elif sim.states[s.top_priority].wsrt_mode and sim.states[s.top_priority].runtime_mode:
+          sim.unique_runtime += 1
+          sim.unique_insts += 1
+        # loop through cores
+        for core in range( sim.ncores ):
+          # select matching pcs
+          if sim.states[core].pc == next_pc and not sim.states[core].stop:
+            sim.states[core].active = True
+            scheduled_list.append( core )
+            # collect stats
+            if sim.states[core].spmd_mode:
+              sim.total_spmd     += 1
+              sim.total_parallel += 1
+            elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
+              sim.total_task     += 1
+              sim.total_wsrt     += 1
+              sim.total_parallel += 1
+            elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
+              sim.total_runtime  += 1
+              sim.total_wsrt     += 1
+              sim.total_parallel += 1
+          # not active yet
+          elif core not in scheduled_list:
+            sim.states[core].active = False
 
-          # update priority
-          if len( scheduled_list ) == sim.ncores:
+        # update priority
+        if len( scheduled_list ) == sim.ncores:
+          s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+          break
+        else:
+          while True:
             s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
-            break
-          else:
-            while True:
-              s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
-              if s.top_priority not in scheduled_list:
-                break
+            if s.top_priority not in scheduled_list:
+              break
 
     #---------------------------------------------------------------------
     # Round-Robin + Min-PC hybrid reconvergence
@@ -114,6 +125,7 @@ class ReconvergenceManager():
 
       scheduled_list = []
       for port in xrange( sim.inst_ports ):
+        min_core = 0
         min_pc = sys.maxint
         update_priority = False
 
@@ -122,6 +134,7 @@ class ReconvergenceManager():
           for core in range( sim.active_cores ):
             if sim.states[core].pc < min_pc and core not in scheduled_list:
               min_pc = sim.states[core].pc
+              min_core = core
           s.switch_interval = sim.ncores + 1
 
         # Round-robin arbitration
@@ -130,9 +143,21 @@ class ReconvergenceManager():
             # NOTE: if selecting an already scheduled core, update priority
             if s.top_priority not in scheduled_list:
               min_pc = sim.states[s.top_priority].pc
+              min_core = s.top_priority
               update_priority = True
               break
             s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+
+        # collect stats
+        if sim.states[min_core].spmd_mode:
+          sim.unique_spmd += 1
+          sim.unique_insts += 1
+        elif sim.states[min_core].wsrt_mode and sim.states[min_core].task_mode:
+          sim.unique_task += 1
+          sim.unique_insts += 1
+        elif sim.states[min_core].wsrt_mode and sim.states[min_core].runtime_mode:
+          sim.unique_runtime += 1
+          sim.unique_insts += 1
 
         # loop through all the cores
         for core in range( sim.ncores ):
@@ -140,12 +165,23 @@ class ReconvergenceManager():
           # cores that have reached the barrier
           if sim.states[core].pc == min_pc and not sim.states[core].stop:
             sim.states[core].active = True
-            sim.total_insts += 1
             scheduled_list.append( core )
+            # collect stats
+            if sim.states[core].spmd_mode:
+              sim.total_spmd     += 1
+              sim.total_parallel += 1
+            elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
+              sim.total_task     += 1
+              sim.total_wsrt     += 1
+              sim.total_parallel += 1
+            elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
+              sim.total_runtime  += 1
+              sim.total_wsrt     += 1
+              sim.total_parallel += 1
+          # not yet scheduled
           elif core not in scheduled_list:
             sim.states[core].active = False
 
-        sim.unique_insts += 1
         s.switch_interval -= 1
 
         # update priority
@@ -193,10 +229,22 @@ class Sim( object ):
     self.color = False
     self.reconvergence = 0
     self.unique_insts = 0
-    self.total_insts = 0
-    self.total_steps = 0
     self.reconvergence_manager = ReconvergenceManager()
     self.inst_ports = 0
+    # stats
+    # NOTE: Collect the stats below only when in parallel mode
+    self.unique_insts   = 0 # unique insts in parallel regions
+    self.unique_spmd    = 0 # unique insts in spmd region
+    self.unique_task    = 0 # unique insts in wsrt tasks
+    self.unique_runtime = 0 # unique insts in wsrt runtime
+    self.total_spmd     = 0 # total insts in spmd region
+    self.total_task     = 0 # total insts in wsrt tasks
+    self.total_runtime  = 0 # total insts in wsrt runtime
+    self.total_wsrt     = 0 # total insts in wsrt region
+    self.total_parallel = 0 # total number of instructions in parallel regions
+    # NOTE: Total number of instructions in timing loop
+    self.total_steps    = 0
+    self.serial_steps   = 0
 
   #-----------------------------------------------------------------------
   # decode
@@ -336,11 +384,6 @@ class Sim( object ):
           s.num_insts += 1
           if s.stats_en: s.stat_num_insts += 1
 
-          # shreesha: collect instrs in serial region if stats has been enabled
-          parallel_mode = s.wsrt_mode or s.spmd_mode
-          if s.stats_en and ( not parallel_mode ): s.serial_insts += 1
-          if parallel_mode and s.runtime_mode: s.runtime_insts += 1
-
           if s.debug.enabled( "insts" ):
             print
           if s.debug.enabled( "regdump" ):
@@ -354,6 +397,9 @@ class Sim( object ):
 
       # count steps in stats region
       if self.states[0].stats_en: self.total_steps += 1
+
+      parallel_mode = self.states[0].wsrt_mode or self.states[0].spmd_mode
+      if self.states[0].stats_en and not parallel_mode: self.serial_steps += 1
 
       # shreesha: reconvergence
       self.reconvergence_manager.advance_pcs( self )
@@ -394,14 +440,48 @@ class Sim( object ):
           print
 
     print '\nDONE! Status =', self.states[0].status
-    print 'Total Ticks Simulated = %d' % tick_ctr
-    print 'Unique Insts in parallel regions = %d' % self.unique_insts
-    print 'Total Insts in parallel regions = %d' % self.total_insts
+    print 'Total ticks Simulated = %d\n' % tick_ctr
+
+    print 'Serial steps in stats region = %d' % self.serial_steps
     print 'Total steps in stats region = %d' % self.total_steps
-    redundant_insts = ( self.total_insts - self.unique_insts )
-    print 'Redundant Insts in parallel regions = %d' % redundant_insts
-    if self.total_insts:
-      print 'Potential savings in parallel regions = %f' % ( 100*redundant_insts / float( self.total_insts ) )
+    parallel_region = self.total_steps - self.serial_steps
+    if self.total_steps:
+      print 'Percent insts in parallel region = %f\n' % ( 100*parallel_region/float( self.total_steps ) )
+
+    print 'Total insts in parallel regions = %d' % self.total_parallel
+    print 'Unique insts in parallel regions = %d' % self.unique_insts
+    redundant_insts = self.total_parallel - self.unique_insts
+    if self.total_parallel:
+      print 'Redundancy in parallel regions = %f' % ( 100*redundant_insts/float( self.total_parallel ) )
+    print
+
+    print "Total insts in spmd region = %d " % self.total_spmd
+    print 'Unique spmd insts = %d' % self.unique_spmd
+    redundant_spmd = self.total_spmd - self.unique_spmd
+    if self.total_spmd:
+      print 'Redundancy in spmd regions = %f' % ( 100*redundant_spmd/float( self.total_spmd ) )
+    print
+
+    print "Total insts in tasks = %d " % self.total_task
+    print "Total insts in runtime = %d " % self.total_runtime
+    print "Total insts in wsrt region = %d " % self.total_wsrt
+    print 'Unique wsrt insts = %d' % ( self.unique_runtime + self.unique_task )
+    redundant_wsrt = self.total_wsrt - ( self.unique_runtime + self.unique_task )
+    if self.total_wsrt:
+      print 'Redundancy in wsrt regions = %f' % ( 100*redundant_wsrt/float( self.total_wsrt ) )
+
+    if self.total_wsrt:
+      print "Percent of task insts = %f" % ( 100*self.total_task /float( self.total_wsrt ) )
+    print 'Unique task insts = %d' % self.unique_task
+    redundant_task = self.total_task - self.unique_task
+    if self.total_task:
+      print 'Redundancy in task regions = %f' % ( 100*redundant_task/float( self.total_task ) )
+
+    print 'Unique runtime insts = %d' % self.unique_runtime
+    redundant_runtime = self.total_runtime - self.unique_runtime
+    if self.total_runtime:
+      print 'Redundancy in runtime regions = %f' % ( 100*redundant_runtime/float( self.total_runtime ) )
+    print
 
     # show all stats
     for i, state in enumerate( self.states ):
