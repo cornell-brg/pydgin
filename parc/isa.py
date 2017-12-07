@@ -885,9 +885,6 @@ def execute_stop( s, inst ):
     s.sim_ptr.barrier_count += 1
     s.stop = True
     s.active = False
-  elif s.stop:
-    s.sim_ptr.barrier_count -= 1
-    s.stop = False
     s.pc += 4
 
 #-----------------------------------------------------------------------

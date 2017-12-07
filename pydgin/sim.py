@@ -70,10 +70,19 @@ class ReconvergenceManager():
 
     if sim.reconvergence == 0:
       next_pc = 0
+      next_core = 0
       scheduled_list = []
       # round-robin for given port bandwidth
       for i in xrange( sim.inst_ports ):
-        next_pc = sim.states[s.top_priority].pc
+
+        while True:
+          s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+          if not ( s.top_priority in scheduled_list or sim.states[s.top_priority].stop ):
+            next_pc = sim.states[s.top_priority].pc
+            next_core = s.top_priority
+            update_priority = True
+            break
+
         # collect stats
         if sim.states[s.top_priority].spmd_mode:
           sim.unique_spmd += 1
@@ -102,19 +111,16 @@ class ReconvergenceManager():
               sim.total_runtime  += 1
               sim.total_wsrt     += 1
               sim.total_parallel += 1
+          # if hit hardware barrier, consider it as scheduled to break the loop
+          elif sim.states[core].stop and core not in scheduled_list:
+            scheduled_list.append( core )
           # not active yet
           elif core not in scheduled_list:
             sim.states[core].active = False
 
         # update priority
         if len( scheduled_list ) == sim.ncores:
-          s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
           break
-        else:
-          while True:
-            s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
-            if s.top_priority not in scheduled_list:
-              break
 
     #---------------------------------------------------------------------
     # Round-Robin + Min-PC hybrid reconvergence
@@ -132,7 +138,7 @@ class ReconvergenceManager():
         # Select the minimum-pc by considering only active cores
         if s.switch_interval == 0:
           for core in range( sim.active_cores ):
-            if sim.states[core].pc < min_pc and core not in scheduled_list:
+            if sim.states[core].pc < min_pc and not ( sim.states[core].stop or core in scheduled_list ):
               min_pc = sim.states[core].pc
               min_core = core
           s.switch_interval = sim.ncores + 1
@@ -141,12 +147,12 @@ class ReconvergenceManager():
         else:
           while True:
             # NOTE: if selecting an already scheduled core, update priority
-            if s.top_priority not in scheduled_list:
+            s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+            if not ( s.top_priority in scheduled_list or sim.states[s.top_priority].stop ):
               min_pc = sim.states[s.top_priority].pc
               min_core = s.top_priority
               update_priority = True
               break
-            s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
 
         # collect stats
         if sim.states[min_core].spmd_mode:
@@ -178,6 +184,9 @@ class ReconvergenceManager():
               sim.total_runtime  += 1
               sim.total_wsrt     += 1
               sim.total_parallel += 1
+          # if hit hardware barrier, consider it as scheduled to break the loop
+          elif sim.states[core].stop and core not in scheduled_list:
+            scheduled_list.append( core )
           # not yet scheduled
           elif core not in scheduled_list:
             sim.states[core].active = False
@@ -186,11 +195,7 @@ class ReconvergenceManager():
 
         # update priority
         if len( scheduled_list ) == sim.ncores:
-          if update_priority:
-            s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
           break
-        elif update_priority:
-          s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
 
 #-------------------------------------------------------------------------
 # Sim
@@ -340,13 +345,9 @@ class Sim( object ):
     # use proc 0 to determine if should be running
     while self.states[0].running:
 
-      # NOTE: Fix this assertion to be more useful
       active = False
       for i in xrange( self.ncores ):
-        if not self.states[i].stop:
-          active |= self.states[i].active
-        else:
-          active |= True
+        active |= self.states[i].active
       if not active:
         print "Something wrong no cores are active!"
         raise AssertionError
@@ -401,15 +402,14 @@ class Sim( object ):
       parallel_mode = self.states[0].wsrt_mode or self.states[0].spmd_mode
       if self.states[0].stats_en and not parallel_mode: self.serial_steps += 1
 
-      # shreesha: reconvergence
-      self.reconvergence_manager.advance_pcs( self )
-
       # check if the count of the barrier is equal to the number of active
       # cores, reset the hardware barrier
       if self.barrier_count == self.active_cores:
+        self.barrier_count = 0
         for i in xrange( self.active_cores ):
           if not self.states[i].active:
             self.states[i].active = True
+            self.states[i].stop = False
 
       # shreesha: linetrace
       if self.linetrace:
@@ -438,6 +438,9 @@ class Sim( object ):
             else:
               print pad( " |", 9, " ", False ),
           print
+
+      # shreesha: reconvergence
+      self.reconvergence_manager.advance_pcs( self )
 
     print '\nDONE! Status =', self.states[0].status
     print 'Total ticks Simulated = %d\n' % tick_ctr
