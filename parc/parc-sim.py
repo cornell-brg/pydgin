@@ -37,8 +37,8 @@ class ParcSim( Sim ):
   def decode( self, bits ):
     # TODO add decode inside instruction:
     #return decode( bits )
-    inst_str, exec_fun = decode( bits )
-    return Instruction( bits, inst_str ), exec_fun
+    inst_str, pre_exec_fun, exec_fun = decode( bits )
+    return Instruction( bits, inst_str ), pre_exec_fun, exec_fun
 
   #-----------------------------------------------------------------------
   # init_state

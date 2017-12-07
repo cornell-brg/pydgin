@@ -59,10 +59,10 @@ class ReconvergenceManager():
     s.top_priority = 0
 
   #-----------------------------------------------------------------------
-  # advance_pcs
+  # select_pcs
   #-----------------------------------------------------------------------
 
-  def advance_pcs( s, sim ):
+  def select_pcs( s, sim ):
 
     #---------------------------------------------------------------------
     # No reconvergence
@@ -345,6 +345,13 @@ class Sim( object ):
     # use proc 0 to determine if should be running
     while self.states[0].running:
 
+      #-------------------------------------------------------------------
+      # fetch
+      #-------------------------------------------------------------------
+
+      self.reconvergence_manager.select_pcs( self )
+
+      # sanity checks
       active = False
       for i in xrange( self.ncores ):
         active |= self.states[i].active
@@ -366,7 +373,10 @@ class Sim( object ):
           inst_bits = mem.iread( pc, 4 )
 
           try:
-            inst, exec_fun = self.decode( inst_bits )
+            inst, pre_exec_fun, exec_fun = self.decode( inst_bits )
+
+            if pre_exec_fun:
+              pre_exec_fun( s, inst )
 
             if s.debug.enabled( "insts" ):
               print "c%s %s %s %s" % (
@@ -438,9 +448,6 @@ class Sim( object ):
             else:
               print pad( " |", 9, " ", False ),
           print
-
-      # shreesha: reconvergence
-      self.reconvergence_manager.advance_pcs( self )
 
     print '\nDONE! Status =', self.states[0].status
     print 'Total ticks Simulated = %d\n' % tick_ctr

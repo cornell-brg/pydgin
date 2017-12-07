@@ -78,6 +78,13 @@ class State( Machine ):
     # xpc stats
     self.num_pcalls = 0
 
+    # shreesha: model params
+    self.stop   = False
+    self.active = True
+    self.mdu    = False
+    self.fpu    = False
+    self.dmem   = False
+
     # stat registers
     self.stat_inst_en      = [ False ] * 16
     self.stat_inst_begin   = [ 0 ]     * 16
@@ -90,8 +97,6 @@ class State( Machine ):
     self.returns = 0
     self.parallel_section = 0
     self.sim_ptr = None
-    self.stop = False
-    self.active = True
 
     # flag to indicate runtime mode
     self.runtime_mode = False

@@ -129,155 +129,155 @@ reg_map = {
 #=======================================================================
 
 encodings = [
-  ['nop',      '000000_00000_00000_00000_00000_000000'],
+  ['nop',      '000000_00000_00000_00000_00000_000000', 0],
   #---------------------------------------------------------------------
   # Coprocessor
   #---------------------------------------------------------------------
-  ['mfc0',     '010000_00000_xxxxx_xxxxx_00000_000000'],
-  ['mtc0',     '010000_00100_xxxxx_xxxxx_00000_000000'],
-  #['mtc2',    '010010_00100_xxxxx_xxxxx_00000_000000'],
+  ['mfc0',     '010000_00000_xxxxx_xxxxx_00000_000000', 0],
+  ['mtc0',     '010000_00100_xxxxx_xxxxx_00000_000000', 0],
+  #['mtc2',    '010010_00100_xxxxx_xxxxx_00000_000000', 0],
   #---------------------------------------------------------------------
   # Arithmetic
   #---------------------------------------------------------------------
-  ['addu',     '000000_xxxxx_xxxxx_xxxxx_00000_100001'],
-  ['subu',     '000000_xxxxx_xxxxx_xxxxx_00000_100011'],
-  ['and',      '000000_xxxxx_xxxxx_xxxxx_00000_100100'],
-  ['or',       '000000_xxxxx_xxxxx_xxxxx_00000_100101'],
-  ['xor',      '000000_xxxxx_xxxxx_xxxxx_00000_100110'],
-  ['nor',      '000000_xxxxx_xxxxx_xxxxx_00000_100111'],
-  ['slt',      '000000_xxxxx_xxxxx_xxxxx_00000_101010'],
-  ['sltu',     '000000_xxxxx_xxxxx_xxxxx_00000_101011'],
+  ['addu',     '000000_xxxxx_xxxxx_xxxxx_00000_100001', 0],
+  ['subu',     '000000_xxxxx_xxxxx_xxxxx_00000_100011', 0],
+  ['and',      '000000_xxxxx_xxxxx_xxxxx_00000_100100', 0],
+  ['or',       '000000_xxxxx_xxxxx_xxxxx_00000_100101', 0],
+  ['xor',      '000000_xxxxx_xxxxx_xxxxx_00000_100110', 0],
+  ['nor',      '000000_xxxxx_xxxxx_xxxxx_00000_100111', 0],
+  ['slt',      '000000_xxxxx_xxxxx_xxxxx_00000_101010', 0],
+  ['sltu',     '000000_xxxxx_xxxxx_xxxxx_00000_101011', 0],
   #---------------------------------------------------------------------
   # Arithmetic Immediate
   #---------------------------------------------------------------------
-  ['addiu',    '001001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['andi',     '001100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['ori',      '001101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['xori',     '001110_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['slti',     '001010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['sltiu',    '001011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['lui',      '001111_00000_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['addiu',    '001001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['andi',     '001100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['ori',      '001101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['xori',     '001110_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['slti',     '001010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['sltiu',    '001011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['lui',      '001111_00000_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
   #---------------------------------------------------------------------
   # Shift
   #---------------------------------------------------------------------
-  ['sll',      '000000_00000_xxxxx_xxxxx_xxxxx_000000'],
-  ['srl',      '000000_00000_xxxxx_xxxxx_xxxxx_000010'],
-  ['sra',      '000000_00000_xxxxx_xxxxx_xxxxx_000011'],
-  ['sllv',     '000000_xxxxx_xxxxx_xxxxx_00000_000100'],
-  ['srlv',     '000000_xxxxx_xxxxx_xxxxx_00000_000110'],
-  ['srav',     '000000_xxxxx_xxxxx_xxxxx_00000_000111'],
+  ['sll',      '000000_00000_xxxxx_xxxxx_xxxxx_000000', 0],
+  ['srl',      '000000_00000_xxxxx_xxxxx_xxxxx_000010', 0],
+  ['sra',      '000000_00000_xxxxx_xxxxx_xxxxx_000011', 0],
+  ['sllv',     '000000_xxxxx_xxxxx_xxxxx_00000_000100', 0],
+  ['srlv',     '000000_xxxxx_xxxxx_xxxxx_00000_000110', 0],
+  ['srav',     '000000_xxxxx_xxxxx_xxxxx_00000_000111', 0],
   #---------------------------------------------------------------------
   # Mul/Div/Rem
   #---------------------------------------------------------------------
-  ['mul',      '011100_xxxxx_xxxxx_xxxxx_00000_000010'],
-  ['div',      '100111_xxxxx_xxxxx_xxxxx_00000_000101'],
-  ['divu',     '100111_xxxxx_xxxxx_xxxxx_00000_000111'],
-  ['rem',      '100111_xxxxx_xxxxx_xxxxx_00000_000110'],
-  ['remu',     '100111_xxxxx_xxxxx_xxxxx_00000_001000'],
+  ['mul',      '011100_xxxxx_xxxxx_xxxxx_00000_000010', 1],
+  ['div',      '100111_xxxxx_xxxxx_xxxxx_00000_000101', 1],
+  ['divu',     '100111_xxxxx_xxxxx_xxxxx_00000_000111', 1],
+  ['rem',      '100111_xxxxx_xxxxx_xxxxx_00000_000110', 1],
+  ['remu',     '100111_xxxxx_xxxxx_xxxxx_00000_001000', 1],
   #---------------------------------------------------------------------
   # Loads
   #---------------------------------------------------------------------
-  ['lw',       '100011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['lh',       '100001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['lhu',      '100101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['lb',       '100000_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['lbu',      '100100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['lw',       '100011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 1],
+  ['lh',       '100001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 1],
+  ['lhu',      '100101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 1],
+  ['lb',       '100000_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 1],
+  ['lbu',      '100100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 1],
   #---------------------------------------------------------------------
   # Stores
   #---------------------------------------------------------------------
-  ['sw',       '101011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['sh',       '101001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['sb',       '101000_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
+  ['sw',       '101011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 1],
+  ['sh',       '101001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 1],
+  ['sb',       '101000_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 1],
   #---------------------------------------------------------------------
   # Jumps
   #---------------------------------------------------------------------
-  ['j',        '000010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['jal',      '000011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['jr',       '000000_xxxxx_00000_00000_00000_001000'],
-  ['jalr',     '000000_xxxxx_00000_xxxxx_00000_001001'],
+  ['j',        '000010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['jal',      '000011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['jr',       '000000_xxxxx_00000_00000_00000_001000', 0],
+  ['jalr',     '000000_xxxxx_00000_xxxxx_00000_001001', 0],
   #---------------------------------------------------------------------
   # Branches
   #---------------------------------------------------------------------
-  ['beq',      '000100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['bne',      '000101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['blez',     '000110_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
-  ['bgtz',     '000111_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
-  ['bltz',     '000001_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
-  ['bgez',     '000001_xxxxx_00001_xxxxx_xxxxx_xxxxxx'],
+  ['beq',      '000100_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['bne',      '000101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['blez',     '000110_xxxxx_00000_xxxxx_xxxxx_xxxxxx', 0],
+  ['bgtz',     '000111_xxxxx_00000_xxxxx_xxxxx_xxxxxx', 0],
+  ['bltz',     '000001_xxxxx_00000_xxxxx_xxxxx_xxxxxx', 0],
+  ['bgez',     '000001_xxxxx_00001_xxxxx_xxxxx_xxxxxx', 0],
   #---------------------------------------------------------------------
   # Conditional
   #---------------------------------------------------------------------
-  ['movn',     '000000_xxxxx_xxxxx_xxxxx_00000_001011'],
-  ['movz',     '000000_xxxxx_xxxxx_xxxxx_00000_001010'],
+  ['movn',     '000000_xxxxx_xxxxx_xxxxx_00000_001011', 0],
+  ['movz',     '000000_xxxxx_xxxxx_xxxxx_00000_001010', 0],
   #---------------------------------------------------------------------
   # Syscall
   #---------------------------------------------------------------------
-  ['syscall',  '000000_xxxxx_xxxxx_xxxxx_xxxxx_001100'],
-  ['eret',     '000000_xxxxx_xxxxx_xxxxx_xxxxx_011000'],
+  ['syscall',  '000000_xxxxx_xxxxx_xxxxx_xxxxx_001100', 0],
+  ['eret',     '000000_xxxxx_xxxxx_xxxxx_xxxxx_011000', 0],
   # NOTE: compiler seems to generate eret with the following encoding
-  ['eret',     '010000_10000_00000_00000_00000_011000'],
+  ['eret',     '010000_10000_00000_00000_00000_011000', 0],
   #---------------------------------------------------------------------
   # AMO
   #---------------------------------------------------------------------
-  ['amo_add',  '100111_xxxxx_xxxxx_xxxxx_00000_000010'],
-  ['amo_and',  '100111_xxxxx_xxxxx_xxxxx_00000_000011'],
-  ['amo_or',   '100111_xxxxx_xxxxx_xxxxx_00000_000100'],
-  ['amo_xchg', '100111_xxxxx_xxxxx_xxxxx_00000_001101'],
-  ['amo_min',  '100111_xxxxx_xxxxx_xxxxx_00000_001110'],
+  ['amo_add',  '100111_xxxxx_xxxxx_xxxxx_00000_000010', 1],
+  ['amo_and',  '100111_xxxxx_xxxxx_xxxxx_00000_000011', 1],
+  ['amo_or',   '100111_xxxxx_xxxxx_xxxxx_00000_000100', 1],
+  ['amo_xchg', '100111_xxxxx_xxxxx_xxxxx_00000_001101', 1],
+  ['amo_min',  '100111_xxxxx_xxxxx_xxxxx_00000_001110', 1],
   #---------------------------------------------------------------------
   # Data-Parallel
   #---------------------------------------------------------------------
-  ['syncl',    '100111_00000_00000_00000_00000_000001'],
-  ['xloop',    '110100_xxxxx_00000_xxxxx_xxxxx_xxxxxx'],
-  ['stop',     '100111_00000_00000_00000_00000_000000'],
-  ['utidx',    '100111_00000_00000_xxxxx_00000_001001'],
-  ['mtuts',    '010010_00000_xxxxx_xxxxx_00000_001000'],
-  ['mfuts',    '010010_xxxxx_xxxxx_xxxxx_00000_001001'],
+  ['syncl',    '100111_00000_00000_00000_00000_000001', 0],
+  ['xloop',    '110100_xxxxx_00000_xxxxx_xxxxx_xxxxxx', 0],
+  ['stop',     '100111_00000_00000_00000_00000_000000', 0],
+  ['utidx',    '100111_00000_00000_xxxxx_00000_001001', 0],
+  ['mtuts',    '010010_00000_xxxxx_xxxxx_00000_001000', 0],
+  ['mfuts',    '010010_xxxxx_xxxxx_xxxxx_00000_001001', 0],
   #---------------------------------------------------------------------
   # XLOOPS
   #---------------------------------------------------------------------
-  ['xloop_uc', '110001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['xloop_or', '110010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['xloop_om', '111101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['xloop_orm','111010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['addiu_xi', '110110_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['addu_xi',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010000'],
-  ['subu_xi',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010001'],
+  ['xloop_uc', '110001_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['xloop_or', '110010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['xloop_om', '111101_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['xloop_orm','111010_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['addiu_xi', '110110_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['addu_xi',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010000', 0],
+  ['subu_xi',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010001', 0],
   #-----------------------------------------------------------------------
   # XPC
   #-----------------------------------------------------------------------
-  ['pcall',    '111011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx'],
-  ['pcallr',   '111100_xxxxx_xxxxx_00000_00000_000001'],
-  ['pcallzr',  '111100_xxxxx_xxxxx_00000_00000_000010'],
-  ['pcallrx',  '111100_xxxxx_xxxxx_00000_00000_000011'],
-  ['psync',    '111100_00000_00000_00000_00000_000000'],
-  ['mtx',      '010010_xxxxx_xxxxx_00000_xxxxx_xxxxxx'],
-  ['mfx',      '010010_xxxxx_xxxxx_00001_xxxxx_xxxxxx'],
-  ['mtxr',     '010010_xxxxx_xxxxx_00010_xxxxx_xxxxxx'],
+  ['pcall',    '111011_xxxxx_xxxxx_xxxxx_xxxxx_xxxxxx', 0],
+  ['pcallr',   '111100_xxxxx_xxxxx_00000_00000_000001', 0],
+  ['pcallzr',  '111100_xxxxx_xxxxx_00000_00000_000010', 0],
+  ['pcallrx',  '111100_xxxxx_xxxxx_00000_00000_000011', 0],
+  ['psync',    '111100_00000_00000_00000_00000_000000', 0],
+  ['mtx',      '010010_xxxxx_xxxxx_00000_xxxxx_xxxxxx', 0],
+  ['mfx',      '010010_xxxxx_xxxxx_00001_xxxxx_xxxxxx', 0],
+  ['mtxr',     '010010_xxxxx_xxxxx_00010_xxxxx_xxxxxx', 0],
   #---------------------------------------------------------------------
   # Misc
   #---------------------------------------------------------------------
-  ['stat',     '100111_00000_xxxxx_00000_00000_001111'],
-  ['hint_wl',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010010'],
-  ['mug',      '010111_xxxxx_xxxxx_00000_00000_000000'],
+  ['stat',     '100111_00000_xxxxx_00000_00000_001111', 0],
+  ['hint_wl',  '100111_xxxxx_xxxxx_xxxxx_xxxxx_010010', 0],
+  ['mug',      '010111_xxxxx_xxxxx_00000_00000_000000', 0],
   #---------------------------------------------------------------------
   # Floating Point
   #---------------------------------------------------------------------
-  ['add_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000000'],
-  ['sub_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000001'],
-  ['mul_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000010'],
-  ['div_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000011'],
-  ['c_eq_s',   '010001_10000_xxxxx_xxxxx_xxxxx_110010'],
-  ['c_lt_s',   '010001_10000_xxxxx_xxxxx_xxxxx_111100'],
-  ['c_le_s',   '010001_10000_xxxxx_xxxxx_xxxxx_111110'],
-# ['c_f_s',    '010001_10000_xxxxx_xxxxx_xxxxx_110000'],
-# ['c_un_s',   '010001_10000_xxxxx_xxxxx_xxxxx_110001'],
-# ['c_ngl_s',  '010001_10000_xxxxx_xxxxx_xxxxx_111011'],
-# ['c_nge_s'   '010001_10000_xxxxx_xxxxx_xxxxx_111101'],
-# ['c_ngt_s',  '010001_10000_xxxxx_xxxxx_xxxxx_111111'],
-  ['cvt_w_s',  '010001_10000_00000_xxxxx_xxxxx_100100'],
-  ['cvt_s_w',  '010001_10100_00000_xxxxx_xxxxx_100000'],
-  ['trunc_w_s','010001_10000_00000_xxxxx_xxxxx_001101'],
+  ['add_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000000', 1],
+  ['sub_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000001', 1],
+  ['mul_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000010', 1],
+  ['div_s',    '010001_xxxxx_xxxxx_xxxxx_xxxxx_000011', 1],
+  ['c_eq_s',   '010001_10000_xxxxx_xxxxx_xxxxx_110010', 1],
+  ['c_lt_s',   '010001_10000_xxxxx_xxxxx_xxxxx_111100', 1],
+  ['c_le_s',   '010001_10000_xxxxx_xxxxx_xxxxx_111110', 1],
+# ['c_f_s',    '010001_10000_xxxxx_xxxxx_xxxxx_110000', 0],
+# ['c_un_s',   '010001_10000_xxxxx_xxxxx_xxxxx_110001', 0],
+# ['c_ngl_s',  '010001_10000_xxxxx_xxxxx_xxxxx_111011', 0],
+# ['c_nge_s'   '010001_10000_xxxxx_xxxxx_xxxxx_111101', 0],
+# ['c_ngt_s',  '010001_10000_xxxxx_xxxxx_xxxxx_111111', 0],
+  ['cvt_w_s',  '010001_10000_00000_xxxxx_xxxxx_100100', 1],
+  ['cvt_s_w',  '010001_10100_00000_xxxxx_xxxxx_100000', 1],
+  ['trunc_w_s','010001_10000_00000_xxxxx_xxxxx_001101', 1],
 ]
 
 #=======================================================================
@@ -428,6 +428,9 @@ def execute_sltu( s, inst ):
 #-----------------------------------------------------------------------
 # mul
 #-----------------------------------------------------------------------
+def pre_execute_mul( s, inst ):
+  s.mdu = True
+
 def execute_mul( s, inst ):
   s.rf[ inst.rd ] = trim_32( s.rf[ inst.rs ] * s.rf[ inst.rt ] )
   s.pc += 4
@@ -435,6 +438,9 @@ def execute_mul( s, inst ):
 #-----------------------------------------------------------------------
 # div
 #-----------------------------------------------------------------------
+def pre_execute_div( s, inst ):
+  s.mdu = True
+
 # http://stackoverflow.com/a/6084608
 def execute_div( s, inst ):
   x    = signed( s.rf[ inst.rs ] )
@@ -447,6 +453,9 @@ def execute_div( s, inst ):
 #-----------------------------------------------------------------------
 # divu
 #-----------------------------------------------------------------------
+def pre_execute_divu( s, inst ):
+  s.mdu = True
+
 def execute_divu( s, inst ):
   s.rf[ inst.rd ] = s.rf[ inst.rs ] / s.rf[ inst.rt ]
   s.pc += 4
@@ -454,6 +463,9 @@ def execute_divu( s, inst ):
 #-----------------------------------------------------------------------
 # rem
 #-----------------------------------------------------------------------
+def pre_execute_rem( s, inst ):
+  s.mdu = True
+
 # http://stackoverflow.com/a/6084608
 def execute_rem( s, inst ):
   x = signed( s.rf[ inst.rs ] )
@@ -465,6 +477,9 @@ def execute_rem( s, inst ):
 #-----------------------------------------------------------------------
 # remu
 #-----------------------------------------------------------------------
+def pre_execute_remu( s, inst ):
+  s.mdu = True
+
 def execute_remu( s, inst ):
   s.rf[ inst.rd ] = s.rf[ inst.rs ] % s.rf[ inst.rt ]
   s.pc += 4
@@ -701,6 +716,9 @@ def execute_bgez( s, inst ):
 #-----------------------------------------------------------------------
 # lw
 #-----------------------------------------------------------------------
+def pre_execute_lw( s, inst ):
+  s.dmem = True
+
 def execute_lw( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 4 )
@@ -709,6 +727,9 @@ def execute_lw( s, inst ):
 #-----------------------------------------------------------------------
 # lh
 #-----------------------------------------------------------------------
+def pre_execute_lh( s, inst ):
+  s.dmem = True
+
 def execute_lh( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = sext_16( s.mem.read( addr, 2 ) )
@@ -717,6 +738,9 @@ def execute_lh( s, inst ):
 #-----------------------------------------------------------------------
 # lhu
 #-----------------------------------------------------------------------
+def pre_execute_lhu( s, inst ):
+  s.dmem = True
+
 def execute_lhu( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 2 )
@@ -725,6 +749,9 @@ def execute_lhu( s, inst ):
 #-----------------------------------------------------------------------
 # lb
 #-----------------------------------------------------------------------
+def pre_execute_lb( s, inst ):
+  s.dmem = True
+
 def execute_lb( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = sext_8( s.mem.read( addr, 1 ) )
@@ -733,6 +760,9 @@ def execute_lb( s, inst ):
 #-----------------------------------------------------------------------
 # lbu
 #-----------------------------------------------------------------------
+def pre_execute_lbu( s, inst ):
+  s.dmem = True
+
 def execute_lbu( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 1 )
@@ -745,6 +775,9 @@ def execute_lbu( s, inst ):
 #-----------------------------------------------------------------------
 # sw
 #-----------------------------------------------------------------------
+def pre_execute_sw( s, inst ):
+  s.dmem = True
+
 def execute_sw( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 4, s.rf[inst.rt] )
@@ -753,6 +786,9 @@ def execute_sw( s, inst ):
 #-----------------------------------------------------------------------
 # sh
 #-----------------------------------------------------------------------
+def pre_execute_sh( s, inst ):
+  s.dmem = True
+
 def execute_sh( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 2, s.rf[inst.rt] )
@@ -761,6 +797,9 @@ def execute_sh( s, inst ):
 #-----------------------------------------------------------------------
 # sb
 #-----------------------------------------------------------------------
+def pre_execute_sb( s, inst ):
+  s.dmem = True
+
 def execute_sb( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 1, s.rf[inst.rt] )
@@ -816,6 +855,9 @@ def execute_eret( s, inst ):
 #-----------------------------------------------------------------------
 # amo.add
 #-----------------------------------------------------------------------
+def pre_execute_amo_add( s, inst ):
+  s.dmem = True
+
 def execute_amo_add( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, trim_32(temp + s.rf[inst.rt]) )
@@ -825,6 +867,9 @@ def execute_amo_add( s, inst ):
 #-----------------------------------------------------------------------
 # amo.and
 #-----------------------------------------------------------------------
+def pre_execute_amo_and( s, inst ):
+  s.dmem = True
+
 def execute_amo_and( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, temp & s.rf[inst.rt] )
@@ -834,6 +879,9 @@ def execute_amo_and( s, inst ):
 #-----------------------------------------------------------------------
 # amo.or
 #-----------------------------------------------------------------------
+def pre_execute_amo_or( s, inst ):
+  s.dmem = True
+
 def execute_amo_or( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, temp | s.rf[inst.rt] )
@@ -843,6 +891,9 @@ def execute_amo_or( s, inst ):
 #-----------------------------------------------------------------------
 # amo.xchg
 #-----------------------------------------------------------------------
+def pre_execute_amo_xchg( s, inst ):
+  s.dmem = True
+
 def execute_amo_xchg( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, s.rf[inst.rt] )
@@ -852,6 +903,9 @@ def execute_amo_xchg( s, inst ):
 #-----------------------------------------------------------------------
 # amo.min
 #-----------------------------------------------------------------------
+def pre_execute_amo_min( s, inst ):
+  s.dmem = True
+
 def execute_amo_min( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, min( temp, s.rf[inst.rt] ) )
@@ -915,6 +969,9 @@ def execute_mfuts( s, inst ):
 #-----------------------------------------------------------------------
 # add_s
 #-----------------------------------------------------------------------
+def pre_execute_add_s( s, inst ):
+  s.fpu = True
+
 def execute_add_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
@@ -924,6 +981,9 @@ def execute_add_s( s, inst ):
 #-----------------------------------------------------------------------
 # sub_s
 #-----------------------------------------------------------------------
+def pre_execute_sub_s( s, inst ):
+  s.fpu = True
+
 def execute_sub_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
@@ -933,6 +993,9 @@ def execute_sub_s( s, inst ):
 #-----------------------------------------------------------------------
 # mul_s
 #-----------------------------------------------------------------------
+def pre_execute_mul_s( s, inst ):
+  s.fpu = True
+
 def execute_mul_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
@@ -942,6 +1005,9 @@ def execute_mul_s( s, inst ):
 #-----------------------------------------------------------------------
 # div_s
 #-----------------------------------------------------------------------
+def pre_execute_div_s( s, inst ):
+  s.fpu = True
+
 def execute_div_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
@@ -951,6 +1017,9 @@ def execute_div_s( s, inst ):
 #-----------------------------------------------------------------------
 # c_eq_s
 #-----------------------------------------------------------------------
+def pre_execute_c_eq_s( s, inst ):
+  s.fpu = True
+
 def execute_c_eq_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
@@ -960,6 +1029,9 @@ def execute_c_eq_s( s, inst ):
 #-----------------------------------------------------------------------
 # c_lt_s
 #-----------------------------------------------------------------------
+def pre_execute_c_lt_s( s, inst ):
+  s.fpu = True
+
 def execute_c_lt_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
@@ -969,6 +1041,9 @@ def execute_c_lt_s( s, inst ):
 #-----------------------------------------------------------------------
 # c_le_s
 #-----------------------------------------------------------------------
+def pre_execute_c_le_s( s, inst ):
+  s.fpu = True
+
 def execute_c_le_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
@@ -978,6 +1053,9 @@ def execute_c_le_s( s, inst ):
 #-----------------------------------------------------------------------
 # cvt_w_s
 #-----------------------------------------------------------------------
+def pre_execute_cvt_w_s( s, inst ):
+  s.fpu = True
+
 def execute_cvt_w_s( s, inst ):
   x = bits2float( s.rf[ inst.fs ] )
   s.rf[ inst.fd ] = trim_32( int( x ) )
@@ -986,6 +1064,9 @@ def execute_cvt_w_s( s, inst ):
 #-----------------------------------------------------------------------
 # cvt_s_w
 #-----------------------------------------------------------------------
+def pre_execute_cvt_s_w( s, inst ):
+  s.fpu = True
+
 def execute_cvt_s_w( s, inst ):
   x = signed( s.rf[ inst.fs ] )
   s.rf[ inst.fd ] = float2bits( float( x ) )
@@ -994,6 +1075,9 @@ def execute_cvt_s_w( s, inst ):
 #-----------------------------------------------------------------------
 # trunc_w_s
 #-----------------------------------------------------------------------
+def pre_execute_trunc_w_s( s, inst ):
+  s.fpu = True
+
 def execute_trunc_w_s( s, inst ):
   # TODO: check for overflow
   x = bits2float( s.rf[ inst.fs ] )

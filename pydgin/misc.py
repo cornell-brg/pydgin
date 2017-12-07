@@ -66,7 +66,7 @@ def create_risc_decoder( encodings, isa_globals, debug=False ):
 
   # removes all characters other than '0', '1', and 'x'
   def remove_ignored_chars( enc ):
-    return [ enc[0], re.sub( '[^01x]', '', enc[1] ) ]
+    return [ enc[0], re.sub( '[^01x]', '', enc[1] ), enc[2] ]
 
   encodings = map( remove_ignored_chars, encodings )
 
@@ -92,9 +92,15 @@ def create_risc_decoder( encodings, isa_globals, debug=False ):
     decoder += 'if   ' if i == 0 else '  elif '
     decoder += ' and '.join( reversed(conditions) ) + ':\n'
     if debug:
-      decoder += '    return "{0}", execute_{0}\n'.format( encodings[i][0] )
+      if encodings[i][2]:
+        decoder += '    return "{0}", pre_execute_{0}, execute_{0}\n'.format( encodings[i][0] )
+      else:
+        decoder += '    return "{0}", None, execute_{0}\n'.format( encodings[i][0] )
     else:
-      decoder += '    return execute_{}\n'.format( encodings[i][0] )
+      if encodings[i][2]:
+        decoder += '    return pre_execute_{}, execute_{0}\n'.format( encodings[i][0] )
+      else:
+        decoder += '    return None, execute_{0}\n'.format( encodings[i][0] )
 
   source = Source('''
 @elidable
