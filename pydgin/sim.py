@@ -106,7 +106,7 @@ class ReconvergenceManager():
         # loop through cores
         for core in range( sim.ncores ):
           # select matching pcs
-          if sim.states[core].pc == next_pc and not sim.states[core].stop:
+          if sim.states[core].pc == next_pc and not (sim.states[core].stop or sim.states[core].stall):
             sim.states[core].active = True
             scheduled_list.append( core )
             # collect stats
@@ -178,7 +178,7 @@ class ReconvergenceManager():
         for core in range( sim.ncores ):
           # advance pcs that match the min-pc and make sure to not activate
           # cores that have reached the barrier
-          if sim.states[core].pc == min_pc and not sim.states[core].stop:
+          if sim.states[core].pc == min_pc and not (sim.states[core].stop or sim.states[core].stall):
             sim.states[core].active = True
             scheduled_list.append( core )
             # collect stats
@@ -399,8 +399,6 @@ class Sim( object ):
             print "Exception message: %s" % error.msg
             break
 
-      #print "Finished Frontend!"
-
       if self.states[0].debug.enabled( "insts" ):
         for i in xrange( self.ncores ):
           s = self.states[ i ]
@@ -417,8 +415,6 @@ class Sim( object ):
       #-------------------------------------------------------------------
 
       self.dmem_coalescer.xtick(self)
-
-      #print "Finished Coalescing!"
 
       for core_id in xrange( self.ncores ):
         s = self.states[ core_id ]
@@ -448,8 +444,6 @@ class Sim( object ):
             print "Reached the max_insts (%d), exiting." % max_insts
             break
 
-      #print "Finished Backend!"
-
       # count steps in stats region
       if self.states[0].stats_en: self.total_steps += 1
 
@@ -467,34 +461,33 @@ class Sim( object ):
 
       # shreesha: linetrace
       if self.linetrace:
-        # FIXME
-        #if self.states[0].stats_en:
-        for i in range( self.ncores ):
-          if self.states[i].active and not self.states[i].stall:
-            parallel_mode = self.states[i].wsrt_mode or self.states[i].spmd_mode
-            # core0 in serial section
-            if self.color and not parallel_mode and i ==0 :
-              print colors.white + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-            # others in bthread control function
-            elif self.color and not parallel_mode:
-              print colors.blue + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-            # cores in spmd region
-            elif self.color and self.states[i].spmd_mode:
-              print colors.purple + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-            # cores executing tasks in wsrt region
-            elif self.color and self.states[i].task_mode and parallel_mode:
-              print colors.green + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-            # cores executing runtime function in wsrt region
-            elif self.color and self.states[i].runtime_mode and parallel_mode:
-              print colors.yellow + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-            # No color requested
+        if self.states[0].stats_en:
+          for i in range( self.ncores ):
+            if self.states[i].active and not self.states[i].stall:
+              parallel_mode = self.states[i].wsrt_mode or self.states[i].spmd_mode
+              # core0 in serial section
+              if self.color and not parallel_mode and i ==0 :
+                print colors.white + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              # others in bthread control function
+              elif self.color and not parallel_mode:
+                print colors.blue + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              # cores in spmd region
+              elif self.color and self.states[i].spmd_mode:
+                print colors.purple + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              # cores executing tasks in wsrt region
+              elif self.color and self.states[i].task_mode and parallel_mode:
+                print colors.green + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              # cores executing runtime function in wsrt region
+              elif self.color and self.states[i].runtime_mode and parallel_mode:
+                print colors.yellow + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+              # No color requested
+              else:
+                print pad( "%x |" % self.states[i].pc, 9, " ", False ),
+            elif self.states[i].active and self.states[i].stall:
+              print pad( "# |", 9, " ", False ),
             else:
-              print pad( "%x |" % self.states[i].pc, 9, " ", False ),
-          elif self.states[i].active and self.states[i].stall:
-            print pad( "# |", 9, " ", False ),
-          else:
-            print pad( " |", 9, " ", False ),
-        print
+              print pad( " |", 9, " ", False ),
+          print
 
     print '\nDONE! Status =', self.states[0].status
     print 'Total ticks Simulated = %d\n' % tick_ctr
