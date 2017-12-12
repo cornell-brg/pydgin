@@ -6,9 +6,9 @@ from        utils import trim_5
 from pydgin.utils import signed, sext_16, sext_8, trim_32, \
                          bits2float, float2bits
 
-from pydgin.misc import create_risc_decoder, FatalError
+from pydgin.MemCoalescer import MemRequest
 
-from machine import ChildListStackEntry
+from pydgin.misc import create_risc_decoder, FatalError
 
 #=======================================================================
 # Register Definitions
@@ -717,7 +717,14 @@ def execute_bgez( s, inst ):
 # lw
 #-----------------------------------------------------------------------
 def pre_execute_lw( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 0
+  dmemreq.len_  = 4
+  dmemreq.addr  = s.rf[inst.rs]
+  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_lw( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -728,7 +735,14 @@ def execute_lw( s, inst ):
 # lh
 #-----------------------------------------------------------------------
 def pre_execute_lh( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 0
+  dmemreq.len_  = 2
+  dmemreq.addr  = s.rf[inst.rs]
+  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_lh( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -739,7 +753,14 @@ def execute_lh( s, inst ):
 # lhu
 #-----------------------------------------------------------------------
 def pre_execute_lhu( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 0
+  dmemreq.len_  = 2
+  dmemreq.addr  = s.rf[inst.rs]
+  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_lhu( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -750,7 +771,14 @@ def execute_lhu( s, inst ):
 # lb
 #-----------------------------------------------------------------------
 def pre_execute_lb( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 0
+  dmemreq.len_  = 1
+  dmemreq.addr  = s.rf[inst.rs]
+  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_lb( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -761,7 +789,14 @@ def execute_lb( s, inst ):
 # lbu
 #-----------------------------------------------------------------------
 def pre_execute_lbu( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 0
+  dmemreq.len_  = 1
+  dmemreq.addr  = s.rf[inst.rs]
+  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_lbu( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -776,7 +811,14 @@ def execute_lbu( s, inst ):
 # sw
 #-----------------------------------------------------------------------
 def pre_execute_sw( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 1
+  dmemreq.len_  = 4
+  dmemreq.addr  = s.rf[inst.rs]
+  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_sw( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -787,7 +829,14 @@ def execute_sw( s, inst ):
 # sh
 #-----------------------------------------------------------------------
 def pre_execute_sh( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 1
+  dmemreq.len_  = 2
+  dmemreq.addr  = s.rf[inst.rs]
+  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_sh( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -798,7 +847,14 @@ def execute_sh( s, inst ):
 # sb
 #-----------------------------------------------------------------------
 def pre_execute_sb( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 1
+  dmemreq.len_  = 1
+  dmemreq.addr  = s.rf[inst.rs]
+  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_sb( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -856,7 +912,13 @@ def execute_eret( s, inst ):
 # amo.add
 #-----------------------------------------------------------------------
 def pre_execute_amo_add( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 2
+  dmemreq.len_  = 4
+  dmemreq.addr  = s.rf[inst.rs]
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_amo_add( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
@@ -868,7 +930,13 @@ def execute_amo_add( s, inst ):
 # amo.and
 #-----------------------------------------------------------------------
 def pre_execute_amo_and( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 2
+  dmemreq.len_  = 4
+  dmemreq.addr  = s.rf[inst.rs]
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_amo_and( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
@@ -880,7 +948,13 @@ def execute_amo_and( s, inst ):
 # amo.or
 #-----------------------------------------------------------------------
 def pre_execute_amo_or( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 2
+  dmemreq.len_  = 4
+  dmemreq.addr  = s.rf[inst.rs]
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_amo_or( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
@@ -892,7 +966,13 @@ def execute_amo_or( s, inst ):
 # amo.xchg
 #-----------------------------------------------------------------------
 def pre_execute_amo_xchg( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 2
+  dmemreq.len_  = 4
+  dmemreq.addr  = s.rf[inst.rs]
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_amo_xchg( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
@@ -904,7 +984,13 @@ def execute_amo_xchg( s, inst ):
 # amo.min
 #-----------------------------------------------------------------------
 def pre_execute_amo_min( s, inst ):
-  s.dmem = True
+  s.dmem        = True
+  s.stall       = True
+  dmemreq       = MemRequest()
+  dmemreq.type_ = 2
+  dmemreq.len_  = 4
+  dmemreq.addr  = s.rf[inst.rs]
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
 
 def execute_amo_min( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )

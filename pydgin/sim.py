@@ -22,6 +22,7 @@ from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param, \
                          elidable
+from pydgin.MemCoalescer import MemCoalescer
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
@@ -64,6 +65,16 @@ class ReconvergenceManager():
 
   def select_pcs( s, sim ):
 
+    scheduled_list = []
+    for core in range( sim.ncores ):
+      # consider stalled pcs as scheduled
+      if sim.states[core].stall:
+        scheduled_list.append( core )
+
+    # if all thread are stalled then skip the analysis
+    if len( scheduled_list ) == sim.ncores:
+      return
+
     #---------------------------------------------------------------------
     # No reconvergence
     #---------------------------------------------------------------------
@@ -71,7 +82,6 @@ class ReconvergenceManager():
     if sim.reconvergence == 0:
       next_pc = 0
       next_core = 0
-      scheduled_list = []
       # round-robin for given port bandwidth
       for i in xrange( sim.inst_ports ):
 
@@ -129,7 +139,6 @@ class ReconvergenceManager():
 
     elif sim.reconvergence == 1:
 
-      scheduled_list = []
       for port in xrange( sim.inst_ports ):
         min_core = 0
         min_pc = sys.maxint
@@ -235,7 +244,11 @@ class Sim( object ):
     self.reconvergence = 0
     self.unique_insts = 0
     self.reconvergence_manager = ReconvergenceManager()
-    self.inst_ports = 0
+    self.dmem_coalescer = MemCoalescer( 16  ) # line_sz in bytes
+    self.inst_ports = 0 # Instruction bandwidth
+    self.data_ports = 0 # Data bandwidth
+    self.mdu_ports  = 0 # MDU bandwidth
+    self.fpu_ports  = 0 # FPU bandwidth
     # stats
     # NOTE: Collect the stats below only when in parallel mode
     self.unique_insts   = 0 # unique insts in parallel regions
@@ -346,7 +359,7 @@ class Sim( object ):
     while self.states[0].running:
 
       #-------------------------------------------------------------------
-      # fetch
+      # frontend
       #-------------------------------------------------------------------
 
       self.reconvergence_manager.select_pcs( self )
@@ -362,49 +375,80 @@ class Sim( object ):
       for core_id in xrange( self.ncores ):
         s = self.states[ core_id ]
 
-        if s.active:
+        if s.active and not s.stall:
           pc = s.fetch_pc()
           mem = s.mem
-
-          if s.debug.enabled( "insts" ):
-            print pad( "%x" % pc, 8, " ", False ),
 
           # fetch
           inst_bits = mem.iread( pc, 4 )
 
+          # decode
           try:
             inst, pre_exec_fun, exec_fun = self.decode( inst_bits )
 
             if pre_exec_fun:
               pre_exec_fun( s, inst )
 
-            if s.debug.enabled( "insts" ):
-              print "c%s %s %s %s" % (
-                      core_id,
-                      pad_hex( inst_bits ),
-                      pad( inst.str, 12 ),
-                      pad( "%d" % s.num_insts, 8 ), ),
+            # record the function to be executed and the inst bits
+            s.inst_bits = inst_bits
+            s.inst      = inst
+            s.exec_fun  = exec_fun
+
+          except FatalError as error:
+            print "Exception in decode (pc: 0x%s), aborting!" % pad_hex( pc )
+            print "Exception message: %s" % error.msg
+            break
+
+      #print "Finished Frontend!"
+
+      if self.states[0].debug.enabled( "insts" ):
+        for i in xrange( self.ncores ):
+          s = self.states[ i ]
+          print pad( "%x" % s.pc, 8, " ", False ),
+          print "c%s %d %d %s %s %s" % (
+                  i, s.active, s.stall,
+                  pad_hex( s.inst_bits ),
+                  pad( s.inst.str, 12 ),
+                  pad( "%d" % s.num_insts, 8 ), ),
+          print
+
+      #-------------------------------------------------------------------
+      # backend
+      #-------------------------------------------------------------------
+
+      self.dmem_coalescer.xtick(self)
+
+      #print "Finished Coalescing!"
+
+      for core_id in xrange( self.ncores ):
+        s = self.states[ core_id ]
+
+        if s.active and not s.stall:
+
+          # execute and commit
+          try:
+
+            inst     = s.inst
+            exec_fun = s.exec_fun
 
             exec_fun( s, inst )
 
           except FatalError as error:
-            print "Exception in execution (pc: 0x%s), aborting!" % pad_hex( pc )
+            print "Exception in execute (pc: 0x%s), aborting!" % pad_hex( s.pc )
             print "Exception message: %s" % error.msg
             break
 
+        if s.active and not s.stall:
           s.num_insts += 1
           if s.stats_en: s.stat_num_insts += 1
-
-          if s.debug.enabled( "insts" ):
-            print
-          if s.debug.enabled( "regdump" ):
-            s.rf.print_regs( per_row=4 )
 
           # check if we have reached the end of the maximum instructions and
           # exit if necessary
           if max_insts != 0 and s.num_insts >= max_insts:
             print "Reached the max_insts (%d), exiting." % max_insts
             break
+
+      #print "Finished Backend!"
 
       # count steps in stats region
       if self.states[0].stats_en: self.total_steps += 1
@@ -423,31 +467,34 @@ class Sim( object ):
 
       # shreesha: linetrace
       if self.linetrace:
-        if self.states[0].stats_en:
-          for i in range( self.ncores ):
-            if self.states[i].active:
-              parallel_mode = self.states[i].wsrt_mode or self.states[i].spmd_mode
-              # core0 in serial section
-              if self.color and not parallel_mode and i ==0 :
-                print colors.white + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-              # others in bthread control function
-              elif self.color and not parallel_mode:
-                print colors.blue + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-              # cores in spmd region
-              elif self.color and self.states[i].spmd_mode:
-                print colors.purple + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-              # cores executing tasks in wsrt region
-              elif self.color and self.states[i].task_mode and parallel_mode:
-                print colors.green + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-              # cores executing runtime function in wsrt region
-              elif self.color and self.states[i].runtime_mode and parallel_mode:
-                print colors.yellow + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
-              # No color requested
-              else:
-                print pad( "%x |" % self.states[i].pc, 9, " ", False ),
+        # FIXME
+        #if self.states[0].stats_en:
+        for i in range( self.ncores ):
+          if self.states[i].active and not self.states[i].stall:
+            parallel_mode = self.states[i].wsrt_mode or self.states[i].spmd_mode
+            # core0 in serial section
+            if self.color and not parallel_mode and i ==0 :
+              print colors.white + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+            # others in bthread control function
+            elif self.color and not parallel_mode:
+              print colors.blue + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+            # cores in spmd region
+            elif self.color and self.states[i].spmd_mode:
+              print colors.purple + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+            # cores executing tasks in wsrt region
+            elif self.color and self.states[i].task_mode and parallel_mode:
+              print colors.green + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+            # cores executing runtime function in wsrt region
+            elif self.color and self.states[i].runtime_mode and parallel_mode:
+              print colors.yellow + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+            # No color requested
             else:
-              print pad( " |", 9, " ", False ),
-          print
+              print pad( "%x |" % self.states[i].pc, 9, " ", False ),
+          elif self.states[i].active and self.states[i].stall:
+            print pad( "# |", 9, " ", False ),
+          else:
+            print pad( " |", 9, " ", False ),
+        print
 
     print '\nDONE! Status =', self.states[0].status
     print 'Total ticks Simulated = %d\n' % tick_ctr
@@ -543,6 +590,9 @@ class Sim( object ):
                            "--analysis",
                            "--runtime-md",
                            "--inst-ports",
+                           "--data-ports",
+                           "--mdu-ports",
+                           "--fpu-ports",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -633,6 +683,15 @@ class Sim( object ):
           elif prev_token == "--inst-ports":
             self.inst_ports = int(token)
 
+          elif prev_token == "--data-ports":
+            self.data_ports = int(token)
+
+          elif prev_token == "--mdu-ports":
+            self.mdu_ports = int(token)
+
+          elif prev_token == "--fpu-ports":
+            self.fpu_ports = int(token)
+
           prev_token = ""
 
       if filename_idx == 0:
@@ -701,6 +760,20 @@ class Sim( object ):
       # shreesha: default number of instruction ports
       if self.inst_ports == 0:
         self.inst_ports = self.ncores
+
+      # shreesha: default number of data ports
+      if self.data_ports == 0:
+        self.data_ports = self.ncores
+
+      self.dmem_coalescer.configure( self.ncores, self.data_ports )
+
+      # shreesha: default number of mdu ports
+      if self.mdu_ports == 0:
+        self.mdu_ports = self.ncores
+
+      # shreesha: default number of fpu ports
+      if self.fpu_ports == 0:
+        self.fpu_ports = self.ncores
 
       # Execute the program
 
