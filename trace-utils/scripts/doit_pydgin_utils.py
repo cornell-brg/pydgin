@@ -141,6 +141,9 @@ def get_base_evaldict():
   evaldict['runtime']    = False # Do not pass runtime-md flag
   evaldict['ncores']     = 4     # Number of cores to simulate
   evaldict['inst_ports'] = 4     # Number of ports for instruction fetch
+  evaldict['data_ports'] = 4     # Number of ports for data memory
+  evaldict['mdu_ports']  = 4     # Number of ports for mdu
+  evaldict['fpu_ports']  = 4     # Number of ports for fpu
   evaldict['analysis']   = 0     # Reconvergence analysis type
   evaldict['linetrace']  = False # Linetrace enable flag
   evaldict['color']      = False # Linetrace colors enable flag
@@ -201,6 +204,7 @@ def gen_trace_per_app( evaldict ):
   app_group       = evaldict["app_group"]
   runtime_md_flag = evaldict["runtime"]
   inst_ports      = evaldict["inst_ports"]
+  data_ports      = evaldict["data_ports"]
   analysis        = evaldict["analysis"]
   linetrace       = evaldict["linetrace"]
   color           = evaldict["color"]
@@ -259,6 +263,7 @@ def gen_trace_per_app( evaldict ):
 
         extra_pydgin_opts += "--analysis %(analysis)s " % { 'analysis' : analysis }
         extra_pydgin_opts += "--inst-ports %(inst_ports)s " % { 'inst_ports' : inst_ports }
+        extra_pydgin_opts += "--data-ports %(data_ports)s " % { 'data_ports' : data_ports }
 
         pydgin_cmd = ' '.join([
           # pydgin binary

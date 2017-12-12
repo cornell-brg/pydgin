@@ -38,18 +38,22 @@ DOIT_CONFIG = {
 def task_pydgin_sims_wsrt():
 
   ncores = 4
+  # FIXME
+  #for iports in range( 1, ncores+1 ):
+  #  for dports in range( 1, ncores+1 ):
+  #    for analysis in range( 2 ):
   for ports in range( 1, ncores+1 ):
     for analysis in range( 2 ):
       # get an evaluation dictionary
       evaldict = get_base_evaldict()
 
       # task info
-      evaldict['basename']    = "sim-pydgin-wsrt-%dc-%dp-%dr" % ( ncores, ports, analysis )
-      evaldict['resultsdir']  = "results-small-wsrt-%dc-%dp-%dr" % ( ncores, ports, analysis )
+      evaldict['basename']    = "sim-pydgin-wsrt-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
+      evaldict['resultsdir']  = "results-tiny-wsrt-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
       evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
       # kernels to run with options
-      evaldict['app_group']   = ["small","mtpull"]
+      evaldict['app_group']   = ["tiny","mtpull"]
       evaldict['app_list']    = app_list
       evaldict['app_dict']    = app_dict
 
@@ -57,6 +61,7 @@ def task_pydgin_sims_wsrt():
       evaldict['runtime']     = True      # provide runtime metadata
       evaldict['ncores']      = ncores    # number of cores to simulate
       evaldict['inst_ports']  = ports     # instruction port bw
+      evaldict['data_ports']  = ports     # data port bw
       evaldict['analysis']    = analysis  # type of reconvergence scheme
 
       # debug options
@@ -80,24 +85,29 @@ def task_pydgin_sims_wsrt():
 def task_pydgin_sims_spmd():
 
   ncores = 4
+  # FIXME
+  #for iports in range( 1, ncores+1 ):
+  #  for dports in range( 1, ncores+1 ):
+  #    for analysis in range( 2 ):
   for ports in range( 1, ncores+1 ):
     for analysis in range( 2 ):
       # get an evaluation dictionary
       evaldict = get_base_evaldict()
 
       # task info
-      evaldict['basename']    = "sim-pydgin-spmd-%dc-%dp-%dr" % ( ncores, ports, analysis )
-      evaldict['resultsdir']  = "results-small-spmd-%dc-%dp-%dr" % ( ncores, ports, analysis )
+      evaldict['basename']    = "sim-pydgin-spmd-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
+      evaldict['resultsdir']  = "results-tiny-spmd-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
       evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
       # kernels to run with options
-      evaldict['app_group']   = ["small","mt"]
+      evaldict['app_group']   = ["tiny","mt"]
       evaldict['app_list']    = app_list_spmd
       evaldict['app_dict']    = app_dict
 
       # pydgin options
       evaldict['ncores']      = ncores    # number of cores to simulate
       evaldict['inst_ports']  = ports     # instruction port bw
+      evaldict['data_ports']  = ports     # data port bw
       evaldict['analysis']    = analysis  # type of reconvergence scheme
 
       # debug options
