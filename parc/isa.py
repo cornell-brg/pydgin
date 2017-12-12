@@ -6,9 +6,8 @@ from        utils import trim_5
 from pydgin.utils import signed, sext_16, sext_8, trim_32, \
                          bits2float, float2bits
 
-from pydgin.MemCoalescer import MemRequest
-
 from pydgin.misc import create_risc_decoder, FatalError
+from pydgin.misc_tpa import MemRequest
 
 #=======================================================================
 # Register Definitions

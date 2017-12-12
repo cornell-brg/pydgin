@@ -1,13 +1,33 @@
 #=========================================================================
-# MemCoalescer.py
+# misc_tpa.py
 #=========================================================================
 # Author : Shreesha Srinath
 # Date   : December 11th, 2017
 #
-# MemCoalescer class models a memory coalescing unit which accepts incoming
-# memory requests and creates coalesced requests
+# Contains misc-tpa related projects: MemRequest, MemCoalescer,
+# LLFUAllocator
 
 import math
+
+#-------------------------------------------------------------------------
+# LLFUAllocator
+#-------------------------------------------------------------------------
+
+class LLFUAllocator():
+
+  def __init__( s ):
+    s.valid        = []  # valid requests
+    s.num_reqs     = 0   # number of requests
+    s.num_ports    = 0   # port bandwidth
+    s.top_priority = 0   # priority
+
+  def configure( s, num_reqs, num_ports ):
+    s.valid     = [False]*num_reqs
+    s.num_reqs  = num_reqs
+    s.num_ports = num_ports
+
+  def allocate( s, sim ):
+    pass
 
 #-------------------------------------------------------------------------
 # MemRequest
@@ -26,7 +46,8 @@ class MemRequest():
 #-------------------------------------------------------------------------
 # MemCoalescer
 #-------------------------------------------------------------------------
-# NOTE: Need to check fairness?
+# MemCoalescer class models a memory coalescing unit which accepts incoming
+# memory requests and creates coalesced requests
 
 class MemCoalescer():
 

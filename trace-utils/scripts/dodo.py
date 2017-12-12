@@ -49,11 +49,11 @@ def task_pydgin_sims_wsrt():
 
       # task info
       evaldict['basename']    = "sim-pydgin-wsrt-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
-      evaldict['resultsdir']  = "results-tiny-wsrt-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
+      evaldict['resultsdir']  = "results-small-wsrt-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
       evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
       # kernels to run with options
-      evaldict['app_group']   = ["tiny","mtpull"]
+      evaldict['app_group']   = ["small","mtpull"]
       evaldict['app_list']    = app_list
       evaldict['app_dict']    = app_dict
 
@@ -96,11 +96,11 @@ def task_pydgin_sims_spmd():
 
       # task info
       evaldict['basename']    = "sim-pydgin-spmd-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
-      evaldict['resultsdir']  = "results-tiny-spmd-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
+      evaldict['resultsdir']  = "results-small-spmd-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
       evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
       # kernels to run with options
-      evaldict['app_group']   = ["tiny","mt"]
+      evaldict['app_group']   = ["small","mt"]
       evaldict['app_list']    = app_list_spmd
       evaldict['app_dict']    = app_dict
 

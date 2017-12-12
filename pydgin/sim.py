@@ -22,7 +22,7 @@ from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param, \
                          elidable
-from pydgin.MemCoalescer import MemCoalescer
+from pydgin.misc_tpa import MemCoalescer
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
