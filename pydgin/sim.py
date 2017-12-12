@@ -23,6 +23,7 @@ from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param, \
                          elidable
 from pydgin.misc_tpa import MemCoalescer
+from pydgin.misc_tpa import LLFUAllocator
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
@@ -245,6 +246,8 @@ class Sim( object ):
     self.unique_insts = 0
     self.reconvergence_manager = ReconvergenceManager()
     self.dmem_coalescer = MemCoalescer( 16  ) # line_sz in bytes
+    self.mdu_allocator  = LLFUAllocator()
+    self.fpu_allocator  = LLFUAllocator(False)
     self.inst_ports = 0 # Instruction bandwidth
     self.data_ports = 0 # Data bandwidth
     self.mdu_ports  = 0 # MDU bandwidth
@@ -414,11 +417,15 @@ class Sim( object ):
       # backend
       #-------------------------------------------------------------------
 
-      self.dmem_coalescer.xtick(self)
+      self.dmem_coalescer.xtick( self )
+      self.mdu_allocator.xtick ( self )
+      self.fpu_allocator.xtick ( self )
 
       for core_id in xrange( self.ncores ):
         s = self.states[ core_id ]
 
+        # FIXME: should not wait for committing if frontend has been
+        # fetched, currently there is not bubble squeezing!
         if s.active and not s.stall:
 
           # execute and commit
@@ -484,7 +491,12 @@ class Sim( object ):
               else:
                 print pad( "%x |" % self.states[i].pc, 9, " ", False ),
             elif self.states[i].active and self.states[i].stall:
-              print pad( "# |", 9, " ", False ),
+              if self.states[i].dmem:
+                print pad( "#d |", 9, " ", False ),
+              elif self.states[i].mdu:
+                print pad( "#m |", 9, " ", False ),
+              elif self.states[i].fpu:
+                print pad( "#f |", 9, " ", False ),
             else:
               print pad( " |", 9, " ", False ),
           print
@@ -753,20 +765,28 @@ class Sim( object ):
       # shreesha: default number of instruction ports
       if self.inst_ports == 0:
         self.inst_ports = self.ncores
+      print "Inst ports", self.inst_ports
 
       # shreesha: default number of data ports
       if self.data_ports == 0:
         self.data_ports = self.ncores
 
       self.dmem_coalescer.configure( self.ncores, self.data_ports )
+      print "Data ports", self.data_ports
 
       # shreesha: default number of mdu ports
       if self.mdu_ports == 0:
         self.mdu_ports = self.ncores
 
+      self.mdu_allocator.configure( self.ncores, self.mdu_ports )
+      print "MDU  ports", self.mdu_ports
+
       # shreesha: default number of fpu ports
       if self.fpu_ports == 0:
         self.fpu_ports = self.ncores
+
+      self.fpu_allocator.configure( self.ncores, self.fpu_ports )
+      print "FPU  ports", self.fpu_ports
 
       # Execute the program
 

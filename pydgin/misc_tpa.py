@@ -15,19 +15,42 @@ import math
 
 class LLFUAllocator():
 
-  def __init__( s ):
+  def __init__( s, mdu=True ):
     s.valid        = []  # valid requests
     s.num_reqs     = 0   # number of requests
     s.num_ports    = 0   # port bandwidth
     s.top_priority = 0   # priority
+    s.mdu          = mdu # mdu or fpu
 
   def configure( s, num_reqs, num_ports ):
     s.valid     = [False]*num_reqs
     s.num_reqs  = num_reqs
     s.num_ports = num_ports
 
-  def allocate( s, sim ):
-    pass
+  def set_request( s, idx ):
+    s.valid[ idx ] = True
+
+  def get_grant( s ):
+    grant = s.top_priority
+    if s.valid[ grant ]:
+      return grant
+    else:
+      for i in xrange( s.num_reqs ):
+        grant = 0 if grant == s.num_reqs-1 else grant+1
+        if s.valid[ grant ]:
+          return grant
+    return grant
+
+  def xtick( s, sim ):
+    for i in xrange( s.num_ports ):
+      grant = s.get_grant()
+      if s.valid[ grant ]:
+        sim.states[grant].stall = False
+        if s.mdu:
+          sim.states[grant].mdu = False
+        else:
+          sim.states[grant].fpu = False
+        s.top_priority = 0 if s.top_priority == s.num_reqs-1 else s.top_priority+1
 
 #-------------------------------------------------------------------------
 # MemRequest
@@ -126,6 +149,7 @@ class MemCoalescer():
         ports = s.table.pop( entry )
         for p in ports:
           sim.states[p].stall = False
+          sim.states[p].dmem  = False
       else:
         break
 

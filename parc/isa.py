@@ -428,7 +428,9 @@ def execute_sltu( s, inst ):
 # mul
 #-----------------------------------------------------------------------
 def pre_execute_mul( s, inst ):
-  s.mdu = True
+  s.mdu   = True
+  s.stall = True
+  s.sim_ptr.mdu_allocator.set_request( s.core_id )
 
 def execute_mul( s, inst ):
   s.rf[ inst.rd ] = trim_32( s.rf[ inst.rs ] * s.rf[ inst.rt ] )
@@ -438,7 +440,9 @@ def execute_mul( s, inst ):
 # div
 #-----------------------------------------------------------------------
 def pre_execute_div( s, inst ):
-  s.mdu = True
+  s.mdu   = True
+  s.stall = True
+  s.sim_ptr.mdu_allocator.set_request( s.core_id )
 
 # http://stackoverflow.com/a/6084608
 def execute_div( s, inst ):
@@ -453,7 +457,9 @@ def execute_div( s, inst ):
 # divu
 #-----------------------------------------------------------------------
 def pre_execute_divu( s, inst ):
-  s.mdu = True
+  s.mdu   = True
+  s.stall = True
+  s.sim_ptr.mdu_allocator.set_request( s.core_id )
 
 def execute_divu( s, inst ):
   s.rf[ inst.rd ] = s.rf[ inst.rs ] / s.rf[ inst.rt ]
@@ -463,7 +469,9 @@ def execute_divu( s, inst ):
 # rem
 #-----------------------------------------------------------------------
 def pre_execute_rem( s, inst ):
-  s.mdu = True
+  s.mdu   = True
+  s.stall = True
+  s.sim_ptr.mdu_allocator.set_request( s.core_id )
 
 # http://stackoverflow.com/a/6084608
 def execute_rem( s, inst ):
@@ -477,7 +485,9 @@ def execute_rem( s, inst ):
 # remu
 #-----------------------------------------------------------------------
 def pre_execute_remu( s, inst ):
-  s.mdu = True
+  s.mdu   = True
+  s.stall = True
+  s.sim_ptr.mdu_allocator.set_request( s.core_id )
 
 def execute_remu( s, inst ):
   s.rf[ inst.rd ] = s.rf[ inst.rs ] % s.rf[ inst.rt ]
@@ -1055,7 +1065,9 @@ def execute_mfuts( s, inst ):
 # add_s
 #-----------------------------------------------------------------------
 def pre_execute_add_s( s, inst ):
-  s.fpu = True
+  s.fpu   = True
+  s.stall = True
+  s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_add_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1067,7 +1079,9 @@ def execute_add_s( s, inst ):
 # sub_s
 #-----------------------------------------------------------------------
 def pre_execute_sub_s( s, inst ):
-  s.fpu = True
+  s.fpu   = True
+  s.stall = True
+  s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_sub_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1079,7 +1093,9 @@ def execute_sub_s( s, inst ):
 # mul_s
 #-----------------------------------------------------------------------
 def pre_execute_mul_s( s, inst ):
-  s.fpu = True
+  s.fpu   = True
+  s.stall = True
+  s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_mul_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1091,7 +1107,9 @@ def execute_mul_s( s, inst ):
 # div_s
 #-----------------------------------------------------------------------
 def pre_execute_div_s( s, inst ):
-  s.fpu = True
+  s.fpu   = True
+  s.stall = True
+  s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_div_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1103,7 +1121,9 @@ def execute_div_s( s, inst ):
 # c_eq_s
 #-----------------------------------------------------------------------
 def pre_execute_c_eq_s( s, inst ):
-  s.fpu = True
+  s.fpu   = True
+  s.stall = True
+  s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_c_eq_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1115,7 +1135,9 @@ def execute_c_eq_s( s, inst ):
 # c_lt_s
 #-----------------------------------------------------------------------
 def pre_execute_c_lt_s( s, inst ):
-  s.fpu = True
+  s.fpu   = True
+  s.stall = True
+  s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_c_lt_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1127,7 +1149,9 @@ def execute_c_lt_s( s, inst ):
 # c_le_s
 #-----------------------------------------------------------------------
 def pre_execute_c_le_s( s, inst ):
-  s.fpu = True
+  s.fpu   = True
+  s.stall = True
+  s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_c_le_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1139,7 +1163,9 @@ def execute_c_le_s( s, inst ):
 # cvt_w_s
 #-----------------------------------------------------------------------
 def pre_execute_cvt_w_s( s, inst ):
-  s.fpu = True
+  s.fpu   = True
+  s.stall = True
+  s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_cvt_w_s( s, inst ):
   x = bits2float( s.rf[ inst.fs ] )
@@ -1150,7 +1176,9 @@ def execute_cvt_w_s( s, inst ):
 # cvt_s_w
 #-----------------------------------------------------------------------
 def pre_execute_cvt_s_w( s, inst ):
-  s.fpu = True
+  s.fpu   = True
+  s.stall = True
+  s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_cvt_s_w( s, inst ):
   x = signed( s.rf[ inst.fs ] )
@@ -1161,7 +1189,9 @@ def execute_cvt_s_w( s, inst ):
 # trunc_w_s
 #-----------------------------------------------------------------------
 def pre_execute_trunc_w_s( s, inst ):
-  s.fpu = True
+  s.fpu   = True
+  s.stall = True
+  s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_trunc_w_s( s, inst ):
   # TODO: check for overflow
