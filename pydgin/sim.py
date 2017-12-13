@@ -22,190 +22,15 @@ from pydgin.debug import Debug, pad, pad_hex
 from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param, \
                          elidable
+
+from pydgin.misc_tpa import colors
 from pydgin.misc_tpa import MemCoalescer
 from pydgin.misc_tpa import LLFUAllocator
+from pydgin.misc_tpa import ReconvergenceManager
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
   return JitPolicy()
-
-#-------------------------------------------------------------------------
-# colors
-#-------------------------------------------------------------------------
-# Ref1: http://ozzmaker.com/add-colour-to-text-in-python/
-# Ref2: http://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html#colors
-
-class colors():
-  red    = '\033[31m'
-  green  = '\033[32m'
-  yellow = '\033[33m'
-  blue   = '\033[34m'
-  purple = '\033[35m'
-  cyan   = '\033[36m'
-  white  = '\033[37m'
-  end    = '\033[0m'
-
-#-------------------------------------------------------------------------
-# ReconvergenceManager
-#-------------------------------------------------------------------------
-# NOTE: By default there is always fetch combining turned on
-
-class ReconvergenceManager():
-
-  def __init__( s ):
-    s.top_priority = 0
-    s.switch_interval = 0
-
-  def set_state( s, active_cores ):
-    s.switch_interval = active_cores
-    s.top_priority = 0
-
-  #-----------------------------------------------------------------------
-  # select_pcs
-  #-----------------------------------------------------------------------
-
-  def select_pcs( s, sim ):
-
-    scheduled_list = []
-    for core in range( sim.ncores ):
-      # consider stalled pcs as scheduled
-      if sim.states[core].stall:
-        scheduled_list.append( core )
-
-    # if all thread are stalled then skip the analysis
-    if len( scheduled_list ) == sim.ncores:
-      return
-
-    #---------------------------------------------------------------------
-    # No reconvergence
-    #---------------------------------------------------------------------
-
-    if sim.reconvergence == 0:
-      next_pc = 0
-      next_core = 0
-      # round-robin for given port bandwidth
-      for i in xrange( sim.inst_ports ):
-
-        while True:
-          s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
-          if not ( s.top_priority in scheduled_list or sim.states[s.top_priority].stop ):
-            next_pc = sim.states[s.top_priority].pc
-            next_core = s.top_priority
-            update_priority = True
-            break
-
-        # collect stats
-        if sim.states[s.top_priority].spmd_mode:
-          sim.unique_spmd += 1
-          sim.unique_insts += 1
-        elif sim.states[s.top_priority].wsrt_mode and sim.states[s.top_priority].task_mode:
-          sim.unique_task += 1
-          sim.unique_insts += 1
-        elif sim.states[s.top_priority].wsrt_mode and sim.states[s.top_priority].runtime_mode:
-          sim.unique_runtime += 1
-          sim.unique_insts += 1
-        # loop through cores
-        for core in range( sim.ncores ):
-          # select matching pcs
-          if sim.states[core].pc == next_pc and not (sim.states[core].stop or sim.states[core].stall):
-            sim.states[core].active = True
-            scheduled_list.append( core )
-            # collect stats
-            if sim.states[core].spmd_mode:
-              sim.total_spmd     += 1
-              sim.total_parallel += 1
-            elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
-              sim.total_task     += 1
-              sim.total_wsrt     += 1
-              sim.total_parallel += 1
-            elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
-              sim.total_runtime  += 1
-              sim.total_wsrt     += 1
-              sim.total_parallel += 1
-          # if hit hardware barrier, consider it as scheduled to break the loop
-          elif sim.states[core].stop and core not in scheduled_list:
-            scheduled_list.append( core )
-          # not active yet
-          elif core not in scheduled_list:
-            sim.states[core].active = False
-
-        # update priority
-        if len( scheduled_list ) == sim.ncores:
-          break
-
-    #---------------------------------------------------------------------
-    # Round-Robin + Min-PC hybrid reconvergence
-    #---------------------------------------------------------------------
-    # FIXME: Add instruction port modeling
-
-    elif sim.reconvergence == 1:
-
-      for port in xrange( sim.inst_ports ):
-        min_core = 0
-        min_pc = sys.maxint
-        update_priority = False
-
-        # Select the minimum-pc by considering only active cores
-        if s.switch_interval == 0:
-          for core in range( sim.active_cores ):
-            if sim.states[core].pc < min_pc and not ( sim.states[core].stop or core in scheduled_list ):
-              min_pc = sim.states[core].pc
-              min_core = core
-          s.switch_interval = sim.ncores + 1
-
-        # Round-robin arbitration
-        else:
-          while True:
-            # NOTE: if selecting an already scheduled core, update priority
-            s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
-            if not ( s.top_priority in scheduled_list or sim.states[s.top_priority].stop ):
-              min_pc = sim.states[s.top_priority].pc
-              min_core = s.top_priority
-              update_priority = True
-              break
-
-        # collect stats
-        if sim.states[min_core].spmd_mode:
-          sim.unique_spmd += 1
-          sim.unique_insts += 1
-        elif sim.states[min_core].wsrt_mode and sim.states[min_core].task_mode:
-          sim.unique_task += 1
-          sim.unique_insts += 1
-        elif sim.states[min_core].wsrt_mode and sim.states[min_core].runtime_mode:
-          sim.unique_runtime += 1
-          sim.unique_insts += 1
-
-        # loop through all the cores
-        for core in range( sim.ncores ):
-          # advance pcs that match the min-pc and make sure to not activate
-          # cores that have reached the barrier
-          if sim.states[core].pc == min_pc and not (sim.states[core].stop or sim.states[core].stall):
-            sim.states[core].active = True
-            scheduled_list.append( core )
-            # collect stats
-            if sim.states[core].spmd_mode:
-              sim.total_spmd     += 1
-              sim.total_parallel += 1
-            elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
-              sim.total_task     += 1
-              sim.total_wsrt     += 1
-              sim.total_parallel += 1
-            elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
-              sim.total_runtime  += 1
-              sim.total_wsrt     += 1
-              sim.total_parallel += 1
-          # if hit hardware barrier, consider it as scheduled to break the loop
-          elif sim.states[core].stop and core not in scheduled_list:
-            scheduled_list.append( core )
-          # not yet scheduled
-          elif core not in scheduled_list:
-            sim.states[core].active = False
-
-        s.switch_interval -= 1
-
-        # update priority
-        if len( scheduled_list ) == sim.ncores:
-          break
 
 #-------------------------------------------------------------------------
 # Sim
@@ -238,20 +63,22 @@ class Sim( object ):
     self.pkernel_bin = None
 
     # shreesha: adding extra stuff here
-    self.barrier_count = 0
-    self.active_cores = 0
-    self.linetrace = False
-    self.color = False
-    self.reconvergence = 0
-    self.unique_insts = 0
     self.reconvergence_manager = ReconvergenceManager()
-    self.dmem_coalescer = MemCoalescer( 16  ) # line_sz in bytes
-    self.mdu_allocator  = LLFUAllocator()
-    self.fpu_allocator  = LLFUAllocator(False)
-    self.inst_ports = 0 # Instruction bandwidth
-    self.data_ports = 0 # Data bandwidth
-    self.mdu_ports  = 0 # MDU bandwidth
-    self.fpu_ports  = 0 # FPU bandwidth
+    self.dmem_coalescer        = MemCoalescer( 16  ) # line_sz in bytes
+    self.mdu_allocator         = LLFUAllocator()
+    self.fpu_allocator         = LLFUAllocator(False)
+
+    # shreesha: adding extra stuff here
+    self.reconvergence = 0
+    self.barrier_count = 0
+    self.active_cores  = 0
+    self.inst_ports    = 0 # Instruction bandwidth
+    self.data_ports    = 0 # Data bandwidth
+    self.mdu_ports     = 0 # MDU bandwidth
+    self.fpu_ports     = 0 # FPU bandwidth
+    self.linetrace     = False
+    self.color         = False
+
     # stats
     # NOTE: Collect the stats below only when in parallel mode
     self.unique_insts   = 0 # unique insts in parallel regions
@@ -365,7 +192,7 @@ class Sim( object ):
       # frontend
       #-------------------------------------------------------------------
 
-      self.reconvergence_manager.select_pcs( self )
+      self.reconvergence_manager.xtick( self )
 
       # sanity checks
       active = False
@@ -664,7 +491,8 @@ class Sim( object ):
           elif prev_token == "--ncores":
             self.ncores = int( token )
             self.active_cores = self.ncores
-            self.reconvergence_manager.set_state( self.ncores )
+            # shreesha: tpa stuff
+            self.reconvergence_manager.configure( self.ncores )
 
           elif prev_token == "--core-switch-ival":
             self.core_switch_ival = int( token )
