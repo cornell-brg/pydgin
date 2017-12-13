@@ -46,6 +46,7 @@ class LLFUAllocator():
       grant = s.get_grant()
       if s.valid[ grant ]:
         sim.states[grant].stall = False
+        s.valid[grant] = False
         if s.mdu:
           sim.states[grant].mdu = False
         else:

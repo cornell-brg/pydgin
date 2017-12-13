@@ -424,8 +424,7 @@ class Sim( object ):
       for core_id in xrange( self.ncores ):
         s = self.states[ core_id ]
 
-        # FIXME: should not wait for committing if frontend has been
-        # fetched, currently there is not bubble squeezing!
+        # NOTE: Be wary of bubble squeezing...
         if s.active and not s.stall:
 
           # execute and commit
