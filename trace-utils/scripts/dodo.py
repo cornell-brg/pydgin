@@ -43,32 +43,35 @@ def task_pydgin_sims_wsrt():
   #  for dports in range( 1, ncores+1 ):
   #    for analysis in range( 2 ):
   for ports in range( 1, ncores+1 ):
-    for analysis in range( 2 ):
-      # get an evaluation dictionary
-      evaldict = get_base_evaldict()
+    for llfus in range( 1, ncores+1  ):
+      for analysis in range( 2 ):
+        # get an evaluation dictionary
+        evaldict = get_base_evaldict()
 
-      # task info
-      evaldict['basename']    = "sim-pydgin-wsrt-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
-      evaldict['resultsdir']  = "results-small-wsrt-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
-      evaldict['doc']         = os.path.basename(__file__).rstrip('c')
+        # task info
+        evaldict['basename']    = "sim-pydgin-wsrt-%dc-%dip-%ddp-%dlp-%dr" % ( ncores, ports, ports, llfus, analysis )
+        evaldict['resultsdir']  = "results-small-wsrt-%dc-%dip-%ddp-%dlp-%dr" % ( ncores, ports, ports, llfus, analysis )
+        evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
-      # kernels to run with options
-      evaldict['app_group']   = ["small","mtpull"]
-      evaldict['app_list']    = app_list
-      evaldict['app_dict']    = app_dict
+        # kernels to run with options
+        evaldict['app_group']   = ["small","mtpull"]
+        evaldict['app_list']    = app_list
+        evaldict['app_dict']    = app_dict
 
-      # pydgin options
-      evaldict['runtime']     = True      # provide runtime metadata
-      evaldict['ncores']      = ncores    # number of cores to simulate
-      evaldict['inst_ports']  = ports     # instruction port bw
-      evaldict['data_ports']  = ports     # data port bw
-      evaldict['analysis']    = analysis  # type of reconvergence scheme
+        # pydgin options
+        evaldict['runtime']     = True      # provide runtime metadata
+        evaldict['ncores']      = ncores    # number of cores to simulate
+        evaldict['inst_ports']  = ports     # instruction port bw
+        evaldict['data_ports']  = ports     # data port bw
+        evaldict['mdu_ports']   = llfus     # mdu port bw
+        evaldict['fpu_ports']   = llfus     # fpu port bw
+        evaldict['analysis']    = analysis  # type of reconvergence scheme
 
-      # debug options
-      #evaldict['linetrace']   = True
-      #evaldict['color']       = True
+        # debug options
+        #evaldict['linetrace']   = True
+        #evaldict['color']       = True
 
-      yield gen_trace_per_app( evaldict )
+        yield gen_trace_per_app( evaldict )
 
 #----------------------------------------------------------------------------
 # spmd tasks
@@ -90,28 +93,31 @@ def task_pydgin_sims_spmd():
   #  for dports in range( 1, ncores+1 ):
   #    for analysis in range( 2 ):
   for ports in range( 1, ncores+1 ):
-    for analysis in range( 2 ):
-      # get an evaluation dictionary
-      evaldict = get_base_evaldict()
+    for llfus in range( 1, ncores+1  ):
+      for analysis in range( 2 ):
+        # get an evaluation dictionary
+        evaldict = get_base_evaldict()
 
-      # task info
-      evaldict['basename']    = "sim-pydgin-spmd-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
-      evaldict['resultsdir']  = "results-small-spmd-%dc-%dip-%ddp-%dr" % ( ncores, ports, ports, analysis )
-      evaldict['doc']         = os.path.basename(__file__).rstrip('c')
+        # task info
+        evaldict['basename']    = "sim-pydgin-spmd-%dc-%dip-%ddp-%dlp-%dr" % ( ncores, ports, ports, llfus, analysis )
+        evaldict['resultsdir']  = "results-small-spmd-%dc-%dip-%ddp-%dlp-%dr" % ( ncores, ports, ports, llfus, analysis )
+        evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
-      # kernels to run with options
-      evaldict['app_group']   = ["small","mt"]
-      evaldict['app_list']    = app_list_spmd
-      evaldict['app_dict']    = app_dict
+        # kernels to run with options
+        evaldict['app_group']   = ["small","mt"]
+        evaldict['app_list']    = app_list_spmd
+        evaldict['app_dict']    = app_dict
 
-      # pydgin options
-      evaldict['ncores']      = ncores    # number of cores to simulate
-      evaldict['inst_ports']  = ports     # instruction port bw
-      evaldict['data_ports']  = ports     # data port bw
-      evaldict['analysis']    = analysis  # type of reconvergence scheme
+        # pydgin options
+        evaldict['ncores']      = ncores    # number of cores to simulate
+        evaldict['inst_ports']  = ports     # instruction port bw
+        evaldict['data_ports']  = ports     # data port bw
+        evaldict['mdu_ports']   = llfus     # mdu port bw
+        evaldict['fpu_ports']   = llfus     # fpu port bw
+        evaldict['analysis']    = analysis  # type of reconvergence scheme
 
-      # debug options
-      #evaldict['linetrace']   = True
-      #evaldict['color']       = True
+        # debug options
+        #evaldict['linetrace']   = True
+        #evaldict['color']       = True
 
-      yield gen_trace_per_app( evaldict )
+        yield gen_trace_per_app( evaldict )
