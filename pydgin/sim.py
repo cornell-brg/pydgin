@@ -328,6 +328,8 @@ class Sim( object ):
                 print pad( "#m |", 9, " ", False ),
               elif self.states[i].fpu:
                 print pad( "#f |", 9, " ", False ),
+            elif self.states[i].stop:
+              print pad( "#h |", 9, " ", False ),
             else:
               print pad( " |", 9, " ", False ),
           print
