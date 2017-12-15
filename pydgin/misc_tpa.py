@@ -56,7 +56,7 @@ class ReconvergenceManager():
   def xtick( s, sim ):
 
     scheduled_list = []
-    for core in range( sim.ncores ):
+    for core in xrange( sim.ncores ):
       # do not consider a core that is stalling or reached hw barroer
       if sim.states[core].stall or sim.states[core].stop:
         scheduled_list.append( core )
@@ -94,8 +94,9 @@ class ReconvergenceManager():
           sim.unique_runtime += 1
           sim.unique_insts += 1
 
+
         # loop through cores
-        for core in range( sim.ncores ):
+        for core in xrange( sim.ncores ):
 
           # select matching pcs
           if sim.states[core].pc == next_pc and not( sim.states[core].stop or sim.states[core].stall ):
@@ -136,7 +137,7 @@ class ReconvergenceManager():
 
         # Select the minimum-pc by considering only active cores
         if s.switch_interval == 0:
-          for core in range( sim.ncores ):
+          for core in xrange( sim.ncores ):
             if sim.states[core].pc < min_pc and core not in scheduled_list:
               min_pc = sim.states[core].pc
               min_core = core
@@ -163,7 +164,7 @@ class ReconvergenceManager():
           sim.unique_insts += 1
 
         # loop through all the cores
-        for core in range( sim.ncores ):
+        for core in xrange( sim.ncores ):
 
           # advance pcs that match the min-pc and make sure to not activate
           # cores that have reached the barrier
@@ -200,20 +201,39 @@ class ReconvergenceManager():
 
 class LLFUAllocator():
 
-  def __init__( s, mdu=True ):
-    s.valid        = []  # valid requests
-    s.num_reqs     = 0   # number of requests
-    s.num_ports    = 0   # port bandwidth
-    s.top_priority = 0   # priority
-    s.mdu          = mdu # mdu or fpu
+  #-----------------------------------------------------------------------
+  # constructor
+  #-----------------------------------------------------------------------
 
-  def configure( s, num_reqs, num_ports ):
+  def __init__( s, mdu=True ):
+    s.valid        = []    # valid requests
+    s.num_reqs     = 0     # number of requests
+    s.num_ports    = 0     # port bandwidth
+    s.top_priority = 0     # priority
+    s.mdu          = mdu   # mdu or fpu
+    s.lockstep     = False # locktep execution
+    s.pc_dict      = {}    # data-structure used to enforce lockstep execution
+
+  #-----------------------------------------------------------------------
+  # configure
+  #-----------------------------------------------------------------------
+
+  def configure( s, num_reqs, num_ports, lockstep ):
     s.valid     = [False]*num_reqs
     s.num_reqs  = num_reqs
     s.num_ports = num_ports
+    s.lockstep  = lockstep
+
+  #-----------------------------------------------------------------------
+  # set_request
+  #-----------------------------------------------------------------------
 
   def set_request( s, idx ):
     s.valid[ idx ] = True
+
+  #-----------------------------------------------------------------------
+  # get_grant
+  #-----------------------------------------------------------------------
 
   def get_grant( s ):
     grant = s.top_priority
@@ -226,17 +246,52 @@ class LLFUAllocator():
           return grant
     return grant
 
+  #-----------------------------------------------------------------------
+  # evaluate_pcs
+  #-----------------------------------------------------------------------
+  # evaluates all pcs and figures out the groups
+
+  def evaluate_pcs( s, sim ):
+    s.pc_dict = {}
+
+    for core in xrange( sim.ncores ):
+      if sim.states[core].active and not sim.states[core].clear:
+        s.pc_dict[sim.states[core].pc] = s.pc_dict.get(sim.states[core].pc, 0) + 1
+
+  #-----------------------------------------------------------------------
+  # xtick
+  #-----------------------------------------------------------------------
+
   def xtick( s, sim ):
-    for i in xrange( s.num_ports ):
-      grant = s.get_grant()
-      if s.valid[ grant ]:
-        sim.states[grant].stall = False
-        s.valid[grant] = False
-        if s.mdu:
-          sim.states[grant].mdu = False
-        else:
-          sim.states[grant].fpu = False
-        s.top_priority = 0 if s.top_priority == s.num_reqs-1 else s.top_priority+1
+    compute = False
+    for i in xrange( sim.ncores ):
+      if s.valid[ i ]:
+        compute = True
+        break
+
+    if compute:
+      if s.lockstep:
+        s.evaluate_pcs( sim )
+
+      for i in xrange( s.num_ports ):
+        grant = s.get_grant()
+        if s.valid[ grant ]:
+          if s.lockstep:
+            sim.states[grant].clear = True
+            s.valid[grant] = False
+            s.pc_dict[ sim.states[0].pc ] -= 1
+            if s.pc_dict[ sim.states[0].pc ] == 0:
+              for core in xrange( sim.ncores ):
+                sim.states[core].clear = False
+                sim.states[core].stall = False
+                if s.mdu: sim.states[core].mdu = False
+                else:     sim.states[core].fpu = False
+          else:
+            sim.states[grant].stall = False
+            s.valid[grant] = False
+            if s.mdu: sim.states[grant].mdu = False
+            else:     sim.states[grant].fpu = False
+          s.top_priority = 0 if s.top_priority == s.num_reqs-1 else s.top_priority+1
 
 #-------------------------------------------------------------------------
 # MemRequest
@@ -265,13 +320,15 @@ class MemCoalescer():
   #-----------------------------------------------------------------------
 
   def __init__( s, line_sz ):
-    s.valid     = []  # valid requests
-    s.num_reqs  = 0   # number of requests
-    s.reqs      = []  # requests list
-    s.fifo      = []  # fifo to clear requests
-    s.table     = {}  # key-value map, key = coalesced request, value = list of ports that coalesce
-    s.num_ports = 0   # port bandwidth
-    s.top_priority = 0
+    s.valid        = []        # valid requests
+    s.num_reqs     = 0         # number of requests
+    s.reqs         = []        # requests list
+    s.fifo         = []        # fifo to clear requests
+    s.table        = {}        # key-value map, key = coalesced request, value = list of ports that coalesce
+    s.num_ports    = 0         # port bandwidth
+    s.lockstep     = False     # flag to enforce lockstep execution
+    s.pc_dict      = {}        # data-structure used to enforce lockstep execution
+    s.top_priority = 0         # priority for aribitration
     # mask bits
     mask_bits = ~( line_sz - 1 )
     s.mask = mask_bits & 0xFFFFFFFF
@@ -280,11 +337,12 @@ class MemCoalescer():
   # configure
   #-----------------------------------------------------------------------
 
-  def configure( s, num_reqs, num_ports ):
+  def configure( s, num_reqs, num_ports, lockstep ):
     s.valid     = [False]*num_reqs
     s.reqs      = [None]*num_reqs
     s.num_reqs  = num_reqs
     s.num_ports = num_ports
+    s.lockstep  = lockstep
 
   #-----------------------------------------------------------------------
   # set_request
@@ -295,11 +353,23 @@ class MemCoalescer():
     s.reqs[ idx ]  = req
 
   #-----------------------------------------------------------------------
-  # caolesce
+  # evaluate_pcs
+  #-----------------------------------------------------------------------
+  # evaluates all pcs and figures out the groups
+
+  def evaluate_pcs( s, sim ):
+    s.pc_dict = {}
+
+    for core in xrange( sim.ncores ):
+      if sim.states[core].active and not sim.states[core].clear:
+        s.pc_dict[sim.states[core].pc] = s.pc_dict.get(sim.states[core].pc, 0) + 1
+
+  #-----------------------------------------------------------------------
+  # coalesce
   #-----------------------------------------------------------------------
 
   def coalesce( s ):
-    for i in range( s.num_reqs ):
+    for i in xrange( s.num_reqs ):
       next_port = s.top_priority
       if s.valid[next_port]:
         # check the line that will be requested
@@ -329,13 +399,31 @@ class MemCoalescer():
   #-----------------------------------------------------------------------
 
   def drain( s, sim ):
-    for i in range( s.num_ports ):
+
+    if len( s.fifo ) and s.lockstep:
+      s.evaluate_pcs( sim )
+
+    for i in xrange( s.num_ports ):
       if len( s.fifo ):
         entry = s.fifo.pop( 0 )
         ports = s.table.pop( entry )
-        for p in ports:
-          sim.states[p].stall = False
-          sim.states[p].dmem  = False
+
+        if s.lockstep:
+          for p in ports:
+            pc = sim.states[p].pc
+            s.pc_dict[ pc ] -= 1
+            sim.states[p].clear = True
+            if s.pc_dict[pc] == 0:
+              for core in xrange( sim.ncores ):
+                if sim.states[core].pc == pc:
+                  sim.states[core].stall = False
+                  sim.states[core].dmem  = False
+                  sim.states[core].clear = False
+        else:
+          for p in ports:
+            sim.states[p].stall = False
+            sim.states[p].dmem  = False
+
       else:
         break
 

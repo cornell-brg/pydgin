@@ -74,12 +74,13 @@ class State( Machine ):
     self.inst_bits = 0
     self.inst      = None
     self.exec_fun  = None
-    self.stop      = False        # flag to indicate reaching a hardware barrier
-    self.active    = True         # flag to indicate advancing a pc
-    self.stall     = False        # flag to indicate a resource stall
-    self.mdu       = False        # flag to indicate a vaild mdu resource request
-    self.fpu       = False        # flag to indicate a vaild fpu resource request
-    self.dmem      = False        # flag to indicate a valid dmem request
+    self.stop      = False  # flag to indicate reaching a hardware barrier
+    self.active    = True   # flag to indicate advancing a pc
+    self.stall     = False  # flag to indicate a resource stall
+    self.mdu       = False  # flag to indicate a vaild mdu resource request
+    self.fpu       = False  # flag to indicate a vaild fpu resource request
+    self.dmem      = False  # flag to indicate a valid dmem request
+    self.clear     = False  # flag to indicate a cleared mem/llfu request for lockstep execution
 
     # stat registers
     self.stat_inst_en      = [ False ] * 16

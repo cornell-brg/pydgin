@@ -76,6 +76,7 @@ class Sim( object ):
     self.data_ports    = 0 # Data bandwidth
     self.mdu_ports     = 0 # MDU bandwidth
     self.fpu_ports     = 0 # FPU bandwidth
+    self.lockstep      = False
     self.linetrace     = False
     self.color         = False
 
@@ -155,6 +156,10 @@ class Sim( object ):
         1 Min-pc, opportunistic
     --runtime-md    Runtime metadata used in analysis
     --inst-ports    Number of instruction ports (bandwidth)
+    --data-ports    Number of data ports (bandwidth)
+    --mdu-ports     Number of MDU ports (bandwidth)
+    --fpu-ports     Number of FPU ports (bandwidth)
+    --lockstep      Enforce lockstep execution on mem/llfu divergence
   """
 
   #-----------------------------------------------------------------------
@@ -417,6 +422,7 @@ class Sim( object ):
                            "--core-type",
                            "--stats-core-type",
                            "--linetrace",
+                           "--lockstep",
                            "--color",
                            "--analysis",
                            "--runtime-md",
@@ -449,6 +455,9 @@ class Sim( object ):
             if not Debug.global_enabled:
               print "WARNING: debugs are not enabled for this translation. " + \
                     "To allow debugs, translate with --debug option."
+
+          elif token == "--lockstep":
+            self.lockstep = True
 
           elif token == "--linetrace":
             self.linetrace = True
@@ -598,22 +607,22 @@ class Sim( object ):
       if self.data_ports == 0:
         self.data_ports = self.ncores
 
-      self.dmem_coalescer.configure( self.ncores, self.data_ports )
-      print "Data ports", self.data_ports
+      self.dmem_coalescer.configure( self.ncores, self.data_ports, self.lockstep )
+      print "Data ports", self.data_ports, "with lockstep execution: ", self.lockstep
 
       # shreesha: default number of mdu ports
       if self.mdu_ports == 0:
         self.mdu_ports = self.ncores
 
-      self.mdu_allocator.configure( self.ncores, self.mdu_ports )
-      print "MDU  ports", self.mdu_ports
+      self.mdu_allocator.configure( self.ncores, self.mdu_ports, self.lockstep )
+      print "MDU  ports", self.mdu_ports, "with lockstep execution: ", self.lockstep
 
       # shreesha: default number of fpu ports
       if self.fpu_ports == 0:
         self.fpu_ports = self.ncores
 
-      self.fpu_allocator.configure( self.ncores, self.fpu_ports )
-      print "FPU  ports", self.fpu_ports
+      self.fpu_allocator.configure( self.ncores, self.fpu_ports, self.lockstep )
+      print "FPU  ports", self.fpu_ports, "with lockstep execution: ", self.lockstep
 
       # Execute the program
 
