@@ -145,6 +145,7 @@ def get_base_evaldict():
   evaldict['mdu_ports']  = 4     # Number of ports for mdu
   evaldict['fpu_ports']  = 4     # Number of ports for fpu
   evaldict['analysis']   = 0     # Reconvergence analysis type
+  evaldict['lockstep']   = False #ockstepp enable flag
   evaldict['linetrace']  = False # Linetrace enable flag
   evaldict['color']      = False # Linetrace colors enable flag
 
@@ -206,6 +207,7 @@ def gen_trace_per_app( evaldict ):
   inst_ports      = evaldict["inst_ports"]
   data_ports      = evaldict["data_ports"]
   analysis        = evaldict["analysis"]
+  lockstep        = evaldict["lockstep"]
   linetrace       = evaldict["linetrace"]
   color           = evaldict["color"]
 
@@ -256,6 +258,8 @@ def gen_trace_per_app( evaldict ):
 
         if runtime_md_flag:
           extra_pydgin_opts += "--runtime-md %(runtime_md)s " % { 'runtime_md' : 'links/'+app+'.nm'}
+        if lockstep:
+          extra_pydgin_opts += "--lockstep "
         if linetrace:
           extra_pydgin_opts += "--linetrace "
         if color:

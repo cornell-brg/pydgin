@@ -277,13 +277,13 @@ class LLFUAllocator():
         grant = s.get_grant()
         if s.valid[ grant ]:
           if s.lockstep:
-            sim.states[grant].clear = True
-            s.valid[grant] = False
-            s.pc_dict[ sim.states[0].pc ] -= 1
-            if s.pc_dict[ sim.states[0].pc ] == 0:
+            s.pc_dict[ sim.states[grant].pc ] -= 1
+            sim.states[grant].clear         = True
+            s.valid[grant]                  = False
+            if s.pc_dict[ sim.states[grant].pc ] == 0:
               for core in xrange( sim.ncores ):
-                sim.states[core].clear = False
-                sim.states[core].stall = False
+                sim.states[core].clear         = False
+                sim.states[core].stall         = False
                 if s.mdu: sim.states[core].mdu = False
                 else:     sim.states[core].fpu = False
           else:
@@ -411,14 +411,14 @@ class MemCoalescer():
         if s.lockstep:
           for p in ports:
             pc = sim.states[p].pc
-            s.pc_dict[ pc ] -= 1
+            s.pc_dict[ pc ]    -= 1
             sim.states[p].clear = True
             if s.pc_dict[pc] == 0:
               for core in xrange( sim.ncores ):
                 if sim.states[core].pc == pc:
+                  sim.states[core].clear = False
                   sim.states[core].stall = False
                   sim.states[core].dmem  = False
-                  sim.states[core].clear = False
         else:
           for p in ports:
             sim.states[p].stall = False
