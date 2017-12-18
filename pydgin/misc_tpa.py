@@ -115,7 +115,7 @@ class ReconvergenceManager():
         if sim.states[core].pc < min_pc and core not in s.scheduled_list:
           min_pc = sim.states[core].pc
           min_core = core
-      s.switch_interval = sim.ncores + 1
+      s.switch_interval = sim.ncores
     # round-robin arbitration
     else:
       min_pc, min_core = s.get_next_pc( sim )
@@ -134,6 +134,13 @@ class ReconvergenceManager():
     for core in xrange( sim.ncores ):
       if sim.states[core].stall or sim.states[core].stop:
         s.scheduled_list.append( core )
+      # for explicit stalls set due to lockstep execution
+      if sim.states[core].clear:
+        sim.states[core].active = False
+
+    # all cores all either stalling or have reached a barrier
+    if len( s.scheduled_list ) == sim.ncores:
+      return
 
     # select pcs based on available bandwidth
     for i in xrange( sim.inst_ports ):
@@ -225,7 +232,7 @@ class LLFUAllocator():
     s.pc_dict = {}
 
     for core in xrange( sim.ncores ):
-      if sim.states[core].active and not sim.states[core].clear:
+      if sim.states[core].stall and not sim.states[core].clear:
         s.pc_dict[sim.states[core].pc] = s.pc_dict.get(sim.states[core].pc, 0) + 1
 
   #-----------------------------------------------------------------------
@@ -240,6 +247,7 @@ class LLFUAllocator():
         break
 
     if compute:
+
       if s.lockstep:
         s.evaluate_pcs( sim )
 
@@ -247,17 +255,19 @@ class LLFUAllocator():
         grant = s.get_grant()
         if s.valid[ grant ]:
           if s.lockstep:
+            s.valid[grant]          = False
+            sim.states[grant].clear = True
+            sim.states[grant].stall = False
+            if s.mdu:
+              sim.states[grant].mdu = False
+            else:
+              sim.states[grant].fpu = False
             pc = sim.states[grant].pc
             s.pc_dict[ pc ] -= 1
-            sim.states[grant].clear = True
-            s.valid[grant]          = False
             if s.pc_dict[ pc ] == 0:
               for core in xrange( sim.ncores ):
-                if sim.states[core].pc == pc:
-                  sim.states[core].clear         = False
-                  sim.states[core].stall         = False
-                  if s.mdu: sim.states[core].mdu = False
-                  else:     sim.states[core].fpu = False
+                if sim.states[core].curr_pc == pc:
+                  sim.states[core].clear = False
           else:
             sim.states[grant].stall = False
             s.valid[grant] = False
@@ -325,18 +335,6 @@ class MemCoalescer():
     s.reqs[ idx ]  = req
 
   #-----------------------------------------------------------------------
-  # evaluate_pcs
-  #-----------------------------------------------------------------------
-  # evaluates all pcs and figures out the groups
-
-  def evaluate_pcs( s, sim ):
-    s.pc_dict = {}
-
-    for core in xrange( sim.ncores ):
-      if sim.states[core].active and not sim.states[core].clear:
-        s.pc_dict[sim.states[core].pc] = s.pc_dict.get(sim.states[core].pc, 0) + 1
-
-  #-----------------------------------------------------------------------
   # coalesce
   #-----------------------------------------------------------------------
 
@@ -367,6 +365,18 @@ class MemCoalescer():
       s.top_priority = 0 if s.top_priority == s.num_reqs-1 else s.top_priority+1
 
   #-----------------------------------------------------------------------
+  # evaluate_pcs
+  #-----------------------------------------------------------------------
+  # evaluates all pcs and figures out the groups
+
+  def evaluate_pcs( s, sim ):
+    s.pc_dict = {}
+
+    for core in xrange( sim.ncores ):
+      if sim.states[core].stall and not sim.states[core].clear:
+        s.pc_dict[sim.states[core].pc] = s.pc_dict.get(sim.states[core].pc, 0) + 1
+
+  #-----------------------------------------------------------------------
   # drain
   #-----------------------------------------------------------------------
 
@@ -384,13 +394,13 @@ class MemCoalescer():
           for port in ports:
             pc = sim.states[port].pc
             s.pc_dict[ pc ] -= 1
-            sim.states[port].clear = True
+            sim.states[port].clear  = True
+            sim.states[port].stall  = False
+            sim.states[port].dmem   = False
             if s.pc_dict[pc] == 0:
               for core in xrange( sim.ncores ):
-                if sim.states[core].pc == pc:
+                if sim.states[core].curr_pc == pc:
                   sim.states[core].clear = False
-                  sim.states[core].stall = False
-                  sim.states[core].dmem  = False
         else:
           for port in ports:
             sim.states[port].stall = False

@@ -440,8 +440,9 @@ def execute_mul( s, inst ):
 # div
 #-----------------------------------------------------------------------
 def pre_execute_div( s, inst ):
-  s.mdu   = True
-  s.stall = True
+  s.mdu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.mdu_allocator.set_request( s.core_id )
 
 # http://stackoverflow.com/a/6084608
