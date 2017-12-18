@@ -427,8 +427,9 @@ def execute_sltu( s, inst ):
 # mul
 #-----------------------------------------------------------------------
 def pre_execute_mul( s, inst ):
-  s.mdu   = True
-  s.stall = True
+  s.mdu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.mdu_allocator.set_request( s.core_id )
 
 def execute_mul( s, inst ):
@@ -456,8 +457,9 @@ def execute_div( s, inst ):
 # divu
 #-----------------------------------------------------------------------
 def pre_execute_divu( s, inst ):
-  s.mdu   = True
-  s.stall = True
+  s.mdu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.mdu_allocator.set_request( s.core_id )
 
 def execute_divu( s, inst ):
@@ -468,8 +470,9 @@ def execute_divu( s, inst ):
 # rem
 #-----------------------------------------------------------------------
 def pre_execute_rem( s, inst ):
-  s.mdu   = True
-  s.stall = True
+  s.mdu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.mdu_allocator.set_request( s.core_id )
 
 # http://stackoverflow.com/a/6084608
@@ -484,8 +487,9 @@ def execute_rem( s, inst ):
 # remu
 #-----------------------------------------------------------------------
 def pre_execute_remu( s, inst ):
-  s.mdu   = True
-  s.stall = True
+  s.mdu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.mdu_allocator.set_request( s.core_id )
 
 def execute_remu( s, inst ):
@@ -727,6 +731,7 @@ def execute_bgez( s, inst ):
 def pre_execute_lw( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 0
   dmemreq.len_  = 4
@@ -745,6 +750,7 @@ def execute_lw( s, inst ):
 def pre_execute_lh( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 0
   dmemreq.len_  = 2
@@ -763,6 +769,7 @@ def execute_lh( s, inst ):
 def pre_execute_lhu( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 0
   dmemreq.len_  = 2
@@ -781,6 +788,7 @@ def execute_lhu( s, inst ):
 def pre_execute_lb( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 0
   dmemreq.len_  = 1
@@ -799,6 +807,7 @@ def execute_lb( s, inst ):
 def pre_execute_lbu( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 0
   dmemreq.len_  = 1
@@ -821,6 +830,7 @@ def execute_lbu( s, inst ):
 def pre_execute_sw( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 1
   dmemreq.len_  = 4
@@ -839,6 +849,7 @@ def execute_sw( s, inst ):
 def pre_execute_sh( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 1
   dmemreq.len_  = 2
@@ -857,6 +868,7 @@ def execute_sh( s, inst ):
 def pre_execute_sb( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 1
   dmemreq.len_  = 1
@@ -922,6 +934,7 @@ def execute_eret( s, inst ):
 def pre_execute_amo_add( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 2
   dmemreq.len_  = 4
@@ -940,6 +953,7 @@ def execute_amo_add( s, inst ):
 def pre_execute_amo_and( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 2
   dmemreq.len_  = 4
@@ -958,6 +972,7 @@ def execute_amo_and( s, inst ):
 def pre_execute_amo_or( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 2
   dmemreq.len_  = 4
@@ -976,6 +991,7 @@ def execute_amo_or( s, inst ):
 def pre_execute_amo_xchg( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 2
   dmemreq.len_  = 4
@@ -994,6 +1010,7 @@ def execute_amo_xchg( s, inst ):
 def pre_execute_amo_min( s, inst ):
   s.dmem        = True
   s.stall       = True
+  s.curr_pc     = s.pc
   dmemreq       = MemRequest()
   dmemreq.type_ = 2
   dmemreq.len_  = 4
@@ -1064,8 +1081,9 @@ def execute_mfuts( s, inst ):
 # add_s
 #-----------------------------------------------------------------------
 def pre_execute_add_s( s, inst ):
-  s.fpu   = True
-  s.stall = True
+  s.fpu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_add_s( s, inst ):
@@ -1078,8 +1096,9 @@ def execute_add_s( s, inst ):
 # sub_s
 #-----------------------------------------------------------------------
 def pre_execute_sub_s( s, inst ):
-  s.fpu   = True
-  s.stall = True
+  s.fpu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_sub_s( s, inst ):
@@ -1092,8 +1111,9 @@ def execute_sub_s( s, inst ):
 # mul_s
 #-----------------------------------------------------------------------
 def pre_execute_mul_s( s, inst ):
-  s.fpu   = True
-  s.stall = True
+  s.fpu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_mul_s( s, inst ):
@@ -1106,8 +1126,9 @@ def execute_mul_s( s, inst ):
 # div_s
 #-----------------------------------------------------------------------
 def pre_execute_div_s( s, inst ):
-  s.fpu   = True
-  s.stall = True
+  s.fpu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_div_s( s, inst ):
@@ -1120,8 +1141,9 @@ def execute_div_s( s, inst ):
 # c_eq_s
 #-----------------------------------------------------------------------
 def pre_execute_c_eq_s( s, inst ):
-  s.fpu   = True
-  s.stall = True
+  s.fpu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_c_eq_s( s, inst ):
@@ -1134,8 +1156,9 @@ def execute_c_eq_s( s, inst ):
 # c_lt_s
 #-----------------------------------------------------------------------
 def pre_execute_c_lt_s( s, inst ):
-  s.fpu   = True
-  s.stall = True
+  s.fpu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_c_lt_s( s, inst ):
@@ -1148,8 +1171,9 @@ def execute_c_lt_s( s, inst ):
 # c_le_s
 #-----------------------------------------------------------------------
 def pre_execute_c_le_s( s, inst ):
-  s.fpu   = True
-  s.stall = True
+  s.fpu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_c_le_s( s, inst ):
@@ -1162,8 +1186,9 @@ def execute_c_le_s( s, inst ):
 # cvt_w_s
 #-----------------------------------------------------------------------
 def pre_execute_cvt_w_s( s, inst ):
-  s.fpu   = True
-  s.stall = True
+  s.fpu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_cvt_w_s( s, inst ):
@@ -1175,8 +1200,9 @@ def execute_cvt_w_s( s, inst ):
 # cvt_s_w
 #-----------------------------------------------------------------------
 def pre_execute_cvt_s_w( s, inst ):
-  s.fpu   = True
-  s.stall = True
+  s.fpu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_cvt_s_w( s, inst ):
@@ -1188,8 +1214,9 @@ def execute_cvt_s_w( s, inst ):
 # trunc_w_s
 #-----------------------------------------------------------------------
 def pre_execute_trunc_w_s( s, inst ):
-  s.fpu   = True
-  s.stall = True
+  s.fpu     = True
+  s.stall   = True
+  s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
 
 def execute_trunc_w_s( s, inst ):

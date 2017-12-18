@@ -238,8 +238,8 @@ class Sim( object ):
         for i in xrange( self.ncores ):
           s = self.states[ i ]
           print pad( "%x" % s.pc, 8, " ", False ),
-          print "c%s %d %d %s %s %s" % (
-                  i, s.active, s.stall,
+          print "C%s a:%d s:%d c:%d %s %s %s" % (
+                  i, s.active, s.stall, s.clear,
                   pad_hex( s.inst_bits ),
                   pad( s.inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),

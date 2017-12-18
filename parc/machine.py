@@ -81,6 +81,7 @@ class State( Machine ):
     self.fpu       = False  # flag to indicate a vaild fpu resource request
     self.dmem      = False  # flag to indicate a valid dmem request
     self.clear     = False  # flag to indicate a cleared mem/llfu request for lockstep execution
+    self.curr_pc   = 0      # used for enforcing lockstep execution
 
     # stat registers
     self.stat_inst_en      = [ False ] * 16

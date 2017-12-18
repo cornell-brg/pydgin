@@ -40,6 +40,7 @@ class ReconvergenceManager():
   def __init__( s ):
     s.top_priority    = 0
     s.switch_interval = 0
+    s.scheduled_list  = []
 
   #-----------------------------------------------------------------------
   # configure
@@ -50,150 +51,119 @@ class ReconvergenceManager():
     s.top_priority    = num_cores-1
 
   #-----------------------------------------------------------------------
+  # update_pcs
+  #-----------------------------------------------------------------------
+
+  def update_pcs( s, sim, next_pc ):
+    # loop through cores
+    for core in xrange( sim.ncores ):
+
+      # select matching pcs
+      if sim.states[core].pc == next_pc and not( sim.states[core].stop or sim.states[core].stall ):
+        sim.states[core].active = True
+        s.scheduled_list.append( core )
+
+        # collect stats
+        if sim.states[core].spmd_mode:
+          sim.total_spmd     += 1
+          sim.total_parallel += 1
+        elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
+          sim.total_task     += 1
+          sim.total_wsrt     += 1
+          sim.total_parallel += 1
+        elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
+          sim.total_runtime  += 1
+          sim.total_wsrt     += 1
+          sim.total_parallel += 1
+
+      # NOTE: do not modify a core that has hit a hw barrier or has been stalling
+      elif core not in s.scheduled_list:
+        sim.states[core].active = False
+
+    # early exit: all cores are scheduled
+    if len( s.scheduled_list ) == sim.ncores:
+      return True
+
+    return False
+
+  #-----------------------------------------------------------------------
+  # get_next_pc
+  #-----------------------------------------------------------------------
+
+  def get_next_pc( s, sim ):
+    next_pc   = 0
+    next_core = 0
+    for x in xrange( sim.ncores ):
+      s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+      if not s.top_priority in s.scheduled_list:
+        next_pc = sim.states[s.top_priority].pc
+        next_core = s.top_priority
+        break
+
+    return next_pc, next_core
+
+  #-----------------------------------------------------------------------
+  # rr_min_pc
+  #-----------------------------------------------------------------------
+
+  def rr_min_pc( s, sim ):
+    min_pc   = sys.maxint
+    min_core = 0
+    # select the minimum-pc by considering only active cores
+    if s.switch_interval == 0:
+      for core in xrange( sim.ncores ):
+        if sim.states[core].pc < min_pc and core not in s.scheduled_list:
+          min_pc = sim.states[core].pc
+          min_core = core
+      s.switch_interval = sim.ncores + 1
+    # round-robin arbitration
+    else:
+      min_pc, min_core = s.get_next_pc( sim )
+      s.switch_interval -= 1
+
+    return min_pc, min_core
+
+  #-----------------------------------------------------------------------
   # xtick
   #-----------------------------------------------------------------------
 
   def xtick( s, sim ):
 
-    scheduled_list = []
+    # do not consider a core that is stalling or reached hw barroer
+    s.scheduled_list = []
     for core in xrange( sim.ncores ):
-      # do not consider a core that is stalling or reached hw barroer
       if sim.states[core].stall or sim.states[core].stop:
-        scheduled_list.append( core )
+        s.scheduled_list.append( core )
 
-    # NOTE: Need to check this again
-    # if all thread are stalled then skip the analysis
-    if len( scheduled_list ) == sim.ncores:
-      return
-
-    #---------------------------------------------------------------------
-    # No reconvergence
-    #---------------------------------------------------------------------
-
-    if sim.reconvergence == 0:
-      next_pc = 0
+    # select pcs based on available bandwidth
+    for i in xrange( sim.inst_ports ):
+      next_pc   = 0
       next_core = 0
+      all_done  = False
+
       # round-robin for given port bandwidth
-      for i in xrange( sim.inst_ports ):
+      if sim.reconvergence == 0:
+        next_pc, next_core = s.get_next_pc( sim )
 
-        for x in xrange( sim.ncores ):
-          s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
-          if not s.top_priority in scheduled_list:
-            next_pc = sim.states[s.top_priority].pc
-            next_core = s.top_priority
-            break
+      # round-robin + min-pc hybrid reconvergence
+      elif sim.reconvergence == 1:
+        next_pc, next_core = s.rr_min_pc( sim )
 
-        # collect stats
-        if sim.states[s.top_priority].spmd_mode:
-          sim.unique_spmd += 1
-          sim.unique_insts += 1
-        elif sim.states[s.top_priority].wsrt_mode and sim.states[s.top_priority].task_mode:
-          sim.unique_task += 1
-          sim.unique_insts += 1
-        elif sim.states[s.top_priority].wsrt_mode and sim.states[s.top_priority].runtime_mode:
-          sim.unique_runtime += 1
-          sim.unique_insts += 1
+      # collect stats
+      if sim.states[next_core].spmd_mode:
+        sim.unique_spmd += 1
+        sim.unique_insts += 1
+      elif sim.states[next_core].wsrt_mode and sim.states[next_core].task_mode:
+        sim.unique_task += 1
+        sim.unique_insts += 1
+      elif sim.states[next_core].wsrt_mode and sim.states[next_core].runtime_mode:
+        sim.unique_runtime += 1
+        sim.unique_insts += 1
 
-
-        # loop through cores
-        for core in xrange( sim.ncores ):
-
-          # select matching pcs
-          if sim.states[core].pc == next_pc and not( sim.states[core].stop or sim.states[core].stall ):
-            sim.states[core].active = True
-            scheduled_list.append( core )
-
-            # collect stats
-            if sim.states[core].spmd_mode:
-              sim.total_spmd     += 1
-              sim.total_parallel += 1
-            elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
-              sim.total_task     += 1
-              sim.total_wsrt     += 1
-              sim.total_parallel += 1
-            elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
-              sim.total_runtime  += 1
-              sim.total_wsrt     += 1
-              sim.total_parallel += 1
-
-          # NOTE: do not modify a core that has hit a hw barrier or has been stalling
-          elif core not in scheduled_list:
-            sim.states[core].active = False
-
-        # early exit: all cores are scheduled
-        if len( scheduled_list ) == sim.ncores:
-          break
-
-    #---------------------------------------------------------------------
-    # Round-Robin + Min-PC hybrid reconvergence
-    #---------------------------------------------------------------------
-    # FIXME: Add instruction port modeling
-
-    elif sim.reconvergence == 1:
-
-      for port in xrange( sim.inst_ports ):
-        min_core = 0
-        min_pc   = sys.maxint
-
-        # Select the minimum-pc by considering only active cores
-        if s.switch_interval == 0:
-          for core in xrange( sim.ncores ):
-            if sim.states[core].pc < min_pc and core not in scheduled_list:
-              min_pc = sim.states[core].pc
-              min_core = core
-          s.switch_interval = sim.ncores + 1
-
-        # Round-robin arbitration
-        else:
-          for x in xrange( sim.ncores ):
-            s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
-            if not s.top_priority in scheduled_list:
-              min_pc = sim.states[s.top_priority].pc
-              min_core = s.top_priority
-              break
-
-        # collect stats
-        if sim.states[min_core].spmd_mode:
-          sim.unique_spmd += 1
-          sim.unique_insts += 1
-        elif sim.states[min_core].wsrt_mode and sim.states[min_core].task_mode:
-          sim.unique_task += 1
-          sim.unique_insts += 1
-        elif sim.states[min_core].wsrt_mode and sim.states[min_core].runtime_mode:
-          sim.unique_runtime += 1
-          sim.unique_insts += 1
-
-        # loop through all the cores
-        for core in xrange( sim.ncores ):
-
-          # advance pcs that match the min-pc and make sure to not activate
-          # cores that have reached the barrier
-          if sim.states[core].pc == min_pc and not( sim.states[core].stop or sim.states[core].stall ):
-            sim.states[core].active = True
-            scheduled_list.append( core )
-
-            # collect stats
-            if sim.states[core].spmd_mode:
-              sim.total_spmd     += 1
-              sim.total_parallel += 1
-            elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
-              sim.total_task     += 1
-              sim.total_wsrt     += 1
-              sim.total_parallel += 1
-            elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
-              sim.total_runtime  += 1
-              sim.total_wsrt     += 1
-              sim.total_parallel += 1
-
-          # NOTE: do not modify a core that has hit a hw barrier or has been stalling
-          elif core not in scheduled_list:
-            sim.states[core].active = False
-
-        s.switch_interval -= 1
-
-        # early exit: all cores are scheduled
-        if len( scheduled_list ) == sim.ncores:
-          break
+      # check for early exit
+      all_done = s.update_pcs( sim, next_pc )
+      if all_done:
+        break
 
 #-------------------------------------------------------------------------
 # LLFUAllocator
@@ -277,15 +247,17 @@ class LLFUAllocator():
         grant = s.get_grant()
         if s.valid[ grant ]:
           if s.lockstep:
-            s.pc_dict[ sim.states[grant].pc ] -= 1
-            sim.states[grant].clear         = True
-            s.valid[grant]                  = False
-            if s.pc_dict[ sim.states[grant].pc ] == 0:
+            pc = sim.states[grant].pc
+            s.pc_dict[ pc ] -= 1
+            sim.states[grant].clear = True
+            s.valid[grant]          = False
+            if s.pc_dict[ pc ] == 0:
               for core in xrange( sim.ncores ):
-                sim.states[core].clear         = False
-                sim.states[core].stall         = False
-                if s.mdu: sim.states[core].mdu = False
-                else:     sim.states[core].fpu = False
+                if sim.states[core].pc == pc:
+                  sim.states[core].clear         = False
+                  sim.states[core].stall         = False
+                  if s.mdu: sim.states[core].mdu = False
+                  else:     sim.states[core].fpu = False
           else:
             sim.states[grant].stall = False
             s.valid[grant] = False
@@ -409,10 +381,10 @@ class MemCoalescer():
         ports = s.table.pop( entry )
 
         if s.lockstep:
-          for p in ports:
-            pc = sim.states[p].pc
-            s.pc_dict[ pc ]    -= 1
-            sim.states[p].clear = True
+          for port in ports:
+            pc = sim.states[port].pc
+            s.pc_dict[ pc ] -= 1
+            sim.states[port].clear = True
             if s.pc_dict[pc] == 0:
               for core in xrange( sim.ncores ):
                 if sim.states[core].pc == pc:
@@ -420,9 +392,9 @@ class MemCoalescer():
                   sim.states[core].stall = False
                   sim.states[core].dmem  = False
         else:
-          for p in ports:
-            sim.states[p].stall = False
-            sim.states[p].dmem  = False
+          for port in ports:
+            sim.states[port].stall = False
+            sim.states[port].dmem  = False
 
       else:
         break
