@@ -59,7 +59,7 @@ class ReconvergenceManager():
     for core in xrange( sim.ncores ):
 
       # select matching pcs
-      if sim.states[core].pc == next_pc and not( sim.states[core].stop or sim.states[core].stall ):
+      if sim.states[core].pc == next_pc and not( sim.states[core].stop or sim.states[core].stall or sim.states[core].clear ):
         sim.states[core].active = True
         s.scheduled_list.append( core )
 
@@ -132,7 +132,7 @@ class ReconvergenceManager():
     # do not consider a core that is stalling or reached hw barroer
     s.scheduled_list = []
     for core in xrange( sim.ncores ):
-      if sim.states[core].stall or sim.states[core].stop:
+      if sim.states[core].stall or sim.states[core].stop or sim.states[core].clear:
         s.scheduled_list.append( core )
       # for explicit stalls set due to lockstep execution
       if sim.states[core].clear:
