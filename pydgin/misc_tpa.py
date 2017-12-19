@@ -266,7 +266,8 @@ class LLFUAllocator():
             s.pc_dict[ pc ] -= 1
             if s.pc_dict[ pc ] == 0:
               for core in xrange( sim.ncores ):
-                if sim.states[core].curr_pc == pc:
+                # only clear cores that are marked to be cleared
+                if sim.states[core].curr_pc == pc and sim.states[core].clear:
                   sim.states[core].clear = False
           else:
             sim.states[grant].stall = False
@@ -353,14 +354,16 @@ class MemCoalescer():
 
         match = False
         for key in s.table.keys():
-          # NOTE: coalesce only for loads
-          if entry.type_ == 0 and entry.addr == key.addr:
+          # NOTE: coalesce only for loads; need to check both the types of
+          # existing keys and the new entry
+          if entry.type_ == 0 and key.type_ == 0 and entry.addr == key.addr:
             s.table[key].append( next_port )
             match = True
 
         if not match:
           s.table[entry] = [ next_port ]
           s.fifo.append( entry )
+
         s.valid[next_port] = False
       s.top_priority = 0 if s.top_priority == s.num_reqs-1 else s.top_priority+1
 
@@ -399,7 +402,8 @@ class MemCoalescer():
             sim.states[port].dmem   = False
             if s.pc_dict[pc] == 0:
               for core in xrange( sim.ncores ):
-                if sim.states[core].curr_pc == pc:
+                # only clear cores that are marked to be cleared
+                if sim.states[core].curr_pc == pc and sim.states[core].clear:
                   sim.states[core].clear = False
         else:
           for port in ports:
