@@ -155,7 +155,8 @@ class Sim( object ):
     --color         Turn on color for linetraces
     --analysis      Use the options below
         0 No reconvergence
-        1 Min-pc, opportunistic
+        1 Min-pc, round-robin
+        2 Min-sp/pc, round-robin
     --runtime-md    Runtime metadata used in analysis
     --inst-ports    Number of instruction ports (bandwidth)
     --data-ports    Number of data ports (bandwidth)
@@ -625,6 +626,13 @@ class Sim( object ):
       # TPA microarchitectural parameters and configuration
       #-----------------------------------------------------------------
 
+      # print the reconvergence scheme used
+      if   self.reconvergence == 0: print "No reconvergence"
+      elif self.reconvergence == 1: print "Min-pc, round-robin"
+      elif self.reconvergence == 2: print "Min-pc, round-robin"
+      else:
+        print "Invalid option for recovergence. Try --help for options."
+        return 1
       # shreesha: default number of instruction ports
       if self.inst_ports == 0:
         self.inst_ports = self.ncores

@@ -11,6 +11,13 @@ import math
 import sys
 
 #-------------------------------------------------------------------------
+# global variable
+#-------------------------------------------------------------------------
+
+# stack pointer is reg:29 for parc
+sp = 29
+
+#-------------------------------------------------------------------------
 # colors
 #-------------------------------------------------------------------------
 # Ref1: http://ozzmaker.com/add-colour-to-text-in-python/
@@ -129,6 +136,32 @@ class ReconvergenceManager():
     return min_pc, min_core
 
   #-----------------------------------------------------------------------
+  # rr_min_sp_pc
+  #-----------------------------------------------------------------------
+
+  def rr_min_sp_pc( s, sim ):
+    min_sp   = sys.maxint
+    min_pc   = 0
+    min_core = 0
+    # select the minimum-pc by considering only active cores
+    if s.switch_interval == 0:
+      for core in xrange( sim.ncores ):
+        if core not in s.scheduled_list:
+          if sim.states[core].rf[ sp ] < min_sp:
+            min_pc = sim.states[core].pc
+            min_core = core
+          elif sim.states[core].rf[ sp ] ==  min_sp and sim.states[core].pc < min_pc:
+            min_pc = sim.states[core].pc
+            min_core = core
+      s.switch_interval = sim.ncores
+    # round-robin arbitration
+    else:
+      min_pc, min_core = s.get_next_pc( sim )
+      s.switch_interval -= 1
+
+    return min_pc, min_core
+
+  #-----------------------------------------------------------------------
   # xtick
   #-----------------------------------------------------------------------
 
@@ -160,6 +193,10 @@ class ReconvergenceManager():
       # round-robin + min-pc hybrid reconvergence
       elif sim.reconvergence == 1:
         next_pc, next_core = s.rr_min_pc( sim )
+
+      # round-robin + min-sp/pc hybrid reconvergence
+      elif sim.reconvergence == 2:
+        next_pc, next_core = s.rr_min_sp_pc( sim )
 
       # collect stats
       if sim.states[next_core].spmd_mode:
