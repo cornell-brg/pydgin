@@ -629,7 +629,7 @@ class Sim( object ):
       # print the reconvergence scheme used
       if   self.reconvergence == 0: print "No reconvergence"
       elif self.reconvergence == 1: print "Min-pc, round-robin"
-      elif self.reconvergence == 2: print "Min-pc, round-robin"
+      elif self.reconvergence == 2: print "Min-sp, round-robin"
       else:
         print "Invalid option for recovergence. Try --help for options."
         return 1
