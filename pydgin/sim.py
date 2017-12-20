@@ -64,21 +64,23 @@ class Sim( object ):
 
     # shreesha: adding extra stuff here
     self.reconvergence_manager = ReconvergenceManager()
-    self.dmem_coalescer        = MemCoalescer( 16  ) # line_sz in bytes
+    self.dmem_coalescer        = MemCoalescer()
     self.mdu_allocator         = LLFUAllocator()
     self.fpu_allocator         = LLFUAllocator(False)
 
     # shreesha: adding extra stuff here
-    self.reconvergence = 0
-    self.barrier_count = 0
-    self.active_cores  = 0
-    self.inst_ports    = 0 # Instruction bandwidth
-    self.data_ports    = 0 # Data bandwidth
-    self.mdu_ports     = 0 # MDU bandwidth
-    self.fpu_ports     = 0 # FPU bandwidth
-    self.lockstep      = False
-    self.linetrace     = False
-    self.color         = False
+    self.reconvergence  = 0
+    self.barrier_count  = 0
+    self.active_cores   = 0
+    self.inst_ports     = 0 # Instruction bandwidth
+    self.data_ports     = 0 # Data bandwidth
+    self.mdu_ports      = 0 # MDU bandwidth
+    self.fpu_ports      = 0 # FPU bandwidth
+    self.icache_line_sz = 0 # Insn cache line size (default word size)
+    self.dcache_line_sz = 0 # Data cache line size (set based on num cores)
+    self.lockstep       = False
+    self.linetrace      = False
+    self.color          = False
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
@@ -160,6 +162,8 @@ class Sim( object ):
     --mdu-ports     Number of MDU ports (bandwidth)
     --fpu-ports     Number of FPU ports (bandwidth)
     --lockstep      Enforce lockstep execution on mem/llfu divergence
+    --icache_line_sz  Cache line size in bytes
+    --dcache_line_sz  Cache line size in bytes
   """
 
   #-----------------------------------------------------------------------
@@ -253,8 +257,15 @@ class Sim( object ):
       self.mdu_allocator.xtick ( self )
       self.fpu_allocator.xtick ( self )
 
-      for core_id in xrange( self.ncores ):
-        s = self.states[ core_id ]
+      # shreesha: linetrace
+      # NOTE: collect the linetrace before commit as pc get's updated else
+      pc_list = []
+
+      for core in xrange( self.ncores ):
+        s = self.states[ core ]
+
+        if self.linetrace:
+          pc_list.append( s.pc )
 
         # NOTE: Be wary of bubble squeezing...
         if s.active and not s.stall:
@@ -305,22 +316,22 @@ class Sim( object ):
               parallel_mode = self.states[i].wsrt_mode or self.states[i].spmd_mode
               # core0 in serial section
               if self.color and not parallel_mode and i ==0 :
-                print colors.white + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+                print colors.white + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
               # others in bthread control function
               elif self.color and not parallel_mode:
-                print colors.blue + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+                print colors.blue + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
               # cores in spmd region
               elif self.color and self.states[i].spmd_mode:
-                print colors.purple + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+                print colors.purple + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
               # cores executing tasks in wsrt region
               elif self.color and self.states[i].task_mode and parallel_mode:
-                print colors.green + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+                print colors.green + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
               # cores executing runtime function in wsrt region
               elif self.color and self.states[i].runtime_mode and parallel_mode:
-                print colors.yellow + pad( "%x |" % self.states[i].pc, 9, " ", False ) + colors.end,
+                print colors.yellow + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
               # No color requested
               else:
-                print pad( "%x |" % self.states[i].pc, 9, " ", False ),
+                print pad( "%x |" % pc_list[i], 9, " ", False ),
             elif self.states[i].active and self.states[i].stall:
               if self.states[i].dmem:
                 print pad( "#d |", 9, " ", False ),
@@ -430,6 +441,8 @@ class Sim( object ):
                            "--data-ports",
                            "--mdu-ports",
                            "--fpu-ports",
+                           "--icache-line-sz",
+                           "--dcache-line-sz",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -500,8 +513,6 @@ class Sim( object ):
           elif prev_token == "--ncores":
             self.ncores = int( token )
             self.active_cores = self.ncores
-            # shreesha: tpa stuff
-            self.reconvergence_manager.configure( self.ncores )
 
           elif prev_token == "--core-switch-ival":
             self.core_switch_ival = int( token )
@@ -532,6 +543,18 @@ class Sim( object ):
 
           elif prev_token == "--fpu-ports":
             self.fpu_ports = int(token)
+
+          elif prev_token == "--icache-line-sz":
+            self.icache_line_sz = int(token)
+            if not self.icache_line_sz % 4 == 0:
+              print "Insn cache line size must be word aligned!"
+              return 1
+
+          elif prev_token == "--dcache-line-sz":
+            self.dcache_line_sz = int(token)
+            if not self.dcache_line_sz % 4 == 0:
+              print "Data cache line size must be word aligned!"
+              return 1
 
           prev_token = ""
 
@@ -598,31 +621,57 @@ class Sim( object ):
           print "Could not open the runtime-md file %s " % runtime_md
           return 1
 
+      #-----------------------------------------------------------------
+      # TPA microarchitectural parameters and configuration
+      #-----------------------------------------------------------------
+
       # shreesha: default number of instruction ports
       if self.inst_ports == 0:
         self.inst_ports = self.ncores
-      print "Inst ports", self.inst_ports
+      print "Inst ports: ", self.inst_ports
+
+      # shreesha: default icache-line-sz
+      if self.icache_line_sz == 0:
+        self.icache_line_sz = 4
+      mask_bits = ~( self.icache_line_sz - 1 )
+      mask = mask_bits & 0xFFFFFFFF
+      print "Insn cache line size: %d, mask: %x" % ( self.icache_line_sz, mask )
+
+      # shreesha: configure reconvergence manager
+      self.reconvergence_manager.configure( self.ncores, self.icache_line_sz )
+
+      # shreesha: default dcache-line-sz
+      if self.dcache_line_sz == 0:
+        self.dcache_line_sz = self.ncores * 4
+      mask_bits = ~( self.dcache_line_sz - 1 )
+      mask = mask_bits & 0xFFFFFFFF
+      print "Data cache line size: %d, mask: %x" % ( self.dcache_line_sz, mask )
 
       # shreesha: default number of data ports
       if self.data_ports == 0:
         self.data_ports = self.ncores
+      print "Data ports: ", self.data_ports, " with lockstep execution: ", self.lockstep
 
-      self.dmem_coalescer.configure( self.ncores, self.data_ports, self.lockstep )
-      print "Data ports", self.data_ports, "with lockstep execution: ", self.lockstep
+      # shreesha: configure dmem coalescer
+      self.dmem_coalescer.configure( self.ncores, self.data_ports, self.dcache_line_sz, self.lockstep )
 
       # shreesha: default number of mdu ports
       if self.mdu_ports == 0:
         self.mdu_ports = self.ncores
+      print "MDU  ports: ", self.mdu_ports, " with lockstep execution: ", self.lockstep
 
+      # shreesha: configure mdu allocator
       self.mdu_allocator.configure( self.ncores, self.mdu_ports, self.lockstep )
-      print "MDU  ports", self.mdu_ports, "with lockstep execution: ", self.lockstep
 
       # shreesha: default number of fpu ports
       if self.fpu_ports == 0:
         self.fpu_ports = self.ncores
+      print "FPU  ports: ", self.fpu_ports, " with lockstep execution: ", self.lockstep
 
+      # shreesha: configure fpu allocator
       self.fpu_allocator.configure( self.ncores, self.fpu_ports, self.lockstep )
-      print "FPU  ports", self.fpu_ports, "with lockstep execution: ", self.lockstep
+
+      #-----------------------------------------------------------------
 
       # Execute the program
 

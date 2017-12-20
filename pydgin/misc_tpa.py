@@ -41,25 +41,30 @@ class ReconvergenceManager():
     s.top_priority    = 0
     s.switch_interval = 0
     s.scheduled_list  = []
+    s.mask            = 0
 
   #-----------------------------------------------------------------------
   # configure
   #-----------------------------------------------------------------------
 
-  def configure( s, num_cores ):
+  def configure( s, num_cores, line_sz ):
     s.switch_interval = num_cores
     s.top_priority    = num_cores-1
+    # mask bits
+    mask_bits = ~( line_sz - 1 )
+    s.mask = mask_bits & 0xFFFFFFFF
 
   #-----------------------------------------------------------------------
   # update_pcs
   #-----------------------------------------------------------------------
 
-  def update_pcs( s, sim, next_pc ):
+  def update_pcs( s, sim, line_addr ):
     # loop through cores
     for core in xrange( sim.ncores ):
 
       # select matching pcs
-      if sim.states[core].pc == next_pc and not( sim.states[core].stop or sim.states[core].stall or sim.states[core].clear ):
+      curr_line_addr = sim.states[core].pc & s.mask
+      if curr_line_addr == line_addr and not( sim.states[core].stop or sim.states[core].stall or sim.states[core].clear ):
         sim.states[core].active = True
         s.scheduled_list.append( core )
 
@@ -168,7 +173,8 @@ class ReconvergenceManager():
         sim.unique_insts += 1
 
       # check for early exit
-      all_done = s.update_pcs( sim, next_pc )
+      line_addr = next_pc & s.mask
+      all_done = s.update_pcs( sim, line_addr )
       if all_done:
         break
 
@@ -302,7 +308,7 @@ class MemCoalescer():
   # constructor
   #-----------------------------------------------------------------------
 
-  def __init__( s, line_sz ):
+  def __init__( s ):
     s.valid        = []        # valid requests
     s.num_reqs     = 0         # number of requests
     s.reqs         = []        # requests list
@@ -312,20 +318,21 @@ class MemCoalescer():
     s.lockstep     = False     # flag to enforce lockstep execution
     s.pc_dict      = {}        # data-structure used to enforce lockstep execution
     s.top_priority = 0         # priority for aribitration
-    # mask bits
-    mask_bits = ~( line_sz - 1 )
-    s.mask = mask_bits & 0xFFFFFFFF
+    s.mask         = 0
 
   #-----------------------------------------------------------------------
   # configure
   #-----------------------------------------------------------------------
 
-  def configure( s, num_reqs, num_ports, lockstep ):
+  def configure( s, num_reqs, num_ports, line_sz, lockstep ):
     s.valid     = [False]*num_reqs
     s.reqs      = [None]*num_reqs
     s.num_reqs  = num_reqs
     s.num_ports = num_ports
     s.lockstep  = lockstep
+    # mask bits
+    mask_bits = ~( line_sz - 1 )
+    s.mask = mask_bits & 0xFFFFFFFF
 
   #-----------------------------------------------------------------------
   # set_request
