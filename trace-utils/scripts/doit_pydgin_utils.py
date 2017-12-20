@@ -210,7 +210,7 @@ def gen_trace_per_app( evaldict ):
   icache_line_sz  = evaldict["icache_line_sz"]
   dcache_line_sz  = evaldict["dcache_line_sz"]
   data_ports      = evaldict["data_ports"]
-  mdu_ports       = evaldict["fpu_ports"]
+  mdu_ports       = evaldict["mdu_ports"]
   fpu_ports       = evaldict["fpu_ports"]
   analysis        = evaldict["analysis"]
   lockstep        = evaldict["lockstep"]
