@@ -135,19 +135,21 @@ def get_base_evaldict():
   resultsdir  = 'results'
   evaldict    = {}
 
-  evaldict['app_group']  = []    # Which group of apps to sim (e.g., ['scalar'])
-  evaldict['app_list']   = []    # List of apps to sim
-  evaldict['app_dict']   = {}    # Dict with app groups/opts to run
-  evaldict['runtime']    = False # Do not pass runtime-md flag
-  evaldict['ncores']     = 4     # Number of cores to simulate
-  evaldict['inst_ports'] = 4     # Number of ports for instruction fetch
-  evaldict['data_ports'] = 4     # Number of ports for data memory
-  evaldict['mdu_ports']  = 4     # Number of ports for mdu
-  evaldict['fpu_ports']  = 4     # Number of ports for fpu
-  evaldict['analysis']   = 0     # Reconvergence analysis type
-  evaldict['lockstep']   = False #ockstepp enable flag
-  evaldict['linetrace']  = False # Linetrace enable flag
-  evaldict['color']      = False # Linetrace colors enable flag
+  evaldict['app_group']       = []    # Which group of apps to sim (e.g., ['scalar'])
+  evaldict['app_list']        = []    # List of apps to sim
+  evaldict['app_dict']        = {}    # Dict with app groups/opts to run
+  evaldict['runtime']         = False # Do not pass runtime-md flag
+  evaldict['ncores']          = 4     # Number of cores to simulate
+  evaldict['icache_line_sz']  = 0     # Icache line sz in bytes
+  evaldict['dcache_line_sz']  = 0     # Dcache line sz in bytes
+  evaldict['inst_ports']      = 4     # Number of ports for instruction fetch
+  evaldict['data_ports']      = 4     # Number of ports for data memory
+  evaldict['mdu_ports']       = 4     # Number of ports for mdu
+  evaldict['fpu_ports']       = 4     # Number of ports for fpu
+  evaldict['analysis']        = 0     # Reconvergence analysis type
+  evaldict['lockstep']        = False #ockstepp enable flag
+  evaldict['linetrace']       = False # Linetrace enable flag
+  evaldict['color']           = False # Linetrace colors enable flag
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -205,7 +207,11 @@ def gen_trace_per_app( evaldict ):
   app_group       = evaldict["app_group"]
   runtime_md_flag = evaldict["runtime"]
   inst_ports      = evaldict["inst_ports"]
+  icache_line_sz  = evaldict["icache_line_sz"]
+  dcache_line_sz  = evaldict["dcache_line_sz"]
   data_ports      = evaldict["data_ports"]
+  mdu_ports       = evaldict["fpu_ports"]
+  fpu_ports       = evaldict["fpu_ports"]
   analysis        = evaldict["analysis"]
   lockstep        = evaldict["lockstep"]
   linetrace       = evaldict["linetrace"]
@@ -266,8 +272,12 @@ def gen_trace_per_app( evaldict ):
           extra_pydgin_opts += "--color "
 
         extra_pydgin_opts += "--analysis %(analysis)s " % { 'analysis' : analysis }
+        extra_pydgin_opts += "--icache-line-sz %(icache_line_sz)s " % { 'icache_line_sz' : icache_line_sz }
+        extra_pydgin_opts += "--dcache-line-sz %(dcache_line_sz)s " % { 'dcache_line_sz' : dcache_line_sz }
         extra_pydgin_opts += "--inst-ports %(inst_ports)s " % { 'inst_ports' : inst_ports }
         extra_pydgin_opts += "--data-ports %(data_ports)s " % { 'data_ports' : data_ports }
+        extra_pydgin_opts += "--mdu-ports %(mdu_ports)s "   % { 'mdu_ports'  : mdu_ports }
+        extra_pydgin_opts += "--fpu-ports %(fpu_ports)s "   % { 'fpu_ports'  : fpu_ports }
 
         pydgin_cmd = ' '.join([
           # pydgin binary

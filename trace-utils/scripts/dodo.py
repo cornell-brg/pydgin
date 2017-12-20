@@ -38,42 +38,36 @@ DOIT_CONFIG = {
 def task_pydgin_sims_wsrt():
 
   ncores = 4
-  # FIXME
-  #for iports in range( 1, ncores+1 ):
-  #  for dports in range( 1, ncores+1 ):
-  #    for analysis in range( 2 ):
-  for ports in range( 1, ncores+1 ):
-    for llfus in range( 1, ncores+1  ):
-      for lockstep in range( 2 ):
-        for analysis in range( 2 ):
-          # get an evaluation dictionary
-          evaldict = get_base_evaldict()
+  for icache_line_sz in [4, ncores*4]:
+    for ports in range( 1, ncores+1 ):
+      for llfus in range( 1, ncores+1  ):
+        for lockstep in range( 2 ):
+          for analysis in range( 3 ):
+            # get an evaluation dictionary
+            evaldict = get_base_evaldict()
 
-          # task info
-          evaldict['basename']    = "sim-pydgin-wsrt-%dc-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, ports, ports, llfus, lockstep, analysis )
-          evaldict['resultsdir']  = "results-small-wsrt-%dc-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, ports, ports, llfus, lockstep, analysis )
-          evaldict['doc']         = os.path.basename(__file__).rstrip('c')
+            # task info
+            evaldict['basename']    = "sim-pydgin-wsrt-%dc-%diclz-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, icache_line_sz, ports, ports, llfus, lockstep, analysis )
+            evaldict['resultsdir']  = "results-small-wsrt-%dc-%diclz-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, icache_line_sz, ports, ports, llfus, lockstep, analysis )
+            evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
-          # kernels to run with options
-          evaldict['app_group']   = ["small","mtpull"]
-          evaldict['app_list']    = app_list
-          evaldict['app_dict']    = app_dict
+            # kernels to run with options
+            evaldict['app_group']   = ["small","mtpull"]
+            evaldict['app_list']    = app_list
+            evaldict['app_dict']    = app_dict
 
-          # pydgin options
-          evaldict['runtime']     = True             # provide runtime metadata
-          evaldict['ncores']      = ncores           # number of cores to simulate
-          evaldict['inst_ports']  = ports            # instruction port bw
-          evaldict['data_ports']  = ports            # data port bw
-          evaldict['mdu_ports']   = llfus            # mdu port bw
-          evaldict['fpu_ports']   = llfus            # fpu port bw
-          evaldict['analysis']    = analysis         # type of reconvergence scheme
-          evaldict['lockstep']    = bool( lockstep ) # enable lockstep execution
+            # pydgin options
+            evaldict['runtime']        = True             # provide runtime metadata
+            evaldict['ncores']         = ncores           # number of cores to simulate
+            evaldict['icache_line_sz'] = icache_line_sz   # icache line size
+            evaldict['inst_ports']     = ports            # instruction port bw
+            evaldict['data_ports']     = ports            # data port bw
+            evaldict['mdu_ports']      = llfus            # mdu port bw
+            evaldict['fpu_ports']      = llfus            # fpu port bw
+            evaldict['analysis']       = analysis         # type of reconvergence scheme
+            evaldict['lockstep']       = bool( lockstep ) # enable lockstep execution
 
-          # debug options
-          #evaldict['linetrace']   = True
-          #evaldict['color']       = True
-
-          yield gen_trace_per_app( evaldict )
+            yield gen_trace_per_app( evaldict )
 
 #----------------------------------------------------------------------------
 # spmd tasks
@@ -90,41 +84,35 @@ def task_pydgin_sims_wsrt():
 def task_pydgin_sims_spmd():
 
   ncores = 4
-  # FIXME
-  #for iports in range( 1, ncores+1 ):
-  #  for dports in range( 1, ncores+1 ):
-  #    for analysis in range( 2 ):
-  for ports in range( 1, ncores+1 ):
-    for llfus in range( 1, ncores+1  ):
-      for lockstep in range( 2 ):
-        for analysis in range( 2 ):
-          # get an evaluation dictionary
-          evaldict = get_base_evaldict()
+  for icache_line_sz in [4, ncores*4]:
+    for ports in range( 1, ncores+1 ):
+      for llfus in range( 1, ncores+1  ):
+        for lockstep in range( 2 ):
+          for analysis in range( 3 ):
+            # get an evaluation dictionary
+            evaldict = get_base_evaldict()
 
-          # task info
-          evaldict['basename']    = "sim-pydgin-spmd-%dc-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, ports, ports, llfus, lockstep, analysis )
-          evaldict['resultsdir']  = "results-small-spmd-%dc-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, ports, ports, llfus, lockstep, analysis )
-          evaldict['doc']         = os.path.basename(__file__).rstrip('c')
+            # task info
+            evaldict['basename']    = "sim-pydgin-spmd-%dc-%diclz-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, icache_line_sz, ports, ports, llfus, lockstep, analysis )
+            evaldict['resultsdir']  = "results-small-spmd-%dc-%diclz-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, icache_line_sz, ports, ports, llfus, lockstep, analysis )
+            evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
-          # kernels to run with options
-          evaldict['app_group']   = ["small","mt"]
-          evaldict['app_list']    = app_list_spmd
-          evaldict['app_dict']    = app_dict
+            # kernels to run with options
+            evaldict['app_group']   = ["small","mt"]
+            evaldict['app_list']    = app_list_spmd
+            evaldict['app_dict']    = app_dict
 
-          # pydgin options
-          evaldict['ncores']      = ncores           # number of cores to simulate
-          evaldict['inst_ports']  = ports            # instruction port bw
-          evaldict['data_ports']  = ports            # data port bw
-          evaldict['mdu_ports']   = llfus            # mdu port bw
-          evaldict['fpu_ports']   = llfus            # fpu port bw
-          evaldict['analysis']    = analysis         # type of reconvergence scheme
-          evaldict['lockstep']    = bool( lockstep ) # enable lockstep execution
+            # pydgin options
+            evaldict['ncores']         = ncores           # number of cores to simulate
+            evaldict['icache_line_sz'] = icache_line_sz   # icache line size
+            evaldict['inst_ports']     = ports            # instruction port bw
+            evaldict['data_ports']     = ports            # data port bw
+            evaldict['mdu_ports']      = llfus            # mdu port bw
+            evaldict['fpu_ports']      = llfus            # fpu port bw
+            evaldict['analysis']       = analysis         # type of reconvergence scheme
+            evaldict['lockstep']       = bool( lockstep ) # enable lockstep execution
 
-          # debug options
-          #evaldict['linetrace']   = True
-          #evaldict['color']       = True
-
-          yield gen_trace_per_app( evaldict )
+            yield gen_trace_per_app( evaldict )
 
 #----------------------------------------------------------------------------
 # debug tasks
