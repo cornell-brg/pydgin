@@ -383,7 +383,7 @@ class MemCoalescer():
   # coalesce
   #-----------------------------------------------------------------------
 
-  def coalesce( s ):
+  def coalesce( s, sim ):
     for i in xrange( s.num_reqs ):
       next_port = s.top_priority
       if s.valid[next_port]:
@@ -403,10 +403,13 @@ class MemCoalescer():
           if entry.type_ == 0 and key.type_ == 0 and entry.addr == key.addr:
             s.table[key].append( next_port )
             match = True
+            sim.total_accesses += 1
 
         if not match:
           s.table[entry] = [ next_port ]
           s.fifo.append( entry )
+          sim.unique_accesses += 1
+          sim.total_accesses += 1
 
         s.valid[next_port] = False
       s.top_priority = 0 if s.top_priority == s.num_reqs-1 else s.top_priority+1
@@ -471,6 +474,6 @@ class MemCoalescer():
         break
 
     if any_valid:
-      s.coalesce()
+      s.coalesce(sim)
 
     s.drain(sim)

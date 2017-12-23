@@ -84,18 +84,20 @@ class Sim( object ):
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
-    self.unique_insts   = 0 # unique insts in parallel regions
-    self.unique_spmd    = 0 # unique insts in spmd region
-    self.unique_task    = 0 # unique insts in wsrt tasks
-    self.unique_runtime = 0 # unique insts in wsrt runtime
-    self.total_spmd     = 0 # total insts in spmd region
-    self.total_task     = 0 # total insts in wsrt tasks
-    self.total_runtime  = 0 # total insts in wsrt runtime
-    self.total_wsrt     = 0 # total insts in wsrt region
-    self.total_parallel = 0 # total number of instructions in parallel regions
+    self.unique_insts    = 0 # unique insts in parallel regions
+    self.unique_spmd     = 0 # unique insts in spmd region
+    self.unique_task     = 0 # unique insts in wsrt tasks
+    self.unique_runtime  = 0 # unique insts in wsrt runtime
+    self.unique_accesses = 0 # unique number of mem accesses
+    self.total_spmd      = 0 # total insts in spmd region
+    self.total_task      = 0 # total insts in wsrt tasks
+    self.total_runtime   = 0 # total insts in wsrt runtime
+    self.total_wsrt      = 0 # total insts in wsrt region
+    self.total_parallel  = 0 # total number of instructions in parallel regions
+    self.total_accesses  = 0 # total number of mem accesses
     # NOTE: Total number of instructions in timing loop
-    self.total_steps    = 0
-    self.serial_steps   = 0
+    self.total_steps     = 0
+    self.serial_steps    = 0
 
   #-----------------------------------------------------------------------
   # decode
@@ -390,6 +392,13 @@ class Sim( object ):
     redundant_runtime = self.total_runtime - self.unique_runtime
     if self.total_runtime:
       print 'Redundancy in runtime regions = %f' % ( 100*redundant_runtime/float( self.total_runtime ) )
+    print
+
+    print 'Total data accesses in parallel regions = %d' % self.total_accesses
+    print 'Unique data accesses in parallel regions = %d' % self.unique_accesses
+    redundant_accesses = self.total_accesses - self.unique_accesses
+    if self.total_accesses:
+      print 'Redundancy for data accesses in parallel regions = %f' % ( 100*redundant_accesses/float( self.total_accesses ) )
     print
 
     # print instruction mix
