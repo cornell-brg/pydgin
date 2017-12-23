@@ -228,6 +228,10 @@ class Sim( object ):
 
             if pre_exec_fun:
               pre_exec_fun( s, inst )
+            else:
+              parallel_mode = s.wsrt_mode or s.spmd_mode
+              if self.states[0].stats_en and parallel_mode:
+                s.int_insts += 1
 
             # record the function to be executed and the inst bits
             s.inst_bits = inst_bits
@@ -386,6 +390,29 @@ class Sim( object ):
     redundant_runtime = self.total_runtime - self.unique_runtime
     if self.total_runtime:
       print 'Redundancy in runtime regions = %f' % ( 100*redundant_runtime/float( self.total_runtime ) )
+    print
+
+    # print instruction mix
+    total_int_insts   = 0
+    total_load_insts  = 0
+    total_store_insts = 0
+    total_amo_insts   = 0
+    total_mdu_insts   = 0
+    total_fpu_insts   = 0
+    for state in self.states:
+      total_int_insts   = total_int_insts   +  state.int_insts
+      total_load_insts  = total_load_insts  +  state.load_insts
+      total_store_insts = total_store_insts +  state.store_insts
+      total_amo_insts   = total_amo_insts   +  state.amo_insts
+      total_mdu_insts   = total_mdu_insts   +  state.mdu_insts
+      total_fpu_insts   = total_fpu_insts   +  state.fpu_insts
+    print 'Instructions mix in parallel regions'
+    print 'integer = %d' % ( total_int_insts )
+    print 'load    = %d' % ( total_load_insts )
+    print 'store   = %d' % ( total_store_insts )
+    print 'amo     = %d' % ( total_amo_insts )
+    print 'mdu     = %d' % ( total_mdu_insts )
+    print 'fpu     = %d' % ( total_fpu_insts )
     print
 
     # show all stats

@@ -431,6 +431,9 @@ def pre_execute_mul( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.mdu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.mdu_insts += 1
 
 def execute_mul( s, inst ):
   s.rf[ inst.rd ] = trim_32( s.rf[ inst.rs ] * s.rf[ inst.rt ] )
@@ -444,6 +447,9 @@ def pre_execute_div( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.mdu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.mdu_insts += 1
 
 # http://stackoverflow.com/a/6084608
 def execute_div( s, inst ):
@@ -462,6 +468,9 @@ def pre_execute_divu( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.mdu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.mdu_insts += 1
 
 def execute_divu( s, inst ):
   s.rf[ inst.rd ] = s.rf[ inst.rs ] / s.rf[ inst.rt ]
@@ -475,6 +484,9 @@ def pre_execute_rem( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.mdu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.mdu_insts += 1
 
 # http://stackoverflow.com/a/6084608
 def execute_rem( s, inst ):
@@ -492,6 +504,9 @@ def pre_execute_remu( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.mdu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.mdu_insts += 1
 
 def execute_remu( s, inst ):
   s.rf[ inst.rd ] = s.rf[ inst.rs ] % s.rf[ inst.rt ]
@@ -739,6 +754,9 @@ def pre_execute_lw( s, inst ):
   dmemreq.addr  = s.rf[inst.rs]
   dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.load_insts += 1
 
 def execute_lw( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -758,6 +776,9 @@ def pre_execute_lh( s, inst ):
   dmemreq.addr  = s.rf[inst.rs]
   dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.load_insts += 1
 
 def execute_lh( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -777,6 +798,9 @@ def pre_execute_lhu( s, inst ):
   dmemreq.addr  = s.rf[inst.rs]
   dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.load_insts += 1
 
 def execute_lhu( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -796,6 +820,9 @@ def pre_execute_lb( s, inst ):
   dmemreq.addr  = s.rf[inst.rs]
   dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.load_insts += 1
 
 def execute_lb( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -815,6 +842,9 @@ def pre_execute_lbu( s, inst ):
   dmemreq.addr  = s.rf[inst.rs]
   dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.load_insts += 1
 
 def execute_lbu( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -838,6 +868,9 @@ def pre_execute_sw( s, inst ):
   dmemreq.addr  = s.rf[inst.rs]
   dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.store_insts += 1
 
 def execute_sw( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -857,6 +890,9 @@ def pre_execute_sh( s, inst ):
   dmemreq.addr  = s.rf[inst.rs]
   dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.store_insts += 1
 
 def execute_sh( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -876,6 +912,9 @@ def pre_execute_sb( s, inst ):
   dmemreq.addr  = s.rf[inst.rs]
   dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.store_insts += 1
 
 def execute_sb( s, inst ):
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
@@ -941,6 +980,9 @@ def pre_execute_amo_add( s, inst ):
   dmemreq.len_  = 4
   dmemreq.addr  = s.rf[inst.rs]
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.amo_insts += 1
 
 def execute_amo_add( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
@@ -960,6 +1002,9 @@ def pre_execute_amo_and( s, inst ):
   dmemreq.len_  = 4
   dmemreq.addr  = s.rf[inst.rs]
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.amo_insts += 1
 
 def execute_amo_and( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
@@ -979,6 +1024,9 @@ def pre_execute_amo_or( s, inst ):
   dmemreq.len_  = 4
   dmemreq.addr  = s.rf[inst.rs]
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.amo_insts += 1
 
 def execute_amo_or( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
@@ -998,6 +1046,9 @@ def pre_execute_amo_xchg( s, inst ):
   dmemreq.len_  = 4
   dmemreq.addr  = s.rf[inst.rs]
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.amo_insts += 1
 
 def execute_amo_xchg( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
@@ -1017,6 +1068,9 @@ def pre_execute_amo_min( s, inst ):
   dmemreq.len_  = 4
   dmemreq.addr  = s.rf[inst.rs]
   s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.amo_insts += 1
 
 def execute_amo_min( s, inst ):
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
@@ -1086,6 +1140,9 @@ def pre_execute_add_s( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.fpu_insts += 1
 
 def execute_add_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1101,6 +1158,9 @@ def pre_execute_sub_s( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.fpu_insts += 1
 
 def execute_sub_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1116,6 +1176,9 @@ def pre_execute_mul_s( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.fpu_insts += 1
 
 def execute_mul_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1131,6 +1194,9 @@ def pre_execute_div_s( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.fpu_insts += 1
 
 def execute_div_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1146,6 +1212,9 @@ def pre_execute_c_eq_s( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.fpu_insts += 1
 
 def execute_c_eq_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1161,6 +1230,9 @@ def pre_execute_c_lt_s( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.fpu_insts += 1
 
 def execute_c_lt_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1176,6 +1248,9 @@ def pre_execute_c_le_s( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.fpu_insts += 1
 
 def execute_c_le_s( s, inst ):
   a = bits2float( s.rf[ inst.fs ] )
@@ -1191,6 +1266,9 @@ def pre_execute_cvt_w_s( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.fpu_insts += 1
 
 def execute_cvt_w_s( s, inst ):
   x = bits2float( s.rf[ inst.fs ] )
@@ -1205,6 +1283,9 @@ def pre_execute_cvt_s_w( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.fpu_insts += 1
 
 def execute_cvt_s_w( s, inst ):
   x = signed( s.rf[ inst.fs ] )
@@ -1219,6 +1300,9 @@ def pre_execute_trunc_w_s( s, inst ):
   s.stall   = True
   s.curr_pc = s.pc
   s.sim_ptr.fpu_allocator.set_request( s.core_id )
+  parallel_mode = s.wsrt_mode or s.spmd_mode
+  if s.sim_ptr.states[0].stats_en and parallel_mode:
+    s.fpu_insts += 1
 
 def execute_trunc_w_s( s, inst ):
   # TODO: check for overflow

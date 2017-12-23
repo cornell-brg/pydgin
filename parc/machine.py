@@ -86,7 +86,7 @@ class State( Machine ):
     # stat registers
     self.stat_inst_en      = [ False ] * 16
     self.stat_inst_begin   = [ 0 ]     * 16
-    self.stat_inst_num_insts = [ 0 ]     * 16
+    self.stat_inst_num_insts = [ 0 ]   * 16
 
     # shreesha: tracing
     self.trace = []
@@ -123,6 +123,13 @@ class State( Machine ):
     self.serial_insts = 0   # instructions count in serial section
     self.runtime_insts = 0  # instructions count in the runtime section
     self.work_insts = 0     # instructions count in the user code/tasks
+    # instruction mix
+    self.load_insts  = 0
+    self.store_insts = 0
+    self.amo_insts   = 0
+    self.mdu_insts   = 0
+    self.fpu_insts   = 0
+    self.int_insts   = 0
 
   def fetch_pc( self ):
     return self.pc
