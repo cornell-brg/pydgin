@@ -403,13 +403,17 @@ class MemCoalescer():
           if entry.type_ == 0 and key.type_ == 0 and entry.addr == key.addr:
             s.table[key].append( next_port )
             match = True
-            sim.total_accesses += 1
+            parallel_mode = sim.states[next_port].wsrt_mode or sim.states[next_port].spmd_mode
+            if sim.states[0].stats_en and parallel_mode:
+              sim.total_accesses += 1
 
         if not match:
           s.table[entry] = [ next_port ]
           s.fifo.append( entry )
-          sim.unique_accesses += 1
-          sim.total_accesses += 1
+          parallel_mode = sim.states[next_port].wsrt_mode or sim.states[next_port].spmd_mode
+          if sim.states[0].stats_en and parallel_mode:
+            sim.unique_accesses += 1
+            sim.total_accesses += 1
 
         s.valid[next_port] = False
       s.top_priority = 0 if s.top_priority == s.num_reqs-1 else s.top_priority+1
