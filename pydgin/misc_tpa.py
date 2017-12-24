@@ -74,6 +74,9 @@ class ReconvergenceManager():
       if curr_line_addr == line_addr and not( sim.states[core].stop or sim.states[core].stall or sim.states[core].clear ):
         sim.states[core].active = True
         s.scheduled_list.append( core )
+        if curr_line_addr not in sim.states[core].l0_buffer:
+          sim.states[core].l0_buffer.pop(0)
+          sim.states[core].l0_buffer.append(curr_line_addr)
 
         # collect stats
         if sim.states[core].spmd_mode:
@@ -175,6 +178,27 @@ class ReconvergenceManager():
       # for explicit stalls set due to lockstep execution
       if sim.states[core].clear:
         sim.states[core].active = False
+
+    # check if any cores have cached in the line in the l0 buffer
+    if sim.l0_buffer_sz != 0:
+      for core in xrange( sim.ncores ):
+        curr_line_addr = sim.states[core].pc & s.mask
+        if curr_line_addr in sim.states[core].l0_buffer:
+          s.scheduled_list.append( core )
+          if not (sim.states[core].stop or sim.states[core].clear):
+            sim.states[core].active = True
+            # collect stats
+            if sim.states[core].spmd_mode:
+              sim.total_spmd     += 1
+              sim.total_parallel += 1
+            elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
+              sim.total_task     += 1
+              sim.total_wsrt     += 1
+              sim.total_parallel += 1
+            elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
+              sim.total_runtime  += 1
+              sim.total_wsrt     += 1
+              sim.total_parallel += 1
 
     # all cores all either stalling or have reached a barrier
     if len( s.scheduled_list ) == sim.ncores:

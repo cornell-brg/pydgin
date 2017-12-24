@@ -70,6 +70,9 @@ class State( Machine ):
     # xpc stats
     self.num_pcalls = 0
 
+    # l0 buffer
+    self.l0_buffer = []
+
     # shreesha: model params
     self.inst_bits = 0
     self.inst      = None

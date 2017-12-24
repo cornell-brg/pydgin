@@ -78,6 +78,7 @@ class Sim( object ):
     self.fpu_ports      = 0 # FPU bandwidth
     self.icache_line_sz = 0 # Insn cache line size (default word size)
     self.dcache_line_sz = 0 # Data cache line size (set based on num cores)
+    self.l0_buffer_sz   = 0 # L0 buffer size
     self.lockstep       = False
     self.linetrace      = False
     self.color          = False
@@ -165,8 +166,9 @@ class Sim( object ):
     --mdu-ports     Number of MDU ports (bandwidth)
     --fpu-ports     Number of FPU ports (bandwidth)
     --lockstep      Enforce lockstep execution on mem/llfu divergence
-    --icache_line_sz  Cache line size in bytes
-    --dcache_line_sz  Cache line size in bytes
+    --icache-line-sz  Cache line size in bytes
+    --dcache-line-sz  Cache line size in bytes
+    --l0-buffer-sz    L0 buffer size in icache-line-sz
   """
 
   #-----------------------------------------------------------------------
@@ -480,6 +482,7 @@ class Sim( object ):
                            "--fpu-ports",
                            "--icache-line-sz",
                            "--dcache-line-sz",
+                           "--l0-buffer-sz",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -593,6 +596,9 @@ class Sim( object ):
               print "Data cache line size must be word aligned!"
               return 1
 
+          elif prev_token == "--l0-buffer-sz":
+            self.l0_buffer_sz = int(token)
+
           prev_token = ""
 
       if filename_idx == 0:
@@ -629,6 +635,7 @@ class Sim( object ):
         self.states[i].core_type = core_type
         self.states[i].stats_core_type = stats_core_type
         self.states[i].sim_ptr = self
+        self.states[i].l0_buffer = [0]*self.l0_buffer_sz
 
       # set accel rf mode
 
@@ -665,7 +672,7 @@ class Sim( object ):
       # print the reconvergence scheme used
       if   self.reconvergence == 0: print "No reconvergence"
       elif self.reconvergence == 1: print "Min-pc, round-robin"
-      elif self.reconvergence == 2: print "Min-sp, round-robin"
+      elif self.reconvergence == 2: print "Min-sp/pc, round-robin"
       else:
         print "Invalid option for recovergence. Try --help for options."
         return 1
@@ -680,6 +687,9 @@ class Sim( object ):
       mask_bits = ~( self.icache_line_sz - 1 )
       mask = mask_bits & 0xFFFFFFFF
       print "Insn cache line size: %d, mask: %x" % ( self.icache_line_sz, mask )
+
+      # shreesha: l0 buffer size
+      print "L0 buffer size in cache lines: %d" % ( self.l0_buffer_sz )
 
       # shreesha: configure reconvergence manager
       self.reconvergence_manager.configure( self.ncores, self.icache_line_sz )
