@@ -49,6 +49,8 @@ class ReconvergenceManager():
     s.switch_interval = 0
     s.scheduled_list  = []
     s.mask            = 0
+    # by default assume a cache-line size of 128 bits
+    s.l0_mask         = ~(16 - 1) & 0xFFFFFFFF
 
   #-----------------------------------------------------------------------
   # configure
@@ -60,6 +62,7 @@ class ReconvergenceManager():
     # mask bits
     mask_bits = ~( line_sz - 1 )
     s.mask = mask_bits & 0xFFFFFFFF
+    s.l0_mask = s.mask
 
   #-----------------------------------------------------------------------
   # update_pcs
@@ -74,9 +77,9 @@ class ReconvergenceManager():
       if curr_line_addr == line_addr and not( sim.states[core].stop or sim.states[core].stall or sim.states[core].clear ):
         sim.states[core].active = True
         s.scheduled_list.append( core )
-        if curr_line_addr not in sim.states[core].l0_buffer:
+        if sim.states[core].pc & s.l0_mask not in sim.states[core].l0_buffer:
           sim.states[core].l0_buffer.pop(0)
-          sim.states[core].l0_buffer.append(curr_line_addr)
+          sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
 
         # collect stats
         if sim.states[core].spmd_mode:
@@ -182,8 +185,8 @@ class ReconvergenceManager():
     # check if any cores have cached in the line in the l0 buffer
     if sim.l0_buffer_sz != 0:
       for core in xrange( sim.ncores ):
-        curr_line_addr = sim.states[core].pc & s.mask
-        if curr_line_addr in sim.states[core].l0_buffer:
+        l0_line_addr = sim.states[core].pc & s.l0_mask
+        if l0_line_addr in sim.states[core].l0_buffer:
           s.scheduled_list.append( core )
           if not (sim.states[core].stop or sim.states[core].clear):
             sim.states[core].active = True
