@@ -140,6 +140,7 @@ def get_base_evaldict():
   evaldict['app_dict']        = {}    # Dict with app groups/opts to run
   evaldict['runtime']         = False # Do not pass runtime-md flag
   evaldict['ncores']          = 4     # Number of cores to simulate
+  evaldict['l0-buffer-sz']    = 1     # Number of l0 buffer line sizes
   evaldict['icache_line_sz']  = 0     # Icache line sz in bytes
   evaldict['dcache_line_sz']  = 0     # Dcache line sz in bytes
   evaldict['inst_ports']      = 4     # Number of ports for instruction fetch
@@ -207,6 +208,7 @@ def gen_trace_per_app( evaldict ):
   app_group       = evaldict["app_group"]
   runtime_md_flag = evaldict["runtime"]
   inst_ports      = evaldict["inst_ports"]
+  l0_buffer_sz    = evaldict["l0_buffer_sz"]
   icache_line_sz  = evaldict["icache_line_sz"]
   dcache_line_sz  = evaldict["dcache_line_sz"]
   data_ports      = evaldict["data_ports"]
@@ -272,6 +274,7 @@ def gen_trace_per_app( evaldict ):
           extra_pydgin_opts += "--color "
 
         extra_pydgin_opts += "--analysis %(analysis)s " % { 'analysis' : analysis }
+        extra_pydgin_opts += "--l0-buffer-sz %(l0_buffer_sz)s " % { 'l0_buffer_sz' : l0_buffer_sz }
         extra_pydgin_opts += "--icache-line-sz %(icache_line_sz)s " % { 'icache_line_sz' : icache_line_sz }
         extra_pydgin_opts += "--dcache-line-sz %(dcache_line_sz)s " % { 'dcache_line_sz' : dcache_line_sz }
         extra_pydgin_opts += "--inst-ports %(inst_ports)s " % { 'inst_ports' : inst_ports }

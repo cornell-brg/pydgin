@@ -28,17 +28,20 @@ DOIT_CONFIG = {
 #----------------------------------------------------------------------------
 # Tasks are named using the following notation:
 #
-#   basename-Nc-Mp-Or
-#     where N = num of cores; M = number of ports; O = reconvergence scheme
-#     NOTE: see pydgin binary options for reconvergence options
+#   basename-Xc-Xl0-Xip-Xdp-Xlp-Xl-Xr
+#     c  : cores
+#     l0 : l0 buffer size
+#     ip : imem ports
+#     dp : dmem ports
+#     lp : llfu ports
+#     l  : lockstep execution for dmem/llfu
+#     r  : reconvergence scheme
 #
-# TBD: The tasks below work decently fine but may need to extend this and
-# make it more elegant
 
 def task_pydgin_sims_wsrt():
 
   ncores = 4
-  for icache_line_sz in [4, ncores*4]:
+  for l0_buffer_sz in [1]:
     for ports in range( 1, ncores+1 ):
       for llfus in range( 1, ncores+1  ):
         for lockstep in range( 2 ):
@@ -47,8 +50,8 @@ def task_pydgin_sims_wsrt():
             evaldict = get_base_evaldict()
 
             # task info
-            evaldict['basename']    = "sim-pydgin-wsrt-%dc-%diclz-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, icache_line_sz, ports, ports, llfus, lockstep, analysis )
-            evaldict['resultsdir']  = "results-small-wsrt-%dc-%diclz-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, icache_line_sz, ports, ports, llfus, lockstep, analysis )
+            evaldict['basename']    = "sim-pydgin-wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+            evaldict['resultsdir']  = "results-small-wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
             evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
             # kernels to run with options
@@ -59,7 +62,8 @@ def task_pydgin_sims_wsrt():
             # pydgin options
             evaldict['runtime']        = True             # provide runtime metadata
             evaldict['ncores']         = ncores           # number of cores to simulate
-            evaldict['icache_line_sz'] = icache_line_sz   # icache line size
+            evaldict['l0_buffer_sz']   = l0_buffer_sz     # l0 buffer size
+            evaldict['icache_line_sz'] = 16               # icache line size
             evaldict['inst_ports']     = ports            # instruction port bw
             evaldict['data_ports']     = ports            # data port bw
             evaldict['mdu_ports']      = llfus            # mdu port bw
@@ -74,17 +78,20 @@ def task_pydgin_sims_wsrt():
 #----------------------------------------------------------------------------
 # Tasks are named using the following notation:
 #
-#   basename-Nc-Mp-Or
-#     where N = num of cores; M = number of ports; O = reconvergence scheme
-#     NOTE: see pydgin binary options for reconvergence options
+#   basename-Xc-Xl0-Xip-Xdp-Xlp-Xl-Xr
+#     c  : cores
+#     l0 : l0 buffer size
+#     ip : imem ports
+#     dp : dmem ports
+#     lp : llfu ports
+#     l  : lockstep execution for dmem/llfu
+#     r  : reconvergence scheme
 #
-# TBD: The tasks below work decently fine but may need to extend this and
-# make it more elegant
 
 def task_pydgin_sims_spmd():
 
   ncores = 4
-  for icache_line_sz in [4, ncores*4]:
+  for l0_buffer_sz in [1]:
     for ports in range( 1, ncores+1 ):
       for llfus in range( 1, ncores+1  ):
         for lockstep in range( 2 ):
@@ -93,8 +100,8 @@ def task_pydgin_sims_spmd():
             evaldict = get_base_evaldict()
 
             # task info
-            evaldict['basename']    = "sim-pydgin-spmd-%dc-%diclz-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, icache_line_sz, ports, ports, llfus, lockstep, analysis )
-            evaldict['resultsdir']  = "results-small-spmd-%dc-%diclz-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, icache_line_sz, ports, ports, llfus, lockstep, analysis )
+            evaldict['basename']    = "sim-pydgin-spmd-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+            evaldict['resultsdir']  = "results-small-spmd-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
             evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
             # kernels to run with options
@@ -104,7 +111,8 @@ def task_pydgin_sims_spmd():
 
             # pydgin options
             evaldict['ncores']         = ncores           # number of cores to simulate
-            evaldict['icache_line_sz'] = icache_line_sz   # icache line size
+            evaldict['l0_buffer_sz']   = l0_buffer_sz     # l0 buffer size
+            evaldict['icache_line_sz'] = 16               # icache line size
             evaldict['inst_ports']     = ports            # instruction port bw
             evaldict['data_ports']     = ports            # data port bw
             evaldict['mdu_ports']      = llfus            # mdu port bw
