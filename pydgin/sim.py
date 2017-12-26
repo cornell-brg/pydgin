@@ -213,7 +213,7 @@ class Sim( object ):
       for i in xrange( self.ncores ):
         active |= self.states[i].active
       if not active:
-        print "Something wrong no cores are active!"
+        print "Something wrong no cores are active! tick: %d" % self.states[0].num_insts
         raise AssertionError
 
       for core_id in xrange( self.ncores ):
