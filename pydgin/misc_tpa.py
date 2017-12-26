@@ -49,7 +49,7 @@ class ReconvergenceManager():
     s.switch_interval = 0
     s.scheduled_list  = []
     s.mask            = 0
-    # by default assume a cache-line size of 128 bits
+    # by default assume a cache line of 128 bits or 16 bytes
     s.l0_mask         = ~(16 - 1) & 0xFFFFFFFF
 
   #-----------------------------------------------------------------------
@@ -62,7 +62,8 @@ class ReconvergenceManager():
     # mask bits
     mask_bits = ~( line_sz - 1 )
     s.mask = mask_bits & 0xFFFFFFFF
-    s.l0_mask = s.mask
+    if line_sz > 16:
+      s.l0_mask = s.mask
 
   #-----------------------------------------------------------------------
   # update_pcs
