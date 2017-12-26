@@ -140,7 +140,7 @@ def get_base_evaldict():
   evaldict['app_dict']        = {}    # Dict with app groups/opts to run
   evaldict['runtime']         = False # Do not pass runtime-md flag
   evaldict['ncores']          = 4     # Number of cores to simulate
-  evaldict['l0-buffer-sz']    = 1     # Number of l0 buffer line sizes
+  evaldict['l0_buffer_sz']    = 1     # Number of l0 buffer line sizes
   evaldict['icache_line_sz']  = 0     # Icache line sz in bytes
   evaldict['dcache_line_sz']  = 0     # Dcache line sz in bytes
   evaldict['inst_ports']      = 4     # Number of ports for instruction fetch
