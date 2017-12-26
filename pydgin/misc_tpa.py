@@ -62,8 +62,9 @@ class ReconvergenceManager():
     # mask bits
     mask_bits = ~( line_sz - 1 )
     s.mask = mask_bits & 0xFFFFFFFF
-    if line_sz > 16:
+    if line_sz != 0:
       s.l0_mask = s.mask
+    print "L0 mask is %x" % s.l0_mask
 
   #-----------------------------------------------------------------------
   # update_pcs
@@ -75,7 +76,7 @@ class ReconvergenceManager():
 
       # select matching pcs
       curr_line_addr = sim.states[core].pc & s.mask
-      if curr_line_addr == line_addr and not( sim.states[core].stop or sim.states[core].stall or sim.states[core].clear ):
+      if curr_line_addr == line_addr and core not in s.scheduled_list:
         sim.states[core].active = True
         s.scheduled_list.append( core )
         if sim.states[core].pc & s.l0_mask not in sim.states[core].l0_buffer:
@@ -187,7 +188,7 @@ class ReconvergenceManager():
     if sim.l0_buffer_sz != 0:
       for core in xrange( sim.ncores ):
         l0_line_addr = sim.states[core].pc & s.l0_mask
-        if l0_line_addr in sim.states[core].l0_buffer:
+        if l0_line_addr in sim.states[core].l0_buffer and core not in s.scheduled_list:
           s.scheduled_list.append( core )
           if not (sim.states[core].stop or sim.states[core].clear):
             sim.states[core].active = True

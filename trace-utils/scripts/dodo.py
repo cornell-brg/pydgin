@@ -128,18 +128,19 @@ def task_pydgin_sims_spmd():
 
 def task_pydgin_sims_debug():
 
-  ncores   = 4
-  ports    = 1
-  llfus    = 1
-  lockstep = 1
-  analysis = 1
+  ncores       = 4
+  l0_buffer_sz = 1
+  ports        = 1
+  llfus        = 3
+  lockstep     = 1
+  analysis     = 1
 
   # get an evaluation dictionary
   evaldict = get_base_evaldict()
 
   # task info
   evaldict['basename']    = "sim-pydgin-debug-%dc-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, ports, ports, llfus, lockstep, analysis )
-  evaldict['resultsdir']  = "results-small-debug-%dc-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, ports, ports, llfus, lockstep, analysis )
+  evaldict['resultsdir']  = "results-debug-%dc-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, ports, ports, llfus, lockstep, analysis )
   evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
   # kernels to run with options
@@ -149,13 +150,15 @@ def task_pydgin_sims_debug():
   evaldict['app_dict']    = app_dict
 
   # pydgin options
-  evaldict['ncores']      = ncores           # number of cores to simulate
-  evaldict['inst_ports']  = ports            # instruction port bw
-  evaldict['data_ports']  = ports            # data port bw
-  evaldict['mdu_ports']   = llfus            # mdu port bw
-  evaldict['fpu_ports']   = llfus            # fpu port bw
-  evaldict['analysis']    = analysis         # type of reconvergence scheme
-  evaldict['lockstep']    = bool( lockstep ) # enable lockstep execution
+  evaldict['ncores']         = ncores           # number of cores to simulate
+  evaldict['inst_ports']     = ports            # instruction port bw
+  evaldict['l0_buffer_sz']   = l0_buffer_sz     # l0 buffer size
+  evaldict['icache_line_sz'] = 16               # icache line size
+  evaldict['data_ports']     = ports            # data port bw
+  evaldict['mdu_ports']      = llfus            # mdu port bw
+  evaldict['fpu_ports']      = llfus            # fpu port bw
+  evaldict['analysis']       = analysis         # type of reconvergence scheme
+  evaldict['lockstep']       = bool( lockstep ) # enable lockstep execution
 
   # debug options
   #evaldict['linetrace']   = True

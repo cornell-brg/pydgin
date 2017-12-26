@@ -273,6 +273,7 @@ def gen_trace_per_app( evaldict ):
         if color:
           extra_pydgin_opts += "--color "
 
+        #extra_pydgin_opts += "--debug insts:28089973 "
         extra_pydgin_opts += "--analysis %(analysis)s " % { 'analysis' : analysis }
         extra_pydgin_opts += "--l0-buffer-sz %(l0_buffer_sz)s " % { 'l0_buffer_sz' : l0_buffer_sz }
         extra_pydgin_opts += "--icache-line-sz %(icache_line_sz)s " % { 'icache_line_sz' : icache_line_sz }
