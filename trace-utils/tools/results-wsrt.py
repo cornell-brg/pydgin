@@ -1,8 +1,8 @@
 #=========================================================================
-# results.py
+# results-wsrt.py
 #=========================================================================
 # Author : Shreesha Srinath
-# Date   : October 6th, 2017
+# Date   : December 28th, 2017
 #
 # Quick and dirty script to parse results
 
@@ -58,55 +58,54 @@ app_short_name_dict = {
 # results_summary()
 #-------------------------------------------------------------------------
 
+ncores = 4
+g_resultsdir_path = "../tpa-results-l0/results-small-wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr"
+
 def results_summary():
-  resultsdir_path = '../results-small-wsrt-8'
+
   with open('results-wsrt.csv', 'w') as out:
     out.write('app,config,stat,value\n')
-    subfolders = os.listdir( resultsdir_path )
-    for subfolder in subfolders:
-      trace_file =  resultsdir_path + '/' + subfolder + '/trace-analysis.txt'
-      cmd = "grep -r -A 5 Overall %(out)s" % { 'out' : trace_file }
-      try:
-        lines = execute( cmd )
-        stats = defaultdict(list)
-        for line in lines.split('\n'):
-          line = line.split(':')
-          line = [ re.sub('%', '', token).rstrip() for token in line ]
-          if 'savings' in line[0]:
-            stats['savings'].append( line[1] )
-          elif 'steps' in line[0]:
-            stats['steps'].append( int(line[1]) )
+    for l0_buffer_sz in [1]:
+      for ports in range( 1, ncores+1 ):
+        for llfus in range( 1, ncores+1 ):
+          for lockstep in range( 2 ):
+            for analysis in range( 3 ):
+              resultsdir_path = g_resultsdir_path % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+              subfolders = os.listdir( resultsdir_path )
+              for subfolder in subfolders:
+                trace_file =  resultsdir_path + '/' + subfolder + '/trace-analysis.txt'
+                cmd = "grep -r -A 5 Overall %(out)s" % { 'out' : trace_file }
+                try:
+                  app = re.sub("-parc", '', subfolder)
+                  app = re.sub("-small", '', app)
+                  app = re.sub("-mtpull", '', app)
 
-        app = re.sub("-parc", '', subfolder)
-        app = re.sub("-small", '', app)
-        app = re.sub("-mtpull", '', app)
+                  if not app in app_short_name_dict.keys():
+                    continue
 
-        if not app in app_short_name_dict.keys():
-          continue
+                  # Performance
+                  res_file =  resultsdir_path + '/' + subfolder + '/' + subfolder + '.out'
+                  cmd = 'grep -r -A 35 "Serial steps in stats region =" %(res_file)s' % { 'res_file' : res_file }
+                  lines = execute( cmd )
+                  total = 0
+                  serial = 0
+                  savings = 0
+                  config = "wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+                  for line in lines.split('\n'):
+                    if line != '':
+                      if 'Serial steps' in line:
+                        serial = int(line.split()[-1])
+                      elif 'Total steps' in line:
+                        total = int(line.split()[-1])
+                      elif 'Redundancy in parallel regions' in line:
+                        savings = line.split()[-1]
 
-        # Instruction redundancy
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'wsrt-maxshare','savings',stats['savings'][0]))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'wsrt-minpc','savings',stats['savings'][1]))
-
-        # Performance
-        res_file =  resultsdir_path + '/' + subfolder + '/' + subfolder + '.out'
-        cmd = 'grep -r -A 5 "Core 0 Instructions Executed in Stat Region" %(out)s' % { 'out' : res_file }
-        lines = execute( cmd )
-        total = 0
-        serial = 0
-        for line in lines.split('\n'):
-          if 'Stat Region' in line:
-            total = int(line.split()[-1])
-          elif 'serial' in line:
-            serial = int(line.split()[-1])
-
-        # Sanity check
-        print app, total, (serial+stats['steps'][0]), total- (serial+stats['steps'][0])
-
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'wsrt-maxshare','steps',stats['steps'][0]+serial))
-        out.write('{},{},{},{}\n'.format(app_short_name_dict[app],'wsrt-minpc','steps',stats['steps'][1]+serial))
-      except:
-        print "{}: Trace file not present".format( subfolder )
-        continue
+                  config = "wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+                  out.write('{},{},{},{}\n'.format(app_short_name_dict[app],config,'serial',serial))
+                  out.write('{},{},{},{}\n'.format(app_short_name_dict[app],config,'total',total))
+                  out.write('{},{},{},{}\n'.format(app_short_name_dict[app],config,'savings',savings))
+                except:
+                  print "{}: Results file not present".format( subfolder )
+                  continue
 
 results_summary()
