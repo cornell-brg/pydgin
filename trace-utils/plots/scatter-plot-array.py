@@ -1,11 +1,15 @@
 #=========================================================================
-# plot-results.py
+# scatter-plot-array.py
 #=========================================================================
 # Quick and super dirty script to summarize results
+#
+# Author : Shreesha Srinath
+# Date   : December 28th, 2017
 
 import brg_plot
 
 import re
+import math
 import sys
 
 import pandas as pd
@@ -20,14 +24,14 @@ app_short_name_dict = OrderedDict([
   ('pbbs-bfs-deterministicBFS'    , 'bfs-d'),
   ('pbbs-bfs-ndBFS'               , 'bfs-nd'),
   ('pbbs-dict-deterministicHash'  , 'dict'),
-  #('pbbs-knn-octTree2Neighbors'   , 'knn'),    # didn't complete for wsrt
+  ('pbbs-knn-octTree2Neighbors'   , 'knn'),
   ('pbbs-mis-ndMIS'               , 'mis'),
-  #('pbbs-nbody-parallelBarnesHut' , 'nbody'),  # fails for wsrt
+  ('pbbs-nbody-parallelBarnesHut' , 'nbody'),
   ('pbbs-rdups-deterministicHash' , 'rdups'),
   ('pbbs-sa-parallelRange'        , 'sarray'),
   ('pbbs-st-ndST'                 , 'sptree'),
-  ('pbbs-isort-blockRadixSort'    , 'radix-1'), # didn't complete for spmd
-  ('pbbs-isort-blockRadixSort-1'  , 'radix-2'), # didn't complete for spmd
+  ('pbbs-isort-blockRadixSort'    , 'radix-1'),
+  ('pbbs-isort-blockRadixSort-1'  , 'radix-2'),
   ('pbbs-csort-quickSort'         , 'qsort'),
   ('pbbs-csort-quickSort-1'       , 'qsort-1'),
   ('pbbs-csort-quickSort-2'       , 'qsort-2'),
@@ -35,7 +39,7 @@ app_short_name_dict = OrderedDict([
   ('pbbs-csort-sampleSort-1'      , 'sampsort-1'),
   ('pbbs-csort-sampleSort-2'      , 'sampsort-2'),
   ('pbbs-hull-quickHull'          , 'hull'),
-  #('cilk-cholesky'                , 'clsky'),  # fails for wsrt
+  ('cilk-cholesky'                , 'clsky'),
   ('cilk-cilksort'                , 'cilksort'),
   ('cilk-heat'                    , 'heat'),
   ('cilk-knapsack'                , 'ksack'),
@@ -70,27 +74,21 @@ app_normalize_map = {
 
 app_list = app_short_name_dict.values()
 
-configs = [
-  'spmd-maxshare',
-  'spmd-minpc',
-  'wsrt-maxshare',
-  'wsrt-minpc',
-  'task2-maxshare',
-  'task2-minpc',
-]
-
 file_list = [
   'results-spmd.csv',
   'results-wsrt.csv',
-  'results-task.csv',
   'results-serial.csv',
 ]
+
+g_config_str = "%s-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr"
+
+g_ncores = 4
 
 #-------------------------------------------------------------------------
 # parse
 #-------------------------------------------------------------------------
 
-def parse_savings( stat, app, df, base_df=None ):
+def parse_stat( stat, app, df, configs, base_df=None ):
   data = []
   if stat == 'steps':
     ts, = base_df[(base_df.app == app_normalize_map[app]) & (base_df.config == 'serial') & (base_df.stat == stat)]['value']
@@ -114,7 +112,7 @@ def parse_savings( stat, app, df, base_df=None ):
 def plot( df ):
 
   #-----------------------------------------------------------------------
-  # Plot savings
+  # scatter plot
   #-----------------------------------------------------------------------
 
   base_df = df[df.config == "serial"].copy()
@@ -134,12 +132,24 @@ def plot( df ):
   for name, value in attribute_dict.iteritems():
     setattr( opts, name, value )
 
-  opts.num_cols = 4
-  opts.num_rows = len( app_list ) / 4
+  opts.num_cols = 5
+  opts.num_rows = math.ceil( len( app_list ) / 4 )
+
+  # select a set of configs
+  configs = []
+  for l0_buffer_sz in [1]:
+    for ports in range( 1, g_ncores+1 ):
+      for llfus in range( 1, g_ncores+1 ):
+        for lockstep in range( 2 ):
+          for analysis in range( 3 ):
+            config = g_config_str % ( 'spmd', g_ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+            configs.append( config )
+            config = g_config_str % ( 'wsrt', g_ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+            configs.append( config )
 
   for index,app in enumerate( app_list ):
-    steps = parse_savings( 'steps', app, df, base_df )
-    savings = parse_savings( 'savings', app, df )
+    steps = parse_stat( 'steps', app, df, configs, base_df )
+    savings = parse_stat( 'savings', app, df, configs )
     data = []
     for x,y in zip(steps,savings):
       temp = []
@@ -158,7 +168,6 @@ def plot( df ):
     if index == len(app_list) - 1:
       opts.legend_enabled = True
       opts.legend_ncol    = 3
-      #opts.legend_bbox    = (-2.7,8.7,1.,0.1) # fig ( 8, 10)
       opts.legend_bbox    = (-1.85,6.3,1.,0.1) # fig (16, 20)
       opts.file_name      = 'scatter.pdf'
 

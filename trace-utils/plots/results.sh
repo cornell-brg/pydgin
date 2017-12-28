@@ -1,5 +1,4 @@
 #!/bin/bash
 cp ../tools/results-spmd.csv .
 cp ../tools/results-wsrt.csv .
-cp ../../../pydgin/tasktrace-utils/tools/results-task.csv .
-cp ../../../pydgin/tasktrace-utils/tools/results-serial.csv .
+cp /work/global/ss2783/github/pydgin-threads/trace-utils/plots/results-serial.csv .

@@ -102,7 +102,7 @@ def results_summary():
 
                   config = "spmd-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
                   out.write('{},{},{},{}\n'.format(app_short_name_dict[app],config,'serial',serial))
-                  out.write('{},{},{},{}\n'.format(app_short_name_dict[app],config,'total',total))
+                  out.write('{},{},{},{}\n'.format(app_short_name_dict[app],config,'steps',total))
                   out.write('{},{},{},{}\n'.format(app_short_name_dict[app],config,'savings',savings))
                 except:
                   print "{}: Results file not present".format( subfolder )
