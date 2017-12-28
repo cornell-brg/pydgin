@@ -67,12 +67,12 @@ app_list_spmd = [
   'pbbs-bfs-ndBFS-parc',
   'pbbs-dict-deterministicHash-parc',
   'pbbs-hull-quickHull-parc',
-  'pbbs-knn-octTree2Neighbors-parc',
   'pbbs-mis-ndMIS-parc',
   'pbbs-nbody-parallelBarnesHut-parc',
   'pbbs-rdups-deterministicHash-parc',
   'pbbs-sa-parallelRange-parc',
   'pbbs-st-ndST-parc',
+  #'pbbs-knn-octTree2Neighbors-parc', -- doesn't work for wsrt
   #'pbbs-isort-blockRadixSort-parc', -- figure out the issue here!
 ]
 
