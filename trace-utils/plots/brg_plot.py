@@ -68,9 +68,34 @@ colors = {
       '#ffff33', '#a65628', '#f781bf', '#999999'], # 9-class Set 1
     'qualitative_paired' : ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c',
       '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a',
-      '#ffff99', '#b15928'] # 12-class Paired
-    }
+      '#ffff99', '#b15928'], # 12-class Paired
 
+    # 20 unique colors
+    # picked from here:
+    # https://github.com/vega/vega/wiki/Scales#scale-range-literals
+    'unique20' : [
+      '#1f77b4',
+      '#aec7e8',
+      '#ff7f0e',
+      '#ffbb78',
+      '#2ca02c',
+      '#98df8a',
+      '#d62728',
+      '#ff9896',
+      '#9467bd',
+      '#c5b0d5',
+      '#8c564b',
+      '#c49c94',
+      '#e377c2',
+      '#f7b6d2',
+      '#7f7f7f',
+      '#c7c7c7',
+      '#bcbd22',
+      '#dbdb8d',
+      '#17becf',
+      '#9edae5',
+    ]
+  }
 
 class PlotOptions:
 
@@ -197,7 +222,11 @@ class PlotOptions:
     # Colors selected from colobrewer2.org for 9 categories, qualitative, print friendly
     self.colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999']
     self.hatch = []
-    self.symbols = [ 'o', 'd', '^', 's', 'p', '*', 'x', '+', '1', '>', '<', 'v' ]
+    self.symbols = [ 'o', 'd', '^', 's', 'p',
+                     '*', 'x', '+', '1', '>',
+                     '<', 'v', '2', '3', '4',
+                     '8', ',', '.', 'D', 'H',
+                   ]
     self.linestyles = []
 
     # Subplot adjust values
