@@ -546,7 +546,9 @@ def add_scatter_plot( ax, opt ):
                                zorder=5+i,
                                s=opt.markersize ) )
 
-    if opt.scatter_bar_arrow and i > 1:
+    # NB: REVISIT THE COMMENTED LINE BELOW
+    # if opt.scatter_bar_arrow and i > 1:
+    if opt.scatter_bar_arrow and i > 0:
       for j in xrange( len( x ) ):
         start = ( opt.data[i-1][j][0], opt.data[i-1][j][1] )
         diff =  ( x[j] - start[0], y[j] - start[1] )
