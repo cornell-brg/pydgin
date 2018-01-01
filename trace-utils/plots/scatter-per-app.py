@@ -118,12 +118,19 @@ def plot_data( app, df, base_df, opts ):
     for ports in range( 1, g_ncores+1 ):
       for llfus in range( 1, g_ncores+1 ):
         configs = []
-        for analysis in range( 3 ):
-          for lockstep in range( 2 ):
+        labels = []
+
+        for lockstep in range( 2 ):
+          for analysis in range( 3 ):
             config = g_config_str % ( 'spmd', g_ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
             configs.append( config )
+            labels.append( 'spmd-%dc-%dl0-%dl-%dr' % ( g_ncores, l0_buffer_sz, lockstep, analysis ) )
+
+        for lockstep in range( 2 ):
+          for analysis in range( 3 ):
             config = g_config_str % ( 'wsrt', g_ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
             configs.append( config )
+            labels.append( 'wsrt-%dc-%dl0-%dl-%dr' % ( g_ncores, l0_buffer_sz, lockstep, analysis ) )
 
         steps = parse_stat( 'steps', app, df, configs, base_df )
         savings = parse_stat( 'savings', app, df, configs )
@@ -136,15 +143,12 @@ def plot_data( app, df, base_df, opts ):
         data = map(list,zip(*data))
 
         opts.data           = data
-        opts.labels         = [[],configs]
+        opts.labels         = [[],labels]
         opts.legend_ncol    = len(configs)
         opts.rotate_labels  = True
         opts.plot_idx       = index+1
-        opts.colors = [
-          '#a6cee3', '#1f78b4', '#b2df8a', '#33a02c',
-          '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00',
-          '#cab2d6', '#6a3d9a', '#35978f', '#b15928',
-        ]
+        opts.colors         = brg_plot.colors['unique20']
+        opts.title          = '(%dip-%ddp,%dlp)' % ( ports, ports, llfus )
 
         if (index+1) % opts.num_cols == 0:
           opts.legend_enabled = True
