@@ -1,10 +1,10 @@
 #=========================================================================
-# scatter-per-app.py
+# scatter-per-all.py
 #=========================================================================
 # Quick and super dirty script to summarize results
 #
 # Author : Shreesha Srinath
-# Date   : December 31st, 2017
+# Date   : January 1st, 2018
 
 import brg_plot
 
@@ -92,24 +92,22 @@ def parse_stat( stat, app, df, configs, base_df=None ):
   data = []
   if stat == 'steps':
     ts, = base_df[(base_df.app == app_normalize_map[app]) & (base_df.config == 'serial') & (base_df.stat == stat)]['value']
-  temp = []
   for config in configs:
     try:
       val, = df[(df.config == config) & (df.app == app) & (df.stat == stat)]['value']
       if stat == 'steps':
-        temp.append(ts/float(val))
+        data.append(ts/float(val))
       else:
-        temp.append(val)
+        data.append(val)
     except:
-      temp.append(0)
-  data.append( temp )
+      data.append(float('nan'))
   return data
 
 #-------------------------------------------------------------------------
 # plot_data()
 #-------------------------------------------------------------------------
 
-def plot_data( app, df, base_df, opts ):
+def plot_data( df, base_df, opts ):
   opts.num_cols = 4
   opts.num_rows = 4
   # select a set of configs
@@ -132,14 +130,15 @@ def plot_data( app, df, base_df, opts ):
             configs.append( config )
             labels.append( 'wsrt-%dc-%dl0-%dl-%dr' % ( g_ncores, l0_buffer_sz, lockstep, analysis ) )
 
-        steps = parse_stat( 'steps', app, df, configs, base_df )
-        savings = parse_stat( 'savings', app, df, configs )
         data = []
-        for x,y in zip(steps,savings):
+        for app in  app_list:
+          steps = parse_stat( 'steps', app, df, configs, base_df )
+          savings = parse_stat( 'savings', app, df, configs )
           temp = []
-          for c,d in zip(x,y):
-            temp.append([c, d])
+          for x,y in zip(steps,savings):
+            temp.append([x, y])
           data.append(temp)
+
         data = map(list,zip(*data))
 
         opts.data           = data
@@ -157,11 +156,10 @@ def plot_data( app, df, base_df, opts ):
         else:
           opts.legend_enabled = False
         if index == opts.num_cols*opts.num_rows - 1:
-          opts.file_name       = '%(app)s-scatter.pdf' % { 'app' : app }
+          opts.file_name       = 'scatter-all.pdf'
           opts.subplots_hspace = 0.5
           opts.fig.text(0.5, 0, 'Speedup', ha='center', fontsize=14)
           opts.fig.text(-0.02, 0.5, 'Inst. Redundancy', va='center', rotation='vertical', fontsize=14)
-          opts.fig.text(0.5, 1.05, app, ha='center', fontsize=14)
 
         # plot data
         brg_plot.add_plot( opts )
@@ -192,8 +190,7 @@ def plot( df ):
   for name, value in attribute_dict.iteritems():
     setattr( opts, name, value )
 
-  for index,app in enumerate( app_list ):
-    plot_data( app, df, base_df, opts )
+  plot_data( df, base_df, opts )
 
 #-------------------------------------------------------------------------
 # main
