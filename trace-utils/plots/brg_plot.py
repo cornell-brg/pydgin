@@ -553,23 +553,25 @@ def add_scatter_plot( ax, opt ):
         start = ( opt.data[i-1][j][0], opt.data[i-1][j][1] )
         diff =  ( x[j] - start[0], y[j] - start[1] )
 
+        # temporarily disabling arrow head
         # we only draw arrow if the diff is above minlen
-        if abs( ( diff[0]**2 + diff[1]**2 )**0.5 ) \
-                                > opt.scatter_bar_arrow_minlen:
-          # temporarily disabling arrow head
-          #head_width = 0.06
-          #head_length = 0.06
-          head_width = 0.00
-          head_length = 0.00
-        else:
-          head_width = 0.0
-          head_length = 0.0
+        #if abs( ( diff[0]**2 + diff[1]**2 )**0.5 ) \
+        #                        > opt.scatter_bar_arrow_minlen:
+        #  #head_width = 0.06
+        #  #head_length = 0.06
+        #  head_width = 0.00
+        #  head_length = 0.00
+        #else:
+        head_width = 0.0
+        head_length = 0.0
 
-        ax.arrow( start[0], start[1], \
-                  diff[0], diff[1], shape="full", length_includes_head=True, \
-                  head_width=head_width, head_length=head_length, \
-                  lw=0.5, overhang=0.0, zorder=2, \
-                  color="#808080")
+        # draw the arrow only if the difference is greater than zero
+        if ( diff[0]**2 + diff[1]**2 ) > 0:
+          ax.arrow( start[0], start[1], \
+                    diff[0], diff[1], shape="full", length_includes_head=True, \
+                    head_width=head_width, head_length=head_length, \
+                    lw=0.5, overhang=0.0, zorder=2, \
+                    color="#808080")
 
     if opt.labels_enabled: #and i > 0:
       for j in xrange( len( x ) ):
