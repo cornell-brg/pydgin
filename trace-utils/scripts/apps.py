@@ -76,6 +76,29 @@ app_list_spmd = [
   #'pbbs-isort-blockRadixSort-parc', -- figure out the issue here!
 ]
 
+app_serial_list = [
+
+  # pbbs apps
+  'pbbs-bfs-serialBFS-parc',
+  'pbbs-csort-serialSort-parc',
+  'pbbs-dict-serialHash-parc',
+  'pbbs-hull-serialHull-parc',
+  'pbbs-isort-serialRadixSort-parc',
+  'pbbs-knn-serialNeighbors-parc',
+  'pbbs-mis-serialMIS-parc',
+  'pbbs-nbody-serialBarnesHut-parc',
+  'pbbs-rdups-serialHash-parc',
+  'pbbs-sa-serialKS-parc',
+  'pbbs-st-serialST-parc',
+
+  # cilk apps
+  'cilk-cholesky-parc',
+  'cilk-cilksort-parc',
+  'cilk-heat-parc',
+  'cilk-knapsack-parc',
+  'cilk-matmul-parc',
+]
+
 #----------------------------------------------------------------------------
 # Application Dictionary
 #----------------------------------------------------------------------------

@@ -148,9 +148,10 @@ def get_base_evaldict():
   evaldict['mdu_ports']       = 4     # Number of ports for mdu
   evaldict['fpu_ports']       = 4     # Number of ports for fpu
   evaldict['analysis']        = 0     # Reconvergence analysis type
-  evaldict['lockstep']        = False #ockstepp enable flag
+  evaldict['lockstep']        = False # Lockstepp enable flag
   evaldict['linetrace']       = False # Linetrace enable flag
   evaldict['color']           = False # Linetrace colors enable flag
+  evaldict['serial']          = False # Flag to indicate serial execution
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -186,11 +187,6 @@ def gen_trace_per_app( evaldict ):
 
   yield docstring_taskdict
 
-  ncores = evaldict["ncores"]
-
-  pydgin_binary = "../../scripts/builds/pydgin-parc-nojit-debug"
-  pydgin_opts   = " --ncores %(ncores)s --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel " % { 'ncores' : ncores }
-
   # Create path to resultsdir inside evaldir
   resultsdir_path = evaldir + '/' + resultsdir
 
@@ -203,6 +199,7 @@ def gen_trace_per_app( evaldict ):
   #   - for each app group in app_dict[app]
   #     - for each set of app options
 
+  ncores          = evaldict["ncores"]
   app_dict        = evaldict["app_dict"]
   app_list        = evaldict["app_list"]
   app_group       = evaldict["app_group"]
@@ -218,6 +215,20 @@ def gen_trace_per_app( evaldict ):
   lockstep        = evaldict["lockstep"]
   linetrace       = evaldict["linetrace"]
   color           = evaldict["color"]
+  serial          = evaldict["serial"]
+
+  # default options for serial code
+  if serial:
+    ncores         = 1
+    inst_ports     = 1
+    data_ports     = 1
+    mdu_ports      = 1
+    fpu_ports      = 1
+    icache_line_sz = 0
+    dcache_line_sz = 0
+
+  pydgin_binary = "../../scripts/builds/pydgin-parc-nojit-debug"
+  pydgin_opts   = " --ncores %(ncores)s --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel " % { 'ncores' : ncores }
 
   for app in app_dict.keys():
     # Only sim the apps in app_list:
