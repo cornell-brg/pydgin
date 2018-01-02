@@ -64,7 +64,7 @@ g_resultsdir_path = "../tpa-results-l0/results-small-spmd-%dc-%dl0-%dip-%ddp-%dl
 def results_summary():
 
   with open('results-spmd.csv', 'w') as out:
-    out.write('app,config,stat,value\n')
+    out.write('app,config,serial,steps,isavings,dsavings\n')
     for l0_buffer_sz in [1]:
       for ports in range( 1, ncores+1 ):
         for llfus in range( 1, ncores+1 ):
@@ -89,7 +89,8 @@ def results_summary():
                   lines = execute( cmd )
                   total = 0
                   serial = 0
-                  savings = 0
+                  isavings = 0
+                  dsavings = 0
                   config = "spmd-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
                   for line in lines.split('\n'):
                     if line != '':
@@ -98,12 +99,12 @@ def results_summary():
                       elif 'Total steps' in line:
                         total = int(line.split()[-1])
                       elif 'Redundancy in parallel regions' in line:
-                        savings = line.split()[-1]
+                        isavings = line.split()[-1]
+                      elif 'Redundancy for data accesses in parallel regions' in line:
+                        dsavings = line.split()[-1]
 
                   config = "spmd-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
-                  out.write('{},{},{},{}\n'.format(app_short_name_dict[app],config,'serial',serial))
-                  out.write('{},{},{},{}\n'.format(app_short_name_dict[app],config,'steps',total))
-                  out.write('{},{},{},{}\n'.format(app_short_name_dict[app],config,'savings',savings))
+                  out.write('{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,serial,total,isavings,dsavings))
                 except:
                   print "{}: Results file not present".format( subfolder )
                   continue
