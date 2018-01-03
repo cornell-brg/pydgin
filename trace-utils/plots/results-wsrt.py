@@ -55,16 +55,23 @@ app_short_name_dict = {
 }
 
 #-------------------------------------------------------------------------
-# results_summary()
+# summary()
 #-------------------------------------------------------------------------
 
-ncores = 4
-g_resultsdir_path = "../tpa-results-l0/results-small-wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr"
+def summary(insn_mix=False):
 
-def results_summary():
+  if insn_mix:
+    res_file = 'insn-mix-wsrt.csv'
+  else:
+    res_file = 'results-wsrt.csv'
 
-  with open('results-wsrt.csv', 'w') as out:
-    out.write('app,config,serial,steps,isavings,dsavings\n')
+  with open(res_file, 'w') as out:
+
+    if insn_mix:
+      out.write('app,config,total,integer,load,store,amo,mdu,fpu\n')
+    else:
+      out.write('app,config,serial,steps,isavings,dsavings\n')
+
     for l0_buffer_sz in [1]:
       for ports in range( 1, ncores+1 ):
         for llfus in range( 1, ncores+1 ):
@@ -73,8 +80,6 @@ def results_summary():
               resultsdir_path = g_resultsdir_path % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
               subfolders = os.listdir( resultsdir_path )
               for subfolder in subfolders:
-                trace_file =  resultsdir_path + '/' + subfolder + '/trace-analysis.txt'
-                cmd = "grep -r -A 5 Overall %(out)s" % { 'out' : trace_file }
                 try:
                   app = re.sub("-parc", '', subfolder)
                   app = re.sub("-small", '', app)
@@ -83,30 +88,80 @@ def results_summary():
                   if not app in app_short_name_dict.keys():
                     continue
 
-                  # Performance
                   res_file =  resultsdir_path + '/' + subfolder + '/' + subfolder + '.out'
-                  cmd = 'grep -r -A 35 "Serial steps in stats region =" %(res_file)s' % { 'res_file' : res_file }
-                  lines = execute( cmd )
-                  total = 0
-                  serial = 0
-                  isavings = 0
-                  dsavings = 0
-                  config = "wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
-                  for line in lines.split('\n'):
-                    if line != '':
-                      if 'Serial steps' in line:
-                        serial = int(line.split()[-1])
-                      elif 'Total steps' in line:
-                        total = int(line.split()[-1])
-                      elif 'Redundancy in parallel regions' in line:
-                        isavings = line.split()[-1]
-                      elif 'Redundancy for data accesses in parallel regions' in line:
-                        dsavings = line.split()[-1]
 
-                  config = "wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
-                  out.write('{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,serial,total,isavings,dsavings))
+                  if insn_mix:
+                    cmd = 'grep -r -A 10 "Instructions mix in parallel regions"  %(res_file)s' % { 'res_file' : res_file }
+                    lines = execute( cmd )
+                    total = 0
+                    integer = 0
+                    load = 0
+                    store = 0
+                    amo = 0
+                    mdu = 0
+                    fpu = 0
+                    for line in lines.split('\n'):
+                      if line != '':
+                        if 'integer' in line:
+                          integer = int(line.split()[-1])
+                          total += integer
+                        elif 'load' in line:
+                          load = int(line.split()[-1])
+                          total += load
+                        elif 'store' in line:
+                          store = int(line.split()[-1])
+                          total += store
+                        elif 'amo' in line:
+                          amo = int(line.split()[-1])
+                          total += amo
+                        elif 'mdu' in line:
+                          mdu = int(line.split()[-1])
+                          total += mdu
+                        elif 'fpu' in line:
+                          fpu = int(line.split()[-1])
+                          total += mdu
+                    integer = 100 * float( integer ) / total
+                    load    = 100 * float( load ) / total
+                    store   = 100 * float( store ) / total
+                    amo     = 100 * float( amo ) / total
+                    mdu     = 100 * float( mdu ) / total
+                    fpu     = 100 * float( fpu ) / total
+                    config = "wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+                    out.write('{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],total,integer,load,store,amo,mdu,fpu))
+                  else:
+                    cmd = 'grep -r -A 35 "Serial steps in stats region =" %(res_file)s' % { 'res_file' : res_file }
+                    lines = execute( cmd )
+                    total = 0
+                    serial = 0
+                    isavings = 0
+                    dsavings = 0
+                    config = "wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+                    for line in lines.split('\n'):
+                      if line != '':
+                        if 'Serial steps' in line:
+                          serial = int(line.split()[-1])
+                        elif 'Total steps' in line:
+                          total = int(line.split()[-1])
+                        elif 'Redundancy in parallel regions' in line:
+                          isavings = line.split()[-1]
+                        elif 'Redundancy for data accesses in parallel regions' in line:
+                          dsavings = line.split()[-1]
+
+                    config = "wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+                    out.write('{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,serial,total,isavings,dsavings))
                 except:
                   print "{}: Results file not present".format( subfolder )
                   continue
+
+#-------------------------------------------------------------------------
+# results_summary()
+#-------------------------------------------------------------------------
+
+ncores = 4
+g_resultsdir_path = "../tpa-results-l0/results-small-wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr"
+
+def results_summary():
+  summary()
+  summary(insn_mix=True)
 
 results_summary()
