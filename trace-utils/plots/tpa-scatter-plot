@@ -6,9 +6,9 @@
 #  -h --help           Display this message
 #
 #  --per-app-plot      Enable scatter plots for each kernel 
-#  --spmd              Turn off spmd data-points 
-#  --wsrt              Turn off wsrt data-points
-#  --isavings          Turn off isavings (enable dsavings)
+#  --no-spmd           Turn off spmd data-points 
+#  --no-wsrt           Turn off wsrt data-points
+#  --no-isavings       Turn off isavings (enable dsavings)
 #
 # Author : Shreesha Srinath
 # Date   : January 2nd, 2018
@@ -55,9 +55,9 @@ def parse_cmdline():
   # Additional commane line arguments for the simulator
 
   p.add_argument( "--per-app-plot", action="store_true",  default=False )
-  p.add_argument( "--spmd",         action="store_false", default=True  )
-  p.add_argument( "--wsrt",         action="store_false", default=True  )
-  p.add_argument( "--isavings",     action="store_false", default=True  )
+  p.add_argument( "--no-spmd",      action="store_false", default=True  )
+  p.add_argument( "--no-wsrt",      action="store_false", default=True  )
+  p.add_argument( "--no-isavings",  action="store_false", default=True  )
 
   opts = p.parse_args()
   if opts.help: p.error()
@@ -316,13 +316,13 @@ if __name__ == "__main__":
   per_app_plot = opts.per_app_plot
 
   # option to plot only spmd data
-  spmd = opts.spmd
+  spmd = opts.no_spmd
 
   # option to plot only wsrt data
-  wsrt = opts.wsrt
+  wsrt = opts.no_wsrt
 
   # option to isavings or dsavings
-  isavings = opts.isavings
+  isavings = opts.no_isavings
 
   # create plots
   plot( df, per_app_plot, spmd, wsrt, isavings )
