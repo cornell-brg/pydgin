@@ -12,6 +12,7 @@
 #
 #   per_app_plot : toggle the value to obtain scatter plots for each app
 #   spmd, wsrt   : toggle the variables to plot spmd or wsrt data
+#   isavings     : toggle to plot inst vs. data redundancy
 #
 # Author : Shreesha Srinath
 # Date   : January 2nd, 2018
@@ -46,7 +47,7 @@ g_ncores = 4
 #    [[3,3],[4,4]], # group 2
 #   ]
 
-def plot_all( opts, df, spmd=True, wsrt=True ):
+def plot_all( opts, df, spmd=True, wsrt=True, isavings=True ):
 
   opts.num_cols = 4
   opts.num_rows = 4
@@ -79,8 +80,11 @@ def plot_all( opts, df, spmd=True, wsrt=True ):
           for app in  app_list:
             try:
               speedup  = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
-              isavings = df[(df.config == config) & (df.app == app)].iloc[0]['isavings']
-              temp.append( [speedup, isavings] )
+              if isavings:
+                savings = df[(df.config == config) & (df.app == app)].iloc[0]['isavings']
+              else:
+                savings = df[(df.config == config) & (df.app == app)].iloc[0]['dsavings']
+              temp.append( [speedup, savings] )
             except:
               temp.append( [float('nan')]*2 )
           data.append( temp )
@@ -103,7 +107,10 @@ def plot_all( opts, df, spmd=True, wsrt=True ):
           opts.file_name       = 'scatter-all.pdf'
           opts.subplots_hspace = 0.5
           opts.fig.text(0.5, 0, 'Speedup', ha='center', fontsize=14)
-          opts.fig.text(-0.02, 0.5, 'Inst. Redundancy', va='center', rotation='vertical', fontsize=14)
+          if isavings:
+            opts.fig.text(-0.02, 0.5, 'Inst. Redundancy', va='center', rotation='vertical', fontsize=14)
+          else:
+            opts.fig.text(-0.02, 0.5, 'Data. Redundancy', va='center', rotation='vertical', fontsize=14)
 
         # plot data
         brg_plot.add_plot( opts )
@@ -122,7 +129,7 @@ def plot_all( opts, df, spmd=True, wsrt=True ):
 #    [[3,3],[4,4]], # group 2
 #   ]
 
-def plot_per_app( app, opts, df, spmd=True, wsrt=True ):
+def plot_per_app( app, opts, df, spmd=True, wsrt=True, isavings=True ):
 
   opts.num_cols = 4
   opts.num_rows = 4
@@ -153,8 +160,11 @@ def plot_per_app( app, opts, df, spmd=True, wsrt=True ):
         for config in configs:
           try:
             speedup  = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
-            isavings = df[(df.config == config) & (df.app == app)].iloc[0]['isavings']
-            data.append( [[speedup, isavings]] )
+            if isavings:
+              savings = df[(df.config == config) & (df.app == app)].iloc[0]['isavings']
+            else:
+              savings = df[(df.config == config) & (df.app == app)].iloc[0]['dsavings']
+            data.append( [[speedup, savings]] )
           except:
             data.append( [[float('nan')]*2] )
 
@@ -176,7 +186,10 @@ def plot_per_app( app, opts, df, spmd=True, wsrt=True ):
           opts.file_name       = '%(app)s-scatter.pdf' % { 'app' : app }
           opts.subplots_hspace = 0.5
           opts.fig.text(0.5, 0, 'Speedup', ha='center', fontsize=14)
-          opts.fig.text(-0.02, 0.5, 'Inst. Redundancy', va='center', rotation='vertical', fontsize=14)
+          if isavings:
+            opts.fig.text(-0.02, 0.5, 'Inst. Redundancy', va='center', rotation='vertical', fontsize=14)
+          else:
+            opts.fig.text(-0.02, 0.5, 'Data. Redundancy', va='center', rotation='vertical', fontsize=14)
           opts.fig.text(0.5, 1.05, app, ha='center', fontsize=14)
 
         # plot data
@@ -187,7 +200,7 @@ def plot_per_app( app, opts, df, spmd=True, wsrt=True ):
 # plot
 #-------------------------------------------------------------------------
 
-def plot( df, per_app_plot, spmd, wsrt ):
+def plot( df, per_app_plot, spmd, wsrt, isavings ):
 
   #-----------------------------------------------------------------------
   # scatter plot
@@ -210,7 +223,7 @@ def plot( df, per_app_plot, spmd, wsrt ):
       for name, value in attribute_dict.iteritems():
         setattr( opts, name, value )
 
-      plot_per_app( app, opts, df, spmd, wsrt )
+      plot_per_app( app, opts, df, spmd, wsrt, isavings )
   else:
     # create plot options dict
     opts = brg_plot.PlotOptions()
@@ -227,7 +240,7 @@ def plot( df, per_app_plot, spmd, wsrt ):
     for name, value in attribute_dict.iteritems():
       setattr( opts, name, value )
 
-    plot_all( opts, df, spmd, wsrt )
+    plot_all( opts, df, spmd, wsrt, isavings )
 
 #-------------------------------------------------------------------------
 # main
@@ -270,5 +283,8 @@ if __name__ == "__main__":
   # option to plot only wsrt data
   wsrt = True
 
+  # option to isavings or dsavings
+  isavings = False
+
   # create plots
-  plot( df, per_app_plot, spmd, wsrt )
+  plot( df, per_app_plot, spmd, wsrt, isavings )
