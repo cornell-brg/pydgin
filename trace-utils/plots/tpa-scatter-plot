@@ -1,30 +1,67 @@
+#!/usr/bin/env python
 #=========================================================================
-# tpa-scatter-plots.py
+# tpa-scatter-plot [options]
 #=========================================================================
+#
+#  -h --help           Display this message
+#
+#  --per-app-plot      Enable scatter plots for each kernel 
+#  --spmd              Turn off spmd data-points 
+#  --wsrt              Turn off wsrt data-points
+#  --isavings          Turn off isavings (enable dsavings)
+#
+# Author : Shreesha Srinath
+# Date   : January 2nd, 2018
+#
 # Script creates scatter subplots for all the configurations where the
 # rows vary the fixed instruction and data bandwidth while the columns vary
 # the llfu bandwidth. In each subplot the variations of the reconvergence
 # scheme, l0-buffer-sz, and lockstep execution values are varied. The
 # script is fairly automated but will need minimal changes as required for
-# a given design-space. Currently, there are two options available:
+# a given design-space
 #
-#  In the main function
-#
-#   per_app_plot : toggle the value to obtain scatter plots for each app
-#   spmd, wsrt   : toggle the variables to plot spmd or wsrt data
-#   isavings     : toggle to plot inst vs. data redundancy
-#
-# Author : Shreesha Srinath
-# Date   : January 2nd, 2018
 
-import brg_plot
-
+import argparse
 import re
 import math
 import sys
+
 import pandas as pd
 
+import brg_plot
+
 from common import *
+
+#-------------------------------------------------------------------------
+# Command line processing
+#-------------------------------------------------------------------------
+
+class ArgumentParserWithCustomError(argparse.ArgumentParser):
+  def error( self, msg = "" ):
+    if ( msg ): print("\n ERROR: %s" % msg)
+    print("")
+    file = open( sys.argv[0] )
+    for ( lineno, line ) in enumerate( file ):
+      if ( line[0] != '#' ): sys.exit(msg != "")
+      if ( (lineno == 2) or (lineno >= 4) ): print( line[1:].rstrip("\n") )
+
+def parse_cmdline():
+  p = ArgumentParserWithCustomError( add_help=False )
+
+  # Standard command line arguments
+
+  p.add_argument( "-h", "--help",    action="store_true" )
+
+  # Additional commane line arguments for the simulator
+
+  p.add_argument( "--per-app-plot", action="store_true",  default=False )
+  p.add_argument( "--spmd",         action="store_false", default=True  )
+  p.add_argument( "--wsrt",         action="store_false", default=True  )
+  p.add_argument( "--isavings",     action="store_false", default=True  )
+
+  opts = p.parse_args()
+  if opts.help: p.error()
+  return opts
 
 #-------------------------------------------------------------------------
 # Global variables
@@ -247,6 +284,7 @@ def plot( df, per_app_plot, spmd, wsrt, isavings ):
 #-------------------------------------------------------------------------
 
 if __name__ == "__main__":
+  opts = parse_cmdline()
 
   # concatenate all the result csv files
   df_list = []
@@ -275,16 +313,16 @@ if __name__ == "__main__":
   df.to_csv('all-results.csv',index=False)
 
   # option to plot all results or just per app-kernel
-  per_app_plot = False
+  per_app_plot = opts.per_app_plot
 
   # option to plot only spmd data
-  spmd = True
+  spmd = opts.spmd
 
   # option to plot only wsrt data
-  wsrt = True
+  wsrt = opts.wsrt
 
   # option to isavings or dsavings
-  isavings = False
+  isavings = opts.isavings
 
   # create plots
   plot( df, per_app_plot, spmd, wsrt, isavings )
