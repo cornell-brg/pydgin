@@ -9,6 +9,8 @@
 #  --absolute          Show absolute instruction counts
 #  --no-spmd           Turn off spmd data-points 
 #  --no-wsrt           Turn off wsrt data-points
+#  --wsrt-splits       Percent split of redundancy in tasks vs. runtime
+#                      insts for wsrt programs
 #
 # Author : Shreesha Srinath
 # Date   : January 3rd, 2018
@@ -48,6 +50,7 @@ def parse_cmdline():
   # Additional commane line arguments for the simulator
 
   p.add_argument( "--per-app-plot", action="store_true",  default=False )
+  p.add_argument( "--wsrt-splits",  action="store_true",  default=False )
   p.add_argument( "--absolute",     action="store_true",  default=False )
   p.add_argument( "--no-spmd",      action="store_false", default=True  )
   p.add_argument( "--no-wsrt",      action="store_false", default=True  )
@@ -76,7 +79,7 @@ g_ncores = 4
 #    [5,6,7,8], # cfg2
 #   ]
 
-def plot_all_apps( opts, df, spmd=True, wsrt=True, absolute=True ):
+def plot_all_apps( opts, df, spmd=True, wsrt=True, absolute=True, wsrt_splits=False ):
 
   opts.num_cols = 1
   opts.num_rows = 1
@@ -106,31 +109,46 @@ def plot_all_apps( opts, df, spmd=True, wsrt=True, absolute=True ):
       labels.append( "wsrt-%s" % app )
     for config in configs:
       temp = []
-      try:
-        row = df[(df.config == config) & (df.app == app)]
-        temp.append( row.iloc[0]['integer'] )
-        temp.append( row.iloc[0]['load'] )
-        temp.append( row.iloc[0]['store'] )
-        temp.append( row.iloc[0]['amo'] )
-        temp.append( row.iloc[0]['mdu'] )
-        temp.append( row.iloc[0]['fpu'] )
-      except:
-        temp = [float('nan')]*6
+      if wsrt_splits:
+        try:
+          row = df[(df.config == config) & (df.app == app)]
+          temp.append( row.iloc[0]['red_task'] )
+          temp.append( row.iloc[0]['red_rt'] )
+        except:
+          temp = [float('nan')]*2
+      else:
+        try:
+          row = df[(df.config == config) & (df.app == app)]
+          temp.append( row.iloc[0]['integer'] )
+          temp.append( row.iloc[0]['load'] )
+          temp.append( row.iloc[0]['store'] )
+          temp.append( row.iloc[0]['amo'] )
+          temp.append( row.iloc[0]['mdu'] )
+          temp.append( row.iloc[0]['fpu'] )
+        except:
+          temp = [float('nan')]*6
       data.append( temp )
 
-  legend = ['int','ld','st','amo','mdu','fpu']
-
-  if absolute: 
-    opts.ylabel = "Insn. breakdown" 
-  else: 
-    opts.ylabel = "Percent Insn. breakdown" 
+  if wsrt_splits:
+    legend = ['task','runtime']
+    opts.ylabel = "Percent Redundant Insn." 
+  else:
+    legend = ['int','ld','st','amo','mdu','fpu']
+    if absolute: 
+      opts.ylabel = "Insn. breakdown" 
+    else: 
+      opts.ylabel = "Percent Insn. breakdown" 
 
   opts.data           = data
   opts.labels         = [labels,legend]
   opts.rotate_labels  = True
   opts.legend_enabled = True
-  opts.legend_ncol    = 6
-  opts.file_name      = 'imix.pdf' % { 'app' : app }
+  if wsrt_splits:
+    opts.legend_ncol  = 2
+    opts.file_name    = 'wsrt-split.pdf' % { 'app' : app }
+  else:
+    opts.legend_ncol  = 6
+    opts.file_name    = 'imix.pdf' % { 'app' : app }
 
   # plot data
   brg_plot.add_plot( opts )
@@ -147,7 +165,7 @@ def plot_all_apps( opts, df, spmd=True, wsrt=True, absolute=True ):
 #    [5,6,7,8], # cfg2
 #   ]
 
-def plot_per_app( app, opts, df, spmd=True, wsrt=True, absolute=True ):
+def plot_per_app( app, opts, df, spmd=True, wsrt=True, absolute=True, wsrt_splits=False ):
 
   opts.num_cols = 4
   opts.num_rows = 4
@@ -174,21 +192,35 @@ def plot_per_app( app, opts, df, spmd=True, wsrt=True, absolute=True ):
               configs.append( config )
               labels.append( 'wsrt-%dc-%dl0-%dl-%dr' % ( g_ncores, l0_buffer_sz, lockstep, analysis ) )
         
-        legend = ['int','ld','st','amo','mdu','fpu']
         data = []
         for config in configs:
           temp = []
-          try:
-            row = df[(df.config == config) & (df.app == app)]
-            temp.append( row.iloc[0]['integer'] )
-            temp.append( row.iloc[0]['load'] )
-            temp.append( row.iloc[0]['store'] )
-            temp.append( row.iloc[0]['amo'] )
-            temp.append( row.iloc[0]['mdu'] )
-            temp.append( row.iloc[0]['fpu'] )
-          except:
-            temp = [float('nan')]*6
+          if wsrt_splits:
+            try:
+              row = df[(df.config == config) & (df.app == app)]
+              temp.append( row.iloc[0]['red_task'] )
+              temp.append( row.iloc[0]['red_rt'] )
+            except:
+              temp = [float('nan')]*2
+          else:
+            try:
+              row = df[(df.config == config) & (df.app == app)]
+              temp.append( row.iloc[0]['integer'] )
+              temp.append( row.iloc[0]['load'] )
+              temp.append( row.iloc[0]['store'] )
+              temp.append( row.iloc[0]['amo'] )
+              temp.append( row.iloc[0]['mdu'] )
+              temp.append( row.iloc[0]['fpu'] )
+            except:
+              temp = [float('nan')]*6
           data.append( temp )
+
+        if wsrt_splits:
+          legend = ['task','runtime']
+          opts.legend_ncol = 2
+        else:
+          opts.legend_ncol = 6
+          legend = ['int','ld','st','amo','mdu','fpu']
 
         opts.data           = data
         opts.labels         = [labels,legend]
@@ -198,18 +230,21 @@ def plot_per_app( app, opts, df, spmd=True, wsrt=True, absolute=True ):
 
         if (index+1) % opts.num_cols == 0:
           opts.legend_enabled = True
-          opts.legend_ncol    = 6
           opts.legend_bbox    = (-2.2,1.15,1.,0.1)
         else:
           opts.legend_enabled = False
         if index == opts.num_cols*opts.num_rows - 1:
-          opts.file_name       = '%(app)s-imix.pdf' % { 'app' : app }
           opts.subplots_hspace = 1.0
           opts.fig.text(0.5, 1.05, app, ha='center', fontsize=14)
-          if absolute:
-            opts.fig.text(-0.02, 0.5, 'Insn. breadown', va='center', rotation='vertical', fontsize=14)
+          if wsrt_splits:
+            opts.file_name = '%(app)s-wsrt-split.pdf' % { 'app' : app }
+            opts.fig.text(-0.02, 0.5, 'Precent Redundant Insn.', va='center', rotation='vertical', fontsize=14)
           else:
-            opts.fig.text(-0.02, 0.5, 'Percent Insn. breakdown', va='center', rotation='vertical', fontsize=14)
+            opts.file_name = '%(app)s-imix.pdf' % { 'app' : app }
+            if absolute:
+              opts.fig.text(-0.02, 0.5, 'Insn. breadown', va='center', rotation='vertical', fontsize=14)
+            else:
+              opts.fig.text(-0.02, 0.5, 'Percent Insn. breakdown', va='center', rotation='vertical', fontsize=14)
 
         # plot data
         brg_plot.add_plot( opts )
@@ -219,7 +254,7 @@ def plot_per_app( app, opts, df, spmd=True, wsrt=True, absolute=True ):
 # plot
 #-------------------------------------------------------------------------
 
-def plot( df, per_app_plot, spmd, wsrt, absolute ):
+def plot( df, per_app_plot, spmd, wsrt, absolute, wsrt_splits ):
 
   #-----------------------------------------------------------------------
   # scatter plot
@@ -243,7 +278,7 @@ def plot( df, per_app_plot, spmd, wsrt, absolute ):
       for name, value in attribute_dict.iteritems():
         setattr( opts, name, value )
 
-      plot_per_app( app, opts, df, spmd, wsrt, absolute )
+      plot_per_app( app, opts, df, spmd, wsrt, absolute, wsrt_splits )
   else:
     # create plot options dict
     opts = brg_plot.PlotOptions()
@@ -261,7 +296,7 @@ def plot( df, per_app_plot, spmd, wsrt, absolute ):
     for name, value in attribute_dict.iteritems():
       setattr( opts, name, value )
 
-    plot_all_apps( opts, df, spmd, wsrt, absolute )
+    plot_all_apps( opts, df, spmd, wsrt, absolute, wsrt_splits )
 
 #-------------------------------------------------------------------------
 # main
@@ -270,19 +305,22 @@ def plot( df, per_app_plot, spmd, wsrt, absolute ):
 if __name__ == "__main__":
   opts = parse_cmdline()
 
-  # concatenate all the result csv files
-  df_list = []
-  for res_file in insn_file_list:
-    df_list.append( pd.read_csv( res_file ) )
-  df = pd.concat(df_list)
+  if opts.wsrt_splits:
+    df = pd.read_csv("runtime-mix-wsrt.csv")
+  else:
+    # concatenate all the result csv files
+    df_list = []
+    for res_file in insn_file_list:
+      df_list.append( pd.read_csv( res_file ) )
+    df = pd.concat(df_list)
 
-  # calculate percent breakdowns
-  if not opts.absolute:
-    df.loc[:,['integer','load','store','amo','mdu','fpu']] = df.loc[:,['integer','load','store','amo','mdu','fpu']].div(df.total, axis=0)
-    df.loc[:,['integer','load','store','amo','mdu','fpu']] = df.loc[:,['integer','load','store','amo','mdu','fpu']].multiply(100, axis=0)
+    # calculate percent breakdowns
+    if not opts.absolute:
+      df.loc[:,['integer','load','store','amo','mdu','fpu']] = df.loc[:,['integer','load','store','amo','mdu','fpu']].div(df.total, axis=0)
+      df.loc[:,['integer','load','store','amo','mdu','fpu']] = df.loc[:,['integer','load','store','amo','mdu','fpu']].multiply(100, axis=0)
 
-  # save the results
-  df.to_csv('all-insn-results.csv',index=False)
+    # save the results
+    df.to_csv('all-insn-results.csv',index=False)
 
   # option to plot absolute numbers
   absolute = opts.absolute
@@ -296,5 +334,11 @@ if __name__ == "__main__":
   # option to plot only wsrt data
   wsrt = opts.no_wsrt
 
+  # option to plot wsrt splits
+  wsrt_splits = opts.wsrt_splits
+  if wsrt_splits:
+    spmd = False
+    absolute = False
+
   # create plots
-  plot( df, per_app_plot, spmd, wsrt, absolute )
+  plot( df, per_app_plot, spmd, wsrt, absolute, wsrt_splits )

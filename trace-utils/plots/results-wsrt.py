@@ -58,10 +58,12 @@ app_short_name_dict = {
 # summary()
 #-------------------------------------------------------------------------
 
-def summary(insn_mix=False):
+def summary(insn_mix=False,wsrt_mix=False):
 
   if insn_mix:
     res_file = 'insn-mix-wsrt.csv'
+  elif wsrt_mix:
+    res_file = 'runtime-mix-wsrt.csv'
   else:
     res_file = 'results-wsrt.csv'
 
@@ -69,6 +71,8 @@ def summary(insn_mix=False):
 
     if insn_mix:
       out.write('app,config,total,integer,load,store,amo,mdu,fpu\n')
+    elif wsrt_mix:
+      out.write('app,config,total_wsrt,total_rt,total_task,unique_rt,unique_task,red_rt,red_task\n')
     else:
       out.write('app,config,serial,steps,isavings,dsavings\n')
 
@@ -122,6 +126,32 @@ def summary(insn_mix=False):
                           total += fpu
                     config = "wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
                     out.write('{},{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,total,integer,load,store,amo,mdu,fpu))
+                  elif wsrt_mix:
+                    cmd = 'grep -r -A 10 "Total insts in tasks"  %(res_file)s' % { 'res_file' : res_file }
+                    lines = execute( cmd )
+                    total_wsrt  = 0
+                    total_rt    = 0
+                    total_task  = 0
+                    unique_rt   = 0
+                    unique_task = 0
+                    for line in lines.split('\n'):
+                      if line != '':
+                        if "Total insts in wsrt region" in line:
+                          total_wsrt = int(line.split()[-1])
+                        elif "Total insts in runtime" in line:
+                          total_rt = int(line.split()[-1])
+                        elif "Total insts in tasks" in line:
+                          total_task = int(line.split()[-1])
+                        elif "Unique runtime insts" in line:
+                          unique_rt = int(line.split()[-1])
+                        elif "Unique task insts" in line:
+                          unique_task = int(line.split()[-1])
+                    assert total_wsrt == ( total_task + total_rt )
+                    total_red = total_wsrt - ( unique_rt + unique_task )
+                    red_task = 100 * float( total_task - unique_task ) / total_red
+                    red_rt = 100 * float( total_rt - unique_rt ) / total_red
+                    config = "wsrt-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+                    out.write('{},{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,total_wsrt,total_rt,total_task,unique_rt,unique_task,red_rt,red_task))
                   else:
                     cmd = 'grep -r -A 35 "Serial steps in stats region =" %(res_file)s' % { 'res_file' : res_file }
                     lines = execute( cmd )
@@ -157,5 +187,6 @@ g_resultsdir_path = "../tpa-results-l0/results-small-wsrt-%dc-%dl0-%dip-%ddp-%dl
 def results_summary():
   summary()
   summary(insn_mix=True)
+  summary(wsrt_mix=True)
 
 results_summary()
