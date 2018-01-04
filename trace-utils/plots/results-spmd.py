@@ -127,7 +127,7 @@ def summary(insn_mix=False):
                     mdu     = 100 * float( mdu ) / total
                     fpu     = 100 * float( fpu ) / total
                     config = "spmd-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
-                    out.write('{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],total,integer,load,store,amo,mdu,fpu))
+                    out.write('{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,total,integer,load,store,amo,mdu,fpu))
                   else:
                     cmd = 'grep -r -A 35 "Serial steps in stats region =" %(res_file)s' % { 'res_file' : res_file }
                     lines = execute( cmd )

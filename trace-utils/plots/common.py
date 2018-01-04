@@ -82,3 +82,8 @@ file_list = [
   'results-wsrt.csv',
   'results-serial.csv',
 ]
+
+insn_file_list = [
+  'insn-mix-spmd.csv',
+  'insn-mix-wsrt.csv',
+]

@@ -708,8 +708,11 @@ def add_bar_plot( ax, opt ):
   if opt.plot_type == "scatter_bar":
     ax.xaxis.grid(True)
 
+  if opt.plot_type == "stacked_bar":
+    ax.set_xticks( ind )
+  else:
+    ax.set_xticks( ind + opt.bar_width/2. )
 
-  ax.set_xticks( ind + opt.bar_width/2. )
   ax.tick_params( labelsize=opt.fontsize )
   if opt.labels:
     if opt.rotate_labels:

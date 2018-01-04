@@ -1,0 +1,192 @@
+#!/usr/bin/env python
+#=========================================================================
+# tpa-bar-plot [options]
+#=========================================================================
+#
+#  -h --help           Display this message
+#
+#  --no-spmd           Turn off spmd data-points 
+#  --no-wsrt           Turn off wsrt data-points
+#
+# Author : Shreesha Srinath
+# Date   : January 3rd, 2018
+
+
+import argparse
+import re
+import math
+import sys
+
+import pandas as pd
+
+import brg_plot
+
+from common import *
+
+#-------------------------------------------------------------------------
+# Command line processing
+#-------------------------------------------------------------------------
+
+class ArgumentParserWithCustomError(argparse.ArgumentParser):
+  def error( self, msg = "" ):
+    if ( msg ): print("\n ERROR: %s" % msg)
+    print("")
+    file = open( sys.argv[0] )
+    for ( lineno, line ) in enumerate( file ):
+      if ( line[0] != '#' ): sys.exit(msg != "")
+      if ( (lineno == 2) or (lineno >= 4) ): print( line[1:].rstrip("\n") )
+
+def parse_cmdline():
+  p = ArgumentParserWithCustomError( add_help=False )
+
+  # Standard command line arguments
+
+  p.add_argument( "-h", "--help",    action="store_true" )
+
+  # Additional commane line arguments for the simulator
+
+  p.add_argument( "--no-spmd",      action="store_false", default=True  )
+  p.add_argument( "--no-wsrt",      action="store_false", default=True  )
+
+  opts = p.parse_args()
+  if opts.help: p.error()
+  return opts
+
+#-------------------------------------------------------------------------
+# Global variables
+#-------------------------------------------------------------------------
+
+g_config_str = "%s-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr"
+
+g_ncores = 4
+
+#-------------------------------------------------------------------------
+# plot_per_app()
+#-------------------------------------------------------------------------
+# Data for stacked_bar plots are orgnized as below:
+#
+# Example:
+#  data = [
+#    # elements within a list are the stacks  
+#    [1,2,3,4], # cfg1
+#    [5,6,7,8], # cfg2
+#   ]
+
+def plot_per_app( app, opts, df, spmd=True, wsrt=True ):
+
+  opts.num_cols = 4
+  opts.num_rows = 4
+
+  # select a set of configs
+  index = 0
+  for l0_buffer_sz in [1]:
+    for ports in range( 1, g_ncores+1 ):
+      for llfus in range( 1, g_ncores+1 ):
+        configs = []
+        labels = []
+
+        if spmd:
+          for lockstep in range( 2 ):
+            for analysis in range( 3 ):
+              config = g_config_str % ( 'spmd', g_ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+              configs.append( config )
+              labels.append( 'spmd-%dc-%dl0-%dl-%dr' % ( g_ncores, l0_buffer_sz, lockstep, analysis ) )
+
+        if wsrt:
+          for lockstep in range( 2 ):
+            for analysis in range( 3 ):
+              config = g_config_str % ( 'wsrt', g_ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+              configs.append( config )
+              labels.append( 'wsrt-%dc-%dl0-%dl-%dr' % ( g_ncores, l0_buffer_sz, lockstep, analysis ) )
+        
+        legend = ['int','ld','st','amo','mdu','fpu']
+        data = []
+        for config in configs:
+          temp = []
+          try:
+            row = df[(df.config == config) & (df.app == app)]
+            temp.append( row.iloc[0]['integer'] )
+            temp.append( row.iloc[0]['load'] )
+            temp.append( row.iloc[0]['store'] )
+            temp.append( row.iloc[0]['amo'] )
+            temp.append( row.iloc[0]['mdu'] )
+            temp.append( row.iloc[0]['fpu'] )
+          except:
+            temp = [float('nan')]*6
+          data.append( temp )
+
+        opts.data           = data
+        opts.labels         = [labels,legend]
+        opts.rotate_labels  = True
+        opts.plot_idx       = index+1
+        opts.title          = '(%dip-%ddp,%dlp)' % ( ports, ports, llfus )
+
+        if (index+1) % opts.num_cols == 0:
+          opts.legend_enabled = True
+          opts.legend_ncol    = 6
+          opts.legend_bbox    = (-2.2,1.15,1.,0.1)
+        else:
+          opts.legend_enabled = False
+        if index == opts.num_cols*opts.num_rows - 1:
+          opts.file_name       = '%(app)s-imix.pdf' % { 'app' : app }
+          opts.subplots_hspace = 1.0
+          opts.fig.text(-0.02, 0.5, 'Percentage breadown for insn. mix', va='center', rotation='vertical', fontsize=14)
+          opts.fig.text(0.5, 1.05, app, ha='center', fontsize=14)
+
+        # plot data
+        brg_plot.add_plot( opts )
+        index = index + 1
+
+#-------------------------------------------------------------------------
+# plot
+#-------------------------------------------------------------------------
+
+def plot( df, spmd, wsrt ):
+
+  #-----------------------------------------------------------------------
+  # scatter plot
+  #-----------------------------------------------------------------------
+
+  for app in  app_list:
+    # create plot options dict
+    opts = brg_plot.PlotOptions()
+    attribute_dict = \
+    {
+      'show'            : False,
+      'plot_type'       : 'stacked_bar',
+      'figsize'         : (16.0, 16.0),
+      'rotate_labels'   : False,
+      'markersize'      : 50,
+      'labels_fontsize' : 1,
+      'legend_enabled'  : False,
+      'bar_width'       : 0.5,
+    }
+    for name, value in attribute_dict.iteritems():
+      setattr( opts, name, value )
+
+    plot_per_app( app, opts, df, spmd, wsrt )
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+  opts = parse_cmdline()
+
+  # concatenate all the result csv files
+  df_list = []
+  for res_file in insn_file_list:
+    df_list.append( pd.read_csv( res_file ) )
+  df = pd.concat(df_list)
+
+  # save the results
+  df.to_csv('all-insn-results.csv',index=False)
+
+  # option to plot only spmd data
+  spmd = opts.no_spmd
+
+  # option to plot only wsrt data
+  wsrt = opts.no_wsrt
+
+  # create plots
+  plot( df, spmd, wsrt )
