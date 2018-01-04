@@ -119,15 +119,9 @@ def summary(insn_mix=False):
                           total += mdu
                         elif 'fpu' in line:
                           fpu = int(line.split()[-1])
-                          total += mdu
-                    integer = 100 * float( integer ) / total
-                    load    = 100 * float( load ) / total
-                    store   = 100 * float( store ) / total
-                    amo     = 100 * float( amo ) / total
-                    mdu     = 100 * float( mdu ) / total
-                    fpu     = 100 * float( fpu ) / total
+                          total += fpu
                     config = "spmd-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
-                    out.write('{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,total,integer,load,store,amo,mdu,fpu))
+                    out.write('{},{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,total,integer,load,store,amo,mdu,fpu))
                   else:
                     cmd = 'grep -r -A 35 "Serial steps in stats region =" %(res_file)s' % { 'res_file' : res_file }
                     lines = execute( cmd )
