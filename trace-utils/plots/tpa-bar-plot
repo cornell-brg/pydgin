@@ -100,8 +100,10 @@ def plot_all_apps( opts, df, spmd=True, wsrt=True, absolute=True ):
   data = []
   labels = []
   for app in app_list:
-    labels.append( "spmd-%s" % app )
-    labels.append( "wsrt-%s" % app )
+    if spmd:
+      labels.append( "spmd-%s" % app )
+    if wsrt:
+      labels.append( "wsrt-%s" % app )
     for config in configs:
       temp = []
       try:
