@@ -232,6 +232,10 @@ class PlotOptions:
     # Subplot adjust values
     self.subplots_hspace = 0
 
+    # pareto-frontier points
+    self.pareto_points = False
+    self.pareto_data   = []
+
     random.seed( 0xdeadbeef )
 
   def get_color( self, idx ):
@@ -306,6 +310,9 @@ def add_plot( opt ):
   ax.set_axisbelow( True )
 
   opt.ax = ax
+
+  if opt.pareto_points:
+    ax.plot(opt.pareto_data[0],opt.pareto_data[1],'--',alpha=0.5)
 
   plt.tight_layout()
 

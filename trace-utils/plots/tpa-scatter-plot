@@ -9,6 +9,7 @@
 #  --no-spmd           Turn off spmd data-points 
 #  --no-wsrt           Turn off wsrt data-points
 #  --no-isavings       Turn off isavings (enable dsavings)
+#  --pareto-frontier   Add a pareto-frontier
 #
 # Author : Shreesha Srinath
 # Date   : January 2nd, 2018
@@ -54,10 +55,11 @@ def parse_cmdline():
 
   # Additional commane line arguments for the simulator
 
-  p.add_argument( "--per-app-plot", action="store_true",  default=False )
-  p.add_argument( "--no-spmd",      action="store_false", default=True  )
-  p.add_argument( "--no-wsrt",      action="store_false", default=True  )
-  p.add_argument( "--no-isavings",  action="store_false", default=True  )
+  p.add_argument( "--per-app-plot",    action="store_true",  default=False )
+  p.add_argument( "--no-spmd",         action="store_false", default=True  )
+  p.add_argument( "--no-wsrt",         action="store_false", default=True  )
+  p.add_argument( "--no-isavings",     action="store_false", default=True  )
+  p.add_argument( "--pareto-frontier", action="store_true",  default=False )
 
   opts = p.parse_args()
   if opts.help: p.error()
@@ -72,6 +74,27 @@ g_config_str = "%s-%dc-%dl0-%dip-%ddp-%dlp-%dl-%dr"
 g_ncores = 4
 
 #-------------------------------------------------------------------------
+# is_pareto_front()
+#-------------------------------------------------------------------------
+# reference:
+# http://hinnefe2.github.io/python/tools/2015/09/21/mario-kart.html
+
+def is_pareto_front(row, stats, xlabel, ylabel):
+  x = row[xlabel]
+  y = row[ylabel]
+
+  # look for points with the same y value but larger x value
+  is_max_x = stats.loc[stats[ylabel]==y].max()[xlabel] <= x
+  # look for points with the same x value but larger y value
+  is_max_y = stats.loc[stats[xlabel]==x].max()[ylabel] <= y
+
+  # look for points that are larger in both x and y
+  is_double = len(stats.loc[(stats[xlabel]>x) & (stats[ylabel]>y)])==0
+
+  return is_max_x and is_max_y and is_double
+
+
+#-------------------------------------------------------------------------
 # plot_all()
 #-------------------------------------------------------------------------
 # NOTE: Each data-point is a list of lists where each nested list
@@ -84,7 +107,7 @@ g_ncores = 4
 #    [[3,3],[4,4]], # group 2
 #   ]
 
-def plot_all( opts, df, spmd=True, wsrt=True, isavings=True ):
+def plot_all( opts, df, spmd=True, wsrt=True, isavings=True, pareto_frontier=False ):
 
   opts.num_cols = 4
   opts.num_rows = 4
@@ -111,21 +134,22 @@ def plot_all( opts, df, spmd=True, wsrt=True, isavings=True ):
               configs.append( config )
               labels.append( 'wsrt-%dc-%dl0-%dl-%dr' % ( g_ncores, l0_buffer_sz, lockstep, analysis ) )
 
-        data = []
+        data  = []
+        stats = pd.DataFrame()
+        savings_label = 'isavings' if isavings else 'dsavings'
         for config in configs:
           temp = []
           for app in  app_list:
             try:
               speedup  = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
-              if isavings:
-                savings = df[(df.config == config) & (df.app == app)].iloc[0]['isavings']
-              else:
-                savings = df[(df.config == config) & (df.app == app)].iloc[0]['dsavings']
+              savings = df[(df.config == config) & (df.app == app)].iloc[0][savings_label]
               temp.append( [speedup, savings] )
+              if pareto_frontier:
+                stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', 'speedup', savings_label]] )
             except:
               temp.append( [float('nan')]*2 )
           data.append( temp )
-
+ 
         opts.data           = data
         opts.labels         = [[],labels]
         opts.legend_ncol    = len(configs)
@@ -133,6 +157,11 @@ def plot_all( opts, df, spmd=True, wsrt=True, isavings=True ):
         opts.plot_idx       = index+1
         opts.colors         = brg_plot.colors['unique20']
         opts.title          = '(%dip-%ddp,%dlp)' % ( ports, ports, llfus )
+        opts.pareto_points  = pareto_frontier
+        if pareto_frontier:
+          is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'speedup', savings_label),axis=1)
+          config_pareto = stats.ix[is_pareto].sort_values(by='speedup')
+          opts.pareto_data = [config_pareto['speedup'].values, config_pareto[savings_label].values]
 
         if (index+1) % opts.num_cols == 0:
           opts.legend_enabled = True
@@ -151,6 +180,7 @@ def plot_all( opts, df, spmd=True, wsrt=True, isavings=True ):
 
         # plot data
         brg_plot.add_plot( opts )
+
         index = index + 1
 
 #-------------------------------------------------------------------------
@@ -166,7 +196,7 @@ def plot_all( opts, df, spmd=True, wsrt=True, isavings=True ):
 #    [[3,3],[4,4]], # group 2
 #   ]
 
-def plot_per_app( app, opts, df, spmd=True, wsrt=True, isavings=True ):
+def plot_per_app( app, opts, df, spmd=True, wsrt=True, isavings=True, pareto_frontier=False ):
 
   opts.num_cols = 4
   opts.num_rows = 4
@@ -193,15 +223,16 @@ def plot_per_app( app, opts, df, spmd=True, wsrt=True, isavings=True ):
               configs.append( config )
               labels.append( 'wsrt-%dc-%dl0-%dl-%dr' % ( g_ncores, l0_buffer_sz, lockstep, analysis ) )
 
-        data = []
+        data  = []
+        stats = pd.DataFrame()
+        savings_label = 'isavings' if isavings else 'dsavings'
         for config in configs:
           try:
-            speedup  = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
-            if isavings:
-              savings = df[(df.config == config) & (df.app == app)].iloc[0]['isavings']
-            else:
-              savings = df[(df.config == config) & (df.app == app)].iloc[0]['dsavings']
+            speedup = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
+            savings = df[(df.config == config) & (df.app == app)].iloc[0][savings_label]
             data.append( [[speedup, savings]] )
+            if pareto_frontier:
+              stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', 'speedup', savings_label]] )
           except:
             data.append( [[float('nan')]*2] )
 
@@ -212,6 +243,11 @@ def plot_per_app( app, opts, df, spmd=True, wsrt=True, isavings=True ):
         opts.plot_idx       = index+1
         opts.colors         = brg_plot.colors['unique20']
         opts.title          = '(%dip-%ddp,%dlp)' % ( ports, ports, llfus )
+        opts.pareto_points  = pareto_frontier
+        if pareto_frontier:
+          is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'speedup', savings_label),axis=1)
+          config_pareto = stats.ix[is_pareto].sort_values(by='speedup')
+          opts.pareto_data = [config_pareto['speedup'].values, config_pareto[savings_label].values]
 
         if (index+1) % opts.num_cols == 0:
           opts.legend_enabled = True
@@ -237,7 +273,7 @@ def plot_per_app( app, opts, df, spmd=True, wsrt=True, isavings=True ):
 # plot
 #-------------------------------------------------------------------------
 
-def plot( df, per_app_plot, spmd, wsrt, isavings ):
+def plot( df, per_app_plot, spmd, wsrt, isavings, pareto_frontier ):
 
   #-----------------------------------------------------------------------
   # scatter plot
@@ -260,7 +296,7 @@ def plot( df, per_app_plot, spmd, wsrt, isavings ):
       for name, value in attribute_dict.iteritems():
         setattr( opts, name, value )
 
-      plot_per_app( app, opts, df, spmd, wsrt, isavings )
+      plot_per_app( app, opts, df, spmd, wsrt, isavings, pareto_frontier )
   else:
     # create plot options dict
     opts = brg_plot.PlotOptions()
@@ -277,7 +313,7 @@ def plot( df, per_app_plot, spmd, wsrt, isavings ):
     for name, value in attribute_dict.iteritems():
       setattr( opts, name, value )
 
-    plot_all( opts, df, spmd, wsrt, isavings )
+    plot_all( opts, df, spmd, wsrt, isavings, pareto_frontier )
 
 #-------------------------------------------------------------------------
 # main
@@ -324,5 +360,8 @@ if __name__ == "__main__":
   # option to isavings or dsavings
   isavings = opts.no_isavings
 
+  # option to show the pareto frontier
+  pareto_frontier = opts.pareto_frontier
+
   # create plots
-  plot( df, per_app_plot, spmd, wsrt, isavings )
+  plot( df, per_app_plot, spmd, wsrt, isavings, pareto_frontier )
