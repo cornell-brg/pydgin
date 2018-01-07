@@ -39,6 +39,7 @@ def task_pydgin_serial_sims():
   evaldict['app_list']    = app_serial_list
   evaldict['serial']      = True
   evaldict['app_dict']    = app_dict
+  evaldict['cluster']     = True
 
   yield gen_trace_per_app( evaldict )
 
@@ -158,8 +159,8 @@ def task_pydgin_sims_debug():
   evaldict = get_base_evaldict()
 
   # task info
-  evaldict['basename']    = "sim-pydgin-debug-%dc-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, ports, ports, llfus, lockstep, analysis )
-  evaldict['resultsdir']  = "results-debug-%dc-%dip-%ddp-%dlp-%dl-%dr" % ( ncores, ports, ports, llfus, lockstep, analysis )
+  evaldict['basename']    = "sim-pydgin-debug"
+  evaldict['resultsdir']  = "results-debug"
   evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
   # kernels to run with options
@@ -178,9 +179,10 @@ def task_pydgin_sims_debug():
   evaldict['fpu_ports']      = llfus            # fpu port bw
   evaldict['analysis']       = analysis         # type of reconvergence scheme
   evaldict['lockstep']       = bool( lockstep ) # enable lockstep execution
+  evaldict['cluster']        = True             # enable running the job on cluster
 
   # debug options
-  #evaldict['linetrace']   = True
-  #evaldict['color']       = True
+  evaldict['linetrace']   = True
+  evaldict['color']       = True
 
   yield gen_trace_per_app( evaldict )

@@ -11,19 +11,23 @@ from doit_utils import *
 import sys
 sys.path.extend(['../tools'])
 
+import os
+
 from trace_analysis import *
 
 #----------------------------------------------------------------------------
 # Tasks
 #----------------------------------------------------------------------------
-# Paths
+# NOTE: All paths are changed to be absolute paths for cluster job
+# submission
 
-evaldir        = '..'                            # Evaluation directory
-scriptsdir     = evaldir + '/tools'              # Scripts directory
-appdir         = 'links'                         # App binaries directory
-appinputdir    = appdir  + '/inputs'             # App inputs directory
-cpptoolsdir    = scriptsdir + '/cpptools'        # C++ tools directory
-tools_builddir = evaldir + "/build-tools"        # Build dir for C++ tools
+curr_dir       = os.path.dirname(__file__)        # Directory from where the script is called
+evaldir        = os.path.join( curr_dir, '..' )   # Evaluation directory
+scriptsdir     = evaldir + '/tools'               # Scripts directory
+appdir         = os.path.join( curr_dir, 'links') # App binaries directory
+appinputdir    = appdir  + '/inputs'              # App inputs directory
+cpptoolsdir    = scriptsdir + '/cpptools'         # C++ tools directory
+tools_builddir = evaldir + "/build-tools"         # Build dir for C++ tools
 
 #----------------------------------------------------------------------------
 # get_labeled_apps()
@@ -124,6 +128,24 @@ def task_runtime_md():
   return taskdict
 
 #----------------------------------------------------------------------------
+# submit_job()
+#----------------------------------------------------------------------------
+# helper script to submit a job on the cluster
+
+def submit_job( cmd, name, folder ):
+  import clusterjob
+  jobscript = clusterjob.JobScript(
+    body     = cmd,
+    jobname  = name,
+    backend  = 'pbs',
+    queue    = 'batch',
+    threads  = 1,
+    ppn      = 1,
+    filename = folder + "/" + name + ".pbs",
+  )
+  jobscript.submit()
+
+#----------------------------------------------------------------------------
 # get_base_evaldict()
 #----------------------------------------------------------------------------
 
@@ -152,6 +174,7 @@ def get_base_evaldict():
   evaldict['linetrace']       = False # Linetrace enable flag
   evaldict['color']           = False # Linetrace colors enable flag
   evaldict['serial']          = False # Flag to indicate serial execution
+  evaldict['cluster']         = False # Flag to indicate submission on cluster
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -227,8 +250,9 @@ def gen_trace_per_app( evaldict ):
     icache_line_sz = 0
     dcache_line_sz = 0
 
-  pydgin_binary = "../../scripts/builds/pydgin-parc-nojit-debug"
-  pydgin_opts   = " --ncores %(ncores)s --pkernel ${STOW_PKGS_ROOT}/maven/boot/pkernel " % { 'ncores' : ncores }
+  # NOTE: All paths are changed to be absolute paths for cluster job submission
+  pydgin_binary = os.path.join( curr_dir, "../../scripts/builds/pydgin-parc-nojit-debug" )
+  pydgin_opts   = " --ncores %(ncores)s --pkernel %(stow_root)s/maven/boot/pkernel " % { 'ncores' : ncores, 'stow_root' : os.environ['STOW_PKGS_ROOT'] }
 
   for app in app_dict.keys():
     # Only sim the apps in app_list:
@@ -313,15 +337,15 @@ def gen_trace_per_app( evaldict ):
 
         ])
 
-        #......................................
-        # Assemble trace analysis commands
-        #......................................
+        #.......................
+        # assemble for cluster
+        #.......................
 
-        analyze_cmd = ' '.join([
-            "{}/trace-analyze".format(tools_builddir),
-            " --trace {}/trace.csv".format(app_results_dir),
-            " --outdir {}".format(app_results_dir),
-        ])
+        cluster = evaldict['cluster']
+        if cluster:
+          actions = [ (create_folder, [app_results_dir]), (submit_job, [pydgin_cmd, labeled_app, app_results_dir]) ]
+        else:
+          actions = [ (create_folder, [app_results_dir]), pydgin_cmd ]
 
         #.......................
         # Build Task Dictionary
@@ -330,7 +354,7 @@ def gen_trace_per_app( evaldict ):
         taskdict = { \
             'basename' : basename,
             'name'     : labeled_app,
-            'actions'  : [ (create_folder, [app_results_dir]), pydgin_cmd],
+            'actions'  : actions,
             'targets'  : targets,
             'task_dep' : [ 'runtime-md' ],
             'file_dep' : [ app_binary ],
