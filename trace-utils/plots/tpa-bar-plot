@@ -94,7 +94,7 @@ def plot_all_apps( opts, df, spmd=True, wsrt=True, absolute=True, wsrt_splits=Fa
   analysis     = 2
 
   if spmd: 
-    config = g_config_str % ( 'wsrt', g_ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
+    config = g_config_str % ( 'spmd', g_ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
     configs.append( config )
   if wsrt: 
     config = g_config_str % ( 'wsrt', g_ncores, l0_buffer_sz, ports, ports, llfus, lockstep, analysis )
