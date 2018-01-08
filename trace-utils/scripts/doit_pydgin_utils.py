@@ -142,6 +142,8 @@ def submit_job( cmd, name, folder ):
     threads  = 1,
     ppn      = 1,
     filename = folder + "/" + name + ".pbs",
+    stdout   = folder + "/" + name + "-qsub.out",
+    stderr   = folder + "/" + name + "-qsub.err",
   )
   jobscript.submit()
 
@@ -300,7 +302,7 @@ def gen_trace_per_app( evaldict ):
         extra_pydgin_opts = ""
 
         if runtime_md_flag:
-          extra_pydgin_opts += "--runtime-md %(runtime_md)s " % { 'runtime_md' : 'links/'+app+'.nm'}
+          extra_pydgin_opts += "--runtime-md %(runtime_md)s " % { 'runtime_md' : appdir+"/"+app+'.nm'}
         if lockstep:
           extra_pydgin_opts += "--lockstep "
         if linetrace:
