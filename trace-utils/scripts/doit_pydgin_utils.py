@@ -144,7 +144,7 @@ def submit_job( cmd, name, folder ):
     filename = folder + "/" + name + ".pbs",
     stdout   = folder + "/" + name + "-qsub.out",
     stderr   = folder + "/" + name + "-qsub.err",
-    time     = "04:00:00",
+    time     = "1-01:00:00",
   )
   jobscript.submit()
 
