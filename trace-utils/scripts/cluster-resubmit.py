@@ -33,5 +33,6 @@ if __name__ == "__main__":
     line = line.split("/")
     failed_jobs.append( line[1] + ":" + line[2] )
 
-  resubmit_cmd = "doit  " + ' '.join( failed_jobs )
-  execute( resubmit_cmd )
+  if len( failed_jobs ) != 0:
+    resubmit_cmd = "doit  " + ' '.join( failed_jobs )
+    execute( resubmit_cmd )
