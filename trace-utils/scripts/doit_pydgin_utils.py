@@ -178,6 +178,7 @@ def get_base_evaldict():
   evaldict['color']           = False # Linetrace colors enable flag
   evaldict['serial']          = False # Flag to indicate serial execution
   evaldict['cluster']         = False # Flag to indicate submission on cluster
+  evaldict['extra_app_opts']  = ''    # Up to you, use this to tack on any extra app opts for all apps
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -291,6 +292,8 @@ def gen_trace_per_app( evaldict ):
 
         # String substitute app options using the evaldict
         app_opts = app_opts % evaldict
+        extra_app_opts = evaldict['extra_app_opts']
+        app_opts += ' ' + extra_app_opts
 
         # Define targets
         targets = [ app_dumpfile, timestamp_file ]

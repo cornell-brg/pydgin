@@ -152,8 +152,8 @@ def task_pydgin_sims_debug():
 
   ncores       = 4
   l0_buffer_sz = 1
-  ports        = 1
-  llfus        = 3
+  ports        = 4
+  llfus        = 4
   lockstep     = 1
   analysis     = 1
 
@@ -168,7 +168,8 @@ def task_pydgin_sims_debug():
   # kernels to run with options
   evaldict['app_group']   = ["tiny","mtpull"]
   #evaldict['app_list']    = ['cilk-matmul-parc-mtpull']
-  evaldict['app_list']    = ['pbbs-bfs-ndBFS-parc-mtpull']
+  #evaldict['app_list']    = ['pbbs-bfs-ndBFS-parc-mtpull']
+  evaldict['app_list']    = ['ubmark-vvadd']
   evaldict['app_dict']    = app_dict
 
   # pydgin options
@@ -181,8 +182,9 @@ def task_pydgin_sims_debug():
   evaldict['fpu_ports']      = llfus            # fpu port bw
   evaldict['analysis']       = analysis         # type of reconvergence scheme
   evaldict['lockstep']       = bool( lockstep ) # enable lockstep execution
-  evaldict['cluster']        = True             # enable running the job on cluster
+  #evaldict['cluster']        = True             # enable running the job on cluster
   evaldict['runtime']        = True             # provide runtime metadata
+  evaldict['extra_app_opts'] = "--verify"
 
   # debug options
   evaldict['linetrace']   = True
