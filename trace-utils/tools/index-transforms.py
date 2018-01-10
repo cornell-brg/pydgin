@@ -37,15 +37,19 @@ if __name__ == "__main__":
     end = beg + (tk_sz-1)*cl_sz + 1
     stride = cl_sz
 
-    # cap the end
     if end > n:
       end = n
 
+    # NOTE: THIS NEEDS TO BE FIXED
+    # eg test: cl_sz=6, kp=8, n=32
     # unequal divisions...
-    if beg+end > n:
-      beg = i*tk_sz
-      end = (i+1)*tk_sz if (i+1)*tk_sz < n else n
-      stride = 1
+    #if end > n and beg+end > n:
+    #  beg = i*tk_sz
+    #  end = (i+1)*tk_sz if (i+1)*tk_sz < n else n
+    #  stride = 1
+    ## cap the end
+    #elif end > n:
+    #  end = n
 
     print ' '.join(['%4d' % i for i in range(beg, end, stride)])
 
