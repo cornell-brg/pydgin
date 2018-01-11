@@ -182,7 +182,7 @@ def task_pydgin_sims_debug():
   evaldict['fpu_ports']      = llfus            # fpu port bw
   evaldict['analysis']       = analysis         # type of reconvergence scheme
   evaldict['lockstep']       = bool( lockstep ) # enable lockstep execution
-  #evaldict['cluster']        = True             # enable running the job on cluster
+  evaldict['cluster']        = True             # enable running the job on cluster
   evaldict['runtime']        = True             # provide runtime metadata
   evaldict['extra_app_opts'] = "--verify"
 
