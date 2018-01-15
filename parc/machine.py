@@ -134,5 +134,8 @@ class State( Machine ):
     self.fpu_insts   = 0
     self.int_insts   = 0
 
+    # local task-queue
+    self.local_queue = []
+
   def fetch_pc( self ):
     return self.pc

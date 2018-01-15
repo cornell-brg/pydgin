@@ -1482,18 +1482,6 @@ def execute_pcallrx( s, inst ):
   s.num_pcalls += 1
 
 #-------------------------------------------------------------------------
-# psync
-#-------------------------------------------------------------------------
-# shreesha: HACK to clear hardware barrier semantics and is probably only
-# required for pydgin
-
-def execute_psync( s, inst ):
-  for i in range( s.sim_ptr.active_cores ):
-    s.sim_ptr.states[i].stop = False
-  s.sim_ptr.barrier_count = 0
-  s.pc += 4
-
-#-------------------------------------------------------------------------
 # mtx
 #-------------------------------------------------------------------------
 # Move a value from the scalar regfile to the accelerator regfile.
@@ -1626,10 +1614,10 @@ def execute_addu_xi( s, inst ):
   #  task.m_target_chunk_sz
   #)
 
-  if len( s.sim_ptr.task_queue ) == 0:
-    s.sim_ptr.task_queue = [task]
+  if len( s.local_queue ) == 0:
+    s.local_queue = [task]
   else:
-    s.sim_ptr.task_queue.append( task )
+    s.local_queue.append( task )
 
   s.pc += 4
 
@@ -1661,6 +1649,20 @@ def execute_subu_xi( s, inst ):
   else:
     s.rf[inst.rd] = 0
 
+  s.pc += 4
+
+#-------------------------------------------------------------------------
+# psync
+#-------------------------------------------------------------------------
+# HACK: used as the hint for corner-turns
+
+def execute_psync( s, inst ):
+  for task in s.local_queue:
+    if len( s.sim_ptr.task_queue ) == 0:
+      s.sim_ptr.task_queue = [task]
+    else:
+      s.sim_ptr.task_queue.append( task )
+  s.local_queue = []
   s.pc += 4
 
 #=======================================================================
