@@ -8,9 +8,9 @@ import math
 
 if __name__ == "__main__":
 
-  n     = 100  # problem size
-  k     = 1    # decomposition factor
-  p     = 8    # number of physical cores
+  n     = 1000  # problem size
+  k     = 8    # decomposition factor
+  p     = 4    # number of physical cores
   kp    = k*p  # logical cores
   cl_sz = 4    # cache line size
 

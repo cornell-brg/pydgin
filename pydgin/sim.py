@@ -82,6 +82,7 @@ class Sim( object ):
     self.lockstep       = False
     self.linetrace      = False
     self.color          = False
+    self.pause_max      = 10
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
@@ -323,6 +324,20 @@ class Sim( object ):
             self.states[i].active = True
             self.states[i].stop = False
 
+      # check if any core has hit the max pause interval
+      reset_pause = False
+      for state in self.states:
+        if state.pause_ctr == self.pause_max:
+          reset_pause = True
+          break
+
+      # check which cores can proceed
+      if reset_pause:
+        for state in self.states:
+          if state.pause_ctr > 0:
+            state.pause_ctr = 0
+            state.pc += 4
+
       # shreesha: linetrace
       if self.linetrace:
         if self.states[0].stats_en:
@@ -489,6 +504,7 @@ class Sim( object ):
                            "--icache-line-sz",
                            "--dcache-line-sz",
                            "--l0-buffer-sz",
+                           "--pause-max",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -604,6 +620,9 @@ class Sim( object ):
 
           elif prev_token == "--l0-buffer-sz":
             self.l0_buffer_sz = int(token)
+
+          elif prev_token == "--pause-max":
+            self.pause_max = int(token)
 
           prev_token = ""
 
@@ -730,6 +749,8 @@ class Sim( object ):
 
       # shreesha: configure fpu allocator
       self.fpu_allocator.configure( self.ncores, self.fpu_ports, self.lockstep )
+
+      print "Pause interval: ", self.pause_max
 
       #-----------------------------------------------------------------
 
