@@ -8,6 +8,7 @@ from pydgin.utils import signed, sext_16, sext_8, trim_32, \
 
 from pydgin.misc import create_risc_decoder, FatalError
 from pydgin.misc_tpa import MemRequest
+from pydgin.misc_tpa import Task
 
 #=======================================================================
 # Register Definitions
@@ -1355,20 +1356,6 @@ def execute_xloop_orm( s, inst ):
 def execute_addiu_xi( s, inst ):
   execute_addiu( s, inst )
 
-#-----------------------------------------------------------------------
-# xloop_addu_xi
-#-----------------------------------------------------------------------
-# implemented as addu
-def execute_addu_xi( s, inst ):
-  execute_addu( s, inst )
-
-#-----------------------------------------------------------------------
-# xloop_subu_xi
-#-----------------------------------------------------------------------
-# implemented as subu
-def execute_subu_xi( s, inst ):
-  execute_subu( s, inst )
-
 #-------------------------------------------------------------------------
 # XPC instructions
 #-------------------------------------------------------------------------
@@ -1609,6 +1596,71 @@ def execute_hint_wl( s, inst ):
 # mug
 #-----------------------------------------------------------------------
 def execute_mug( s, inst ):
+  s.pc += 4
+
+#=======================================================================
+# TPA Instructions
+#=======================================================================
+
+#-----------------------------------------------------------------------
+# addu_xi
+#-----------------------------------------------------------------------
+# HACK: Used as enq instruction
+
+def execute_addu_xi( s, inst ):
+  task_addr = trim_32( s.rf[inst.rt] )
+  task = Task()
+  task.m_func_ptr        = s.mem.read( task_addr + 0,  4 )
+  task.m_args_ptr        = s.mem.read( task_addr + 4,  4 )
+  task.m_ref_count_ptr   = s.mem.read( task_addr + 8,  4 )
+  task.m_begin           = s.mem.read( task_addr + 12, 4 )
+  task.m_end             = s.mem.read( task_addr + 16, 4 )
+  task.m_target_chunk_sz = s.mem.read( task_addr + 20, 4 )
+  #print "task addr: %x " % task_addr
+  #print "enqueue: %x, %x, %x, %d, %d, %d" % (
+  #  task.m_func_ptr,
+  #  task.m_args_ptr,
+  #  task.m_ref_count_ptr,
+  #  task.m_begin,
+  #  task.m_end,
+  #  task.m_target_chunk_sz
+  #)
+
+  if len( s.sim_ptr.task_queue ) == 0:
+    s.sim_ptr.task_queue = [task]
+  else:
+    s.sim_ptr.task_queue.append( task )
+
+  s.pc += 4
+
+#-----------------------------------------------------------------------
+# subu_xi
+#-----------------------------------------------------------------------
+# HACK: Used as deq instruction
+
+def execute_subu_xi( s, inst ):
+  if len( s.sim_ptr.task_queue ) != 0:
+    task_addr = trim_32( s.rf[inst.rt] )
+    task      = s.sim_ptr.task_queue.pop(0)
+    s.mem.write( task_addr + 0,   4, task.m_func_ptr        )
+    s.mem.write( task_addr + 4,   4, task.m_args_ptr        )
+    s.mem.write( task_addr + 8,   4, task.m_ref_count_ptr   )
+    s.mem.write( task_addr + 12,  4, task.m_begin           )
+    s.mem.write( task_addr + 16,  4, task.m_end             )
+    s.mem.write( task_addr + 20,  4, task.m_target_chunk_sz )
+    s.rf[inst.rd] = 1
+    #print "task addr: %x " % task_addr
+    #print "dequeue : %x, %x, %x, %d, %d, %d" % (
+    #  task.m_func_ptr,
+    #  task.m_args_ptr,
+    #  task.m_ref_count_ptr,
+    #  task.m_begin,
+    #  task.m_end,
+    #  task.m_target_chunk_sz
+    #)
+  else:
+    s.rf[inst.rd] = 0
+
   s.pc += 4
 
 #=======================================================================

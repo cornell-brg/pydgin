@@ -34,19 +34,25 @@ def execute(cmd):
 #-------------------------------------------------------------------------
 
 g_runtime_funcs = {
-  "run"          : "wsrt::TaskGroup::run",
-  "run_and_wait" : "wsrt::TaskGroup::run_and_wait",
-  "wait"         : "wsrt::TaskGroup::wait()", 
-  "TaskGroup"    : "wsrt::TaskGroup::TaskGroup()",
-  "init"         : "wsrt::task_scheduler_init()",
-  "end"          : "wsrt::task_scheduler_end()",
+  "wsrt_run"           : "wsrt::TaskGroup::run",
+  "wsrt_run_and_wait"  : "wsrt::TaskGroup::run_and_wait",
+  "wsrt_wait"          : "wsrt::TaskGroup::wait()", 
+  "wsrt_TaskGroup"     : "wsrt::TaskGroup::TaskGroup()",
+  "wsrt_init"          : "wsrt::task_scheduler_init()",
+  "wsrt_end"           : "wsrt::task_scheduler_end()",
+  "tpart_run"          : "tpart::TaskGroup::run",
+  "tpart_run_and_wait" : "tpart::TaskGroup::run_and_wait",
+  "tpart_wait"         : "tpart::TaskGroup::wait()", 
+  "tpart_TaskGroup"    : "tpart::TaskGroup::TaskGroup()",
+  "tpart_init"         : "tpart::task_scheduler_init()",
+  "tpart_end"          : "tpart::task_scheduler_end()",
 }
 
 #-------------------------------------------------------------------------
 # inspect_app
 #-------------------------------------------------------------------------
 
-maven_nm_cmd = "maven-nm -C --radix=d %(app)s | grep wsrt"
+maven_nm_cmd = "maven-nm -C --radix=d %(app)s | grep 'wsrt\|tpart'"
 
 def inspect_app( app_kernel ):
   app = os.path.dirname(os.path.abspath(__file__)) + "/../scripts/links/" + app_kernel

@@ -100,6 +100,8 @@ class Sim( object ):
     self.total_steps     = 0
     self.serial_steps    = 0
 
+    self.task_queue = []
+
   #-----------------------------------------------------------------------
   # decode
   #-----------------------------------------------------------------------
@@ -291,6 +293,10 @@ class Sim( object ):
             print "Exception in execute (pc: 0x%s), aborting!" % pad_hex( s.pc )
             print "Exception message: %s" % error.msg
             break
+
+        if self.states[0].debug.enabled( "regdump" ):
+          print "C%d" % core
+          s.rf.print_regs( per_row=4 )
 
         if s.active and not s.stall:
           s.num_insts += 1
