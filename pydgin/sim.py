@@ -69,20 +69,21 @@ class Sim( object ):
     self.fpu_allocator         = LLFUAllocator(False)
 
     # shreesha: adding extra stuff here
-    self.reconvergence  = 0
-    self.barrier_count  = 0
-    self.active_cores   = 0
-    self.inst_ports     = 0 # Instruction bandwidth
-    self.data_ports     = 0 # Data bandwidth
-    self.mdu_ports      = 0 # MDU bandwidth
-    self.fpu_ports      = 0 # FPU bandwidth
-    self.icache_line_sz = 0 # Insn cache line size (default word size)
-    self.dcache_line_sz = 0 # Data cache line size (set based on num cores)
-    self.l0_buffer_sz   = 0 # L0 buffer size
-    self.lockstep       = False
-    self.linetrace      = False
-    self.color          = False
-    self.pause_max      = 10
+    self.reconvergence   = 0
+    self.barrier_count   = 0
+    self.active_cores    = 0
+    self.inst_ports      = 0 # Instruction bandwidth
+    self.data_ports      = 0 # Data bandwidth
+    self.mdu_ports       = 0 # MDU bandwidth
+    self.fpu_ports       = 0 # FPU bandwidth
+    self.icache_line_sz  = 0 # Insn cache line size (default word size)
+    self.dcache_line_sz  = 0 # Data cache line size (set based on num cores)
+    self.l0_buffer_sz    = 0 # L0 buffer size
+    self.lockstep        = False
+    self.linetrace       = False
+    self.color           = False
+    self.pause_max       = 10
+    self.pause_threshold = 0
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
@@ -326,13 +327,16 @@ class Sim( object ):
 
       # check if any core has hit the max pause interval
       reset_pause = False
+      all_waiting = True
       for state in self.states:
         if state.pause_ctr == self.pause_max:
           reset_pause = True
-          break
+
+        if not state.pause_ctr > self.pause_threshold:
+          all_waiting = False
 
       # check which cores can proceed
-      if reset_pause:
+      if all_waiting or reset_pause:
         for state in self.states:
           if state.pause_ctr > 0:
             state.pause_ctr = 0
@@ -505,6 +509,7 @@ class Sim( object ):
                            "--dcache-line-sz",
                            "--l0-buffer-sz",
                            "--pause-max",
+                           "--pause-threshold",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -623,6 +628,9 @@ class Sim( object ):
 
           elif prev_token == "--pause-max":
             self.pause_max = int(token)
+
+          elif prev_token == "--pause-threshold":
+            self.pause_threshold = int(token)
 
           prev_token = ""
 
@@ -751,6 +759,9 @@ class Sim( object ):
       self.fpu_allocator.configure( self.ncores, self.fpu_ports, self.lockstep )
 
       print "Pause interval: ", self.pause_max
+      if self.pause_threshold == 0:
+        self.pause_threshold = self.pause_max/2
+      print "Pause threshold: ", self.pause_threshold
 
       #-----------------------------------------------------------------
 
