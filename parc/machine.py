@@ -137,8 +137,8 @@ class State( Machine ):
     # local task-queue
     self.local_queue = []
 
-    # pause counter
-    self.pause_ctr = 0
+    # barrier counter
+    self.barrier_ctr = 0
 
   def fetch_pc( self ):
     return self.pc

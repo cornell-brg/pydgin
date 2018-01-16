@@ -82,8 +82,7 @@ class Sim( object ):
     self.lockstep        = False
     self.linetrace       = False
     self.color           = False
-    self.pause_max       = 10
-    self.pause_threshold = 0
+    self.barrier_limit   = 100
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
@@ -316,30 +315,23 @@ class Sim( object ):
       parallel_mode = self.states[0].wsrt_mode or self.states[0].spmd_mode
       if self.states[0].stats_en and not parallel_mode: self.serial_steps += 1
 
-      # check if the count of the barrier is equal to the number of active
-      # cores, reset the hardware barrier
-      if self.barrier_count == self.active_cores:
-        self.barrier_count = 0
-        for i in xrange( self.active_cores ):
-          if not self.states[i].active:
-            self.states[i].active = True
-            self.states[i].stop = False
-
-      # check if any core has hit the max pause interval
-      reset_pause = False
+      # check for early exit at a barrier hint or if any core has hit the
+      # max limit
       all_waiting = True
+      reset_core  = False
       for state in self.states:
-        if state.pause_ctr == self.pause_max:
-          reset_pause = True
-
-        if not state.pause_ctr > self.pause_threshold:
+        if state.barrier_ctr == self.barrier_limit:
+          reset_core = True
+        if not state.barrier_ctr > 0:
           all_waiting = False
 
       # check which cores can proceed
-      if all_waiting or reset_pause:
+      # NOTE: I currently opportunistically wakeup any other core that is
+      # waiting when a core has hit the barrier limit
+      if all_waiting or reset_core:
         for state in self.states:
-          if state.pause_ctr > 0:
-            state.pause_ctr = 0
+          if state.barrier_ctr > 0:
+            state.barrier_ctr = 0
             state.pc += 4
 
       # shreesha: linetrace
@@ -508,8 +500,7 @@ class Sim( object ):
                            "--icache-line-sz",
                            "--dcache-line-sz",
                            "--l0-buffer-sz",
-                           "--pause-max",
-                           "--pause-threshold",
+                           "--barrier-limit",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -626,11 +617,8 @@ class Sim( object ):
           elif prev_token == "--l0-buffer-sz":
             self.l0_buffer_sz = int(token)
 
-          elif prev_token == "--pause-max":
-            self.pause_max = int(token)
-
-          elif prev_token == "--pause-threshold":
-            self.pause_threshold = int(token)
+          elif prev_token == "--barrier-limit":
+            self.barrier_limit = int(token)
 
           prev_token = ""
 
@@ -758,10 +746,7 @@ class Sim( object ):
       # shreesha: configure fpu allocator
       self.fpu_allocator.configure( self.ncores, self.fpu_ports, self.lockstep )
 
-      print "Pause interval: ", self.pause_max
-      if self.pause_threshold == 0:
-        self.pause_threshold = self.pause_max/2
-      print "Pause threshold: ", self.pause_threshold
+      print "Barrier limit: ", self.barrier_limit
 
       #-----------------------------------------------------------------
 

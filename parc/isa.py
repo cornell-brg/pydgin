@@ -1105,16 +1105,6 @@ def execute_xloop( s, inst ):
   s.pc += 4
 
 #-----------------------------------------------------------------------
-# stop
-#-----------------------------------------------------------------------
-def execute_stop( s, inst ):
-  if s.sim_ptr.barrier_count != s.sim_ptr.active_cores and not s.stop:
-    s.sim_ptr.barrier_count += 1
-    s.stop = True
-    s.active = False
-    s.pc += 4
-
-#-----------------------------------------------------------------------
 # utidx
 #-----------------------------------------------------------------------
 def execute_utidx( s, inst ):
@@ -1660,10 +1650,25 @@ def execute_psync( s, inst ):
   s.pc += 4
 
 #-----------------------------------------------------------------------
+# stop
+#-----------------------------------------------------------------------
+
+# NOTE: old implementation -- keep this around
+#def execute_stop( s, inst ):
+#  if s.sim_ptr.barrier_count != s.sim_ptr.active_cores and not s.stop:
+#    s.sim_ptr.barrier_count += 1
+#    s.stop = True
+#    s.active = False
+#    s.pc += 4
+
+def execute_stop( s, inst ):
+  s.barrier_ctr += 1
+
+#-----------------------------------------------------------------------
 # hint_wl
 #-----------------------------------------------------------------------
 def execute_hint_wl( s, inst ):
-  s.pause_ctr += 1
+  s.pc += 4
 
 #=======================================================================
 # Create Decoder
