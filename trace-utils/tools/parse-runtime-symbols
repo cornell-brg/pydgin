@@ -79,6 +79,8 @@ def main():
       f = open( res_dir + "/" + app + ".nm", "wb" )
       csv.writer(f).writerow( addrs )
       csv.writer(f).writerow( names )
+      addrs = [ hex(x) for x in addrs ]
+      csv.writer(f).writerow( addrs )
     except:
       print "%(app)s is not a task-parallel program\n" % { 'app' : app }
 
