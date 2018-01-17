@@ -152,10 +152,6 @@ class ReconvergenceManager():
           sim.total_wsrt     += 1
           sim.total_parallel += 1
 
-      # NOTE: do not modify a core that has hit a hw barrier or has been stalling
-      elif core not in s.scheduled_list:
-        sim.states[core].active = False
-
     # early exit: all cores are scheduled
     if len( s.scheduled_list ) == sim.ncores:
       return True
@@ -236,9 +232,10 @@ class ReconvergenceManager():
     for core in xrange( sim.ncores ):
       if sim.states[core].stall or sim.states[core].stop or sim.states[core].clear:
         s.scheduled_list.append( core )
-      # for explicit stalls set due to lockstep execution
-      if sim.states[core].clear:
-        sim.states[core].active = False
+
+      # deactivate all cores; cores get activated based on the number of
+      # ports, coalescing, reconvergence policy, and l0 buffer selection
+      sim.states[core].active = False
 
     # check if any cores have cached in the line in the l0 buffer
     if sim.l0_buffer_sz != 0:
