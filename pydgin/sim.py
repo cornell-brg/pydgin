@@ -315,6 +315,11 @@ class Sim( object ):
       parallel_mode = self.states[0].wsrt_mode or self.states[0].spmd_mode
       if self.states[0].stats_en and not parallel_mode: self.serial_steps += 1
 
+      # update barrier counts for stalling cores
+      for state in self.states:
+        if state.stop:
+          state.barrier_ctr += 1
+
       # check for early exit at a barrier hint or if any core has hit the
       # max limit
       all_waiting = True
@@ -332,6 +337,8 @@ class Sim( object ):
         for state in self.states:
           if state.barrier_ctr > 0:
             state.barrier_ctr = 0
+            state.stop = False
+            state.active = True
             state.pc += 4
 
       # shreesha: linetrace

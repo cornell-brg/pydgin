@@ -1662,7 +1662,8 @@ def execute_psync( s, inst ):
 #    s.pc += 4
 
 def execute_stop( s, inst ):
-  s.barrier_ctr += 1
+  s.stop = True
+  s.active = False
 
 #-----------------------------------------------------------------------
 # hint_wl
