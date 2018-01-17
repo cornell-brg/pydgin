@@ -83,6 +83,8 @@ class Sim( object ):
     self.linetrace       = False
     self.color           = False
     self.barrier_limit   = 100
+    self.icoalesce       = True  # toggle instruction coalescing
+    self.iword_match     = True  # toggle instruction word vs. line matching
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
@@ -97,6 +99,7 @@ class Sim( object ):
     self.total_wsrt      = 0 # total insts in wsrt region
     self.total_parallel  = 0 # total number of instructions in parallel regions
     self.total_accesses  = 0 # total number of mem accesses
+    self.total_coalesces = 0 # total number of instruction coalesces
     # NOTE: Total number of instructions in timing loop
     self.total_steps     = 0
     self.serial_steps    = 0
@@ -172,6 +175,9 @@ class Sim( object ):
     --icache-line-sz  Cache line size in bytes
     --dcache-line-sz  Cache line size in bytes
     --l0-buffer-sz    L0 buffer size in icache-line-sz
+    --barrier-limit   Max stall cycles for barrier limit
+    --icoalesce       Toggle coalescing for instructions (default True)
+    --iword-match     Toggle instruction word vs. line matching (default word)
   """
 
   #-----------------------------------------------------------------------
@@ -427,6 +433,16 @@ class Sim( object ):
       print 'Redundancy for data accesses in parallel regions = %f' % ( 100*redundant_accesses/float( self.total_accesses ) )
     print
 
+    total_l0_hits = 0
+    for state in self.states:
+      total_l0_hits = total_l0_hits + state.l0_hits
+      print 'L0 hits for core %d : %d' % ( state.core_id, state.l0_hits )
+    print 'Total hits in L0 buffer: %d' % total_l0_hits
+    print 'Total number of coalesced instruction accesses: %d' % self.total_coalesces
+    print 'Savings due to L0 buffers: %f' % ( 100*total_l0_hits/float( self.total_parallel ) )
+    print 'Savings due to coalescing: %f' % ( 100*self.total_coalesces/float( self.total_parallel ) )
+    print
+
     # print instruction mix
     total_int_insts   = 0
     total_load_insts  = 0
@@ -508,6 +524,8 @@ class Sim( object ):
                            "--dcache-line-sz",
                            "--l0-buffer-sz",
                            "--barrier-limit",
+                           "--icoalesce",
+                           "--iword-match",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -542,6 +560,12 @@ class Sim( object ):
 
           elif token == "--color":
             self.color = True
+
+          elif token == "--icoalesce":
+            self.icoalesce = False
+
+          elif token == "--iword-match":
+            self.iword_match = False
 
           elif token in tokens_with_args:
             prev_token = token
@@ -711,16 +735,14 @@ class Sim( object ):
 
       # shreesha: default icache-line-sz
       if self.icache_line_sz == 0:
-        self.icache_line_sz = 4
-      mask_bits = ~( self.icache_line_sz - 1 )
-      mask = mask_bits & 0xFFFFFFFF
-      print "Insn cache line size: %d, mask: %x" % ( self.icache_line_sz, mask )
+        self.icache_line_sz = self.ncores * 4
+      print "Insn cache line size: %d" % self.icache_line_sz
 
       # shreesha: l0 buffer size
       print "L0 buffer size in cache lines: %d" % ( self.l0_buffer_sz )
 
       # shreesha: configure reconvergence manager
-      self.reconvergence_manager.configure( self.ncores, self.icache_line_sz )
+      self.reconvergence_manager.configure( self.ncores, self.icoalesce, self.iword_match, self.icache_line_sz )
 
       # shreesha: default dcache-line-sz
       if self.dcache_line_sz == 0:

@@ -72,6 +72,7 @@ class State( Machine ):
 
     # l0 buffer
     self.l0_buffer = []
+    self.l0_hits = 0
 
     # shreesha: model params
     self.inst_bits = 0

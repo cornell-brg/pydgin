@@ -63,26 +63,65 @@ class ReconvergenceManager():
     s.switch_interval = 0
     s.scheduled_list  = []
     s.mask            = 0
-    # by default assume a cache line of 128 bits or 16 bytes
-    s.l0_mask         = ~(16 - 1) & 0xFFFFFFFF
+    s.l0_mask         = 0
+    s.coalesce        = True
 
   #-----------------------------------------------------------------------
   # configure
   #-----------------------------------------------------------------------
 
-  def configure( s, num_cores, line_sz ):
+  def configure( s, num_cores, coalesce, word_match, line_sz ):
     s.switch_interval = num_cores
     s.top_priority    = num_cores-1
-    # mask bits
-    mask_bits = ~( line_sz - 1 )
-    s.mask = mask_bits & 0xFFFFFFFF
-    if line_sz != 0:
-      s.l0_mask = s.mask
+    # enable coaelscing
+    s.coalesce        = coalesce
+    # mask bits used for instr coalescing
+    mask_sz = line_sz
+    if word_match:
+      mask_sz = 4
+    s.mask = ~( mask_sz - 1 ) & 0xFFFFFFFF
+    # mask bits used for checking L0 hits
+    s.l0_mask = ~(line_sz - 1) & 0xFFFFFFFF
+
+    print "Coalesing enabled: ", s.coalesce
+    print "Coalescing mask is %x" % s.mask
     print "L0 mask is %x" % s.l0_mask
+
+  #-----------------------------------------------------------------------
+  # update_single_pc
+  #-----------------------------------------------------------------------
+  # updates a single pc
+
+  def update_single_pc( s, sim, core, line_addr ):
+    # select matching pcs
+    curr_line_addr = sim.states[core].pc & s.mask
+    if curr_line_addr == line_addr and core not in s.scheduled_list:
+      sim.states[core].active = True
+      s.scheduled_list.append( core )
+      # add the line to the l0 buffer if there is a l0 buffer present
+      if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer and sim.l0_buffer_sz != 0:
+        sim.states[core].l0_buffer.pop(0)
+        sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
+
+      # collect stats
+      if sim.states[core].spmd_mode:
+        sim.total_spmd     += 1
+        sim.total_parallel += 1
+      elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
+        sim.total_task     += 1
+        sim.total_wsrt     += 1
+        sim.total_parallel += 1
+      elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
+        sim.total_runtime  += 1
+        sim.total_wsrt     += 1
+        sim.total_parallel += 1
 
   #-----------------------------------------------------------------------
   # update_pcs
   #-----------------------------------------------------------------------
+  # function implements instruction coalescing and in addition if a l0
+  # buffer is present and a matched value is not present then the line is
+  # replaced
 
   def update_pcs( s, sim, line_addr ):
     # loop through cores
@@ -93,7 +132,10 @@ class ReconvergenceManager():
       if curr_line_addr == line_addr and core not in s.scheduled_list:
         sim.states[core].active = True
         s.scheduled_list.append( core )
-        if sim.states[core].pc & s.l0_mask not in sim.states[core].l0_buffer:
+        if sim.states[0].stats_en:
+          sim.total_coalesces += 1
+        # add the line to the l0 buffer if there is a l0 buffer present
+        if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer and sim.l0_buffer_sz != 0:
           sim.states[core].l0_buffer.pop(0)
           sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
 
@@ -206,6 +248,8 @@ class ReconvergenceManager():
           s.scheduled_list.append( core )
           if not (sim.states[core].stop or sim.states[core].clear):
             sim.states[core].active = True
+            if sim.states[0].stats_en:
+              sim.states[core].l0_hits += 1
             # collect stats
             if sim.states[core].spmd_mode:
               sim.total_spmd     += 1
@@ -252,11 +296,13 @@ class ReconvergenceManager():
         sim.unique_runtime += 1
         sim.unique_insts += 1
 
-      # check for early exit
       line_addr = next_pc & s.mask
-      all_done = s.update_pcs( sim, line_addr )
-      if all_done:
-        break
+      s.update_single_pc( sim, next_core, line_addr )
+      if s.coalesce:
+        # check for early exit
+        all_done = s.update_pcs( sim, line_addr )
+        if all_done:
+          break
 
 #-------------------------------------------------------------------------
 # LLFUAllocator
