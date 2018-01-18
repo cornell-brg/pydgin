@@ -97,6 +97,7 @@ class ReconvergenceManager():
     curr_line_addr = sim.states[core].pc & s.mask
     if curr_line_addr == line_addr and core not in s.scheduled_list:
       sim.states[core].active = True
+      sim.states[core].istall = False
       s.scheduled_list.append( core )
       # add the line to the l0 buffer if there is a l0 buffer present
       if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer and sim.l0_buffer_sz != 0:
@@ -131,6 +132,7 @@ class ReconvergenceManager():
       curr_line_addr = sim.states[core].pc & s.mask
       if curr_line_addr == line_addr and core not in s.scheduled_list:
         sim.states[core].active = True
+        sim.states[core].istall = False
         s.scheduled_list.append( core )
         if sim.states[0].stats_en:
           sim.total_coalesces += 1
@@ -230,12 +232,14 @@ class ReconvergenceManager():
     # do not consider a core that is stalling or reached hw barroer
     s.scheduled_list = []
     for core in xrange( sim.ncores ):
-      if sim.states[core].stall or sim.states[core].stop or sim.states[core].clear:
-        s.scheduled_list.append( core )
-
       # deactivate all cores; cores get activated based on the number of
       # ports, coalescing, reconvergence policy, and l0 buffer selection
       sim.states[core].active = False
+      sim.states[core].istall = True
+
+      if sim.states[core].stall or sim.states[core].stop or sim.states[core].clear:
+        s.scheduled_list.append( core )
+        sim.states[core].istall = False
 
     # check if any cores have cached in the line in the l0 buffer
     if sim.l0_buffer_sz != 0:
@@ -243,22 +247,22 @@ class ReconvergenceManager():
         l0_line_addr = sim.states[core].pc & s.l0_mask
         if l0_line_addr in sim.states[core].l0_buffer and core not in s.scheduled_list:
           s.scheduled_list.append( core )
-          if not (sim.states[core].stop or sim.states[core].clear):
-            sim.states[core].active = True
-            if sim.states[0].stats_en:
-              sim.states[core].l0_hits += 1
-            # collect stats
-            if sim.states[core].spmd_mode:
-              sim.total_spmd     += 1
-              sim.total_parallel += 1
-            elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
-              sim.total_task     += 1
-              sim.total_wsrt     += 1
-              sim.total_parallel += 1
-            elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
-              sim.total_runtime  += 1
-              sim.total_wsrt     += 1
-              sim.total_parallel += 1
+          sim.states[core].active = True
+          sim.states[core].istall = False
+          if sim.states[0].stats_en:
+            sim.states[core].l0_hits += 1
+          # collect stats
+          if sim.states[core].spmd_mode:
+            sim.total_spmd     += 1
+            sim.total_parallel += 1
+          elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
+            sim.total_task     += 1
+            sim.total_wsrt     += 1
+            sim.total_parallel += 1
+          elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
+            sim.total_runtime  += 1
+            sim.total_wsrt     += 1
+            sim.total_parallel += 1
 
     # all cores all either stalling or have reached a barrier
     if len( s.scheduled_list ) == sim.ncores:

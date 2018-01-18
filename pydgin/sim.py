@@ -315,6 +315,15 @@ class Sim( object ):
             print "Reached the max_insts (%d), exiting." % max_insts
             break
 
+      # collect all stall stats
+      for tc in self.states:
+        if tc.istall:
+          tc.imem_stalls += 1
+        elif tc.stall:
+          if   tc.dmem: tc.dmem_stalls += 1
+          elif tc.mdu:  tc.mdu_stalls  += 1
+          elif tc.fpu:  tc.fpu_stalls  += 1
+
       # count steps in stats region
       if self.states[0].stats_en: self.total_steps += 1
 
@@ -378,6 +387,8 @@ class Sim( object ):
                 print pad( "#m |", 9, " ", False ),
               elif self.states[i].fpu:
                 print pad( "#f |", 9, " ", False ),
+            elif not self.states[i].active and self.states[i].istall:
+              print pad( "#i |", 9, " ", False ),
             else:
               print pad( " |", 9, " ", False ),
           print
@@ -441,6 +452,34 @@ class Sim( object ):
     print 'Total number of coalesced instruction accesses: %d' % self.total_coalesces
     print 'Savings due to L0 buffers: %f' % ( 100*total_l0_hits/float( self.total_parallel ) )
     print 'Savings due to coalescing: %f' % ( 100*self.total_coalesces/float( self.total_parallel ) )
+    print
+
+    # print stall counts
+    total_imem_stalls = 0
+    total_dmem_stalls = 0
+    total_mdu_stalls  = 0
+    total_fpu_stalls  = 0
+    print pad( "Core |", 12, " ", False ),
+    print pad( "imem# |", 12, " ", False ),
+    print pad( "dmem# |", 12, " ", False ),
+    print pad( "mdu# |", 12, " ", False ),
+    print pad( "fpu# |", 12, " ", False )
+    for state in self.states:
+      print pad( "%d |" % state.core_id, 12, " ", False ),
+      total_imem_stalls += state.imem_stalls
+      print pad( "%d |" % state.imem_stalls, 12, " ", False ),
+      total_dmem_stalls += state.dmem_stalls
+      print pad( "%d |" % state.dmem_stalls, 12, " ", False ),
+      total_mdu_stalls  += state.mdu_stalls
+      print pad( "%d |" % state.mdu_stalls, 12, " ", False ),
+      total_fpu_stalls  += state.fpu_stalls
+      print pad( "%d |" % state.fpu_stalls, 12, " ", False )
+
+    print pad( "Total |", 12, " ", False ),
+    print pad( "%d |" % total_imem_stalls, 12, " ", False ),
+    print pad( "%d |" % total_dmem_stalls, 12, " ", False ),
+    print pad( "%d |" % total_mdu_stalls, 12, " ", False ),
+    print pad( "%d |" % total_fpu_stalls, 12, " ", False )
     print
 
     # print instruction mix
