@@ -295,6 +295,8 @@ class ReconvergenceManager():
 
       line_addr = next_pc & s.mask
       s.update_single_pc( sim, next_core, line_addr )
+      if len( s.scheduled_list ) == sim.ncores:
+        break
       if s.coalesce:
         # check for early exit
         all_done = s.update_pcs( sim, line_addr )
