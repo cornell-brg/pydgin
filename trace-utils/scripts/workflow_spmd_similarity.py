@@ -1,5 +1,5 @@
 #============================================================================
-# workflow_wsrt_similarity
+# workflow_spmd_similarity
 #============================================================================
 
 from apps import *
@@ -7,21 +7,20 @@ from doit_utils import *
 from doit_pydgin_utils import *
 
 
-def task_wsrt_similarity():
+def task_spmd_similarity():
 
-  #for barrier_limit in [1,50,100,250,500,1000]:
   for barrier_limit in [1,250]:
 
     evaldict = get_base_evaldict()
 
     # task info
-    evaldict['basename']        = "sim-wsrt-similarity-limit-%d" % barrier_limit
-    evaldict['resultsdir']      = "results-wsrt-similarity-limit-%d" % barrier_limit
+    evaldict['basename']        = "sim-spmd-similarity-limit-%d" % barrier_limit
+    evaldict['resultsdir']      = "results-spmd-similarity-limit-%d" % barrier_limit
     evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
     # bmark params
-    evaldict['app_group']       = ["small","mtpull"]
-    evaldict['app_list']        = app_list
+    evaldict['app_group']       = ["small","mt"]
+    evaldict['app_list']        = app_list_spmd
     evaldict['app_dict']        = app_dict
 
     # uarch params
@@ -37,7 +36,6 @@ def task_wsrt_similarity():
     evaldict['analysis']        = 1
 
     # misc params
-    #evaldict['cluster']         = True
-    evaldict['runtime']         = True
+    evaldict['cluster']         = False
 
     yield gen_trace_per_app( evaldict )

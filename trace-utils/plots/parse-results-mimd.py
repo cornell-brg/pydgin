@@ -60,18 +60,18 @@ app_short_name_dict = OrderedDict([
   ('cilk-matmul'                  , 'matmul'),
 ])
 
-g_resultsdir_path = "../results-wsrt-similarity-limit-%d"
+g_resultsdir_path = "../results-%s-similarity-limit-%d"
 
 #-------------------------------------------------------------------------
 # summarize
 #-------------------------------------------------------------------------
 
-def summarize():
+def summarize(runtime):
 
   data = []
   #for limit in [1,50,100,250,500,1000]:
   for limit in [1,250]:
-    resultsdir_path = g_resultsdir_path % limit
+    resultsdir_path = g_resultsdir_path % ( runtime, limit )
     subfolders = os.listdir( resultsdir_path )
     for subfolder in subfolders:
       try:
@@ -94,7 +94,7 @@ def summarize():
             elif 'Redundancy in parallel regions' in line:
               isavings = line.split()[-1]
 
-        config = "mimd-limit-%d" % limit
+        config = "%s-mimd-limit-%d" % ( runtime, limit )
         data.append([app_short_name_dict[app],config,total,isavings])
       except:
         print "limit-{} {}: Results file not present".format( limit, subfolder )
@@ -109,23 +109,29 @@ def summarize():
 #-------------------------------------------------------------------------
 
 if __name__ == "__main__":
-  df = summarize()
+  spmd_df = summarize("spmd")
 
-  base_df = df[df.config == "mimd-limit-1"].copy()
+  wsrt_df = summarize("wsrt")
+
+  df = pd.concat([spmd_df,wsrt_df])
+
+  base_df = df[df.config == "spmd-mimd-limit-1"].copy()
 
   for app in app_short_name_dict.values():
-    ts = base_df.loc[base_df.app == app,['steps']].iloc[0]
-    df.loc[df.app == app, ['steps']] = \
-      float(ts)/df.loc[df.app == app, ['steps']]
+    if app in base_df.app.unique():
+      ts = base_df.loc[base_df.app == app,['steps']].iloc[0]
+      df.loc[df.app == app, ['steps']] = \
+        float(ts)/df.loc[df.app == app, ['steps']]
 
   configs = df.config.unique()
   print "{:^21s}".format("kernel") + ("{:^21s}"*len(configs)).format(*configs)
   for app in app_short_name_dict.values():
-    out = "{:^18s}".format(app)
-    for config in configs:
-      perf = df.loc[(df.app == app) & (df.config == config), ['steps']].iloc[0]
-      red  = df.loc[(df.app == app) & (df.config == config), ['isavings']].iloc[0]
-      out += "{:^10.2f} {:^10.2f}".format( float(perf), float(red) )
-    print out
+    if app in base_df.app.unique():
+      out = "{:^18s}".format(app)
+      for config in configs:
+        perf = df.loc[(df.app == app) & (df.config == config), ['steps']].iloc[0]
+        red  = df.loc[(df.app == app) & (df.config == config), ['isavings']].iloc[0]
+        out += "{:^10.2f} {:^10.2f}".format( float(perf), float(red) )
+      print out
 
   df.to_csv('test.csv',index=False)
