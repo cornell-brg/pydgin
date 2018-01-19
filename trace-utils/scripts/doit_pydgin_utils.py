@@ -179,6 +179,9 @@ def get_base_evaldict():
   evaldict['serial']          = False # Flag to indicate serial execution
   evaldict['cluster']         = False # Flag to indicate submission on cluster
   evaldict['extra_app_opts']  = ''    # Up to you, use this to tack on any extra app opts for all apps
+  evaldict['icoalesce']       = True  # Turn of instruction coalescing
+  evaldict['barrier_limit']   = 1     # Max stall cycles for barrier limit
+  evaldict['iword_match']     = True  # Match only word boundaries
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -243,6 +246,9 @@ def gen_trace_per_app( evaldict ):
   linetrace       = evaldict["linetrace"]
   color           = evaldict["color"]
   serial          = evaldict["serial"]
+  icoalesce       = evaldict["icoalesce"]
+  iword_match     = evaldict["iword_match"]
+  barrier_limit   = evaldict["barrier_limit"]
 
   # default options for serial code
   if serial:
@@ -314,7 +320,13 @@ def gen_trace_per_app( evaldict ):
         if color:
           extra_pydgin_opts += "--color "
 
-        #extra_pydgin_opts += "--debug insts:28089973 "
+        if not icoalesce:
+          extra_pydgin_opts += "--icoalesce "
+
+        if not iword_match:
+          extra_pydgin_opts += "--iword-match "
+
+        extra_pydgin_opts += "--barrier-limit %(barrier_limit)s " % { 'barrier_limit' : barrier_limit }
         extra_pydgin_opts += "--analysis %(analysis)s " % { 'analysis' : analysis }
         extra_pydgin_opts += "--l0-buffer-sz %(l0_buffer_sz)s " % { 'l0_buffer_sz' : l0_buffer_sz }
         extra_pydgin_opts += "--icache-line-sz %(icache_line_sz)s " % { 'icache_line_sz' : icache_line_sz }
