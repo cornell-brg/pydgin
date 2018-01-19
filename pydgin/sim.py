@@ -85,21 +85,25 @@ class Sim( object ):
     self.barrier_limit   = 100
     self.icoalesce       = True  # toggle instruction coalescing
     self.iword_match     = True  # toggle instruction word vs. line matching
+    self.simt            = False # toggle to indicate simt frontend
+    self.simt_l0_buffer  = []
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
-    self.unique_insts    = 0 # unique insts in parallel regions
-    self.unique_spmd     = 0 # unique insts in spmd region
-    self.unique_task     = 0 # unique insts in wsrt tasks
-    self.unique_runtime  = 0 # unique insts in wsrt runtime
-    self.unique_accesses = 0 # unique number of mem accesses
-    self.total_spmd      = 0 # total insts in spmd region
-    self.total_task      = 0 # total insts in wsrt tasks
-    self.total_runtime   = 0 # total insts in wsrt runtime
-    self.total_wsrt      = 0 # total insts in wsrt region
-    self.total_parallel  = 0 # total number of instructions in parallel regions
-    self.total_accesses  = 0 # total number of mem accesses
-    self.total_coalesces = 0 # total number of instruction coalesces
+    self.unique_insts         = 0 # unique insts in parallel regions
+    self.unique_spmd          = 0 # unique insts in spmd region
+    self.unique_task          = 0 # unique insts in wsrt tasks
+    self.unique_runtime       = 0 # unique insts in wsrt runtime
+    self.unique_imem_accesses = 0 # unique number of imem accesses
+    self.unique_dmem_accesses = 0 # unique number of dmem accesses
+    self.total_spmd           = 0 # total insts in spmd region
+    self.total_task           = 0 # total insts in wsrt tasks
+    self.total_runtime        = 0 # total insts in wsrt runtime
+    self.total_wsrt           = 0 # total insts in wsrt region
+    self.total_parallel       = 0 # total number of instructions in parallel regions
+    self.total_imem_accesses  = 0 # total number of imem accesses
+    self.total_dmem_accesses  = 0 # total number of dmem accesses
+    self.total_coalesces      = 0 # total number of instruction coalesces
     # NOTE: Total number of instructions in timing loop
     self.total_steps     = 0
     self.serial_steps    = 0
@@ -178,6 +182,7 @@ class Sim( object ):
     --barrier-limit   Max stall cycles for barrier limit
     --icoalesce       Toggle coalescing for instructions (default True)
     --iword-match     Toggle instruction word vs. line matching (default word)
+    --simt            Toggle for SIMT frontend (default False)
   """
 
   #-----------------------------------------------------------------------
@@ -437,21 +442,26 @@ class Sim( object ):
       print 'Redundancy in runtime regions = %f' % ( 100*redundant_runtime/float( self.total_runtime ) )
     print
 
-    print 'Total data accesses in parallel regions = %d' % self.total_accesses
-    print 'Unique data accesses in parallel regions = %d' % self.unique_accesses
-    redundant_accesses = self.total_accesses - self.unique_accesses
-    if self.total_accesses:
-      print 'Redundancy for data accesses in parallel regions = %f' % ( 100*redundant_accesses/float( self.total_accesses ) )
-    print
-
+    print 'Total instruction accesses in parallel regions = %d' % self.total_imem_accesses
+    print 'Unique instruction accesses in parallel regions = %d' % self.unique_imem_accesses
     total_l0_hits = 0
     for state in self.states:
       total_l0_hits = total_l0_hits + state.l0_hits
       print 'L0 hits for core %d : %d' % ( state.core_id, state.l0_hits )
     print 'Total hits in L0 buffer: %d' % total_l0_hits
     print 'Total number of coalesced instruction accesses: %d' % self.total_coalesces
-    print 'Savings due to L0 buffers: %f' % ( 100*total_l0_hits/float( self.total_parallel ) )
-    print 'Savings due to coalescing: %f' % ( 100*self.total_coalesces/float( self.total_parallel ) )
+    redundant_imem_accesses = self.total_imem_accesses - self.unique_imem_accesses
+    if self.total_imem_accesses:
+      print 'Savings for instruction accesses in parallel regions = %f' % ( 100*redundant_imem_accesses/float( self.total_imem_accesses ) )
+      print 'Savings due to L0 buffers: %f' % ( 100*total_l0_hits/float( self.total_imem_accesses ) )
+      print 'Savings due to coalescing: %f' % ( 100*self.total_coalesces/float( self.total_imem_accesses ) )
+    print
+
+    print 'Total data accesses in parallel regions = %d' % self.total_dmem_accesses
+    print 'Unique data accesses in parallel regions = %d' % self.unique_dmem_accesses
+    redundant_dmem_accesses = self.total_dmem_accesses - self.unique_dmem_accesses
+    if self.total_dmem_accesses:
+      print 'Savings for data accesses in parallel regions = %f' % ( 100*redundant_dmem_accesses/float( self.total_dmem_accesses ) )
     print
 
     # print stall counts
@@ -565,6 +575,7 @@ class Sim( object ):
                            "--barrier-limit",
                            "--icoalesce",
                            "--iword-match",
+                           "--simt",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -605,6 +616,9 @@ class Sim( object ):
 
           elif token == "--iword-match":
             self.iword_match = False
+
+          elif token == "--simt":
+            self.simt = True
 
           elif token in tokens_with_args:
             prev_token = token
@@ -778,6 +792,7 @@ class Sim( object ):
       print "Insn cache line size: %d" % self.icache_line_sz
 
       # shreesha: l0 buffer size
+      print "SIMT Frontend: ", bool(self.simt)
       print "L0 buffer size in cache lines: %d" % ( self.l0_buffer_sz )
 
       # shreesha: configure reconvergence manager

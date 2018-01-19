@@ -62,6 +62,7 @@ class ReconvergenceManager():
     s.top_priority    = 0
     s.switch_interval = 0
     s.scheduled_list  = []
+    s.unique_pcs      = []
     s.mask            = 0
     s.l0_mask         = 0
     s.coalesce        = True
@@ -88,6 +89,43 @@ class ReconvergenceManager():
     print "L0 mask is %x" % s.l0_mask
 
   #-----------------------------------------------------------------------
+  # collect_stats
+  #-----------------------------------------------------------------------
+  # NOTE: Look across all cores that will execute, find instructions that
+  # are unique and count total
+
+  def collect_stats( s, sim ):
+
+    s.unique_pcs = []
+    for core in xrange( sim.ncores ):
+      if sim.states[core].active and sim.states[core].pc not in s.unique_pcs:
+        s.unique_pcs.append( sim.states[core].pc )
+        # collect total instructions
+        if sim.states[core].spmd_mode:
+          sim.unique_spmd    += 1
+          sim.unique_insts   += 1
+        elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
+          sim.unique_task    += 1
+          sim.unique_insts   += 1
+        elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
+          sim.unique_runtime += 1
+          sim.unique_insts   += 1
+
+      if sim.states[core].active:
+        # collect total instructions
+        if sim.states[core].spmd_mode:
+          sim.total_spmd     += 1
+          sim.total_parallel += 1
+        elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
+          sim.total_task     += 1
+          sim.total_wsrt     += 1
+          sim.total_parallel += 1
+        elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
+          sim.total_runtime  += 1
+          sim.total_wsrt     += 1
+          sim.total_parallel += 1
+
+  #-----------------------------------------------------------------------
   # update_single_pc
   #-----------------------------------------------------------------------
   # updates a single pc
@@ -99,23 +137,14 @@ class ReconvergenceManager():
       sim.states[core].active = True
       sim.states[core].istall = False
       s.scheduled_list.append( core )
+      parallel_mode = sim.states[core].wsrt_mode or sim.states[core].spmd_mode
+      if sim.states[0].stats_en and parallel_mode:
+        sim.unique_imem_accesses += 1
+        sim.total_imem_accesses += 1
       # add the line to the l0 buffer if there is a l0 buffer present
       if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer and sim.l0_buffer_sz != 0:
         sim.states[core].l0_buffer.pop(0)
         sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
-
-      # collect stats
-      if sim.states[core].spmd_mode:
-        sim.total_spmd     += 1
-        sim.total_parallel += 1
-      elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
-        sim.total_task     += 1
-        sim.total_wsrt     += 1
-        sim.total_parallel += 1
-      elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
-        sim.total_runtime  += 1
-        sim.total_wsrt     += 1
-        sim.total_parallel += 1
 
   #-----------------------------------------------------------------------
   # update_pcs
@@ -134,25 +163,14 @@ class ReconvergenceManager():
         sim.states[core].active = True
         sim.states[core].istall = False
         s.scheduled_list.append( core )
-        if sim.states[0].stats_en:
-          sim.total_coalesces += 1
+        parallel_mode = sim.states[core].wsrt_mode or sim.states[core].spmd_mode
+        if sim.states[0].stats_en and parallel_mode:
+          sim.total_coalesces     += 1
+          sim.total_imem_accesses += 1
         # add the line to the l0 buffer if there is a l0 buffer present
         if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer and sim.l0_buffer_sz != 0:
           sim.states[core].l0_buffer.pop(0)
           sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
-
-        # collect stats
-        if sim.states[core].spmd_mode:
-          sim.total_spmd     += 1
-          sim.total_parallel += 1
-        elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
-          sim.total_task     += 1
-          sim.total_wsrt     += 1
-          sim.total_parallel += 1
-        elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
-          sim.total_runtime  += 1
-          sim.total_wsrt     += 1
-          sim.total_parallel += 1
 
     # early exit: all cores are scheduled
     if len( s.scheduled_list ) == sim.ncores:
@@ -249,23 +267,15 @@ class ReconvergenceManager():
           s.scheduled_list.append( core )
           sim.states[core].active = True
           sim.states[core].istall = False
-          if sim.states[0].stats_en:
+          parallel_mode = sim.states[core].wsrt_mode or sim.states[core].spmd_mode
+          if sim.states[0].stats_en and parallel_mode:
             sim.states[core].l0_hits += 1
-          # collect stats
-          if sim.states[core].spmd_mode:
-            sim.total_spmd     += 1
-            sim.total_parallel += 1
-          elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
-            sim.total_task     += 1
-            sim.total_wsrt     += 1
-            sim.total_parallel += 1
-          elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
-            sim.total_runtime  += 1
-            sim.total_wsrt     += 1
-            sim.total_parallel += 1
+            sim.total_imem_accesses += 1
 
-    # all cores all either stalling or have reached a barrier
+    # all cores all either stalling or have reached a barrier or have
+    # instructions in L0 buffer
     if len( s.scheduled_list ) == sim.ncores:
+      s.collect_stats( sim )
       return
 
     # select pcs based on available bandwidth
@@ -286,26 +296,23 @@ class ReconvergenceManager():
       elif sim.reconvergence == 2:
         next_pc, next_core = s.rr_min_sp_pc( sim )
 
-      # collect stats
-      if sim.states[next_core].spmd_mode:
-        sim.unique_spmd += 1
-        sim.unique_insts += 1
-      elif sim.states[next_core].wsrt_mode and sim.states[next_core].task_mode:
-        sim.unique_task += 1
-        sim.unique_insts += 1
-      elif sim.states[next_core].wsrt_mode and sim.states[next_core].runtime_mode:
-        sim.unique_runtime += 1
-        sim.unique_insts += 1
+      # NOTE: update_single_pc updates just one core based on the policy
+      # for reconvergence and resource constraints and update_pcs updates
+      # other cores for a given constraint only if coalescing is enabled
 
       line_addr = next_pc & s.mask
       s.update_single_pc( sim, next_core, line_addr )
       if len( s.scheduled_list ) == sim.ncores:
         break
+
       if s.coalesce:
         # check for early exit
         all_done = s.update_pcs( sim, line_addr )
         if all_done:
           break
+
+    # collect stats before exit
+    s.collect_stats( sim )
 
 #-------------------------------------------------------------------------
 # LLFUAllocator
@@ -497,15 +504,15 @@ class MemCoalescer():
             match = True
             parallel_mode = sim.states[next_port].wsrt_mode or sim.states[next_port].spmd_mode
             if sim.states[0].stats_en and parallel_mode:
-              sim.total_accesses += 1
+              sim.total_dmem_accesses += 1
 
         if not match:
           s.table[entry] = [ next_port ]
           s.fifo.append( entry )
           parallel_mode = sim.states[next_port].wsrt_mode or sim.states[next_port].spmd_mode
           if sim.states[0].stats_en and parallel_mode:
-            sim.unique_accesses += 1
-            sim.total_accesses += 1
+            sim.unique_dmem_accesses += 1
+            sim.total_dmem_accesses += 1
 
         s.valid[next_port] = False
       s.top_priority = 0 if s.top_priority == s.num_reqs-1 else s.top_priority+1
