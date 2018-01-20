@@ -147,6 +147,10 @@ def submit_job( cmd, name, folder ):
     time     = "24:00:00",
   )
   jobscript.submit()
+  # Adding a time delay of 5 seconds
+  # NOTE: not sure if I need this but otherwise jobs are failing at times
+  from time import sleep
+  sleep(5)
 
 #----------------------------------------------------------------------------
 # get_base_evaldict()
