@@ -125,6 +125,23 @@ class ReconvergenceManager():
           sim.total_wsrt     += 1
           sim.total_parallel += 1
 
+    #if sim.states[0].debug.enabled( "tpa" ):
+    #  print "frontend: [",
+    #  for core in xrange( sim.ncores ):
+    #    if sim.states[core].istall:
+    #      print "%d:i," % core,
+    #    elif sim.states[core].stall:
+    #      print "%d:s," % core,
+    #    elif sim.states[core].stop:
+    #      print "%d:b," % core,
+    #    elif sim.states[core].clear:
+    #      print "%d:w," % core,
+    #    elif sim.states[core].active:
+    #      print "%d:a," % core,
+    #    else:
+    #      print "%d:n," % core,
+    #  print "]"
+
   #-----------------------------------------------------------------------
   # update_single_pc
   #-----------------------------------------------------------------------
@@ -137,14 +154,39 @@ class ReconvergenceManager():
       sim.states[core].active = True
       sim.states[core].istall = False
       s.scheduled_list.append( core )
+
+      # stats for not SIMT frontend
       parallel_mode = sim.states[core].wsrt_mode or sim.states[core].spmd_mode
-      if sim.states[0].stats_en and parallel_mode:
+      if sim.states[0].stats_en and parallel_mode and not sim.simt:
         sim.unique_imem_accesses += 1
         sim.total_imem_accesses += 1
-      # add the line to the l0 buffer if there is a l0 buffer present
-      if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer and sim.l0_buffer_sz != 0:
-        sim.states[core].l0_buffer.pop(0)
-        sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
+
+      # SIMT L0 Buffer present
+      if sim.simt and sim.l0_buffer_sz != 0:
+        if (sim.states[core].pc & s.l0_mask) in sim.simt_l0_buffer:
+          if sim.states[0].stats_en and parallel_mode:
+            sim.simt_l0_hits += 1
+            sim.total_imem_accesses += 1
+        else:
+          # add the line to the l0 buffer if there is a l0 buffer present
+          if sim.simt_l0_buffer:
+            sim.simt_l0_buffer.pop(0)
+          sim.simt_l0_buffer.append(sim.states[core].pc & s.l0_mask)
+          if sim.states[0].stats_en and parallel_mode:
+            sim.unique_imem_accesses += 1
+            sim.total_imem_accesses += 1
+      # SIMT but no l0 buffer present
+      elif sim.simt and sim.l0_buffer_sz == 0:
+        if sim.states[0].stats_en and parallel_mode:
+          sim.unique_imem_accesses += 1
+          sim.total_imem_accesses += 1
+      # Not SIMT but l0 buffer present
+      elif not sim.simt and sim.l0_buffer_sz != 0:
+        # add the line to the l0 buffer if there is a l0 buffer present
+        if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer:
+          if sim.states[core].l0_buffer:
+            sim.states[core].l0_buffer.pop(0)
+          sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
 
   #-----------------------------------------------------------------------
   # update_pcs
@@ -168,9 +210,11 @@ class ReconvergenceManager():
           sim.total_coalesces     += 1
           sim.total_imem_accesses += 1
         # add the line to the l0 buffer if there is a l0 buffer present
-        if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer and sim.l0_buffer_sz != 0:
-          sim.states[core].l0_buffer.pop(0)
-          sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
+        if not sim.simt and sim.l0_buffer_sz != 0:
+          if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer:
+            if sim.states[core].l0_buffer:
+              sim.states[core].l0_buffer.pop(0)
+            sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
 
     # early exit: all cores are scheduled
     if len( s.scheduled_list ) == sim.ncores:
@@ -252,15 +296,20 @@ class ReconvergenceManager():
     for core in xrange( sim.ncores ):
       # deactivate all cores; cores get activated based on the number of
       # ports, coalescing, reconvergence policy, and l0 buffer selection
-      sim.states[core].active = False
-      sim.states[core].istall = True
+      # NOTE: if a core is at a barrier or waiting for others to catchup
+      # (clear) it is deactivated but when it is stalling it is active
+      if sim.states[core].stall:
+        sim.states[core].active = True
+      else:
+        sim.states[core].active = False
+        sim.states[core].istall = True
 
       if sim.states[core].stall or sim.states[core].stop or sim.states[core].clear:
         s.scheduled_list.append( core )
         sim.states[core].istall = False
 
     # check if any cores have cached in the line in the l0 buffer
-    if sim.l0_buffer_sz != 0:
+    if sim.l0_buffer_sz != 0 and not sim.simt:
       for core in xrange( sim.ncores ):
         l0_line_addr = sim.states[core].pc & s.l0_mask
         if l0_line_addr in sim.states[core].l0_buffer and core not in s.scheduled_list:
@@ -299,7 +348,6 @@ class ReconvergenceManager():
       # NOTE: update_single_pc updates just one core based on the policy
       # for reconvergence and resource constraints and update_pcs updates
       # other cores for a given constraint only if coalescing is enabled
-
       line_addr = next_pc & s.mask
       s.update_single_pc( sim, next_core, line_addr )
       if len( s.scheduled_list ) == sim.ncores:

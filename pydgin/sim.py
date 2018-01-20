@@ -104,6 +104,7 @@ class Sim( object ):
     self.total_imem_accesses  = 0 # total number of imem accesses
     self.total_dmem_accesses  = 0 # total number of dmem accesses
     self.total_coalesces      = 0 # total number of instruction coalesces
+    self.simt_l0_hits         = 0 # total hits in simt l0 buffer
     # NOTE: Total number of instructions in timing loop
     self.total_steps     = 0
     self.serial_steps    = 0
@@ -223,10 +224,13 @@ class Sim( object ):
       self.reconvergence_manager.xtick( self )
 
       # sanity checks
-      active = False
+      active      = False
+      all_waiting = True
       for i in xrange( self.ncores ):
         active |= self.states[i].active
-      if not active:
+        all_waiting = all_waiting and (self.states[i].stop or self.states[i].stall or self.states[i].clear)
+
+      if not active and not all_waiting:
         print "Something wrong no cores are active! tick: %d" % self.states[0].num_insts
         raise AssertionError
 
@@ -265,8 +269,8 @@ class Sim( object ):
         for i in xrange( self.ncores ):
           s = self.states[ i ]
           print pad( "%x" % s.pc, 8, " ", False ),
-          print "C%s a:%d s:%d c:%d %s %s %s" % (
-                  i, s.active, s.stall, s.clear,
+          print "C%s a:%d i:%d s:%d c:%d %s %s %s" % (
+                  i, s.active, s.istall, s.stall, s.clear,
                   pad_hex( s.inst_bits ),
                   pad( s.inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),
@@ -285,6 +289,7 @@ class Sim( object ):
       pc_list = []
 
       for core in xrange( self.ncores ):
+
         s = self.states[ core ]
 
         if self.linetrace:
@@ -350,6 +355,23 @@ class Sim( object ):
         if not state.barrier_ctr > 0:
           all_waiting = False
 
+      #if self.states[0].debug.enabled( "tpa" ):
+      #  print "backend : [",
+      #  for core in range( self.ncores ):
+      #    if self.states[core].istall:
+      #      print "%d:i," % core,
+      #    elif self.states[core].stall:
+      #      print "%d:s," % core,
+      #    elif self.states[core].stop:
+      #      print "%d:b," % core,
+      #    elif self.states[core].clear:
+      #      print "%d:w," % core,
+      #    elif self.states[core].active:
+      #      print "%d:a," % core,
+      #    else:
+      #      print "%d:n," %core,
+      #  print "]"
+
       # check which cores can proceed
       # NOTE: I currently opportunistically wakeup any other core that is
       # waiting when a core has hit the barrier limit
@@ -365,7 +387,12 @@ class Sim( object ):
       if self.linetrace:
         if self.states[0].stats_en:
           for i in range( self.ncores ):
-            if self.states[i].active and not self.states[i].stall:
+            #NOTE: the linetrace is not perfect but is a start
+            #lockstep execution is a pain to show
+            stall  = self.states[i].stall or self.states[i].istall
+            clear  = self.states[i].clear
+            active = self.states[i].active
+            if active and not ( stall or clear):
               parallel_mode = self.states[i].wsrt_mode or self.states[i].spmd_mode
               # core0 in serial section
               if self.color and not parallel_mode and i ==0 :
@@ -385,15 +412,17 @@ class Sim( object ):
               # No color requested
               else:
                 print pad( "%x |" % pc_list[i], 9, " ", False ),
-            elif self.states[i].active and self.states[i].stall:
+            elif stall:
+              if self.states[i].istall:
+                print pad( "#i |", 9, " ", False ),
               if self.states[i].dmem:
                 print pad( "#d |", 9, " ", False ),
               elif self.states[i].mdu:
                 print pad( "#m |", 9, " ", False ),
               elif self.states[i].fpu:
                 print pad( "#f |", 9, " ", False ),
-            elif not self.states[i].active and self.states[i].istall:
-              print pad( "#i |", 9, " ", False ),
+            elif clear:
+                print pad( "#w |", 9, " ", False ),
             else:
               print pad( " |", 9, " ", False ),
           print
@@ -448,12 +477,14 @@ class Sim( object ):
     for state in self.states:
       total_l0_hits = total_l0_hits + state.l0_hits
       print 'L0 hits for core %d : %d' % ( state.core_id, state.l0_hits )
-    print 'Total hits in L0 buffer: %d' % total_l0_hits
+    print 'Total hits in Core L0 buffer: %d' % total_l0_hits
+    print 'Total hits in SIMT L0 buffer: %d' % self.simt_l0_hits
     print 'Total number of coalesced instruction accesses: %d' % self.total_coalesces
     redundant_imem_accesses = self.total_imem_accesses - self.unique_imem_accesses
     if self.total_imem_accesses:
       print 'Savings for instruction accesses in parallel regions = %f' % ( 100*redundant_imem_accesses/float( self.total_imem_accesses ) )
-      print 'Savings due to L0 buffers: %f' % ( 100*total_l0_hits/float( self.total_imem_accesses ) )
+      print 'Savings due to Core L0 buffers: %f' % ( 100*total_l0_hits/float( self.total_imem_accesses ) )
+      print 'Savings due to SIMT L0 buffers: %f' % ( 100*self.simt_l0_hits/float( self.total_imem_accesses ) )
       print 'Savings due to coalescing: %f' % ( 100*self.total_coalesces/float( self.total_imem_accesses ) )
     print
 
