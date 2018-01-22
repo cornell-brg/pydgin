@@ -37,7 +37,7 @@ def task_wsrt_similarity():
     evaldict['analysis']        = 1
 
     # misc params
-    #evaldict['cluster']         = True
+    evaldict['cluster']         = True
     evaldict['runtime']         = True
 
     yield gen_trace_per_app( evaldict )

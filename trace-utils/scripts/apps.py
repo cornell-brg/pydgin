@@ -36,6 +36,15 @@ app_list = [
   'px-fib',
   'ubmark-vvadd',
 
+  # custom bmarks
+  'bilateral',
+  'dct8x8m',
+  'dither',
+  'rgb2cmyk',
+  'mriq',
+  'strsearch',
+  'uts',
+
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc-mtpull',
   'pbbs-bfs-ndBFS-parc-mtpull',
@@ -62,6 +71,16 @@ app_list = [
 app_list_spmd = [
   'ubmark-vvadd',
   'ubmark-bin-search',
+
+  # custom bmarks
+  'bilateral',
+  'dct8x8m',
+  'dither',
+  'rgb2cmyk',
+  'mriq',
+  'strsearch',
+  'uts',
+
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc',
   'pbbs-bfs-ndBFS-parc',
@@ -77,6 +96,15 @@ app_list_spmd = [
 ]
 
 app_serial_list = [
+
+  # custom bmarks
+  'bilateral',
+  'dct8x8m',
+  'dither',
+  'rgb2cmyk',
+  'mriq',
+  'strsearch',
+  'uts',
 
   # pbbs apps
   'pbbs-bfs-serialBFS-parc',
@@ -121,17 +149,21 @@ app_dict = {
                               'scalar' : [ '--impl scalar ', ] },
 
     'px-fib'              : { 'mtpull' : [ '--impl mt --n 15', ] },
+
     'bilateral'           : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
                               'scalar' : [ '--impl scalar --warmup', ] },
 
     'dct8x8m'             : { 'mt'     : [ '--impl mt', ],
+                              'mtpull' : [ '--impl mtpull', ],
                               'scalar' : [ '--impl scalar --warmup', ] },
 
     'dither'              : { 'mt'     : [ '--impl mt', ],
+                              'mtpull' : [ '--impl mtpull', ],
                               'scalar' : [ '--impl scalar --warmup', ] },
 
     'mriq'                : { 'mt'     : [ '--impl mt', ],
+                              'mtpull' : [ '--impl mtpull', ],
                               'scalar' : [ '--impl scalar --warmup', ] },
 
     'rgb2cmyk'            : { 'mt'     : [ '--impl mt', ],

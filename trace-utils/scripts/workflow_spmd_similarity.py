@@ -36,6 +36,6 @@ def task_spmd_similarity():
     evaldict['analysis']        = 1
 
     # misc params
-    evaldict['cluster']         = False
+    evaldict['cluster']         = True
 
     yield gen_trace_per_app( evaldict )
