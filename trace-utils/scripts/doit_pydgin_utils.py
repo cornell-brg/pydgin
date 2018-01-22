@@ -182,6 +182,7 @@ def get_base_evaldict():
   evaldict['icoalesce']       = True  # Turn of instruction coalescing
   evaldict['barrier_limit']   = 1     # Max stall cycles for barrier limit
   evaldict['iword_match']     = True  # Match only word boundaries
+  evaldict['simt']            = False # Indicate a SIMT frontend
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -249,6 +250,7 @@ def gen_trace_per_app( evaldict ):
   icoalesce       = evaldict["icoalesce"]
   iword_match     = evaldict["iword_match"]
   barrier_limit   = evaldict["barrier_limit"]
+  simt            = evaldict["simt"]
 
   # default options for serial code
   if serial:
@@ -319,6 +321,9 @@ def gen_trace_per_app( evaldict ):
           extra_pydgin_opts += "--linetrace "
         if color:
           extra_pydgin_opts += "--color "
+
+        if simt:
+          extra_pydgin_opts += "--simt "
 
         if not icoalesce:
           extra_pydgin_opts += "--icoalesce "

@@ -181,9 +181,9 @@ app_dict = {
                               'mtpull' : [ '--impl mtpull', ],
                               'scalar' : [ '--impl scalar ', ] },
 
-    'uts'                 : { 'mt'     : [ '--impl mt', ],
-                              'mtpull' : [ '--impl mtpull', ],
-                              'scalar' : [ '--impl scalar', ], },
+    'uts'                 : { 'mt'     : [ '--impl mt --dataset small-t3', ],
+                              'mtpull' : [ '--impl mtpull --dataset small-t3', ],
+                              'scalar' : [ '--impl scalar --dataset small-t3', ], },
 
     'viterbi'             : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
