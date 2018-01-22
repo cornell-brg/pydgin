@@ -21,6 +21,17 @@ from collections import OrderedDict
 # NOTE: This data-structure is an OrderedDict which means the order here
 # determines the order of all the plots
 app_short_name_dict = OrderedDict([
+  # custom
+  ('bilateral'                    , 'bilateral'),
+  ('dct8x8m'                      , 'dct8x8m'),
+  ('dither'                       , 'dither'),
+  ('mriq'                         , 'mriq'),
+  ('rgb2cmyk'                     , 'rgb2cmyk'),
+  ('strsearch'                    , 'strsearch'),
+  ('viterbi'                      , 'viterbi'),
+  ('uts'                          , 'uts'),
+
+  # pbbs
   ('pbbs-bfs-deterministicBFS'    , 'bfs-d'),
   ('pbbs-bfs-ndBFS'               , 'bfs-nd'),
   ('pbbs-dict-deterministicHash'  , 'dict'),
@@ -39,6 +50,8 @@ app_short_name_dict = OrderedDict([
   ('pbbs-csort-sampleSort-1'      , 'sampsort-1'),
   ('pbbs-csort-sampleSort-2'      , 'sampsort-2'),
   ('pbbs-hull-quickHull'          , 'hull'),
+
+  # cilk
   #('cilk-cholesky'                , 'clsky'),
   ('cilk-cilksort'                , 'cilksort'),
   ('cilk-heat'                    , 'heat'),
@@ -48,6 +61,14 @@ app_short_name_dict = OrderedDict([
 
 # dictionary which shows the baseline normalization map
 app_normalize_map = {
+  'bilateral'  : 'bilateral-scalar',
+  'dct8x8m'    : 'dct8x8m-scalar',
+  'dither'     : 'dither-scalar',
+  'mriq'       : 'mriq-scalar',
+  'rgb2cymk'   : 'rgb2cymk-scalar',
+  'strsearch'  : 'strsearch-scalar',
+  'viterbi'    : 'viterbi-scalar',
+  'uts'        : 'uts-scalar',
   'sampsort'   : 'pbbs-csort-serialSort',
   'sampsort-1' : 'pbbs-csort-serialSort-1',
   'sampsort-2' : 'pbbs-csort-serialSort-2',

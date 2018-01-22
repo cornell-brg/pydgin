@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #=========================================================================
-# parse-results-mimd
+# analyze-results-ideal
 #=========================================================================
 #
 #  -h --help           Display this message
@@ -8,9 +8,10 @@
 #  --no-spmd           Turn off spmd data-points
 #  --no-wsrt           Turn off wsrt data-points
 #  --no-perf           Turn off performance normalization
+#  --plot              Turn off table and show the plot
 #
 # Author : Shreesha Srinath
-# Date   : January 18th, 2018
+# Date   : January 22nd, 2018
 #
 # Quick and dirty script to parse results for wsrt similarity on the
 # abstract MIMD architecture
@@ -24,7 +25,9 @@ import subprocess
 
 import pandas as pd
 
-from collections import OrderedDict
+import brg_plot
+
+from common import *
 
 #-------------------------------------------------------------------------
 # Utility Function
@@ -36,6 +39,12 @@ def execute(cmd):
     return subprocess.check_output(cmd, shell=True)
   except  subprocess.CalledProcessError, err:
     return err
+
+#-------------------------------------------------------------------------
+# Global variable
+#-------------------------------------------------------------------------
+
+g_resultsdir_path = "../results-%s-similarity-limit-%d"
 
 #-------------------------------------------------------------------------
 # Command line processing
@@ -59,56 +68,14 @@ def parse_cmdline():
 
   # Additional commane line arguments for the simulator
 
-  p.add_argument( "--no-spmd",   action="store_false", default=True  )
-  p.add_argument( "--no-wsrt",   action="store_false", default=True  )
-  p.add_argument( "--no-perf",   action="store_false", default=True  )
+  p.add_argument( "--no-spmd",   action="store_false", default=True   )
+  p.add_argument( "--no-wsrt",   action="store_false", default=True   )
+  p.add_argument( "--no-perf",   action="store_false", default=True   )
+  p.add_argument( "--plot",      action="store_true",  default=False  )
 
   opts = p.parse_args()
   if opts.help: p.error()
   return opts
-
-#-------------------------------------------------------------------------
-# Global variable
-#-------------------------------------------------------------------------
-
-# map showing the shorter names used.
-# NOTE: This data-structure is an OrderedDict which means the order here
-# determines the order of all the plots
-app_short_name_dict = OrderedDict([
-  ('bilateral',                     'bilateral'),
-  ('dct8x8m',                       'dct8x8m'),
-  ('dither',                        'dither'),
-  ('mriq',                          'mriq'),
-  ('rgb2cmyk',                      'rgb2cmyk'),
-  ('strsearch',                     'strsearch'),
-  ('viterbi',                       'viterbi'),
-  ('uts',                           'uts'),
-  ('pbbs-bfs-deterministicBFS'    , 'bfs-d'),
-  ('pbbs-bfs-ndBFS'               , 'bfs-nd'),
-  ('pbbs-dict-deterministicHash'  , 'dict'),
-  #('pbbs-knn-octTree2Neighbors'   , 'knn'),
-  ('pbbs-mis-ndMIS'               , 'mis'),
-  #('pbbs-nbody-parallelBarnesHut' , 'nbody'),
-  ('pbbs-rdups-deterministicHash' , 'rdups'),
-  ('pbbs-sa-parallelRange'        , 'sarray'),
-  ('pbbs-st-ndST'                 , 'sptree'),
-  #('pbbs-isort-blockRadixSort'    , 'radix-1'),
-  #('pbbs-isort-blockRadixSort-1'  , 'radix-2'),
-  ('pbbs-csort-quickSort'         , 'qsort'),
-  ('pbbs-csort-quickSort-1'       , 'qsort-1'),
-  ('pbbs-csort-quickSort-2'       , 'qsort-2'),
-  ('pbbs-csort-sampleSort'        , 'sampsort'),
-  ('pbbs-csort-sampleSort-1'      , 'sampsort-1'),
-  ('pbbs-csort-sampleSort-2'      , 'sampsort-2'),
-  ('pbbs-hull-quickHull'          , 'hull'),
-  #('cilk-cholesky'                , 'clsky'),
-  ('cilk-cilksort'                , 'cilksort'),
-  ('cilk-heat'                    , 'heat'),
-  ('cilk-knapsack'                , 'ksack'),
-  ('cilk-matmul'                  , 'matmul'),
-])
-
-g_resultsdir_path = "../results-%s-similarity-limit-%d"
 
 #-------------------------------------------------------------------------
 # summarize
@@ -117,7 +84,6 @@ g_resultsdir_path = "../results-%s-similarity-limit-%d"
 def summarize(runtime):
 
   data = []
-  #for limit in [1,50,100,250,500,1000]:
   for limit in [1,250]:
     resultsdir_path = g_resultsdir_path % ( runtime, limit )
     subfolders = os.listdir( resultsdir_path )
@@ -135,21 +101,21 @@ def summarize(runtime):
         cmd = 'grep -r -A 35 "Serial steps in stats region =" %(res_file)s' % { 'res_file' : res_file }
         lines = execute( cmd )
         total = 0
-        isavings = 0
+        iredundancy = 0
         for line in lines.split('\n'):
           if line != '':
             if 'Total steps' in line:
               total = int(line.split()[-1])
             elif 'Redundancy in parallel regions' in line:
-              isavings = line.split()[-1]
+              iredundancy = line.split()[-1]
 
         config = "%s-mimd-limit-%d" % ( runtime, limit )
-        data.append([app_short_name_dict[app],config,total,isavings])
+        data.append([app_short_name_dict[app],config,total,iredundancy])
       except:
         print "{} limit-{} {}: Results file not present".format( runtime, limit, subfolder )
         continue
 
-  columns = ['app','config','steps','isavings']
+  columns = ['app','config','steps','iredundancy']
   df = pd.DataFrame(data,columns=columns)
   return df
 
@@ -170,13 +136,118 @@ def print_table( df, base_df, print_perf=True ):
     if app in base_df.app.unique():
       out = "{:^18s}".format(app)
       for config in configs:
-        red  = df.loc[(df.app == app) & (df.config == config), ['isavings']].iloc[0]
+        red  = df.loc[(df.app == app) & (df.config == config), ['iredundancy']].iloc[0]
         if print_perf:
           perf = df.loc[(df.app == app) & (df.config == config), ['steps']].iloc[0]
           out += "{:^10.2f} {:^10.2f}".format( float(perf), float(red) )
         else:
           out += "{:^20.2f}".format( float(red) )
       print out
+
+#-------------------------------------------------------------------------
+# plot 
+#-------------------------------------------------------------------------
+
+def plot( base_df, df, spmd, wsrt ):
+  
+  # normalize all data
+  for app in app_short_name_dict.values():
+    if spmd:
+      try:
+        ts = base_df.loc[base_df.app == app,['steps']].iloc[0]
+        df.loc[df.app == app, ['steps']] = \
+          float(ts)/df.loc[df.app == app, ['steps']]
+      except:
+        ts = df.loc[(df.app == app) & (df.config == 'wsrt-mimd-limit-1'),['steps']].iloc[0]
+        df.loc[df.app == app, ['steps']] = \
+          float(ts)/df.loc[df.app == app, ['steps']]
+    else:
+      ts = base_df.loc[base_df.app == app,['steps']].iloc[0]
+      df.loc[df.app == app, ['steps']] = \
+        float(ts)/df.loc[df.app == app, ['steps']]
+
+  # create plot options dict
+  opts = brg_plot.PlotOptions()
+  attribute_dict = \
+  {
+    'show'            : False,
+    'plot_type'       : 'bar',
+    'figsize'         : (16.0, 8.0),
+    'rotate_labels'   : False,
+    'markersize'      : 50,
+    'labels_fontsize' : 1,
+    'legend_enabled'  : False,
+    'bar_width'       : 0.5,
+  }
+  for name, value in attribute_dict.iteritems():
+    setattr( opts, name, value )
+
+  # figure out the labels
+  spmd_legend_labels = [
+    'spmd',
+    'spmd-hint',
+  ]
+
+  wsrt_legend_labels = [
+    'wsrt',
+    'wsrt-hint',
+  ] 
+
+  if not spmd:
+    legend_labels = wsrt_legend_labels
+  elif not wsrt:
+    legend_labels = spmd_legend_labels
+  else:
+    legend_labels = spmd_legend_labels + wsrt_legend_labels
+
+  # collect data
+  redun_data = []
+  steps_data = []
+ 
+  for app in app_short_name_dict.values():
+    temp_steps = []
+    temp_redun = []
+    for config in df.config.unique():
+      try:
+        temp_steps.append( df.loc[(df.app == app) & (df.config == config), ['steps']].iloc[0]['steps'] )
+        temp_redun.append( df.loc[(df.app == app) & (df.config == config), ['iredundancy']].iloc[0]['iredundancy'] )
+      except:
+        temp_steps.append(float('nan'))
+        temp_redun.append(float('nan'))
+    steps_data.append( temp_steps )
+    redun_data.append( temp_redun )
+
+  # set plot options
+  opts.num_cols = 1
+  opts.num_rows = 2
+
+  ## plot redundancy
+  opts.plot_idx       = 1
+  opts.data           = redun_data 
+  opts.legend_ncol    = len(legend_labels)
+  opts.rotate_labels  = True
+  opts.labels         = [app_list,legend_labels]
+  opts.normalize_line = 75.0
+  #opts.title          = "Instruction Redundancy"
+  opts.ylabel         = "Precent Redundant Insns."
+  opts.legend_enabled = True
+
+  brg_plot.add_plot( opts )
+
+  # plot redundancy
+  opts.plot_idx       = 2
+  opts.data           = steps_data 
+  opts.legend_ncol    = len(legend_labels)
+  opts.rotate_labels  = True
+  opts.labels         = [app_list,legend_labels]
+  #opts.title          = "Normalized Performance"
+  opts.normalize_line = 1
+  opts.ylabel         = "Perf. Normalized to %s" % ( 'wsrt' if not spmd else 'spmd' )  
+  opts.legend_enabled = True
+  opts.file_name      = 'ideal-machine.pdf'
+
+  brg_plot.add_plot( opts )
+
 
 #-------------------------------------------------------------------------
 # main
@@ -191,12 +262,21 @@ if __name__ == "__main__":
   if not opts.no_wsrt:
     df = spmd_df
     base_df = df[df.config == "spmd-mimd-limit-1"].copy()
-    print_table( df, base_df, opts.no_perf )
+    if opts.plot:
+      plot( base_df, df, spmd=True, wsrt=False )
+    else:
+      print_table( df, base_df, opts.no_perf )
   elif not opts.no_spmd:
     df = wsrt_df
     base_df = df[df.config == "wsrt-mimd-limit-1"].copy()
-    print_table( df, base_df, opts.no_perf )
+    if opts.plot:
+      plot( base_df, df, spmd=False, wsrt=True )
+    else:
+      print_table( df, base_df, opts.no_perf )
   else:
     df = pd.concat([spmd_df,wsrt_df])
     base_df = df[df.config == "spmd-mimd-limit-1"].copy()
-    print_table( df, base_df, opts.no_perf )
+    if opts.plot:
+      plot( base_df, df, spmd=True, wsrt=True )
+    else:
+      print_table( df, base_df, opts.no_perf )
