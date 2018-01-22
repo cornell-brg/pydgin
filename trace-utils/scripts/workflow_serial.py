@@ -14,7 +14,7 @@ def task_pydgin_serial_sims():
   evaldict['resultsdir']  = "results-serial-small"
   evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
-  evaldict['app_group']   = ["small"]
+  evaldict['app_group']   = ["small","scalar"]
   evaldict['app_list']    = app_serial_list
   evaldict['serial']      = True
   evaldict['app_dict']    = app_dict

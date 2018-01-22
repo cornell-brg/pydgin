@@ -43,6 +43,7 @@ app_list = [
   'rgb2cmyk',
   'mriq',
   'strsearch',
+  'viterbi',
   'uts',
 
   # pbbs apps
@@ -79,6 +80,7 @@ app_list_spmd = [
   'rgb2cmyk',
   'mriq',
   'strsearch',
+  'viterbi',
   'uts',
 
   # pbbs apps
@@ -104,6 +106,7 @@ app_serial_list = [
   'rgb2cmyk',
   'mriq',
   'strsearch',
+  'viterbi',
   'uts',
 
   # pbbs apps
@@ -152,31 +155,31 @@ app_dict = {
 
     'bilateral'           : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+                              'scalar' : [ '--impl scalar ', ] },
 
     'dct8x8m'             : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+                              'scalar' : [ '--impl scalar ', ] },
 
     'dither'              : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+                              'scalar' : [ '--impl scalar ', ] },
 
     'mriq'                : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+                              'scalar' : [ '--impl scalar ', ] },
 
     'rgb2cmyk'            : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+                              'scalar' : [ '--impl scalar ', ] },
 
     'sgemm'               : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+                              'scalar' : [ '--impl scalar ', ] },
 
     'strsearch'           : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+                              'scalar' : [ '--impl scalar ', ] },
 
     'uts'                 : { 'mt'     : [ '--impl mt', ],
                               'mtpull' : [ '--impl mtpull', ],
@@ -186,39 +189,39 @@ app_dict = {
                               'mtpull' : [ '--impl mtpull', ],
                               'scalar' : [ '--impl scalar', ] },
 
-    'ubmark-cmplx-mult'   : { 'mt'     : [ '--impl mt --warmup', ],
-                              'mtpull' : [ '--impl mtpull --warmup', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+    'ubmark-cmplx-mult'   : { 'mt'     : [ '--impl mt ', ],
+                              'mtpull' : [ '--impl mtpull ', ],
+                              'scalar' : [ '--impl scalar ', ] },
 
-    'bfs'                 : { 'mt'     : [ '--impl mt --warmup', ],
-                              'mtpull' : [ '--impl mtpull --warmup', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+    'bfs'                 : { 'mt'     : [ '--impl mt ', ],
+                              'mtpull' : [ '--impl mtpull ', ],
+                              'scalar' : [ '--impl scalar ', ] },
 
-    'kmeans'              : { 'mt'     : [ '--impl mt --warmup', ],
-                              'mtpull' : [ '--impl mtpull --warmup', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+    'kmeans'              : { 'mt'     : [ '--impl mt ', ],
+                              'mtpull' : [ '--impl mtpull ', ],
+                              'scalar' : [ '--impl scalar ', ] },
 
-    'rsort'               : { 'mt'     : [ '--impl mt --warmup', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+    'rsort'               : { 'mt'     : [ '--impl mt ', ],
+                              'scalar' : [ '--impl scalar ', ] },
 
-    'ubmark-masked-filter': { 'mt'     : [ '--impl mt --warmup', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+    'ubmark-masked-filter': { 'mt'     : [ '--impl mt ', ],
+                              'scalar' : [ '--impl scalar ', ] },
 
-    'ubmark-grow'         : { 'mt'     : [ '--impl mt --warmup', ],
-                              'mtpull' : [ '--impl mtpull --warmup', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+    'ubmark-grow'         : { 'mt'     : [ '--impl mt ', ],
+                              'mtpull' : [ '--impl mtpull ', ],
+                              'scalar' : [ '--impl scalar ', ] },
 
-    'ubmark-mugtask'      : { 'mt'     : [ '--impl mt --warmup', ],
-                              'mtpull' : [ '--impl mtpull --warmup', ] },
+    'ubmark-mugtask'      : { 'mt'     : [ '--impl mt ', ],
+                              'mtpull' : [ '--impl mtpull ', ] },
 
-    'ubmark-parallel'     : { 'mt'     : [ '--impl mt --warmup', ],
-                              'mtpull' : [ '--impl mtpull --warmup', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+    'ubmark-parallel'     : { 'mt'     : [ '--impl mt ', ],
+                              'mtpull' : [ '--impl mtpull ', ],
+                              'scalar' : [ '--impl scalar ', ] },
 
-    'ubmark-swap'         : { 'mt'     : [ '--impl mt --warmup', ] },
+    'ubmark-swap'         : { 'mt'     : [ '--impl mt ', ] },
 
-    'parsec-scluster'     : { 'mt'     : [ '--impl mt --warmup', ],
-                              'scalar' : [ '--impl scalar --warmup', ] },
+    'parsec-scluster'     : { 'mt'     : [ '--impl mt ', ],
+                              'scalar' : [ '--impl scalar ', ] },
 
     'splash2-fft'         : { 'mt'     : [ '-p%(num_cpus)s -m8 -n512 -l5', ] },
 
