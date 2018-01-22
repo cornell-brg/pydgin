@@ -1,12 +1,22 @@
+#!/usr/bin/env python
 #=========================================================================
-# parse-results-mimd.py
+# parse-results-mimd
 #=========================================================================
+#
+#  -h --help           Display this message
+#
+#  --no-spmd           Turn off spmd data-points
+#  --no-wsrt           Turn off wsrt data-points
+#  --no-perf           Turn off performance normalization
+#
 # Author : Shreesha Srinath
 # Date   : January 18th, 2018
 #
 # Quick and dirty script to parse results for wsrt similarity on the
 # abstract MIMD architecture
+#
 
+import argparse
 import os
 import sys
 import re
@@ -28,6 +38,36 @@ def execute(cmd):
     return err
 
 #-------------------------------------------------------------------------
+# Command line processing
+#-------------------------------------------------------------------------
+
+class ArgumentParserWithCustomError(argparse.ArgumentParser):
+  def error( self, msg = "" ):
+    if ( msg ): print("\n ERROR: %s" % msg)
+    print("")
+    file = open( sys.argv[0] )
+    for ( lineno, line ) in enumerate( file ):
+      if ( line[0] != '#' ): sys.exit(msg != "")
+      if ( (lineno == 2) or (lineno >= 4) ): print( line[1:].rstrip("\n") )
+
+def parse_cmdline():
+  p = ArgumentParserWithCustomError( add_help=False )
+
+  # Standard command line arguments
+
+  p.add_argument( "-h", "--help", action="store_true" )
+
+  # Additional commane line arguments for the simulator
+
+  p.add_argument( "--no-spmd",   action="store_false", default=True  )
+  p.add_argument( "--no-wsrt",   action="store_false", default=True  )
+  p.add_argument( "--no-perf",   action="store_false", default=True  )
+
+  opts = p.parse_args()
+  if opts.help: p.error()
+  return opts
+
+#-------------------------------------------------------------------------
 # Global variable
 #-------------------------------------------------------------------------
 
@@ -35,6 +75,14 @@ def execute(cmd):
 # NOTE: This data-structure is an OrderedDict which means the order here
 # determines the order of all the plots
 app_short_name_dict = OrderedDict([
+  ('bilateral',                     'bilateral'),
+  ('dct8x8m',                       'dct8x8m'),
+  ('dither',                        'dither'),
+  ('mriq',                          'mriq'),
+  #('rgb2cmyk',                      'rgb2cmyk'),
+  ('strsearch',                     'strsearch'),
+  ('viterbi',                       'viterbi'),
+  ('uts',                           'uts'),
   ('pbbs-bfs-deterministicBFS'    , 'bfs-d'),
   ('pbbs-bfs-ndBFS'               , 'bfs-nd'),
   ('pbbs-dict-deterministicHash'  , 'dict'),
@@ -78,6 +126,7 @@ def summarize(runtime):
         app = re.sub("-parc", '', subfolder)
         app = re.sub("-small", '', app)
         app = re.sub("-mtpull", '', app)
+        app = re.sub("-mt", '', app)
 
         if not app in app_short_name_dict.keys():
           continue
@@ -97,7 +146,7 @@ def summarize(runtime):
         config = "%s-mimd-limit-%d" % ( runtime, limit )
         data.append([app_short_name_dict[app],config,total,isavings])
       except:
-        print "limit-{} {}: Results file not present".format( limit, subfolder )
+        print "{} limit-{} {}: Results file not present".format( runtime, limit, subfolder )
         continue
 
   columns = ['app','config','steps','isavings']
@@ -105,18 +154,10 @@ def summarize(runtime):
   return df
 
 #-------------------------------------------------------------------------
-# main
+# print table
 #-------------------------------------------------------------------------
 
-if __name__ == "__main__":
-  spmd_df = summarize("spmd")
-
-  wsrt_df = summarize("wsrt")
-
-  df = pd.concat([spmd_df,wsrt_df])
-
-  base_df = df[df.config == "spmd-mimd-limit-1"].copy()
-
+def print_table( df, base_df, print_perf=True ):
   for app in app_short_name_dict.values():
     if app in base_df.app.unique():
       ts = base_df.loc[base_df.app == app,['steps']].iloc[0]
@@ -129,9 +170,33 @@ if __name__ == "__main__":
     if app in base_df.app.unique():
       out = "{:^18s}".format(app)
       for config in configs:
-        perf = df.loc[(df.app == app) & (df.config == config), ['steps']].iloc[0]
         red  = df.loc[(df.app == app) & (df.config == config), ['isavings']].iloc[0]
-        out += "{:^10.2f} {:^10.2f}".format( float(perf), float(red) )
+        if print_perf:
+          perf = df.loc[(df.app == app) & (df.config == config), ['steps']].iloc[0]
+          out += "{:^10.2f} {:^10.2f}".format( float(perf), float(red) )
+        else:
+          out += "{:^20.2f}".format( float(red) )
       print out
 
-  df.to_csv('test.csv',index=False)
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+  opts = parse_cmdline()
+
+  spmd_df = summarize("spmd")
+  wsrt_df = summarize("wsrt")
+
+  if not opts.no_wsrt:
+    df = spmd_df
+    base_df = df[df.config == "spmd-mimd-limit-1"].copy()
+    print_table( df, base_df, opts.no_perf )
+  elif not opts.no_spmd:
+    df = wsrt_df
+    base_df = df[df.config == "wsrt-mimd-limit-1"].copy()
+    print_table( df, base_df, opts.no_perf )
+  else:
+    df = pd.concat([spmd_df,wsrt_df])
+    base_df = df[df.config == "spmd-mimd-limit-1"].copy()
+    print_table( df, base_df, opts.no_perf )
