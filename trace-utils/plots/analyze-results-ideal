@@ -158,9 +158,11 @@ def plot( base_df, df, spmd, wsrt ):
         df.loc[df.app == app, ['steps']] = \
           float(ts)/df.loc[df.app == app, ['steps']]
       except:
-        ts = df.loc[(df.app == app) & (df.config == 'wsrt-mimd-limit-1'),['steps']].iloc[0]
-        df.loc[df.app == app, ['steps']] = \
-          float(ts)/df.loc[df.app == app, ['steps']]
+        if wsrt:
+          ts = df.loc[(df.app == app) & (df.config == 'wsrt-mimd-limit-1'),['steps']].iloc[0]
+          df.loc[df.app == app, ['steps']] = \
+            float(ts)/df.loc[df.app == app, ['steps']]
+          continue
     else:
       ts = base_df.loc[base_df.app == app,['steps']].iloc[0]
       df.loc[df.app == app, ['steps']] = \
