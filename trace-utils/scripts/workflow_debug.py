@@ -16,9 +16,8 @@ def task_pydgin_sims_debug():
   evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
   # bmark params
-  evaldict['app_group']       = ["tiny","mt"]
-  evaldict['app_list']        = ['pbbs-bfs-deterministicBFS-parc']
-  #evaldict['app_list']        = app_list
+  evaldict['app_group']       = ["small","mtpull"]
+  evaldict['app_list']        = ['rgb2cmyk']
   evaldict['app_dict']        = app_dict
 
   # uarch params
@@ -37,7 +36,7 @@ def task_pydgin_sims_debug():
 
   # misc params
   evaldict['cluster']         = False
-  #evaldict['runtime']         = True
+  evaldict['runtime']         = True
 
   # debug options
   #evaldict['linetrace']       = True

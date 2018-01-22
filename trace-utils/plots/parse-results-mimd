@@ -79,7 +79,7 @@ app_short_name_dict = OrderedDict([
   ('dct8x8m',                       'dct8x8m'),
   ('dither',                        'dither'),
   ('mriq',                          'mriq'),
-  #('rgb2cmyk',                      'rgb2cmyk'),
+  ('rgb2cmyk',                      'rgb2cmyk'),
   ('strsearch',                     'strsearch'),
   ('viterbi',                       'viterbi'),
   ('uts',                           'uts'),
