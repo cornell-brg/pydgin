@@ -28,39 +28,28 @@ def execute(cmd):
 # global variables
 #-------------------------------------------------------------------------
 
-g_prefix_path = "../"
+g_prefix_path = "../../all-results/"
 
-g_configs_dict = {
-  'results-serial-small'                      : 'serial',
-  'results-mimd-spmd-1'                       : 'mimd-spmd',
-  'results-mimd-spmd-250'                     : 'mimd-spmd-hint',
-  'results-mimd-wsrt-1'                       : 'mimd-wsrt',
-  'results-mimd-wsrt-250'                     : 'mimd-wsrt-hint',
-  'results-conjoined-cores-spmd-1-limit-1'    : 'conj-cores-1-spmd',
-  'results-conjoined-cores-spmd-1-limit-250'  : 'conj-cores-1-spmd-hint',
-  'results-conjoined-cores-spmd-2-limit-1'    : 'conj-cores-2-spmd',
-  'results-conjoined-cores-spmd-2-limit-250'  : 'conj-cores-2-spmd-hint',
-  'results-conjoined-cores-wsrt-1-limit-1'    : 'conj-cores-1-wsrt',
-  'results-conjoined-cores-wsrt-1-limit-250'  : 'conj-cores-1-wsrt-hint',
-  'results-conjoined-cores-wsrt-2-limit-1'    : 'conj-cores-2-wsrt',
-  'results-conjoined-cores-wsrt-2-limit-250'  : 'conj-cores-2-wsrt-hint',
-  'results-simt-spmd-1-2-limit-1'             : 'simt-1-2-spmd',
-  'results-simt-spmd-1-2-limit-250'           : 'simt-1-2-spmd-hint',
-  'results-simt-spmd-1-4-limit-1'             : 'simt-1-4-spmd',
-  'results-simt-spmd-1-4-limit-250'           : 'simt-1-4-spmd-hint',
-  'results-simt-spmd-2-2-limit-1'             : 'simt-2-2-spmd',
-  'results-simt-spmd-2-2-limit-250'           : 'simt-2-2-spmd-hint',
-  'results-simt-spmd-2-4-limit-1'             : 'simt-2-4-spmd',
-  'results-simt-spmd-2-4-limit-250'           : 'simt-2-4-spmd-hint',
-  'results-simt-wsrt-1-2-limit-1'             : 'simt-1-2-wsrt',
-  'results-simt-wsrt-1-2-limit-250'           : 'simt-1-2-wsrt-hint',
-  'results-simt-wsrt-1-4-limit-1'             : 'simt-1-4-wsrt',
-  'results-simt-wsrt-1-4-limit-250'           : 'simt-1-4-wsrt-hint',
-  'results-simt-wsrt-2-2-limit-1'             : 'simt-2-2-wsrt',
-  'results-simt-wsrt-2-2-limit-250'           : 'simt-2-2-wsrt-hint',
-  'results-simt-wsrt-2-4-limit-1'             : 'simt-2-4-wsrt',
-  'results-simt-wsrt-2-4-limit-250'           : 'simt-2-4-wsrt-hint',
-}
+g_configs_dict = {}
+
+#-------------------------------------------------------------------------
+# populate_configs()
+#-------------------------------------------------------------------------
+
+def populate_configs():
+  subfolders = os.listdir( g_prefix_path )
+  short_name = None
+  for subfolder in subfolders:
+    if "serial" in subfolder:
+      short_name = "serial"
+    else:
+      short_name = re.sub("results-", "", subfolder)
+      short_name = re.sub("-limit-1", "", short_name)
+      short_name = re.sub("-limit-250", "-hint", short_name)
+      short_name = re.sub("conjoined-", "conj-", short_name)
+    g_configs_dict[subfolder] = short_name
+    print "{:^40s} {:^40s}".format( subfolder, short_name )
+  print "Total number of configs are: ", len( g_configs_dict )
 
 #-------------------------------------------------------------------------
 # summarize()
@@ -120,5 +109,5 @@ def summarize():
 #-------------------------------------------------------------------------
 
 if __name__ == "__main__":
+  populate_configs()
   summarize()
-

@@ -30,22 +30,30 @@ from common import *
 #-------------------------------------------------------------------------
 
 g_wsrt_configs = [
-  "mimd-wsrt",
-  "mimd-wsrt-hint",
-  "conj-cores-2-wsrt",
-  "conj-cores-2-wsrt-hint",
-  "simt-1-4-wsrt",
-  "simt-1-4-wsrt-hint",
-  "simt-2-2-wsrt",
-  "simt-2-2-wsrt-hint",
-  #"conj-cores-1-wsrt",
-  #"simt-2-4-wsrt",
-  #"simt-1-2-wsrt",
-  #"simt-2-2-wsrt",
-  #"conj-cores-1-wsrt-hint",
-  #"simt-1-2-wsrt-hint",
-  #"simt-2-4-wsrt-hint",
-  #"simt-2-2-wsrt-hint",
+  #"mimd-wsrt-1",
+  #"mimd-wsrt-1-hint",
+  "conj-cores-wsrt-1-1-4-1",     
+  "conj-cores-wsrt-1-1-4-1-hint",
+  "conj-cores-wsrt-1-2-2-1",     
+  "conj-cores-wsrt-1-2-2-1-hint",
+  #"simt-wsrt-1-1-4",
+  #"simt-wsrt-1-1-4-hint",
+  #"simt-wsrt-1-2-4",
+  #"simt-wsrt-1-2-4-hint",
+  #"simt-wsrt-1-2-2",
+  #"simt-wsrt-1-2-2-hint",
+  #"conj-cores-wsrt-1-1-4-0",     
+  #"conj-cores-wsrt-1-1-4-0-hint",
+  #"conj-cores-wsrt-1-1-4-1",     
+  #"conj-cores-wsrt-1-1-4-1-hint",
+  #"conj-cores-wsrt-1-2-2-0",     
+  #"conj-cores-wsrt-1-2-2-0-hint",
+  #"conj-cores-wsrt-1-2-2-1",     
+  #"conj-cores-wsrt-1-2-2-1-hint",
+  #"conj-cores-wsrt-1-2-4-0",     
+  #"conj-cores-wsrt-1-2-4-0-hint",
+  #"conj-cores-wsrt-1-2-4-1",     
+  #"conj-cores-wsrt-1-2-4-1-hint",
 ]
 
 g_spmd_configs = [
@@ -186,7 +194,7 @@ def plot( df, spmd, wsrt, isavings, pareto_frontier ):
 
     if index % opts.num_cols == 0:
       opts.legend_enabled = True
-      opts.legend_ncol    = 4
+      opts.legend_ncol    = 2
       opts.legend_bbox    = (1.8,1.1,1.,0.1)
     else:
       opts.legend_enabled = False
