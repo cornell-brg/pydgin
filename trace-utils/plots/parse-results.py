@@ -71,6 +71,7 @@ def summarize():
           app = re.sub("-parc", '', subfolder)
           app = re.sub("-small", '', app)
           app = re.sub("-mtpull", '', app)
+          app = re.sub("-mt", '', app)
 
           if not app in app_short_name_dict.keys() and config != "serial":
             continue

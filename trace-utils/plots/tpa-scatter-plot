@@ -30,14 +30,22 @@ from common import *
 #-------------------------------------------------------------------------
 
 g_wsrt_configs = [
-  #"mimd-wsrt-1",
-  #"mimd-wsrt-1-hint",
-  "conj-cores-wsrt-1-1-4-1",     
-  "conj-cores-wsrt-1-1-4-1-hint",
-  "conj-cores-wsrt-1-2-2-1",     
-  "conj-cores-wsrt-1-2-2-1-hint",
-  #"simt-wsrt-1-1-4",
-  #"simt-wsrt-1-1-4-hint",
+  "mimd-wsrt-1",
+  "mimd-wsrt-1-hint",
+  #"conj-cores-wsrt-1-1-4-0",     
+  #"conj-cores-wsrt-1-1-4-0-hint",
+  #"conj-cores-wsrt-1-1-4-1",     
+  #"conj-cores-wsrt-1-1-4-1-hint",
+  #"conj-cores-wsrt-1-2-2-0",     
+  #"conj-cores-wsrt-1-2-2-0-hint",
+  #"conj-cores-wsrt-1-2-2-1",     
+  #"conj-cores-wsrt-1-2-2-1-hint",
+  "simt-wsrt-1-1-4",
+  "simt-wsrt-1-1-4-hint",
+  "simt-wsrt-1-2-4",
+  "simt-wsrt-1-2-4-hint",
+  "simt-wsrt-1-2-2",
+  "simt-wsrt-1-2-2-hint",
   #"simt-wsrt-1-2-4",
   #"simt-wsrt-1-2-4-hint",
   #"simt-wsrt-1-2-2",
@@ -57,21 +65,23 @@ g_wsrt_configs = [
 ]
 
 g_spmd_configs = [
-  "mimd-spmd",
-  #"conj-cores-1-spmd",
-  "conj-cores-2-spmd",
-  "simt-1-4-spmd",
-  #"simt-1-2-spmd",
-  "simt-2-2-spmd",
-  "mimd-spmd-hint",
-  #"conj-cores-1-spmd-hint",
-  "conj-cores-2-spmd-hint",
-  "simt-1-4-spmd-hint",
-  #"simt-1-2-spmd-hint",
-  "simt-2-2-spmd-hint",
+  "mimd-spmd-1",
+  "mimd-spmd-1-hint",
+  #"conj-cores-spmd-1-1-4-0",     
+  #"conj-cores-spmd-1-1-4-0-hint",
+  "conj-cores-spmd-1-1-4-1",     
+  "conj-cores-spmd-1-1-4-1-hint",
+  #"conj-cores-spmd-1-2-2-0",     
+  #"conj-cores-spmd-1-2-2-0-hint",
+  "conj-cores-spmd-1-2-2-1",     
+  "conj-cores-spmd-1-2-2-1-hint",
+  "simt-spmd-1-1-4",
+  "simt-spmd-1-1-4-hint",
+  #"simt-spmd-1-2-4",
+  #"simt-spmd-1-2-4-hint",
+  "simt-spmd-1-2-2",
+  "simt-spmd-1-2-2-hint",
 ]
-
-
 
 #-------------------------------------------------------------------------
 # Command line processing
@@ -131,10 +141,13 @@ def is_pareto_front(row, stats, xlabel, ylabel):
 def plot( df, spmd, wsrt, isavings, pareto_frontier ):
 
   configs = []
+  kernels_list = []
   if spmd:
     configs += g_spmd_configs
+    kernels_list += app_spmd_list
   if wsrt:
     configs += g_wsrt_configs
+    kernels_list += app_list
 
   #-----------------------------------------------------------------------
   # scatter plot
@@ -155,12 +168,15 @@ def plot( df, spmd, wsrt, isavings, pareto_frontier ):
   for name, value in attribute_dict.iteritems():
     setattr( opts, name, value )
 
+  if spmd:
+    opts.figsize = (16.0,16.0)
+
   # plot array 
   opts.num_cols = 4
-  opts.num_rows = int( math.ceil( len(app_list)/4.0 ) )
+  opts.num_rows = int( math.ceil( len(kernels_list)/4.0 ) )
   
   index = 0
-  for app in  app_list:
+  for app in  kernels_list:
     # collect data
     if pareto_frontier:
       stats = pd.DataFrame()
@@ -194,11 +210,11 @@ def plot( df, spmd, wsrt, isavings, pareto_frontier ):
 
     if index % opts.num_cols == 0:
       opts.legend_enabled = True
-      opts.legend_ncol    = 2
+      opts.legend_ncol    = 5
       opts.legend_bbox    = (1.8,1.1,1.,0.1)
     else:
       opts.legend_enabled = False
-    if index == len(app_list) -1:
+    if index == len(kernels_list) -1:
       opts.file_name       = 'scatter-all.pdf'
       opts.subplots_hspace = 0.5
       opts.fig.text(0.5, 0, 'Speedup', ha='center', fontsize=14)

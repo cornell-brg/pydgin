@@ -94,8 +94,30 @@ app_normalize_map = {
   'clsky'      : 'cilk-cholesky',
 }
 
-# list of application kernels t
+# list of application kernels
 app_list = app_short_name_dict.values()
+
+filter_spmd_dict = OrderedDict([
+  # pbbs
+  ('pbbs-csort-quickSort'         , 'qsort'),
+  ('pbbs-csort-quickSort-1'       , 'qsort-1'),
+  ('pbbs-csort-quickSort-2'       , 'qsort-2'),
+  ('pbbs-csort-sampleSort'        , 'sampsort'),
+  ('pbbs-csort-sampleSort-1'      , 'sampsort-1'),
+  ('pbbs-csort-sampleSort-2'      , 'sampsort-2'),
+
+  # cilk
+  ('cilk-cilksort'                , 'cilksort'),
+  ('cilk-heat'                    , 'heat'),
+  ('cilk-knapsack'                , 'ksack'),
+  ('cilk-matmul'                  , 'matmul'),
+])
+
+filter_spmd_list = filter_spmd_dict.values()
+app_spmd_list = []
+for app in app_list:
+  if app not in filter_spmd_list:
+    app_spmd_list.append( app )
 
 # list of files required to parse all the results
 file_list = [
