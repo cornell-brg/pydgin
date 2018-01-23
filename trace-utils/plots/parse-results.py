@@ -109,6 +109,10 @@ def summarize():
             out.write('{},{},{},{},{}\n'.format(app_short_name_dict[app],config,steps,iredundancy,isavings))
         except:
           print "{} {}: Results file not present".format( config, subfolder )
+          if config == "serial":
+            out.write('{},{},{},{},{}\n'.format(app,0,0,0,0))
+          else:
+            out.write('{},{},{},{},{}\n'.format(app_short_name_dict[app],0,0,0,0))
           continue
 
 #-------------------------------------------------------------------------

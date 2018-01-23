@@ -24,11 +24,11 @@ app_short_name_dict = OrderedDict([
   # custom
   ('bilateral'                    , 'bilateral'),
   ('dct8x8m'                      , 'dct8x8m'),
-  ('dither'                       , 'dither'),
+  #('dither'                       , 'dither'), # debug simt configs
   ('mriq'                         , 'mriq'),
   ('rgb2cmyk'                     , 'rgb2cmyk'),
   ('strsearch'                    , 'strsearch'),
-  ('viterbi'                      , 'viterbi'),
+  #('viterbi'                      , 'viterbi'), # debug simt configs
   ('uts'                          , 'uts'),
 
   # pbbs
@@ -40,7 +40,7 @@ app_short_name_dict = OrderedDict([
   #('pbbs-nbody-parallelBarnesHut' , 'nbody'),
   ('pbbs-rdups-deterministicHash' , 'rdups'),
   ('pbbs-sa-parallelRange'        , 'sarray'),
-  ('pbbs-st-ndST'                 , 'sptree'),
+  #('pbbs-st-ndST'                 , 'sptree'), # debug simt configs
   #('pbbs-isort-blockRadixSort'    , 'radix-1'),
   #('pbbs-isort-blockRadixSort-1'  , 'radix-2'),
   ('pbbs-csort-quickSort'         , 'qsort'),
@@ -65,7 +65,7 @@ app_normalize_map = {
   'dct8x8m'    : 'dct8x8m-scalar',
   'dither'     : 'dither-scalar',
   'mriq'       : 'mriq-scalar',
-  'rgb2cymk'   : 'rgb2cymk-scalar',
+  'rgb2cmyk'   : 'rgb2cmyk-scalar',
   'strsearch'  : 'strsearch-scalar',
   'viterbi'    : 'viterbi-scalar',
   'uts'        : 'uts-scalar',
