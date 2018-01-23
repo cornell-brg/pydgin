@@ -223,12 +223,13 @@ def plot( base_df, df, spmd, wsrt ):
   opts.num_cols = 1
   opts.num_rows = 2
 
-  ## plot redundancy
+  # plot redundancy
   opts.plot_idx       = 1
   opts.data           = redun_data 
   opts.legend_ncol    = len(legend_labels)
   opts.rotate_labels  = True
   opts.labels         = [app_list,legend_labels]
+  opts.colors         = brg_plot.colors['qualitative_paired']
   opts.normalize_line = 75.0
   #opts.title          = "Instruction Redundancy"
   opts.ylabel         = "Precent Redundant Insns."
@@ -236,12 +237,13 @@ def plot( base_df, df, spmd, wsrt ):
 
   brg_plot.add_plot( opts )
 
-  # plot redundancy
+  # plot performance
   opts.plot_idx       = 2
   opts.data           = steps_data 
   opts.legend_ncol    = len(legend_labels)
   opts.rotate_labels  = True
   opts.labels         = [app_list,legend_labels]
+  opts.colors         = brg_plot.colors['qualitative_paired']
   #opts.title          = "Normalized Performance"
   opts.normalize_line = 1
   opts.ylabel         = "Perf. Normalized to %s" % ( 'wsrt' if not spmd else 'spmd' )  
