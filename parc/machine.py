@@ -75,18 +75,20 @@ class State( Machine ):
     self.l0_hits = 0
 
     # shreesha: model params
-    self.inst_bits = 0
-    self.inst      = None
-    self.exec_fun  = None
-    self.stop      = False  # flag to indicate reaching a hardware barrier
-    self.active    = True   # flag to indicate advancing a pc
-    self.istall    = False  # flag to indicate a instruction fetch stall
-    self.stall     = False  # flag to indicate a resource stall
-    self.mdu       = False  # flag to indicate a vaild mdu resource request
-    self.fpu       = False  # flag to indicate a vaild fpu resource request
-    self.dmem      = False  # flag to indicate a valid dmem request
-    self.clear     = False  # flag to indicate a cleared mem/llfu request for lockstep execution
-    self.curr_pc   = 0      # used for enforcing lockstep execution
+    self.inst_bits  = 0
+    self.inst       = None
+    self.exec_fun   = None
+    self.stop       = False  # flag to indicate reaching a hardware barrier
+    self.active     = True   # flag to indicate advancing a pc
+    self.istall     = False  # flag to indicate a instruction fetch stall
+    self.stall      = False  # flag to indicate a resource stall
+    self.mdu        = False  # flag to indicate a vaild mdu resource request
+    self.fpu        = False  # flag to indicate a vaild fpu resource request
+    self.dmem       = False  # flag to indicate a valid dmem request
+    self.clear      = False  # flag to indicate a cleared mem/llfu request for lockstep execution
+    self.curr_pc    = 0      # used for enforcing lockstep execution
+    self.insn_str   = ' :'
+    self.l0_enabled = False
 
     # resource conflicts
     self.imem_stalls = 0

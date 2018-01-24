@@ -632,6 +632,8 @@ def execute_jal( s, inst ):
   if s.pc in s.runtime_dict.keys():
     if s.task_mode:
       s.task_mode = False
+      if s.sim_ptr.l0_hybrid:
+        s.l0_enabled = True
       if len( s.task_ras ) == 0:
         s.task_ras = [s.rf[31]]
       else:
@@ -652,6 +654,8 @@ def execute_jr( s, inst ):
     s.runtime_mode = True
     s.runtime_ras.pop()
     s.task_mode = False
+    if s.sim_ptr.l0_hybrid:
+      s.l0_enabled = True
 
   # shreesha: tasktrace
   # Returning to task-mode
@@ -659,6 +663,8 @@ def execute_jr( s, inst ):
     s.task_mode = True
     s.task_ras.pop()
     s.runtime_mode = False
+    if s.sim_ptr.l0_hybrid:
+      s.l0_enabled = False
 
 #-----------------------------------------------------------------------
 # jalr
@@ -674,6 +680,8 @@ def execute_jalr( s, inst ):
   if s.runtime_mode and s.stat_inst_en[10] and s.wsrt_mode:
     s.runtime_mode = False
     s.task_mode = True
+    if s.sim_ptr.l0_hybrid:
+      s.l0_enabled = False
     if len(s.runtime_ras) == 0:
       s.runtime_ras = [s.rf[inst.rd]]
     else:

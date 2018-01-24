@@ -183,6 +183,8 @@ def get_base_evaldict():
   evaldict['barrier_limit']   = 1     # Max stall cycles for barrier limit
   evaldict['iword_match']     = True  # Match only word boundaries
   evaldict['simt']            = False # Indicate a SIMT frontend
+  evaldict['sched_limit']     = 0     # Limit for switching arbitration
+  evaldict['l0_hybrid']       = False # Indicate a hybrid L0
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -251,6 +253,8 @@ def gen_trace_per_app( evaldict ):
   iword_match     = evaldict["iword_match"]
   barrier_limit   = evaldict["barrier_limit"]
   simt            = evaldict["simt"]
+  sched_limit     = evaldict["sched_limit"]
+  l0_hybrid       = evaldict["l0_hybrid"]
 
   # default options for serial code
   if serial:
@@ -325,12 +329,16 @@ def gen_trace_per_app( evaldict ):
         if simt:
           extra_pydgin_opts += "--simt "
 
+        if l0_hybrid:
+          extra_pydgin_opts += "--l0-hybrid "
+
         if not icoalesce:
           extra_pydgin_opts += "--icoalesce "
 
         if not iword_match:
           extra_pydgin_opts += "--iword-match "
 
+        extra_pydgin_opts += "--sched-limit %(sched_limit)s " % { 'sched_limit' : sched_limit }
         extra_pydgin_opts += "--barrier-limit %(barrier_limit)s " % { 'barrier_limit' : barrier_limit }
         extra_pydgin_opts += "--analysis %(analysis)s " % { 'analysis' : analysis }
         extra_pydgin_opts += "--l0-buffer-sz %(l0_buffer_sz)s " % { 'l0_buffer_sz' : l0_buffer_sz }

@@ -44,7 +44,7 @@ def execute(cmd):
 # Global variable
 #-------------------------------------------------------------------------
 
-g_resultsdir_path = "../results-%s-similarity-limit-%d"
+g_resultsdir_path = "../../similarity-results/results-%s-similarity-limit-%d"
 
 #-------------------------------------------------------------------------
 # Command line processing

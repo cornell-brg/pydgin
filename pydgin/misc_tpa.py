@@ -71,8 +71,8 @@ class ReconvergenceManager():
   # configure
   #-----------------------------------------------------------------------
 
-  def configure( s, num_cores, coalesce, word_match, line_sz ):
-    s.switch_interval = num_cores
+  def configure( s, num_cores, coalesce, word_match, line_sz, sched_limit ):
+    s.switch_interval = sched_limit
     s.top_priority    = num_cores-1
     # enable coaelscing
     s.coalesce        = coalesce
@@ -202,6 +202,7 @@ class ReconvergenceManager():
       # select matching pcs
       curr_line_addr = sim.states[core].pc & s.mask
       if curr_line_addr == line_addr and core not in s.scheduled_list:
+        sim.states[core].insn_str = 'C:'
         sim.states[core].active = True
         sim.states[core].istall = False
         s.scheduled_list.append( core )
@@ -246,16 +247,23 @@ class ReconvergenceManager():
     min_pc   = sys.maxint
     min_core = 0
     # select the minimum-pc by considering only active cores
-    if s.switch_interval == 0:
+    if s.switch_interval > 0:
       for core in xrange( sim.ncores ):
         if sim.states[core].pc < min_pc and core not in s.scheduled_list:
           min_pc = sim.states[core].pc
           min_core = core
-      s.switch_interval = sim.ncores
-    # round-robin arbitration
-    else:
-      min_pc, min_core = s.get_next_pc( sim )
       s.switch_interval -= 1
+      #if sim.states[0].debug.enabled( "tpa" ):
+      #  print "min-pc: %x %d" % ( min_pc, min_core )
+    # round-robin arbitration
+    elif s.switch_interval == 0:
+      min_pc, min_core = s.get_next_pc( sim )
+      s.switch_interval = sim.sched_limit
+      #if sim.states[0].debug.enabled( "tpa" ):
+      #  print "rr   : %x %d" % ( min_pc, min_core )
+    else:
+      print "Something wrong in scheduling tick: %d" % sim.states[0].num_insts
+      raise AssertionError
 
     return min_pc, min_core
 
@@ -268,7 +276,7 @@ class ReconvergenceManager():
     min_pc   = 0
     min_core = 0
     # select the minimum-pc by considering only active cores
-    if s.switch_interval == 0:
+    if s.switch_interval > 0:
       for core in xrange( sim.ncores ):
         if core not in s.scheduled_list:
           if sim.states[core].rf[ sp ] < min_sp:
@@ -277,11 +285,18 @@ class ReconvergenceManager():
           elif sim.states[core].rf[ sp ] ==  min_sp and sim.states[core].pc < min_pc:
             min_pc = sim.states[core].pc
             min_core = core
-      s.switch_interval = sim.ncores
-    # round-robin arbitration
-    else:
-      min_pc, min_core = s.get_next_pc( sim )
       s.switch_interval -= 1
+      #if sim.states[0].debug.enabled( "tpa" ):
+      #  print "min-sp: %x %d" % ( min_pc, min_core )
+    # round-robin arbitration
+    elif s.switch_interval == 0:
+      min_pc, min_core = s.get_next_pc( sim )
+      s.switch_interval = sim.sched_limit
+      #if sim.states[0].debug.enabled( "tpa" ):
+      #  print "rr   : %x %d" % ( min_pc, min_core )
+    else:
+      print "Something wrong in scheduling tick: %d" % sim.states[0].num_insts
+      raise AssertionError
 
     return min_pc, min_core
 
@@ -303,6 +318,7 @@ class ReconvergenceManager():
       else:
         sim.states[core].active = False
         sim.states[core].istall = True
+        sim.states[core].insn_str = ' :'
 
       if sim.states[core].stall or sim.states[core].stop or sim.states[core].clear:
         s.scheduled_list.append( core )
@@ -311,15 +327,17 @@ class ReconvergenceManager():
     # check if any cores have cached in the line in the l0 buffer
     if sim.l0_buffer_sz != 0 and not sim.simt:
       for core in xrange( sim.ncores ):
-        l0_line_addr = sim.states[core].pc & s.l0_mask
-        if l0_line_addr in sim.states[core].l0_buffer and core not in s.scheduled_list:
-          s.scheduled_list.append( core )
-          sim.states[core].active = True
-          sim.states[core].istall = False
-          parallel_mode = sim.states[core].wsrt_mode or sim.states[core].spmd_mode
-          if sim.states[0].stats_en and parallel_mode:
-            sim.states[core].l0_hits += 1
-            sim.total_imem_accesses += 1
+        if sim.states[core].l0_enabled:
+          l0_line_addr = sim.states[core].pc & s.l0_mask
+          if l0_line_addr in sim.states[core].l0_buffer and core not in s.scheduled_list:
+            s.scheduled_list.append( core )
+            sim.states[core].active = True
+            sim.states[core].istall = False
+            parallel_mode = sim.states[core].wsrt_mode or sim.states[core].spmd_mode
+            if sim.states[0].stats_en and parallel_mode:
+              sim.states[core].l0_hits += 1
+              sim.total_imem_accesses += 1
+            sim.states[core].insn_str = 'L:'
 
     # all cores all either stalling or have reached a barrier or have
     # instructions in L0 buffer
@@ -349,6 +367,7 @@ class ReconvergenceManager():
       # for reconvergence and resource constraints and update_pcs updates
       # other cores for a given constraint only if coalescing is enabled
       line_addr = next_pc & s.mask
+      sim.states[next_core].insn_str = 'S:'
       s.update_single_pc( sim, next_core, line_addr )
       if len( s.scheduled_list ) == sim.ncores:
         break

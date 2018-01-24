@@ -87,6 +87,8 @@ class Sim( object ):
     self.iword_match     = True  # toggle instruction word vs. line matching
     self.simt            = False # toggle to indicate simt frontend
     self.simt_l0_buffer  = []
+    self.sched_limit     = 0
+    self.l0_hybrid       = False # toggle hybrid l0 mode
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
@@ -184,6 +186,8 @@ class Sim( object ):
     --icoalesce       Toggle coalescing for instructions (default True)
     --iword-match     Toggle instruction word vs. line matching (default word)
     --simt            Toggle for SIMT frontend (default False)
+    --sched-limit     Limit for scheduling to guarantee forward progress
+    --l0-hybrid       Toggle on hybrid L0 buffer use (default False)
   """
 
   #-----------------------------------------------------------------------
@@ -387,44 +391,48 @@ class Sim( object ):
       if self.linetrace:
         if self.states[0].stats_en:
           for i in range( self.ncores ):
+            stall  = False
+            clear  = False
+            active = False
             #NOTE: the linetrace is not perfect but is a start
             #lockstep execution is a pain to show
             stall  = self.states[i].stall or self.states[i].istall
             clear  = self.states[i].clear
             active = self.states[i].active
+
             if active and not ( stall or clear):
               parallel_mode = self.states[i].wsrt_mode or self.states[i].spmd_mode
               # core0 in serial section
               if self.color and not parallel_mode and i ==0 :
-                print colors.white + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
+                print colors.white + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
               # others in bthread control function
               elif self.color and not parallel_mode:
-                print colors.blue + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
+                print colors.blue + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
               # cores in spmd region
               elif self.color and self.states[i].spmd_mode:
-                print colors.purple + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
+                print colors.purple + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
               # cores executing tasks in wsrt region
               elif self.color and self.states[i].task_mode and parallel_mode:
-                print colors.green + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
+                print colors.green + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
               # cores executing runtime function in wsrt region
               elif self.color and self.states[i].runtime_mode and parallel_mode:
-                print colors.yellow + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
+                print colors.yellow + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
               # No color requested
               else:
-                print pad( "%x |" % pc_list[i], 9, " ", False ),
+                print  self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ),
             elif stall:
               if self.states[i].istall:
-                print pad( "#i |", 9, " ", False ),
+                print pad( "#i |", 11, " ", False ),
               if self.states[i].dmem:
-                print pad( "#d |", 9, " ", False ),
+                print pad( "#d |", 11, " ", False ),
               elif self.states[i].mdu:
-                print pad( "#m |", 9, " ", False ),
+                print pad( "#m |", 11, " ", False ),
               elif self.states[i].fpu:
-                print pad( "#f |", 9, " ", False ),
+                print pad( "#f |", 11, " ", False ),
             elif clear:
-                print pad( "#w |", 9, " ", False ),
+                print pad( "#w |", 11, " ", False ),
             else:
-              print pad( " |", 9, " ", False ),
+              print pad( " |", 11, " ", False ),
           print
 
     print '\nDONE! Status =', self.states[0].status
@@ -607,6 +615,8 @@ class Sim( object ):
                            "--icoalesce",
                            "--iword-match",
                            "--simt",
+                           "--sched-limit",
+                           "--l0-hybrid"
                          ]
 
       # go through the args one by one and parse accordingly
@@ -650,6 +660,9 @@ class Sim( object ):
 
           elif token == "--simt":
             self.simt = True
+
+          elif token == "--l0-hybrid":
+            self.l0_hybrid = True
 
           elif token in tokens_with_args:
             prev_token = token
@@ -735,6 +748,9 @@ class Sim( object ):
           elif prev_token == "--barrier-limit":
             self.barrier_limit = int(token)
 
+          elif prev_token == "--sched-limit":
+            self.sched_limit = int(token)
+
           prev_token = ""
 
       if filename_idx == 0:
@@ -771,7 +787,9 @@ class Sim( object ):
         self.states[i].core_type = core_type
         self.states[i].stats_core_type = stats_core_type
         self.states[i].sim_ptr = self
-        self.states[i].l0_buffer = [0]*self.l0_buffer_sz
+        if self.l0_buffer_sz > 0:
+          self.states[i].l0_buffer = [0]*self.l0_buffer_sz
+          self.states[i].l0_enabled = True
 
       # set accel rf mode
 
@@ -824,10 +842,14 @@ class Sim( object ):
 
       # shreesha: l0 buffer size
       print "SIMT Frontend: ", bool(self.simt)
+      print "SIMT L0 buffer : ", bool(self.simt) and self.l0_buffer_sz > 0
       print "L0 buffer size in cache lines: %d" % ( self.l0_buffer_sz )
+      for state in self.states:
+        print "Core %d: L0 buffer present: %d" % ( state.core_id, state.l0_enabled )
+      print "Hybrid L0: ", bool(self.l0_hybrid)
 
       # shreesha: configure reconvergence manager
-      self.reconvergence_manager.configure( self.ncores, self.icoalesce, self.iword_match, self.icache_line_sz )
+      self.reconvergence_manager.configure( self.ncores, self.icoalesce, self.iword_match, self.icache_line_sz, self.sched_limit )
 
       # shreesha: default dcache-line-sz
       if self.dcache_line_sz == 0:
@@ -861,6 +883,9 @@ class Sim( object ):
       self.fpu_allocator.configure( self.ncores, self.fpu_ports, self.lockstep )
 
       print "Barrier limit: ", self.barrier_limit
+      if self.sched_limit == 0:
+        self.sched_limit = self.ncores
+      print "Scheduling limit: ", self.sched_limit
 
       #-----------------------------------------------------------------
 

@@ -33,17 +33,17 @@ from doit_pydgin_utils import appdir, appinputdir
 # Use app_list to specify which of the apps in app_dict to actually sim
 
 app_list = [
-  'px-fib',
-  'ubmark-vvadd',
+  #'px-fib',
+  #'ubmark-vvadd',
 
   # custom bmarks
   'bilateral',
   'dct8x8m',
-  'dither',
+  #'dither',
   'rgb2cmyk',
   'mriq',
   'strsearch',
-  'viterbi',
+  #'viterbi',
   'uts',
 
   # pbbs apps
@@ -56,7 +56,7 @@ app_list = [
   'pbbs-mis-ndMIS-parc-mtpull',
   'pbbs-rdups-deterministicHash-parc-mtpull',
   'pbbs-sa-parallelRange-parc-mtpull',
-  'pbbs-st-ndST-parc-mtpull',
+  #'pbbs-st-ndST-parc-mtpull',
   #'pbbs-isort-blockRadixSort-parc-mtpull', #-- not sure about this yet
   #'pbbs-knn-octTree2Neighbors-parc-mtpull', #-- min-pc: std::bad_alloc assertion
   #'pbbs-nbody-parallelBarnesHut-parc-mtpull', #-- exception in pydgin!
@@ -66,21 +66,21 @@ app_list = [
   'cilk-heat-parc-mtpull',
   'cilk-knapsack-parc-mtpull',
   'cilk-matmul-parc-mtpull',
-  #'cilk-cholesky-parc-mtpull', #-- min-pc: out-of-mem assertions from the app kernel
+  'cilk-cholesky-parc-mtpull', #-- min-pc: out-of-mem assertions from the app kernel
 ]
 
 app_list_spmd = [
-  'ubmark-vvadd',
-  'ubmark-bin-search',
+  #'ubmark-vvadd',
+  #'ubmark-bin-search',
 
   # custom bmarks
   'bilateral',
   'dct8x8m',
-  'dither',
+  #'dither',
   'rgb2cmyk',
   'mriq',
   'strsearch',
-  'viterbi',
+  #'viterbi',
   'uts',
 
   # pbbs apps
@@ -92,7 +92,7 @@ app_list_spmd = [
   'pbbs-nbody-parallelBarnesHut-parc',
   'pbbs-rdups-deterministicHash-parc',
   'pbbs-sa-parallelRange-parc',
-  'pbbs-st-ndST-parc',
+  #'pbbs-st-ndST-parc',
   #'pbbs-knn-octTree2Neighbors-parc', -- doesn't work for wsrt
   #'pbbs-isort-blockRadixSort-parc', -- figure out the issue here!
 ]
