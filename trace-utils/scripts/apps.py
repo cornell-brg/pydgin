@@ -66,7 +66,7 @@ app_list = [
   'cilk-heat-parc-mtpull',
   'cilk-knapsack-parc-mtpull',
   'cilk-matmul-parc-mtpull',
-  'cilk-cholesky-parc-mtpull', #-- min-pc: out-of-mem assertions from the app kernel
+  #'cilk-cholesky-parc-mtpull', #-- min-pc: out-of-mem assertions from the app kernel
 ]
 
 app_list_spmd = [

@@ -14,7 +14,7 @@ from doit_pydgin_utils import *
 def task_mimd_wsrt():
 
   for l0_buffer_sz in range( 2 ):
-    for barrier_limit in [1,250]:
+    for barrier_limit in [1,500,100]:
 
       evaldict = get_base_evaldict()
 
@@ -53,7 +53,7 @@ def task_mimd_wsrt():
 def task_mimd_spmd():
 
   for l0_buffer_sz in range( 2 ):
-    for barrier_limit in [1,250]:
+    for barrier_limit in [1,500,100]:
 
       evaldict = get_base_evaldict()
 

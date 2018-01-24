@@ -16,7 +16,7 @@ from doit_pydgin_utils import *
 
 def task_conjoined_cores_wsrt():
 
-  for l0_buffer_sz in range( 2 ):
+  for l0_buffer_sz in [1]:
     for frontend in [1,2]:
       for resources in [2,4]:
         for l0_hybrid in range( 2 ):

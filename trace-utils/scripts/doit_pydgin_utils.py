@@ -142,8 +142,8 @@ def submit_job( cmd, name, folder ):
     threads  = 1,
     ppn      = 1,
     filename = folder + "/" + name + ".pbs",
-    stdout   = folder + "/" + name + "-qsub.out",
-    stderr   = folder + "/" + name + "-qsub.err",
+    stdout   = folder + "/" + name + ".out",
+    stderr   = folder + "/" + name + ".err",
     time     = "24:00:00",
   )
   jobscript.submit()
@@ -361,11 +361,6 @@ def gen_trace_per_app( evaldict ):
           app_binary,
           app_opts,
 
-          # app dumpfile
-          '2>&1',
-          '| tee',
-          app_dumpfile,
-
         ])
 
         #.......................
@@ -376,6 +371,13 @@ def gen_trace_per_app( evaldict ):
         if cluster:
           actions = [ (create_folder, [app_results_dir]), (submit_job, [pydgin_cmd, labeled_app, app_results_dir]) ]
         else:
+          dump_file = ' '.join([
+            # app dumpfile
+            ' 2>&1',
+            '| tee',
+            app_dumpfile,
+          ])
+          pydgin_cmd += dump_file
           actions = [ (create_folder, [app_results_dir]), pydgin_cmd ]
 
         #.......................
