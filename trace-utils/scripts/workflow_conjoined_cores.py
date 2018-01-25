@@ -35,7 +35,7 @@ def task_conjoined_cores_wsrt():
               resources,
               analysis,
               lockstep,
-              sharing,
+              smart_sharing,
               barrier_limit
             )
             evaldict['basename']        = "sim-" + base_str
@@ -93,7 +93,7 @@ def task_conjoined_cores_spmd():
               resources,
               analysis,
               lockstep,
-              sharing,
+              smart_sharing,
               barrier_limit
             )
             evaldict['basename']        = "sim-" + base_str

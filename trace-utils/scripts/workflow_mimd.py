@@ -18,8 +18,8 @@ def task_mimd_wsrt():
     evaldict = get_base_evaldict()
 
     # task info
-    evaldict['basename']        = "sim-mimd-wsrt-%d-limit-%d" % ( l0_buffer_sz, barrier_limit )
-    evaldict['resultsdir']      = "results-mimd-wsrt-%d-limit-%d" % ( l0_buffer_sz, barrier_limit )
+    evaldict['basename']        = "sim-mimd-wsrt-limit-%d" % ( barrier_limit )
+    evaldict['resultsdir']      = "results-mimd-wsrt-limit-%d" % ( barrier_limit )
     evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
     # bmark params
@@ -56,8 +56,8 @@ def task_mimd_spmd():
     evaldict = get_base_evaldict()
 
     # task info
-    evaldict['basename']        = "sim-mimd-spmd-%d-limit-%d" % ( l0_buffer_sz, barrier_limit )
-    evaldict['resultsdir']      = "results-mimd-spmd-%d-limit-%d" % ( l0_buffer_sz, barrier_limit )
+    evaldict['basename']        = "sim-mimd-spmd-limit-%d" % ( barrier_limit )
+    evaldict['resultsdir']      = "results-mimd-spmd-limit-%d" % ( barrier_limit )
     evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
     # bmark params
