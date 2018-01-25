@@ -88,7 +88,7 @@ class State( Machine ):
     self.clear      = False  # flag to indicate a cleared mem/llfu request for lockstep execution
     self.curr_pc    = 0      # used for enforcing lockstep execution
     self.insn_str   = ' :'
-    self.l0_enabled = False
+    self.lockstep   = False
 
     # resource conflicts
     self.imem_stalls = 0

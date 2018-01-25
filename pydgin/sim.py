@@ -69,26 +69,26 @@ class Sim( object ):
     self.fpu_allocator         = LLFUAllocator(False)
 
     # shreesha: adding extra stuff here
-    self.reconvergence   = 0
-    self.barrier_count   = 0
-    self.active_cores    = 0
-    self.inst_ports      = 0 # Instruction bandwidth
-    self.data_ports      = 0 # Data bandwidth
-    self.mdu_ports       = 0 # MDU bandwidth
-    self.fpu_ports       = 0 # FPU bandwidth
-    self.icache_line_sz  = 0 # Insn cache line size (default word size)
-    self.dcache_line_sz  = 0 # Data cache line size (set based on num cores)
-    self.l0_buffer_sz    = 0 # L0 buffer size
-    self.lockstep        = False
-    self.linetrace       = False
-    self.color           = False
-    self.barrier_limit   = 100
-    self.icoalesce       = True  # toggle instruction coalescing
-    self.iword_match     = True  # toggle instruction word vs. line matching
-    self.simt            = False # toggle to indicate simt frontend
-    self.simt_l0_buffer  = []
-    self.sched_limit     = 0
-    self.l0_hybrid       = False # toggle hybrid l0 mode
+    self.reconvergence      = 0
+    self.barrier_count      = 0
+    self.active_cores       = 0
+    self.inst_ports         = 0 # Instruction bandwidth
+    self.data_ports         = 0 # Data bandwidth
+    self.mdu_ports          = 0 # MDU bandwidth
+    self.fpu_ports          = 0 # FPU bandwidth
+    self.icache_line_sz     = 0 # Insn cache line size (default word size)
+    self.dcache_line_sz     = 0 # Data cache line size (set based on num cores)
+    self.l0_buffer_sz       = 0 # L0 buffer size
+    self.linetrace          = False
+    self.color              = False
+    self.barrier_limit      = 100
+    self.icoalesce          = True  # toggle instruction coalescing
+    self.iword_match        = True  # toggle instruction word vs. line matching
+    self.simt               = False # toggle to indicate simt frontend
+    self.simt_l0_buffer     = []
+    self.sched_limit        = 0
+    self.lockstep           = 0     # lockstep see options
+    self.task_lockstep      = False
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
@@ -179,6 +179,9 @@ class Sim( object ):
     --mdu-ports     Number of MDU ports (bandwidth)
     --fpu-ports     Number of FPU ports (bandwidth)
     --lockstep      Enforce lockstep execution on mem/llfu divergence
+        0             No lockstep execution (default)
+        1             Lockstep execution
+        2             Task-aware lock-step execution
     --icache-line-sz  Cache line size in bytes
     --dcache-line-sz  Cache line size in bytes
     --l0-buffer-sz    L0 buffer size in icache-line-sz
@@ -643,9 +646,6 @@ class Sim( object ):
               print "WARNING: debugs are not enabled for this translation. " + \
                     "To allow debugs, translate with --debug option."
 
-          elif token == "--lockstep":
-            self.lockstep = True
-
           elif token == "--linetrace":
             self.linetrace = True
 
@@ -660,9 +660,6 @@ class Sim( object ):
 
           elif token == "--simt":
             self.simt = True
-
-          elif token == "--l0-hybrid":
-            self.l0_hybrid = True
 
           elif token in tokens_with_args:
             prev_token = token
@@ -714,6 +711,9 @@ class Sim( object ):
 
           elif prev_token == "--analysis":
             self.reconvergence = int( token )
+
+          elif prev_token == "--lockstep":
+            self.lockstep = int( token )
 
           elif prev_token == "--runtime-md":
             runtime_md = token
@@ -789,7 +789,11 @@ class Sim( object ):
         self.states[i].sim_ptr = self
         if self.l0_buffer_sz > 0:
           self.states[i].l0_buffer = [0]*self.l0_buffer_sz
-          self.states[i].l0_enabled = True
+        # set lockstep execution state
+        if self.lockstep == 1:
+          self.states[i].lockstep = True
+        elif self.lockstep == 2:
+          self.task_lockstep = True
 
       # set accel rf mode
 
@@ -844,9 +848,6 @@ class Sim( object ):
       print "SIMT Frontend: ", bool(self.simt)
       print "SIMT L0 buffer : ", bool(self.simt) and self.l0_buffer_sz > 0
       print "L0 buffer size in cache lines: %d" % ( self.l0_buffer_sz )
-      for state in self.states:
-        print "Core %d: L0 buffer present: %d" % ( state.core_id, state.l0_enabled )
-      print "Hybrid L0: ", bool(self.l0_hybrid)
 
       # shreesha: configure reconvergence manager
       self.reconvergence_manager.configure( self.ncores, self.icoalesce, self.iword_match, self.icache_line_sz, self.sched_limit )
@@ -861,7 +862,13 @@ class Sim( object ):
       # shreesha: default number of data ports
       if self.data_ports == 0:
         self.data_ports = self.ncores
-      print "Data ports: ", self.data_ports, " with lockstep execution: ", self.lockstep
+      print "Data ports: ", self.data_ports, " with: ",
+      if self.lockstep == 0:
+        print "No lockstep sharing"
+      elif self.lockstep == 1:
+        print "Lockstep sharing"
+      elif self.lockstep == 2:
+        print "Task-aware adaptive lockstep sharing"
 
       # shreesha: configure dmem coalescer
       self.dmem_coalescer.configure( self.ncores, self.data_ports, self.dcache_line_sz, self.lockstep )
@@ -869,7 +876,13 @@ class Sim( object ):
       # shreesha: default number of mdu ports
       if self.mdu_ports == 0:
         self.mdu_ports = self.ncores
-      print "MDU  ports: ", self.mdu_ports, " with lockstep execution: ", self.lockstep
+      print "MDU  ports: ", self.mdu_ports, " with: ",
+      if self.lockstep == 0:
+        print "No lockstep sharing"
+      elif self.lockstep == 1:
+        print "Lockstep sharing"
+      elif self.lockstep == 2:
+        print "Task-aware adaptive lockstep sharing"
 
       # shreesha: configure mdu allocator
       self.mdu_allocator.configure( self.ncores, self.mdu_ports, self.lockstep )
@@ -877,7 +890,13 @@ class Sim( object ):
       # shreesha: default number of fpu ports
       if self.fpu_ports == 0:
         self.fpu_ports = self.ncores
-      print "FPU  ports: ", self.fpu_ports, " with lockstep execution: ", self.lockstep
+      print "FPU  ports: ", self.fpu_ports, " with: ",
+      if self.lockstep == 0:
+        print "No lockstep sharing"
+      elif self.lockstep == 1:
+        print "Lockstep sharing"
+      elif self.lockstep == 2:
+        print "Task-aware adaptive lockstep sharing"
 
       # shreesha: configure fpu allocator
       self.fpu_allocator.configure( self.ncores, self.fpu_ports, self.lockstep )

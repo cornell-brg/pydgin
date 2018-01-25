@@ -173,13 +173,13 @@ def get_base_evaldict():
   evaldict['mdu_ports']       = 4     # Number of ports for mdu
   evaldict['fpu_ports']       = 4     # Number of ports for fpu
   evaldict['analysis']        = 0     # Reconvergence analysis type
-  evaldict['lockstep']        = False # Lockstepp enable flag
+  evaldict['lockstep']        = 0     # Lockstep type
   evaldict['linetrace']       = False # Linetrace enable flag
   evaldict['color']           = False # Linetrace colors enable flag
   evaldict['serial']          = False # Flag to indicate serial execution
   evaldict['cluster']         = False # Flag to indicate submission on cluster
   evaldict['extra_app_opts']  = ''    # Up to you, use this to tack on any extra app opts for all apps
-  evaldict['icoalesce']       = True  # Turn of instruction coalescing
+  evaldict['icoalesce']       = True  # Turn off instruction coalescing
   evaldict['barrier_limit']   = 1     # Max stall cycles for barrier limit
   evaldict['iword_match']     = True  # Match only word boundaries
   evaldict['simt']            = False # Indicate a SIMT frontend
@@ -319,8 +319,7 @@ def gen_trace_per_app( evaldict ):
 
         if runtime_md_flag:
           extra_pydgin_opts += "--runtime-md %(runtime_md)s " % { 'runtime_md' : appdir+"/"+app+'.nm'}
-        if lockstep:
-          extra_pydgin_opts += "--lockstep "
+
         if linetrace:
           extra_pydgin_opts += "--linetrace "
         if color:
@@ -338,6 +337,7 @@ def gen_trace_per_app( evaldict ):
         if not iword_match:
           extra_pydgin_opts += "--iword-match "
 
+        extra_pydgin_opts += "--lockstep %(lockstep)s " % { 'lockstep' : lockstep }
         extra_pydgin_opts += "--sched-limit %(sched_limit)s " % { 'sched_limit' : sched_limit }
         extra_pydgin_opts += "--barrier-limit %(barrier_limit)s " % { 'barrier_limit' : barrier_limit }
         extra_pydgin_opts += "--analysis %(analysis)s " % { 'analysis' : analysis }

@@ -18,44 +18,53 @@ from doit_pydgin_utils import *
 
 def task_simt_wsrt():
 
-  for l0_buffer_sz in [1]:
-    for frontend in [1,2]:
-      for resources in [2,4]:
-        for analysis in range( 3 ):
-          for barrier_limit in [1,500,1000]:
+  l0_buffer_sz = 1
+  for frontend in [1]:
+    for resources in [2,4]:
+      for analysis in [0,1]:
+        for barrier_limit in [1,1000]:
 
-            evaldict = get_base_evaldict()
+          evaldict = get_base_evaldict()
 
-            # task info
-            evaldict['basename']        = "sim-simt-wsrt-%d-%d-%d-%d-limit-%d" % ( l0_buffer_sz, frontend, resources, analysis, barrier_limit )
-            evaldict['resultsdir']      = "results-simt-wsrt-%d-%d-%d-%d-limit-%d" % ( l0_buffer_sz, frontend, resources, analysis, barrier_limit )
-            evaldict['doc']             = os.path.basename(__file__).rstrip('c')
+          # task info
+          base_str = "simt-wsrt-%dL0-%dF-%dR-%dA-limit-%d"
+          base_str = base_str % (
+            l0_buffer_sz,
+            frontend,
+            resources,
+            analysis,
+            barrier_limit
+          )
+          evaldict['basename']        = "sim-" + base_str
+          evaldict['resultsdir']      = "results-" + base_str
+          evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
-            # bmark params
-            evaldict['app_group']       = ["small","mtpull"]
-            evaldict['app_list']        = app_list
-            evaldict['app_dict']        = app_dict
+          # bmark params
+          evaldict['app_group']       = ["small","mtpull"]
+          evaldict['app_list']        = app_list
+          evaldict['app_dict']        = app_dict
 
-            # uarch params
-            evaldict['barrier_limit']   = barrier_limit
-            evaldict['ncores']          = 4
-            evaldict['l0_buffer_sz']    = l0_buffer_sz
-            evaldict['icache_line_sz']  = 16
-            evaldict['dcache_line_sz']  = 16
-            evaldict['inst_ports']      = frontend
-            evaldict['data_ports']      = resources
-            evaldict['mdu_ports']       = resources
-            evaldict['fpu_ports']       = resources
-            evaldict['iword_match']     = True
-            evaldict['analysis']        = analysis
-            evaldict['lockstep']        = True
-            evaldict['simt']            = True
+          # uarch params
+          evaldict['ncores']          = 4
+          evaldict['icache_line_sz']  = 16
+          evaldict['dcache_line_sz']  = 16
+          evaldict['l0_buffer_sz']    = l0_buffer_sz
+          evaldict['inst_ports']      = frontend
+          evaldict['data_ports']      = resources
+          evaldict['mdu_ports']       = resources
+          evaldict['fpu_ports']       = resources
+          evaldict['analysis']        = analysis
+          evaldict['lockstep']        = 1
+          evaldict['barrier_limit']   = barrier_limit
+          evaldict['simt']            = True
+          evaldict['icoalesce']       = True
+          evaldict['iword_match']     = True
 
-            # misc params
-            evaldict['cluster']         = True
-            evaldict['runtime']         = True
+          # misc params
+          evaldict['cluster']         = True
+          evaldict['runtime']         = True
 
-            yield gen_trace_per_app( evaldict )
+          yield gen_trace_per_app( evaldict )
 
 #----------------------------------------------------------------------------
 # SPMD
@@ -63,40 +72,49 @@ def task_simt_wsrt():
 
 def task_simt_spmd():
 
-  for l0_buffer_sz in range( 2 ):
-    for frontend in [1,2]:
-      for resources in [2,4]:
-        for analysis in range( 3 ):
-          for barrier_limit in [1,500,1000]:
+  l0_buffer_sz = 1
+  for frontend in [1]:
+    for resources in [2,4]:
+      for analysis in [0,1]:
+        for barrier_limit in [1,1000]:
 
-            evaldict = get_base_evaldict()
+          evaldict = get_base_evaldict()
 
-            # task info
-            evaldict['basename']        = "sim-simt-spmd-%d-%d-%d-%d-limit-%d" % ( l0_buffer_sz, frontend, resources, analysis, barrier_limit )
-            evaldict['resultsdir']      = "results-simt-spmd-%d-%d-%d-%d-limit-%d" % ( l0_buffer_sz, frontend, resources, analysis, barrier_limit )
-            evaldict['doc']             = os.path.basename(__file__).rstrip('c')
+          # task info
+          base_str = "simt-spmd-%dL0-%dF-%dR-%dA-limit-%d"
+          base_str = base_str % (
+            l0_buffer_sz,
+            frontend,
+            resources,
+            analysis,
+            barrier_limit
+          )
+          evaldict['basename']        = "sim-" + base_str
+          evaldict['resultsdir']      = "results-" + base_str
+          evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
-            # bmark params
-            evaldict['app_group']       = ["small","mt"]
-            evaldict['app_list']        = app_list_spmd
-            evaldict['app_dict']        = app_dict
+          # bmark params
+          evaldict['app_group']       = ["small","mt"]
+          evaldict['app_list']        = app_list_spmd
+          evaldict['app_dict']        = app_dict
 
-            # uarch params
-            evaldict['barrier_limit']   = barrier_limit
-            evaldict['ncores']          = 4
-            evaldict['l0_buffer_sz']    = l0_buffer_sz
-            evaldict['icache_line_sz']  = 16
-            evaldict['dcache_line_sz']  = 16
-            evaldict['inst_ports']      = frontend
-            evaldict['data_ports']      = resources
-            evaldict['mdu_ports']       = resources
-            evaldict['fpu_ports']       = resources
-            evaldict['iword_match']     = True
-            evaldict['analysis']        = analysis
-            evaldict['lockstep']        = True
-            evaldict['simt']            = True
+          # uarch params
+          evaldict['ncores']          = 4
+          evaldict['icache_line_sz']  = 16
+          evaldict['dcache_line_sz']  = 16
+          evaldict['l0_buffer_sz']    = l0_buffer_sz
+          evaldict['inst_ports']      = frontend
+          evaldict['data_ports']      = resources
+          evaldict['mdu_ports']       = resources
+          evaldict['fpu_ports']       = resources
+          evaldict['analysis']        = analysis
+          evaldict['lockstep']        = 1
+          evaldict['barrier_limit']   = barrier_limit
+          evaldict['simt']            = True
+          evaldict['icoalesce']       = True
+          evaldict['iword_match']     = True
 
-            # misc params
-            evaldict['cluster']         = True
+          # misc params
+          evaldict['cluster']         = True
 
-            yield gen_trace_per_app( evaldict )
+          yield gen_trace_per_app( evaldict )

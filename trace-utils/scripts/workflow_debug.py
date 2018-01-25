@@ -17,12 +17,12 @@ def task_pydgin_sims_debug():
 
   # bmark params
   evaldict['app_group']       = ["small","mtpull"]
-  evaldict['app_list']        = ['ubmark-vvadd']
-  #evaldict['app_list']        = ['bilateral']
+  #evaldict['app_list']        = ['ubmark-vvadd']
+  evaldict['app_list']        = ['bilateral']
   evaldict['app_dict']        = app_dict
 
   # uarch params
-  evaldict['barrier_limit']   = 500
+  evaldict['barrier_limit']   = 1
   evaldict['ncores']          = 4
   evaldict['l0_buffer_sz']    = 1
   evaldict['icache_line_sz']  = 16
@@ -31,11 +31,10 @@ def task_pydgin_sims_debug():
   evaldict['data_ports']      = 2
   evaldict['mdu_ports']       = 2
   evaldict['fpu_ports']       = 2
-  evaldict['analysis']        = 2
+  evaldict['analysis']        = 0
   evaldict['icoalesce']       = True
-  evaldict['iword_match']     = False
-  evaldict['lockstep']        = False
-  evaldict['l0_hybrid']       = True
+  evaldict['iword_match']     = True
+  evaldict['lockstep']        = 2
   #evaldict['extra_app_opts']  = ' --dataset tiny '
 
   # misc params
