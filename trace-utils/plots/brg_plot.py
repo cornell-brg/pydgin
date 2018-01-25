@@ -222,10 +222,10 @@ class PlotOptions:
     # Colors selected from colobrewer2.org for 9 categories, qualitative, print friendly
     self.colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999']
     self.hatch = []
-    self.symbols = [ 'o', 'd', '^', 's', 'p',
-                     '*', 'x', '+', '1', '>',
+    self.symbols = [ 'o', 'd', '^', 's', '*',
+                     'p', '+', 'x', '8', '>',
                      '<', 'v', '2', '3', '4',
-                     '8', ',', '.', 'D', 'H',
+                     '1', ',', '.', 'D', 'H',
                    ]
     self.linestyles = []
 

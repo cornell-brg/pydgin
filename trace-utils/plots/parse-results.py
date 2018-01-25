@@ -28,7 +28,7 @@ def execute(cmd):
 # global variables
 #-------------------------------------------------------------------------
 
-g_prefix_path = "../../all-results/"
+g_prefix_path = "../new-results/"
 
 g_configs_dict = {}
 
@@ -44,8 +44,10 @@ def populate_configs():
       short_name = "serial"
     else:
       short_name = re.sub("results-", "", subfolder)
-      short_name = re.sub("-limit-1", "", short_name)
-      short_name = re.sub("-limit-250", "-hint", short_name)
+      short_name = re.sub("-limit-1", "-1", short_name)
+      short_name = re.sub("-limit-250", "-250", short_name)
+      short_name = re.sub("-limit-500", "-500", short_name)
+      short_name = re.sub("-limit-1000", "-1000", short_name)
       short_name = re.sub("conjoined-", "conj-", short_name)
     g_configs_dict[subfolder] = short_name
     print "{:^40s} {:^40s}".format( subfolder, short_name )

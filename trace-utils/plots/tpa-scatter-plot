@@ -30,39 +30,60 @@ from common import *
 #-------------------------------------------------------------------------
 
 g_wsrt_configs = [
-  "mimd-wsrt-1",
-  "mimd-wsrt-1-hint",
-  #"conj-cores-wsrt-1-1-4-0",     
-  #"conj-cores-wsrt-1-1-4-0-hint",
-  #"conj-cores-wsrt-1-1-4-1",     
-  #"conj-cores-wsrt-1-1-4-1-hint",
-  #"conj-cores-wsrt-1-2-2-0",     
-  #"conj-cores-wsrt-1-2-2-0-hint",
-  #"conj-cores-wsrt-1-2-2-1",     
-  #"conj-cores-wsrt-1-2-2-1-hint",
-  "simt-wsrt-1-1-4",
-  "simt-wsrt-1-1-4-hint",
-  "simt-wsrt-1-2-4",
-  "simt-wsrt-1-2-4-hint",
-  "simt-wsrt-1-2-2",
-  "simt-wsrt-1-2-2-hint",
-  #"simt-wsrt-1-2-4",
-  #"simt-wsrt-1-2-4-hint",
-  #"simt-wsrt-1-2-2",
-  #"simt-wsrt-1-2-2-hint",
-  #"conj-cores-wsrt-1-1-4-0",     
-  #"conj-cores-wsrt-1-1-4-0-hint",
-  #"conj-cores-wsrt-1-1-4-1",     
-  #"conj-cores-wsrt-1-1-4-1-hint",
-  #"conj-cores-wsrt-1-2-2-0",     
-  #"conj-cores-wsrt-1-2-2-0-hint",
-  #"conj-cores-wsrt-1-2-2-1",     
-  #"conj-cores-wsrt-1-2-2-1-hint",
-  #"conj-cores-wsrt-1-2-4-0",     
-  #"conj-cores-wsrt-1-2-4-0-hint",
-  #"conj-cores-wsrt-1-2-4-1",     
-  #"conj-cores-wsrt-1-2-4-1-hint",
+  "mimd-wsrt-1-1",
+  "mimd-wsrt-1-1000",
+  #"conj-cores-wsrt-1-1-2-0-0-1",
+  #"conj-cores-wsrt-1-1-2-0-0-1000",
+  #"conj-cores-wsrt-1-1-2-0-1-1",
+  #"conj-cores-wsrt-1-1-2-0-1-1000",
+  "conj-cores-wsrt-1-1-4-0-0-1",
+  "conj-cores-wsrt-1-1-4-0-0-1000",
+  "conj-cores-wsrt-1-1-4-0-1-1",
+  "conj-cores-wsrt-1-1-4-0-1-1000",
+  #"conj-cores-wsrt-1-2-2-0-0-1",
+  #"conj-cores-wsrt-1-2-2-0-0-1000",
+  #"conj-cores-wsrt-1-2-4-0-0-1",
+  #"conj-cores-wsrt-1-2-4-0-0-1000",
+  #"simt-wsrt-1-1-4-0-1",
+  #"simt-wsrt-1-1-4-0-1-1000",
+  #"simt-wsrt-1-1-2-0-1",
+  #"simt-wsrt-1-1-2-0-1-1000",
 ]
+
+g_config_labels = [
+  "mimd",
+  "mimd-hint",
+  #"ccores-1-2-rr",
+  #"ccores-1-2-rr-hint",
+  #"ccores-1-2-pc",
+  #"ccores-1-2-pc-hint",
+  "ccores-1-4-rr",
+  "ccores-1-4-rr-hint",
+  "ccores-1-4-pc",
+  "ccores-1-4-pc-hint",
+  "ccores-2-2",
+  "ccores-2-2-hint",
+  "ccores-2-4",
+  "ccores-2-4-hint",
+  "simt-1-4",
+  "simt-1-4-hint",
+  "simt-1-2",
+  "simt-1-2-hint",
+]
+  #"conj-cores-wsrt-1-1-2-1-1-1000",
+  #"conj-cores-wsrt-1-1-2-0-2-1",
+  #"conj-cores-wsrt-1-1-2-0-2-500",
+  #"conj-cores-wsrt-1-1-2-0-2-1000",
+  #"simt-wsrt-1-2-4-0-1",
+  #"simt-wsrt-1-2-2-0-500",
+  #"simt-wsrt-1-2-4-0-1000",
+  #"simt-wsrt-1-2-4-1-1",
+  #"simt-wsrt-1-2-2-1-500",
+  #"simt-wsrt-1-2-4-1-1000",
+  #"simt-wsrt-1-2-2-2-1",
+  #"simt-wsrt-1-2-2-2-500",
+  #"simt-wsrt-1-2-2-2-1000",
+#]
 
 g_spmd_configs = [
   "mimd-spmd-1",
@@ -161,7 +182,7 @@ def plot( df, spmd, wsrt, isavings, pareto_frontier ):
     'plot_type'       : 'scatter',
     'figsize'         : (16.0, 28.0),
     'rotate_labels'   : False,
-    'markersize'      : 50,
+    'markersize'      : 60,
     'labels_fontsize' : 1,
     'legend_enabled'  : False,
   }
@@ -193,13 +214,15 @@ def plot( df, spmd, wsrt, isavings, pareto_frontier ):
         data.append( [[float('nan')]*2] )
         if pareto_frontier:
           stats = stats.append( [float('nan')]*2 )
+      #print "{} {} {} {}".format( app, config, data[-1][0][0], data[-1][0][1] )
 
     # add plot
     opts.data           = data
-    opts.labels         = [[],configs]
+    opts.labels         = [[],g_config_labels]
     opts.legend_ncol    = len(configs)
     opts.plot_idx       = index+1
-    opts.colors         = brg_plot.colors['unique20']
+    #opts.colors         = brg_plot.colors['unique20']
+    opts.colors         = brg_plot.colors['qualitative_paired']
     opts.pareto_points  = pareto_frontier
     opts.title          = app
 
@@ -210,7 +233,7 @@ def plot( df, spmd, wsrt, isavings, pareto_frontier ):
 
     if index % opts.num_cols == 0:
       opts.legend_enabled = True
-      opts.legend_ncol    = 5
+      opts.legend_ncol    = 3
       opts.legend_bbox    = (1.8,1.1,1.,0.1)
     else:
       opts.legend_enabled = False
