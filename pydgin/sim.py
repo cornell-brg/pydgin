@@ -23,6 +23,8 @@ from pydgin.misc  import FatalError
 from pydgin.jit   import JitDriver, hint, set_user_param, set_param, \
                          elidable
 
+from pydgin.utils import cvt_int2bytes
+
 from pydgin.misc_tpa import colors
 from pydgin.misc_tpa import MemCoalescer
 from pydgin.misc_tpa import LLFUAllocator
@@ -113,6 +115,9 @@ class Sim( object ):
 
     self.task_queue = []
 
+    # output file
+    self.outfile = ''
+
   #-----------------------------------------------------------------------
   # decode
   #-----------------------------------------------------------------------
@@ -190,7 +195,7 @@ class Sim( object ):
     --iword-match     Toggle instruction word vs. line matching (default word)
     --simt            Toggle for SIMT frontend (default False)
     --sched-limit     Limit for scheduling to guarantee forward progress
-    --l0-hybrid       Toggle on hybrid L0 buffer use (default False)
+    --outfile         Name for the output trace dump
   """
 
   #-----------------------------------------------------------------------
@@ -223,6 +228,9 @@ class Sim( object ):
 
     # use proc 0 to determine if should be running
     while self.states[0].running:
+
+      if self.states[0].stats_en:
+        tick_ctr += 1
 
       #-------------------------------------------------------------------
       # frontend
@@ -390,6 +398,15 @@ class Sim( object ):
             state.active = True
             state.pc += 4
 
+      # shreesha: dump trace
+      if self.outfile and self.states[0].stats_en:
+        self.out_fd.write( cvt_int2bytes( tick_ctr ) )
+        for i in range( self.ncores ):
+          if self.states[i].task_mode:    self.out_fd.write(chr(True))
+          else:                           self.out_fd.write(chr(False))
+          if self.states[i].runtime_mode: self.out_fd.write(chr(True))
+          else:                           self.out_fd.write(chr(False))
+
       # shreesha: linetrace
       if self.linetrace:
         if self.states[0].stats_en:
@@ -437,6 +454,9 @@ class Sim( object ):
             else:
               print pad( " |", 11, " ", False ),
           print
+
+    if self.outfile:
+      self.out_fd.close()
 
     print '\nDONE! Status =', self.states[0].status
     print 'Total ticks Simulated = %d\n' % tick_ctr
@@ -607,6 +627,7 @@ class Sim( object ):
                            "--color",
                            "--analysis",
                            "--runtime-md",
+                           "--outfile",
                            "--inst-ports",
                            "--data-ports",
                            "--mdu-ports",
@@ -619,7 +640,6 @@ class Sim( object ):
                            "--iword-match",
                            "--simt",
                            "--sched-limit",
-                           "--l0-hybrid"
                          ]
 
       # go through the args one by one and parse accordingly
@@ -717,6 +737,9 @@ class Sim( object ):
 
           elif prev_token == "--runtime-md":
             runtime_md = token
+
+          elif prev_token == "--outfile":
+            self.outfile = token
 
           elif prev_token == "--inst-ports":
             self.inst_ports = int(token)
@@ -821,6 +844,13 @@ class Sim( object ):
           runtime_md_file.close()
         except IOError:
           print "Could not open the runtime-md file %s " % runtime_md
+          return 1
+
+      if self.outfile:
+        try:
+          self.out_fd = open( self.outfile, "w" )
+        except:
+          print "Could not open dump file: %", self.outfile
           return 1
 
       #-----------------------------------------------------------------

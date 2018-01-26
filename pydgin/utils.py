@@ -100,3 +100,20 @@ except ImportError:
     raw_data  = struct.pack( "f", flt )
     conv_data = struct.unpack( "I", raw_data )
     return conv_data[0]
+
+#-----------------------------------------------------------------------
+# cvt_int2bytes
+#-----------------------------------------------------------------------
+# NOTE: I pad to max 32-bits which maybe a bit too much
+
+def cvt_int2bytes( integer ):
+  # convert to hex
+  raw_data = str('%x' % integer)
+  # pad for odd length
+  if len( raw_data ) != 8:
+    raw_data = "0" * ( 8 - len( raw_data ) ) + raw_data
+  # split into chunks of 2 to form a byte
+  raw_data = [raw_data[i:i+2] for i in range( 0, len( raw_data ), 2)]
+  # convert each chunk to a byte
+  raw_data = "".join( [chr( int( byt, 16 ) ) for byt in raw_data] )
+  return raw_data

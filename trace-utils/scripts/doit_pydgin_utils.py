@@ -184,7 +184,7 @@ def get_base_evaldict():
   evaldict['iword_match']     = True  # Match only word boundaries
   evaldict['simt']            = False # Indicate a SIMT frontend
   evaldict['sched_limit']     = 0     # Limit for switching arbitration
-  evaldict['l0_hybrid']       = False # Indicate a hybrid L0
+  evaldict['dumptrace']       = False # Dump trace
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -254,7 +254,7 @@ def gen_trace_per_app( evaldict ):
   barrier_limit   = evaldict["barrier_limit"]
   simt            = evaldict["simt"]
   sched_limit     = evaldict["sched_limit"]
-  l0_hybrid       = evaldict["l0_hybrid"]
+  dumptrace       = evaldict["dumptrace"]
 
   # default options for serial code
   if serial:
@@ -328,9 +328,6 @@ def gen_trace_per_app( evaldict ):
         if simt:
           extra_pydgin_opts += "--simt "
 
-        if l0_hybrid:
-          extra_pydgin_opts += "--l0-hybrid "
-
         if not icoalesce:
           extra_pydgin_opts += "--icoalesce "
 
@@ -348,6 +345,9 @@ def gen_trace_per_app( evaldict ):
         extra_pydgin_opts += "--data-ports %(data_ports)s " % { 'data_ports' : data_ports }
         extra_pydgin_opts += "--mdu-ports %(mdu_ports)s "   % { 'mdu_ports'  : mdu_ports }
         extra_pydgin_opts += "--fpu-ports %(fpu_ports)s "   % { 'fpu_ports'  : fpu_ports }
+
+        if dumptrace:
+          extra_pydgin_opts += "--outfile %s" % ( app_results_dir + "/trace.out" )
 
         pydgin_cmd = ' '.join([
           # pydgin binary
