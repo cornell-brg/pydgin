@@ -405,14 +405,20 @@ class Sim( object ):
         self.out_fd.write( cvt_int2bytes( tick_ctr ) )
         pc_counts = {}
         for i in range( self.ncores ):
-          pc_counts[self.states[i].pc] = pc_counts.get(self.states[i].pc, 0) + 1
+          if self.states[i].active and not (self.states[i].stall or self.states[i].istall or self.states[i].clear):
+            pc_counts[self.states[i].pc] = pc_counts.get(self.states[i].pc, 0) + 1
 
         for i in range( self.ncores ):
-          if self.states[i].task_mode:    self.out_fd.write(chr(True))
-          else:                           self.out_fd.write(chr(False))
-          if self.states[i].runtime_mode: self.out_fd.write(chr(True))
-          else:                           self.out_fd.write(chr(False))
-          self.out_fd.write( chr( pc_counts[self.states[i].pc] ) )
+          task_mode    = False
+          runtime_mode = False
+          pc_count     = 0
+          if self.states[i].active and not (self.states[i].stall or self.states[i].istall or self.states[i].clear):
+            if self.states[i].task_mode:    task_mode    = True
+            if self.states[i].runtime_mode: runtime_mode = True
+            pc_count = pc_counts[self.states[i].pc]
+          self.out_fd.write( chr( task_mode ) )
+          self.out_fd.write( chr( runtime_mode ) )
+          self.out_fd.write( chr( pc_count ) )
           self.out_fd.write( chr( self.states[i].start_task ) )
 
       # shreesha: linetrace
