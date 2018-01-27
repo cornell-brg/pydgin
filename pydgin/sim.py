@@ -224,7 +224,7 @@ class Sim( object ):
     jitdriver = self.jitdriver
 
     core_id = 0
-    tick_ctr = 0
+    tick_ctr = 1
 
     # use proc 0 to determine if should be running
     while self.states[0].running:
@@ -306,6 +306,8 @@ class Sim( object ):
       for core in xrange( self.ncores ):
 
         s = self.states[ core ]
+
+        s.start_task = False
 
         if self.linetrace:
           pc_list.append( s.pc )
@@ -401,11 +403,17 @@ class Sim( object ):
       # shreesha: dump trace
       if self.outfile and self.states[0].stats_en:
         self.out_fd.write( cvt_int2bytes( tick_ctr ) )
+        pc_counts = {}
+        for i in range( self.ncores ):
+          pc_counts[self.states[i].pc] = pc_counts.get(self.states[i].pc, 0) + 1
+
         for i in range( self.ncores ):
           if self.states[i].task_mode:    self.out_fd.write(chr(True))
           else:                           self.out_fd.write(chr(False))
           if self.states[i].runtime_mode: self.out_fd.write(chr(True))
           else:                           self.out_fd.write(chr(False))
+          self.out_fd.write( chr( pc_counts[self.states[i].pc] ) )
+          self.out_fd.write( chr( self.states[i].start_task ) )
 
       # shreesha: linetrace
       if self.linetrace:

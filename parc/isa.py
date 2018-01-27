@@ -678,6 +678,7 @@ def execute_jalr( s, inst ):
   # executing a task has been set, if this is true then we are executing in
   # task mode, record where we entered the task mode & reset runtime mode
   if s.runtime_mode and s.stat_inst_en[10] and s.wsrt_mode:
+    s.start_task = True
     s.runtime_mode = False
     s.task_mode = True
     if s.sim_ptr.task_lockstep:

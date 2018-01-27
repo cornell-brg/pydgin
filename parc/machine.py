@@ -89,6 +89,7 @@ class State( Machine ):
     self.curr_pc    = 0      # used for enforcing lockstep execution
     self.insn_str   = ' :'
     self.lockstep   = False
+    self.start_task = False
 
     # resource conflicts
     self.imem_stalls = 0
