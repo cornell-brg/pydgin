@@ -1,0 +1,276 @@
+#!/usr/bin/env python
+#=========================================================================
+# activity-plot [options]
+#=========================================================================
+#
+#  -h --help           Display this message
+#
+#  -i --input-file      Input encoded trace file
+#  -o --output-file     Output figure file
+#  -t --title           Plot title
+#  -s --slice-interval  Time slice to zoom in (e.g. 0:3000 or 1000:1500)
+#  -n --ncores          Number of cores
+#  --decoded-file       Save the decoded trace (for debug purposes)
+#  --detailed-file      Save the decoded and expanded trace (for debug purposes)
+#
+# Author : Shreesha Srinath
+# Date   : January 28th, 2018
+#
+
+import argparse
+import itertools
+import matplotlib
+import sys
+
+import numpy as np
+import pandas as pd
+
+import matplotlib.pyplot as plt
+
+#-------------------------------------------------------------------------
+# Command line processing
+#-------------------------------------------------------------------------
+
+class ArgumentParserWithCustomError(argparse.ArgumentParser):
+  def error( self, msg = "" ):
+    if ( msg ): print("\n ERROR: %s" % msg)
+    print("")
+    file = open( sys.argv[0] )
+    for ( lineno, line ) in enumerate( file ):
+      if ( line[0] != '#' ): sys.exit(msg != "")
+      if ( (lineno == 2) or (lineno >= 4) ): print( line[1:].rstrip("\n") )
+
+def parse_cmdline():
+  p = ArgumentParserWithCustomError( add_help=False )
+
+  # Standard command line arguments
+
+  p.add_argument( "-h", "--help",    action="store_true" )
+
+  # Additional commane line arguments for the simulator
+
+  p.add_argument( "-i", "--input-file",     action="store", default="")
+  p.add_argument( "-o", "--output-file",    action="store", default="")
+  p.add_argument( "-s", "--slice-interval", action="store", default="")
+  p.add_argument( "-t", "--title",          action="store", default="")
+  p.add_argument( "-n", "--ncores", type=int, action="store", default=4)
+  p.add_argument( "--decoded-file",  action="store", default="")
+  p.add_argument( "--detailed-file", action="store", default="")
+
+  opts = p.parse_args()
+  if opts.help: p.error()
+  return opts
+
+#-------------------------------------------------------------------------
+# Global variables
+#-------------------------------------------------------------------------
+
+g_activity_colors = itertools.cycle([
+  "#1a9850",  # task    : green
+  "#fee08b",  # runtime : yellow
+  "#9ecae1",  # sim1    : faint blue
+  "#6baed6",  # sim2    : blue
+  "#3182bd",  # sim3    : medium blue
+  "#08519c",  # sim4    : dark blue
+])
+
+g_fontsize        = 12
+g_labels_fontsize = 12
+
+#-------------------------------------------------------------------------
+# axvlines
+#-------------------------------------------------------------------------
+# Draw vertical lines on plot
+# ref: https://stackoverflow.com/questions/24988448/how-to-draw-vertical-lines-on-a-given-plot-in-matplotlib
+#
+# xs = scalar, list or 1D numpy array of horizontal offsets
+# ys = tuple specifying the length of line segments
+
+def axvlines( axes, xs, ys, **plot_kwargs ):
+  xs       = np.array( (xs, ) if np.isscalar( xs ) else xs, copy=False )
+  x_points = np.repeat( xs[:, None], repeats=3, axis=1 ).flatten()
+  y_points = np.repeat( np.array( ys + (np.nan, ) )[None, :], repeats=len( xs ), axis=0 ).flatten()
+  axes.plot( x_points, y_points, scaley = False, **plot_kwargs )
+
+#-------------------------------------------------------------------------
+# axhlines
+#-------------------------------------------------------------------------
+# Draw vertical lines on plot
+# ref: https://stackoverflow.com/questions/24988448/how-to-draw-vertical-lines-on-a-given-plot-in-matplotlib
+#
+# ys = scalar, list or 1D numpy array of vertical offsets
+# xs = tuple specifying the length of line segments
+
+def axhlines( axes, xs, ys, **plot_kwargs ):
+  ys       = np.array( (ys, ) if np.isscalar( ys ) else ys, copy=False )
+  y_points = np.repeat( ys[:, None], repeats=3, axis=1 ).flatten()
+  x_points = np.repeat( np.array( xs + (np.nan, ) )[None, :], repeats=len( ys ), axis=0 ).flatten()
+  axes.plot( x_points, y_points, scaley = False, **plot_kwargs )
+
+#-------------------------------------------------------------------------
+# decode_trace
+#-------------------------------------------------------------------------
+
+def decode_trace( infile_str, ncores ):
+  dt_tuples = []
+  dt_tuples.append( ('tick_ctr', '>i4') )
+  for i in range(ncores):
+    dt_tuples.append( ('c%d_task'%i,    'b') )
+    dt_tuples.append( ('c%d_runtime'%i, 'b') )
+    dt_tuples.append( ('c%d_sim'%i,    'i1') )
+    dt_tuples.append( ('c%d_start'%i,  'i1') )
+  dt   = np.dtype( dt_tuples )
+  data = np.fromfile( infile_str, dtype=dt )
+  df   = pd.DataFrame( data )
+  return df
+
+#-------------------------------------------------------------------------
+# format_frame
+#-------------------------------------------------------------------------
+
+def format_frame( df, ncores ):
+  # format the dataframe; collect task start times
+  # NOTE: maybe, there is a better optimized way to do this but this works for now...
+  index = 0
+  starts = []
+  for i in range( ncores ):
+    column = 'c%d'%i
+    # format task and runtime values
+    df.loc[df[column+'_task']    == 1, column+'_task']    = index + 0.1
+    df.loc[df[column+'_task']    == 0, column+'_task']    = float( 'nan' )
+    df.loc[df[column+'_runtime'] == 1, column+'_runtime'] = index + 0.2
+    df.loc[df[column+'_runtime'] == 0, column+'_runtime'] = float( 'nan' )
+    # create new columns for similarity
+    df[column+'_sim1']  = np.where( df[column+'_sim'] == 1, index + 0.3, float( 'nan' ) )
+    df[column+'_sim2']  = np.where( df[column+'_sim'] == 2, index + 0.4, float( 'nan' ) )
+    df[column+'_sim3']  = np.where( df[column+'_sim'] == 3, index + 0.5, float( 'nan' ) )
+    df[column+'_sim4']  = np.where( df[column+'_sim'] == 4, index + 0.6, float( 'nan' ) )
+    # collect task start times
+    starts.append( df.loc[df[column+'_start'] == 1, 'tick_ctr'].tolist() )
+    index = index + 1
+  return starts
+
+#-------------------------------------------------------------------------
+# collect_data
+#-------------------------------------------------------------------------
+
+def collect_data( df, ncores, slicing, time_slice ):
+  data = []
+  for i in range( ncores ):
+    column = 'c%d'%i
+    if not slicing:
+      data.append( df.loc[:, column+'_task'].tolist()    )
+      data.append( df.loc[:, column+'_runtime'].tolist() )
+      data.append( df.loc[:, column+'_sim1'].tolist()    )
+      data.append( df.loc[:, column+'_sim2'].tolist()    )
+      data.append( df.loc[:, column+'_sim3'].tolist()    )
+      data.append( df.loc[:, column+'_sim4'].tolist()    )
+    else:
+      data.append( df.loc[time_slice, column+'_task'].tolist()    )
+      data.append( df.loc[time_slice, column+'_runtime'].tolist() )
+      data.append( df.loc[time_slice, column+'_sim1'].tolist()    )
+      data.append( df.loc[time_slice, column+'_sim2'].tolist()    )
+      data.append( df.loc[time_slice, column+'_sim3'].tolist()    )
+      data.append( df.loc[time_slice, column+'_sim4'].tolist()    )
+
+  time = []
+  if not slicing:
+    time = df.iloc[:,0].tolist()
+  else:
+    time = df.iloc[time_slice,0].tolist()
+
+  return data, time
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+  opts = parse_cmdline()
+
+  # options parsing
+  if not opts.input_file:
+    print "Specify an input file!"
+    exit( 1 )
+
+  if not opts.output_file:
+    print "Specify an output file!"
+    exit( 1 )
+
+  time_slice = None
+  slicing    = False
+  if opts.slice_interval:
+    slice_list = opts.slice_interval.split( ":" )
+    if len (slice_list ) != 2:
+      print "Time slice string e.g. 0:1000 "
+      exit( 1 )
+    slicing    = True
+    time_slice = range( int( slice_list[0] ), int( slice_list[1] ) )
+
+  # get the decoded dataframe
+  df = decode_trace( opts.input_file, opts.ncores )
+
+  # save decoded file
+  if opts.decoded_file:
+    df.to_csv( opts.decoded_file, index=False )
+
+  # format the frame
+  task_starts = format_frame( df, opts.ncores )
+
+  # save detailed file
+  if opts.detailed_file:
+    df.to_csv( opts.detailed_file, index=False )
+
+  # collect activity
+  activity_data, time = collect_data( df, opts.ncores, slicing, time_slice )
+
+  #-----------------------------------------------------------------------
+  # create plot
+  #-----------------------------------------------------------------------
+
+  # Set font
+  plt.rcParams['font.size'] = g_fontsize
+  plt.rcParams['font.family'] = 'sans-serif'
+  plt.rcParams['font.sans-serif'] = ['Arial']
+
+  # size of figure in inches (width,height)
+  fig  = plt.figure()
+  axes = fig.add_subplot( 1, 1, 1 )
+
+  # plot activity
+  # NOTE: Use scatter plots only when zooming in esle it's extremely slow
+  for activity in activity_data:
+    if not slicing:
+      axes.plot( time, activity, lw=0.1, marker="|", color = next( g_activity_colors ), rasterized=True )
+    else:
+      axes.scatter( time, activity, marker="|", color=next( g_activity_colors ) )
+
+  # plot task start times
+  if not slicing:
+    start_times = task_starts
+  else:
+    start_times = []
+    for start in task_starts:
+      start_times.append( [i for i in start if i <= time_slice[-1]] )
+
+  for i in range( opts.ncores ):
+    axvlines( axes, start_times[i], (i, i+1), color='#000000', lw=0.1 )
+
+  # set xlimits
+  if slicing:
+    axes.set_xlim( [time_slice[0]-2, time_slice[-1]+2] )
+
+  # ytick labels
+  labels = ['C%d' % i for i in range( opts.ncores ) ]
+  axes.set_yticks( [i + 0.5 for i in range( opts.ncores )] )
+  axes.set_yticklabels(
+    labels,
+    fontsize=g_labels_fontsize
+  )
+  axes.tick_params(axis='y', which='both', length=0 )
+
+  # set title
+  axes.set_title( opts.title, fontsize = g_fontsize )
+
+  # save the plot
+  plt.savefig( opts.output_file )
