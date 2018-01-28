@@ -347,8 +347,12 @@ def execute_mtc0( s, inst ):
     s.stats_en = s.rf[inst.rt]
     if s.stats_en == 1:
       s.task_mode = True
+      for core in range( 1, s.sim_ptr.ncores ):
+        s.sim_ptr.states[core].stats_en = 1
     elif s.stats_en == 0:
       s.task_mode = False
+      for core in range( 1, s.sim_ptr.ncores ):
+        s.sim_ptr.states[core].stats_en = 0
   elif inst.rd == reg_map['c0_tidmask']:
     s.sim_ptr.active_cores = s.rf[inst.rt]
     print "Active cores", s.rf[inst.rt]

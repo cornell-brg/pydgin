@@ -89,60 +89,6 @@ class ReconvergenceManager():
     print "L0 mask is %x" % s.l0_mask
 
   #-----------------------------------------------------------------------
-  # collect_stats
-  #-----------------------------------------------------------------------
-  # NOTE: Look across all cores that will execute, find instructions that
-  # are unique and count total
-
-  def collect_stats( s, sim ):
-
-    s.unique_pcs = []
-    for core in xrange( sim.ncores ):
-      if sim.states[core].active and not sim.states[core].stall and sim.states[core].pc not in s.unique_pcs:
-        s.unique_pcs.append( sim.states[core].pc )
-        # collect total instructions
-        if sim.states[core].spmd_mode:
-          sim.unique_spmd    += 1
-          sim.unique_insts   += 1
-        elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
-          sim.unique_task    += 1
-          sim.unique_insts   += 1
-        elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
-          sim.unique_runtime += 1
-          sim.unique_insts   += 1
-
-      if sim.states[core].active and not sim.states[core].stall:
-        # collect total instructions
-        if sim.states[core].spmd_mode:
-          sim.total_spmd     += 1
-          sim.total_parallel += 1
-        elif sim.states[core].wsrt_mode and sim.states[core].task_mode:
-          sim.total_task     += 1
-          sim.total_wsrt     += 1
-          sim.total_parallel += 1
-        elif sim.states[core].wsrt_mode and sim.states[core].runtime_mode:
-          sim.total_runtime  += 1
-          sim.total_wsrt     += 1
-          sim.total_parallel += 1
-
-    #if sim.states[0].debug.enabled( "tpa" ):
-    #  print "frontend: [",
-    #  for core in xrange( sim.ncores ):
-    #    if sim.states[core].istall:
-    #      print "%d:i," % core,
-    #    elif sim.states[core].stall:
-    #      print "%d:s," % core,
-    #    elif sim.states[core].stop:
-    #      print "%d:b," % core,
-    #    elif sim.states[core].clear:
-    #      print "%d:w," % core,
-    #    elif sim.states[core].active:
-    #      print "%d:a," % core,
-    #    else:
-    #      print "%d:n," % core,
-    #  print "]"
-
-  #-----------------------------------------------------------------------
   # update_single_pc
   #-----------------------------------------------------------------------
   # updates a single pc
@@ -338,7 +284,6 @@ class ReconvergenceManager():
     # all cores all either stalling or have reached a barrier or have
     # instructions in L0 buffer
     if len( s.scheduled_list ) == sim.ncores:
-      s.collect_stats( sim )
       return
 
     # select pcs based on available bandwidth
@@ -373,9 +318,6 @@ class ReconvergenceManager():
         all_done = s.update_pcs( sim, line_addr )
         if all_done:
           break
-
-    # collect stats before exit
-    s.collect_stats( sim )
 
 #-------------------------------------------------------------------------
 # LLFUAllocator

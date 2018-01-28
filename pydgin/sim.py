@@ -294,8 +294,9 @@ class Sim( object ):
       #-------------------------------------------------------------------
 
       #-------------------------------------------------------------------
-      # frontend
+      # frontend resources
       #-------------------------------------------------------------------
+
       self.reconvergence_manager.xtick( self )
 
       # sanity checks
@@ -309,6 +310,11 @@ class Sim( object ):
         print "Something wrong no cores are active! tick: %d" % self.states[0].num_insts
         raise AssertionError
 
+      #-------------------------------------------------------------------
+      # frontend
+      #-------------------------------------------------------------------
+
+      unique_pcs = []
       for core_id in xrange( self.ncores ):
         s = self.states[ core_id ]
 
@@ -335,6 +341,37 @@ class Sim( object ):
             s.inst      = inst
             s.exec_fun  = exec_fun
 
+            #-------------------------------------------------------------
+            # collect stats
+            #-------------------------------------------------------------
+            # NOTE: Look across all cores that will be fetched, find
+            # instructions that are unique and count total.
+            if s.pc not in unique_pcs:
+              unique_pcs.append( s.pc )
+              # collect total instructions
+              if s.spmd_mode:
+                self.unique_spmd    += 1
+                self.unique_insts   += 1
+              elif s.wsrt_mode and s.task_mode:
+                self.unique_task    += 1
+                self.unique_insts   += 1
+              elif s.wsrt_mode and s.runtime_mode:
+                self.unique_runtime += 1
+                self.unique_insts   += 1
+
+            # collect total instructions
+            if s.spmd_mode:
+              self.total_spmd     += 1
+              self.total_parallel += 1
+            elif s.wsrt_mode and s.task_mode:
+              self.total_task     += 1
+              self.total_wsrt     += 1
+              self.total_parallel += 1
+            elif s.wsrt_mode and s.runtime_mode:
+              self.total_runtime  += 1
+              self.total_wsrt     += 1
+              self.total_parallel += 1
+
           except FatalError as error:
             print "Exception in decode (pc: 0x%s), aborting!" % pad_hex( pc )
             print "Exception message: %s" % error.msg
@@ -352,12 +389,41 @@ class Sim( object ):
           print
 
       #-------------------------------------------------------------------
-      # backend
+      # backend resources
       #-------------------------------------------------------------------
 
       self.dmem_coalescer.xtick( self )
       self.mdu_allocator.xtick ( self )
       self.fpu_allocator.xtick ( self )
+
+      #-----------------------------------------------------------------------
+      # dump trace
+      #-----------------------------------------------------------------------
+      # shreesha: dump trace shows actual execution trace
+
+      if self.outfile and self.states[0].stats_en:
+        self.out_fd.write( cvt_int2bytes( self.tick_ctr ) )
+        pc_counts = {}
+        for i in range( self.ncores ):
+          if self.states[i].active and not (self.states[i].stall or self.states[i].istall or self.states[i].clear):
+            pc_counts[self.states[i].pc] = pc_counts.get(self.states[i].pc, 0) + 1
+
+        for i in range( self.ncores ):
+          task_mode    = False
+          runtime_mode = False
+          pc_count     = 0
+          if self.states[i].active and not (self.states[i].stall or self.states[i].istall or self.states[i].clear):
+            if self.states[i].task_mode:    task_mode    = True
+            if self.states[i].runtime_mode: runtime_mode = True
+            pc_count = pc_counts[self.states[i].pc]
+          self.out_fd.write( chr( task_mode ) )
+          self.out_fd.write( chr( runtime_mode ) )
+          self.out_fd.write( chr( pc_count ) )
+          self.out_fd.write( chr( self.states[i].start_task ) )
+
+      #-------------------------------------------------------------------
+      # backend
+      #-------------------------------------------------------------------
 
       # shreesha: linetrace
       # NOTE: collect the linetrace before commit as pc get's updated else
@@ -459,27 +525,6 @@ class Sim( object ):
             state.stop = False
             state.active = True
             state.pc += 4
-
-      # shreesha: dump trace
-      if self.outfile and self.states[0].stats_en:
-        self.out_fd.write( cvt_int2bytes( self.tick_ctr ) )
-        pc_counts = {}
-        for i in range( self.ncores ):
-          if self.states[i].active and not (self.states[i].stall or self.states[i].istall or self.states[i].clear):
-            pc_counts[self.states[i].pc] = pc_counts.get(self.states[i].pc, 0) + 1
-
-        for i in range( self.ncores ):
-          task_mode    = False
-          runtime_mode = False
-          pc_count     = 0
-          if self.states[i].active and not (self.states[i].stall or self.states[i].istall or self.states[i].clear):
-            if self.states[i].task_mode:    task_mode    = True
-            if self.states[i].runtime_mode: runtime_mode = True
-            pc_count = pc_counts[self.states[i].pc]
-          self.out_fd.write( chr( task_mode ) )
-          self.out_fd.write( chr( runtime_mode ) )
-          self.out_fd.write( chr( pc_count ) )
-          self.out_fd.write( chr( self.states[i].start_task ) )
 
       # shreesha: linetrace
       if self.linetrace:
