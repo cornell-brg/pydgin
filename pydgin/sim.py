@@ -229,6 +229,12 @@ class Sim( object ):
     # use proc 0 to determine if should be running
     while self.states[0].running:
 
+      # check if we have reached the end of the maximum instructions and
+      # exit if necessary
+      if max_insts != 0 and self.states[0].num_insts >= max_insts:
+        print "Reached the max_insts (%d), exiting." % max_insts
+        break
+
       if self.states[0].stats_en:
         tick_ctr += 1
 
@@ -338,9 +344,9 @@ class Sim( object ):
 
           # check if we have reached the end of the maximum instructions and
           # exit if necessary
-          if max_insts != 0 and s.num_insts >= max_insts:
-            print "Reached the max_insts (%d), exiting." % max_insts
-            break
+          #if max_insts != 0 and s.num_insts >= max_insts:
+          #  print "Reached the max_insts (%d), exiting." % max_insts
+          #  break
 
       # collect all stall stats
       for tc in self.states:
