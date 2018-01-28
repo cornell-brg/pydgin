@@ -49,7 +49,7 @@ class Sim( object ):
 
     if jit_enabled:
       self.jitdriver = JitDriver( greens =['pc', 'core_id'],
-                                  reds   = ['tick_ctr', 'max_insts', 'state', 'sim',],
+                                  reds   = ['max_insts', 'state', 'sim',],
                                   #virtualizables  =['state',],
                                   get_printable_location=self.get_location,
                                 )
@@ -59,6 +59,8 @@ class Sim( object ):
       self.default_trace_limit = 400000
 
     self.max_insts = 0
+    self.max_ticks = 0
+    self.tick_ctr = 0
 
     self.ncores = 1
     self.core_switch_ival = 1
@@ -166,6 +168,7 @@ class Sim( object ):
          bootstrap          initial stack and register state
 
     --max-insts <i> Run until the maximum number of instructions
+    --max-ticks <i> Run until the maximum number of ticks in stats region
     --ncores <i>    Number of cores to simulate
     --core-switch-ival <i>
                     Switch cores at this interval
@@ -221,10 +224,11 @@ class Sim( object ):
     #s = self.state
 
     max_insts = self.max_insts
+    max_ticks = self.max_ticks
     jitdriver = self.jitdriver
 
     core_id = 0
-    tick_ctr = 1
+    tick_ctr = self.tick_ctr
 
     # use proc 0 to determine if should be running
     while self.states[0].running:
@@ -235,13 +239,63 @@ class Sim( object ):
         print "Reached the max_insts (%d), exiting." % max_insts
         break
 
+      # check if we have reached the end of the maximum ticks and exit if
+      # necessary
+      if max_ticks != 0 and self.tick_ctr >= max_ticks:
+        print "Reached the max_ticks (%d), exiting." % max_ticks
+        break
+
       if self.states[0].stats_en:
-        tick_ctr += 1
+        self.tick_ctr += 1
+
+      #-------------------------------------------------------------------
+      # IMPORTANT: 01/27/2018
+      #
+      # The simulation for a tick as shown below:
+      #
+      #     recovergence_manager.xtick()
+      #
+      #     for all cores:
+      #       frontend
+      #
+      #     mem_coalescer.xtick()
+      #     llfu_allocators.xtick()
+      #
+      #     for all cores:
+      #       backend
+      #
+      #  - reconvergence manager: sets a thread to be active based on based
+      #  on thread-selection policy under constrained instruction port
+      #  bandwidth and hits in L0 buffers. In addition, a core that is
+      #  waiting for another peer executing in lockstep mode (indicated by
+      #  clear flag) is considered to be inactive as otherwise a core
+      #  advances. If the core was not allocated any fetch bandwidth then
+      #  it is deactivated unless it was stalling due to backend in which
+      #  case it doesn't need any frontend functionality
+      #
+      #  - frontend loop: fetches an instruction for each active core that
+      #  is not stalling decodes it and sets up requests to backend
+      #  resources by calling the pre-execute function.
+      #
+      #  - mem_coalescer and llfu allocators: based on the requests as set
+      #  up by the frontend and given resources, these objects figure out
+      #  which cores can advance and which can't indicated by the stall
+      #  flags.
+      #
+      # - backend loop: if a core is active and is not stalling the backend
+      # is executed and any architectural state based on the instruction
+      # type is updated. NOTE: If a core is waiting for a peer due to
+      # lockstep execution it is deactivated and hence, the required
+      # behavior of lockstep execution is realized.
+      #
+      # Given, the above behavior the redundancy stats must hence be
+      # collected only if a core is active and is not stalling. The stats
+      # are currently collected in the recovergence manager.
+      #-------------------------------------------------------------------
 
       #-------------------------------------------------------------------
       # frontend
       #-------------------------------------------------------------------
-
       self.reconvergence_manager.xtick( self )
 
       # sanity checks
@@ -408,7 +462,7 @@ class Sim( object ):
 
       # shreesha: dump trace
       if self.outfile and self.states[0].stats_en:
-        self.out_fd.write( cvt_int2bytes( tick_ctr ) )
+        self.out_fd.write( cvt_int2bytes( self.tick_ctr ) )
         pc_counts = {}
         for i in range( self.ncores ):
           if self.states[i].active and not (self.states[i].stall or self.states[i].istall or self.states[i].clear):
@@ -479,7 +533,7 @@ class Sim( object ):
       self.out_fd.close()
 
     print '\nDONE! Status =', self.states[0].status
-    print 'Total ticks Simulated = %d\n' % tick_ctr
+    print 'Total ticks Simulated = %d\n' % self.tick_ctr
 
     print 'Serial steps in stats region = %d' % self.serial_steps
     print 'Total steps in stats region = %d' % self.total_steps
@@ -636,6 +690,7 @@ class Sim( object ):
                            "-e", "--env",
                            "-d", "--debug",
                            "--max-insts",
+                           "--max-ticks",
                            "--jit",
                            "--ncores",
                            "--core-switch-ival",
@@ -728,6 +783,9 @@ class Sim( object ):
 
           elif prev_token == "--max-insts":
             self.max_insts = int( token )
+
+          elif prev_token == "--max-ticks":
+            self.max_ticks = int( token )
 
           elif prev_token == "--jit":
             # pass the jit flags to rpython.rlib.jit

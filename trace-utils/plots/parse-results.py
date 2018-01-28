@@ -28,7 +28,7 @@ def execute(cmd):
 # global variables
 #-------------------------------------------------------------------------
 
-g_prefix_path = "../new-results/"
+g_prefix_path = "../"
 
 g_configs_dict = {}
 
@@ -67,6 +67,8 @@ def summarize():
 
     for config_dir,config in g_configs_dict.iteritems():
       resultsdir_path = g_prefix_path + config_dir
+      if not os.path.isdir(resultsdir_path):
+        continue
       subfolders      = os.listdir( resultsdir_path )
       for subfolder in subfolders:
         try:

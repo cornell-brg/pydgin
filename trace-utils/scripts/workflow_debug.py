@@ -17,8 +17,8 @@ def task_pydgin_sims_debug():
 
   # bmark params
   evaldict['app_group']       = ["small","mtpull"]
-  #evaldict['app_list']        = ['ubmark-vvadd']
-  evaldict['app_list']        = ['bilateral']
+  evaldict['app_list']        = ['ubmark-vvadd']
+  #evaldict['app_list']        = ['bilateral']
   evaldict['app_dict']        = app_dict
 
   # uarch params
@@ -36,6 +36,7 @@ def task_pydgin_sims_debug():
   evaldict['iword_match']     = True
   evaldict['lockstep']        = 2
   #evaldict['extra_app_opts']  = ' --dataset tiny '
+  evaldict['dumptrace']       = True
 
   # misc params
   evaldict['cluster']         = True

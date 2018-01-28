@@ -98,7 +98,7 @@ class ReconvergenceManager():
 
     s.unique_pcs = []
     for core in xrange( sim.ncores ):
-      if sim.states[core].active and sim.states[core].pc not in s.unique_pcs:
+      if sim.states[core].active and not sim.states[core].stall and sim.states[core].pc not in s.unique_pcs:
         s.unique_pcs.append( sim.states[core].pc )
         # collect total instructions
         if sim.states[core].spmd_mode:
@@ -111,7 +111,7 @@ class ReconvergenceManager():
           sim.unique_runtime += 1
           sim.unique_insts   += 1
 
-      if sim.states[core].active:
+      if sim.states[core].active and not sim.states[core].stall:
         # collect total instructions
         if sim.states[core].spmd_mode:
           sim.total_spmd     += 1
