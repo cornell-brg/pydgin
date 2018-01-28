@@ -17,8 +17,8 @@ def task_pydgin_sims_debug():
 
   # bmark params
   evaldict['app_group']       = ["small","mtpull"]
-  evaldict['app_list']        = ['ubmark-vvadd']
-  #evaldict['app_list']        = ['bilateral']
+  #evaldict['app_list']        = ['ubmark-vvadd']
+  evaldict['app_list']        = ['bilateral']
   evaldict['app_dict']        = app_dict
 
   # uarch params
@@ -34,8 +34,8 @@ def task_pydgin_sims_debug():
   evaldict['analysis']        = 0
   evaldict['icoalesce']       = True
   evaldict['iword_match']     = True
-  evaldict['lockstep']        = 2
-  #evaldict['extra_app_opts']  = ' --dataset tiny '
+  evaldict['lockstep']        = 1
+  evaldict['extra_app_opts']  = ' --dataset tiny '
   evaldict['dumptrace']       = True
 
   # misc params
@@ -43,7 +43,7 @@ def task_pydgin_sims_debug():
   evaldict['runtime']         = True
 
   # debug options
-  #evaldict['linetrace']       = True
+  evaldict['linetrace']       = False
   evaldict['color']           = True
 
   yield gen_trace_per_app( evaldict )

@@ -32,37 +32,35 @@ from common import *
 g_wsrt_configs = [
   "mimd-wsrt-1-1",
   "simt-wsrt-1-1-4-1-1",
-  #"conj-cores-wsrt-1L0-1F-2R-0A-0L-0S-1",
-  #"conj-cores-wsrt-1L0-1F-2R-0A-0L-1S-1",
-  #"conj-cores-wsrt-1L0-1F-2R-0A-1L-1S-1",
-  #"conj-cores-wsrt-1L0-1F-2R-0A-1L-1S-1000",
-  #"conj-cores-wsrt-1L0-1F-2R-0A-2L-1S-1",
-  #"conj-cores-wsrt-1L0-1F-2R-0A-2L-1S-1000",
-  #"conj-cores-wsrt-1L0-1F-2R-0A-1L-1S-1000",
-  #"conj-cores-wsrt-1L0-1F-2R-1A-0L-0S-1",
-  #"conj-cores-wsrt-1L0-1F-2R-1A-0L-1S-1",
+  "conj-cores-wsrt-1L0-1F-2R-0A-0L-0S-1",
+  "conj-cores-wsrt-1L0-1F-2R-0A-0L-1S-1",
+  "conj-cores-wsrt-1L0-1F-2R-0A-0L-1S-1000",
+  "conj-cores-wsrt-1L0-1F-2R-0A-1L-1S-1",
+  "conj-cores-wsrt-1L0-1F-2R-0A-1L-1S-1000",
+  "conj-cores-wsrt-1L0-1F-2R-1A-0L-0S-1",
+  "conj-cores-wsrt-1L0-1F-2R-1A-0L-1S-1",
+  "conj-cores-wsrt-1L0-1F-2R-1A-0L-1S-1000",
   "conj-cores-wsrt-1L0-1F-2R-1A-1L-1S-1",
   "conj-cores-wsrt-1L0-1F-2R-1A-1L-1S-1000",
-  "conj-cores-wsrt-1L0-1F-2R-1A-2L-1S-1",
-  "conj-cores-wsrt-1L0-1F-2R-1A-2L-1S-1000",
-  #"conj-cores-wsrt-1L0-1F-2R-1A-1L-1S-1000",
 ]
 
 g_config_labels = [
   "mimd",
   "simt-pc-1-4",
-  #"cc-1-2-rr-base",
-  #"cc-1-2-rr",
-  #"cc-1-2-rr-lock",
-  #"cc-1-2-rr-lhint",
+  "cc-1-2-rr-base",
+  "cc-1-2-rr",
+  "cc-1-2-rr-hint",
+  "cc-1-2-rr-lock",
+  "cc-1-2-rr-lhint",
   #"cc-1-2-rr-adap",
   #"cc-1-2-rr-ahint",
-  #"cc-1-2-pc-base",
-  #"cc-1-2-pc",
+  "cc-1-2-pc-base",
+  "cc-1-2-pc",
+  "cc-1-2-pc-hint",
   "cc-1-2-pc-lock",
   "cc-1-2-pc-lhint",
-  "cc-1-2-pc-adap",
-  "cc-1-2-pc-ahint",
+  #"cc-1-2-pc-adap",
+  #"cc-1-2-pc-ahint",
 ]
 
 g_spmd_configs = [
@@ -213,7 +211,7 @@ def plot( df, spmd, wsrt, isavings, pareto_frontier ):
 
     if index % opts.num_cols == 0:
       opts.legend_enabled = True
-      opts.legend_ncol    = 3
+      opts.legend_ncol    = 6
       opts.legend_bbox    = (1.8,1.1,1.,0.1)
     else:
       opts.legend_enabled = False

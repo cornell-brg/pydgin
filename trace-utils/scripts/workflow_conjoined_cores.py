@@ -20,8 +20,8 @@ def task_conjoined_cores_wsrt():
   frontend     = 1
 
   for smart_sharing in range( 2 ):
-    for resources in [2,4]:
-      for lockstep in range( 3 ):
+    for resources in [2]:
+      for lockstep in range( 2 ):
         for analysis in [0,1]:
           for barrier_limit in [1,1000]:
 

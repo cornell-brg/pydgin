@@ -11,7 +11,11 @@ from doit_utils import *
 import sys
 sys.path.extend(['../tools'])
 
+sys.path.extend(['../plots'])
+from common import app_short_name_dict
+
 import os
+import re
 
 from trace_analysis import *
 
@@ -410,3 +414,139 @@ def gen_trace_per_app( evaldict ):
     }
 
   yield cleaner_taskdict
+
+#----------------------------------------------------------------------------
+# get_base_plotdict()
+#----------------------------------------------------------------------------
+# NOTE: Used only for the activity plots.
+
+def get_base_plotdict():
+
+  # default task options
+  doc         = 'basic configuration'
+  basename    = 'unnamed'
+  resultsdir  = 'results'
+  plotdict    = {}
+
+  plotdict['app_group']  = []    # Which group of apps to sim (e.g., ['scalar'])
+  plotdict['app_list']   = []    # List of apps to sim
+  plotdict['app_dict']   = {}    # Dict with app groups/opts to run
+  plotdict['ncores']     = 4     # Number of cores to simulate
+  plotdict['time_slice'] = ""    # String that specifies a time-slice e.g. 0:1000
+  plotdict['decoded']    = False # save the decoded file
+
+  # These params should definitely be overwritten in the workflow
+  plotdict['basename']   = basename     # Name of the task
+  plotdict['resultsdir'] = resultsdir   # Name of the results directory
+  plotdict['doc']        = doc          # Docstring that is printed in 'doit list'
+
+  return plotdict
+
+#----------------------------------------------------------------------------
+# Generating task dicts for plotting
+#----------------------------------------------------------------------------
+# Given a app dictionary, yield simulation tasks for doit to find.
+#
+# Loop and yield a task for:
+#
+# - for each app in app_dict.keys()
+#   - for each app group in app_dict[app]
+#     - for each set of app options
+#
+# IMPORTANT: THIS IS SUPER HACKY FOR NOW. IDEALLY THERE SHOULD BE A WAY TO
+# SPECIFY THE TASK DEPENDENCY BETWEEN THE SIMULATIONS (TRACE FILE) AND
+# RUNNING THE PLOT SCRIPTS ON IT. FOR NOW I AM USING THIS AS I AM LAZY.
+
+def gen_plot_per_app( plotdict ):
+
+  # pydgin simulation configuration params from evaldict
+  basename   = plotdict['basename']
+  resultsdir = plotdict['resultsdir']
+  doc        = plotdict['doc']
+
+  # Yield a docstring subtask
+  docstring_taskdict = { \
+      'basename' : basename,
+      'name'     : None,
+      'doc'      : doc,
+    }
+
+  yield docstring_taskdict
+
+  # Create path to resultsdir inside evaldir
+  resultsdir_path = evaldir + '/' + resultsdir
+
+  #....................................................................
+  # Generate subtasks for each app
+  #....................................................................
+  # Loop and yield a task for:
+  #
+  # - for each app in app_dict.keys()
+  #   - for each app group in app_dict[app]
+  #     - for each set of app options
+
+  ncores     = plotdict["ncores"]
+  app_dict   = plotdict["app_dict"]
+  app_list   = plotdict["app_list"]
+  app_group  = plotdict["app_group"]
+  decoded    = plotdict["decoded"]
+  time_slice = plotdict["time_slice"]
+
+  plot_app   = os.path.join( curr_dir, "../plots/activity-plot" )
+
+  for app in app_dict.keys():
+    # Only sim the apps in app_list:
+    if app not in app_list:
+      continue
+
+    # name of the app
+    app_name = re.sub("-parc", '', app)
+    app_name = re.sub("-mtpull", '', app_name)
+    app_name = re.sub("-mt", '', app_name)
+    app_name = app_short_name_dict[app]
+
+    # For each app group in app_dict[app]
+    for group, app_opts_list in app_dict[app].iteritems():
+      # Only sim the apps in app_group:
+      if group not in app_group:
+        continue
+
+      # For each set of app options
+      for i, app_opts in enumerate(app_opts_list):
+        # Label specially to accomodate more than one set of app_opts
+        label       = '-' + str(i) if i > 0 else ''
+        labeled_app = app + '-' + group + label
+
+
+        # paths
+        app_results_dir = resultsdir_path + '/' + labeled_app
+        plot_outfile    = app_results_dir + '/' + app_name + '.pdf'
+
+        targets = [ plot_outfile ]
+
+        plot_opts = " "
+        plot_opts += "--ncores %s " % ncores
+        plot_opts += "--input-file %s" % app_results_dir + "/trace.out "
+        plot_opts += "--output-file %s " % plot_outfile
+        plot_opts += "--title %s " % app_name
+        if time_slice:
+          plot_opts += "--slice-interval %s" % time_slice
+        if decoded:
+          plot_opts += "--decoded %s " % app_results_dir + "/decoded.csv"
+
+        plot_cmd = ''.join([ plot_app, plot_opts ])
+
+        #.......................
+        # Build Task Dictionary
+        #.......................
+
+        taskdict = { \
+            'basename' : basename,
+            'name'     : labeled_app+"-plot",
+            'actions'  : [plot_cmd],
+            'targets'  : targets,
+            'uptodate' : [ False ],
+            'clean'    : [ 'rm -rf {}'.format(plot_outfile) ]
+          }
+
+        yield taskdict
