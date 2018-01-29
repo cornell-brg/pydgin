@@ -82,3 +82,25 @@ from workflow_conjoined_cores import *
 #----------------------------------------------------------------------------
 
 from workflow_simt import *
+
+#----------------------------------------------------------------------------
+# UBMARK
+#----------------------------------------------------------------------------
+
+from workflow_ubmark import *
+
+def task_ubmark_pydgin_serial_sim():
+
+  evaldict = get_base_evaldict()
+
+  evaldict['basename']    = "sim-ubmark-serial"
+  evaldict['resultsdir']  = "ubmark/results-serial"
+  evaldict['doc']         = os.path.basename(__file__).rstrip('c')
+
+  evaldict['app_group']   = ["scalar"]
+  evaldict['app_list']    = ["ubmark-tpa-vvmult"]
+  evaldict['serial']      = True
+  evaldict['app_dict']    = app_dict
+  evaldict['cluster']     = True
+
+  yield gen_trace_per_app( evaldict )

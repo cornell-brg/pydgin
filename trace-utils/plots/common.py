@@ -21,6 +21,7 @@ from collections import OrderedDict
 # NOTE: This data-structure is an OrderedDict which means the order here
 # determines the order of all the plots
 app_short_name_dict = OrderedDict([
+  ('ubmark-tpa-vvmult'            , 'vvmult'),
   # custom
   ('bilateral'                    , 'bilateral'),
   ('dct8x8m'                      , 'dct8x8m'),
@@ -61,6 +62,7 @@ app_short_name_dict = OrderedDict([
 
 # dictionary which shows the baseline normalization map
 app_normalize_map = {
+  'vvmult'     : 'ubmark-tpa-vvmult-scalar',
   'bilateral'  : 'bilateral-scalar',
   'dct8x8m'    : 'dct8x8m-scalar',
   'dither'     : 'dither-scalar',

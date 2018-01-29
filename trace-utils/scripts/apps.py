@@ -142,6 +142,12 @@ app_dict = {
     # maven-app-misc
     #........................................................................
 
+    'ubmark-tpa-vvmult'   : {
+                              'scalar' : [ '--impl scalar' ],
+                              'mt'     : [ '--impl mt' ],
+                              'mtpull' : [ '--impl mtpull', ]
+                            },
+
     'ubmark-vvadd'        : {
                               'mt' : [ '--impl mt' ],
                               'mtpull' : [ '--impl mtpull', ]
