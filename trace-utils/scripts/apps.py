@@ -69,6 +69,25 @@ app_list = [
   #'cilk-cholesky-parc-mtpull', #-- min-pc: out-of-mem assertions from the app kernel
 ]
 
+app_wsrt_subset = [
+  # custom bmarks
+  'bilateral',
+  'rgb2cmyk',
+  'strsearch',
+  'uts',
+
+  # pbbs apps
+  'pbbs-bfs-deterministicBFS-parc-mtpull',
+  'pbbs-csort-sampleSort-parc-mtpull',
+  'pbbs-rdups-deterministicHash-parc-mtpull',
+
+  # cilk apps
+  'cilk-cilksort-parc-mtpull',
+  'cilk-heat-parc-mtpull',
+  'cilk-knapsack-parc-mtpull',
+  'cilk-matmul-parc-mtpull',
+]
+
 app_list_spmd = [
   #'ubmark-vvadd',
   #'ubmark-bin-search',
@@ -124,6 +143,25 @@ app_serial_list = [
 
   # cilk apps
   'cilk-cholesky-parc',
+  'cilk-cilksort-parc',
+  'cilk-heat-parc',
+  'cilk-knapsack-parc',
+  'cilk-matmul-parc',
+]
+
+app_serial_subset = [
+  # custom bmarks
+  'bilateral',
+  'rgb2cmyk',
+  'strsearch',
+  'uts',
+
+  # pbbs apps
+  'pbbs-bfs-serialBFS-parc',
+  'pbbs-csort-serialSort-parc',
+  'pbbs-rdups-serialHash-parc',
+
+  # cilk apps
   'cilk-cilksort-parc',
   'cilk-heat-parc',
   'cilk-knapsack-parc',
