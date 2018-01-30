@@ -189,6 +189,7 @@ def get_base_evaldict():
   evaldict['simt']            = False # Indicate a SIMT frontend
   evaldict['sched_limit']     = 0     # Limit for switching arbitration
   evaldict['dumptrace']       = False # Dump trace
+  evaldict['limit_lockstep']  = False # Match lockstep group size to resources
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -259,6 +260,7 @@ def gen_trace_per_app( evaldict ):
   simt            = evaldict["simt"]
   sched_limit     = evaldict["sched_limit"]
   dumptrace       = evaldict["dumptrace"]
+  limit_lockstep  = evaldict["limit_lockstep"]
 
   # default options for serial code
   if serial:
@@ -337,6 +339,9 @@ def gen_trace_per_app( evaldict ):
 
         if not iword_match:
           extra_pydgin_opts += "--iword-match "
+
+        if limit_lockstep:
+          extra_pydgin_opts += "--limit-lockstep "
 
         extra_pydgin_opts += "--lockstep %(lockstep)s " % { 'lockstep' : lockstep }
         extra_pydgin_opts += "--sched-limit %(sched_limit)s " % { 'sched_limit' : sched_limit }

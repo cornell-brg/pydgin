@@ -87,9 +87,10 @@ class State( Machine ):
     self.dmem       = False  # flag to indicate a valid dmem request
     self.clear      = False  # flag to indicate a cleared mem/llfu request for lockstep execution
     self.curr_pc    = 0      # used for enforcing lockstep execution
-    self.insn_str   = ' :'
-    self.lockstep   = False
-    self.start_task = False
+    self.insn_str   = ' :'   # default fetch string for linetrace
+    self.lockstep   = False  # used to indicate if a thread is allowed to participate in lockstep or not
+    self.start_task = False  # used to indicate start of a task
+    self.ganged     = False  # used to indicate if a thread is part of a lockstep group
 
     # resource conflicts
     self.imem_stalls = 0

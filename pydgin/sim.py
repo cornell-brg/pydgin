@@ -76,23 +76,24 @@ class Sim( object ):
     self.reconvergence      = 0
     self.barrier_count      = 0
     self.active_cores       = 0
-    self.inst_ports         = 0 # Instruction bandwidth
-    self.data_ports         = 0 # Data bandwidth
-    self.mdu_ports          = 0 # MDU bandwidth
-    self.fpu_ports          = 0 # FPU bandwidth
-    self.icache_line_sz     = 0 # Insn cache line size (default word size)
-    self.dcache_line_sz     = 0 # Data cache line size (set based on num cores)
-    self.l0_buffer_sz       = 0 # L0 buffer size
+    self.inst_ports         = 0     # Instruction bandwidth
+    self.data_ports         = 0     # Data bandwidth
+    self.mdu_ports          = 0     # MDU bandwidth
+    self.fpu_ports          = 0     # FPU bandwidth
+    self.icache_line_sz     = 0     # Insn cache line size (default word size)
+    self.dcache_line_sz     = 0     # Data cache line size (set based on num cores)
+    self.l0_buffer_sz       = 0     # L0 buffer size
     self.linetrace          = False
     self.color              = False
-    self.barrier_limit      = 100
+    self.barrier_limit      = 100   # barrier hint limit
     self.icoalesce          = True  # toggle instruction coalescing
     self.iword_match        = True  # toggle instruction word vs. line matching
     self.simt               = False # toggle to indicate simt frontend
-    self.simt_l0_buffer     = []
-    self.sched_limit        = 0
+    self.simt_l0_buffer     = []    # global simt L0 buffer
+    self.sched_limit        = 0     # max cycles for priority thread selection
     self.lockstep           = 0     # lockstep see options
-    self.task_lockstep      = False
+    self.task_lockstep      = False # used in lockstep
+    self.limit_lockstep     = False # set the max lockstep group size to resources
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
@@ -199,6 +200,7 @@ class Sim( object ):
     --simt            Toggle for SIMT frontend (default False)
     --sched-limit     Limit for scheduling to guarantee forward progress
     --outfile         Name for the output trace dump
+    --limit-lockstep  Limit the max group size to resources for lockstep execution
   """
 
   #-----------------------------------------------------------------------
@@ -381,8 +383,8 @@ class Sim( object ):
         for i in xrange( self.ncores ):
           s = self.states[ i ]
           print pad( "%x" % s.pc, 8, " ", False ),
-          print "C%s a:%d i:%d s:%d c:%d %s %s %s" % (
-                  i, s.active, s.istall, s.stall, s.clear,
+          print "C%s a:%d i:%d s:%d c:%d g:%d l:%d %s %s %s" % (
+                  i, s.active, s.istall, s.stall, s.clear, s.ganged, s.lockstep,
                   pad_hex( s.inst_bits ),
                   pad( s.inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),
@@ -760,6 +762,7 @@ class Sim( object ):
                            "--iword-match",
                            "--simt",
                            "--sched-limit",
+                           "--limit-lockstep",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -800,6 +803,9 @@ class Sim( object ):
 
           elif token == "--simt":
             self.simt = True
+
+          elif token == "--limit-lockstep":
+            self.limit_lockstep = True
 
           elif token in tokens_with_args:
             prev_token = token
@@ -1012,6 +1018,9 @@ class Sim( object ):
       mask = mask_bits & 0xFFFFFFFF
       print "Data cache line size: %d, mask: %x" % ( self.dcache_line_sz, mask )
 
+      # lockstep option
+      print "Limiting lockstep group size: ", bool( self.limit_lockstep )
+
       # shreesha: default number of data ports
       if self.data_ports == 0:
         self.data_ports = self.ncores
@@ -1024,7 +1033,7 @@ class Sim( object ):
         print "Task-aware adaptive lockstep sharing"
 
       # shreesha: configure dmem coalescer
-      self.dmem_coalescer.configure( self.ncores, self.data_ports, self.dcache_line_sz, self.lockstep )
+      self.dmem_coalescer.configure( self.ncores, self.data_ports, self.dcache_line_sz, self.lockstep, self.limit_lockstep )
 
       # shreesha: default number of mdu ports
       if self.mdu_ports == 0:
@@ -1038,7 +1047,7 @@ class Sim( object ):
         print "Task-aware adaptive lockstep sharing"
 
       # shreesha: configure mdu allocator
-      self.mdu_allocator.configure( self.ncores, self.mdu_ports, self.lockstep )
+      self.mdu_allocator.configure( self.ncores, self.mdu_ports, self.lockstep, self.limit_lockstep )
 
       # shreesha: default number of fpu ports
       if self.fpu_ports == 0:
@@ -1052,7 +1061,7 @@ class Sim( object ):
         print "Task-aware adaptive lockstep sharing"
 
       # shreesha: configure fpu allocator
-      self.fpu_allocator.configure( self.ncores, self.fpu_ports, self.lockstep )
+      self.fpu_allocator.configure( self.ncores, self.fpu_ports, self.lockstep, self.limit_lockstep )
 
       print "Barrier limit: ", self.barrier_limit
       if self.sched_limit == 0:

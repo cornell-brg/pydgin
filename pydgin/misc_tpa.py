@@ -320,6 +320,98 @@ class ReconvergenceManager():
           break
 
 #-------------------------------------------------------------------------
+# GangEntry
+#-------------------------------------------------------------------------
+
+class GangEntry():
+  def __init__( s ):
+    s.pc    = 0
+    s.cores = []
+
+#-------------------------------------------------------------------------
+# GangTable
+#-------------------------------------------------------------------------
+
+class GangTable():
+
+  #-----------------------------------------------------------------------
+  # constructor
+  #-----------------------------------------------------------------------
+
+  def __init__( s ):
+    s.num_ports = 0
+    # table stores gang entries
+    s.gang_table = []
+    s.limit_lockstep = False
+
+  #-----------------------------------------------------------------------
+  # insert_entry
+  #-----------------------------------------------------------------------
+
+  def insert_entry( s, sim, core ):
+    match = False
+    for entry in s.gang_table:
+     # a match exists
+      if sim.states[core].pc == entry.pc:
+        # create a new entry if the max limit is reached
+        if s.limit_lockstep and len( entry.cores ) == s.num_ports:
+          #print "Limited group creating a new entry for pc: %x" % sim.states[core].pc
+          new_entry = GangEntry()
+          new_entry.pc = sim.states[core].pc
+          new_entry.cores.append( core )
+          new_entry.count = 1
+          sim.states[core].ganged = True
+          s.gang_table.append( new_entry )
+          match = True
+          break
+        # append to existing group
+        else:
+          entry.count += 1
+          #print "appending to entry for pc: %x, %d" % (sim.states[core].pc, entry.count)
+          sim.states[core].ganged = True
+          entry.cores.append( core )
+          match = True
+
+    # create a new entry
+    if not match:
+      #print "creating a new entry for pc: %x" % sim.states[core].pc
+      new_entry = GangEntry()
+      new_entry.pc = sim.states[core].pc
+      new_entry.cores.append( core )
+      new_entry.count = 1
+      sim.states[core].ganged = True
+      s.gang_table.append( new_entry )
+
+  #-----------------------------------------------------------------------
+  # update_table
+  #-----------------------------------------------------------------------
+
+  def update_table( s, sim, grant ):
+    free_entry = False
+    free_idx = 0
+    pc = sim.states[grant].pc
+    for entry in s.gang_table:
+      if pc == entry.pc:
+        #print "match for pc: %x" % pc
+        if grant in entry.cores:
+          entry.count -= 1
+          #print "core in list and count is: ", entry.count
+          if entry.count == 0:
+            #print "going to free cores:", entry.cores
+            free_gang = True
+            for core in entry.cores:
+              sim.states[core].clear = False
+              sim.states[core].ganged = False
+            free_entry = True
+            break
+      free_idx += 1
+    if free_entry:
+      free_entry = False
+      del s.gang_table[free_idx]
+
+# GangTable --------------------------------------------------------------
+
+#-------------------------------------------------------------------------
 # LLFUAllocator
 #-------------------------------------------------------------------------
 
@@ -330,23 +422,27 @@ class LLFUAllocator():
   #-----------------------------------------------------------------------
 
   def __init__( s, mdu=True ):
-    s.valid        = []    # valid requests
-    s.num_reqs     = 0     # number of requests
-    s.num_ports    = 0     # port bandwidth
-    s.top_priority = 0     # priority
-    s.mdu          = mdu   # mdu or fpu
-    s.lockstep     = False # locktep execution
-    s.pc_dict      = {}    # data-structure used to enforce lockstep execution
+    s.valid          = []    # valid requests
+    s.num_reqs       = 0     # number of requests
+    s.num_ports      = 0     # port bandwidth
+    s.top_priority   = 0     # priority
+    s.mdu            = mdu   # mdu or fpu
+    s.lockstep       = False # locktep execution
+    s.limit_lockstep = False # match lockstep group size to resources
+    s.gang_table     = GangTable()
 
   #-----------------------------------------------------------------------
   # configure
   #-----------------------------------------------------------------------
 
-  def configure( s, num_reqs, num_ports, lockstep ):
+  def configure( s, num_reqs, num_ports, lockstep, limit_lockstep ):
     s.valid     = [False]*num_reqs
     s.num_reqs  = num_reqs
     s.num_ports = num_ports
     s.lockstep  = lockstep
+    # pass params to gang table
+    s.gang_table.num_ports = num_ports
+    s.gang_table.limit_lockstep = limit_lockstep
 
   #-----------------------------------------------------------------------
   # set_request
@@ -371,16 +467,14 @@ class LLFUAllocator():
     return grant
 
   #-----------------------------------------------------------------------
-  # evaluate_pcs
+  # create gangs
   #-----------------------------------------------------------------------
-  # evaluates all pcs and figures out the groups
 
-  def evaluate_pcs( s, sim ):
-    s.pc_dict = {}
-
+  def create_gangs( s, sim ):
     for core in xrange( sim.ncores ):
-      if sim.states[core].stall and not sim.states[core].clear and sim.states[core].lockstep:
-        s.pc_dict[sim.states[core].pc] = s.pc_dict.get(sim.states[core].pc, 0) + 1
+      # if a core has a request, is not ganged yet, and if lockstep is enabled
+      if s.valid[core] and not sim.states[core].ganged and sim.states[core].lockstep:
+        s.gang_table.insert_entry( sim, core )
 
   #-----------------------------------------------------------------------
   # xtick
@@ -395,7 +489,7 @@ class LLFUAllocator():
 
     if compute:
 
-      s.evaluate_pcs( sim )
+      s.create_gangs( sim )
 
       for i in xrange( s.num_ports ):
         grant = s.get_grant()
@@ -408,13 +502,7 @@ class LLFUAllocator():
               sim.states[grant].mdu = False
             else:
               sim.states[grant].fpu = False
-            pc = sim.states[grant].pc
-            s.pc_dict[ pc ] -= 1
-            if s.pc_dict[ pc ] == 0:
-              for core in xrange( sim.ncores ):
-                # only clear cores that are marked to be cleared
-                if sim.states[core].curr_pc == pc and sim.states[core].clear:
-                  sim.states[core].clear = False
+            s.gang_table.update_table( sim, grant )
           else:
             sim.states[grant].stall = False
             s.valid[grant] = False
@@ -456,15 +544,15 @@ class MemCoalescer():
     s.table        = {}        # key-value map, key = coalesced request, value = list of ports that coalesce
     s.num_ports    = 0         # port bandwidth
     s.lockstep     = False     # flag to enforce lockstep execution
-    s.pc_dict      = {}        # data-structure used to enforce lockstep execution
     s.top_priority = 0         # priority for aribitration
     s.mask         = 0
+    s.gang_table   = GangTable()
 
   #-----------------------------------------------------------------------
   # configure
   #-----------------------------------------------------------------------
 
-  def configure( s, num_reqs, num_ports, line_sz, lockstep ):
+  def configure( s, num_reqs, num_ports, line_sz, lockstep, limit_lockstep ):
     s.valid     = [False]*num_reqs
     s.reqs      = [None]*num_reqs
     s.num_reqs  = num_reqs
@@ -473,6 +561,9 @@ class MemCoalescer():
     # mask bits
     mask_bits = ~( line_sz - 1 )
     s.mask = mask_bits & 0xFFFFFFFF
+    # pass params to gang table
+    s.gang_table.num_ports = num_ports
+    s.gang_table.limit_lockstep = limit_lockstep
 
   #-----------------------------------------------------------------------
   # set_request
@@ -522,16 +613,18 @@ class MemCoalescer():
       s.top_priority = 0 if s.top_priority == s.num_reqs-1 else s.top_priority+1
 
   #-----------------------------------------------------------------------
-  # evaluate_pcs
+  # create_gangs
   #-----------------------------------------------------------------------
-  # evaluates all pcs and figures out the groups
 
-  def evaluate_pcs( s, sim ):
-    s.pc_dict = {}
-
+  def create_gangs( s, sim ):
     for core in xrange( sim.ncores ):
-      if sim.states[core].stall and not sim.states[core].clear and sim.states[core].lockstep:
-        s.pc_dict[sim.states[core].pc] = s.pc_dict.get(sim.states[core].pc, 0) + 1
+      # if a core has a request, is not ganged yet, and if lockstep is enabled
+      # NOTE: determining a valid mem request is a bit weird as I clear the
+      # valid bit in creating coalesced entries function
+      valid_request = False
+      valid_request = sim.states[core].stall and sim.states[core].dmem
+      if valid_request and not sim.states[core].ganged and sim.states[core].lockstep:
+        s.gang_table.insert_entry( sim, core )
 
   #-----------------------------------------------------------------------
   # drain
@@ -540,7 +633,7 @@ class MemCoalescer():
   def drain( s, sim ):
 
     if len( s.fifo ):
-      s.evaluate_pcs( sim )
+      s.create_gangs( sim )
 
     for i in xrange( s.num_ports ):
       if len( s.fifo ):
@@ -549,20 +642,13 @@ class MemCoalescer():
 
         for port in ports:
           if sim.states[port].lockstep:
-            pc = sim.states[port].pc
-            s.pc_dict[ pc ] -= 1
             sim.states[port].clear  = True
             sim.states[port].stall  = False
             sim.states[port].dmem   = False
-            if s.pc_dict[pc] == 0:
-              for core in xrange( sim.ncores ):
-                # only clear cores that are marked to be cleared
-                if sim.states[core].curr_pc == pc and sim.states[core].clear:
-                  sim.states[core].clear = False
+            s.gang_table.update_table( sim, port )
           else:
             sim.states[port].stall = False
             sim.states[port].dmem  = False
-
       else:
         break
 
