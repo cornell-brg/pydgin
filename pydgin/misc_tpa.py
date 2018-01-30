@@ -350,27 +350,18 @@ class GangTable():
 
   def insert_entry( s, sim, core ):
     match = False
-    for entry in s.gang_table:
-     # a match exists
-      if sim.states[core].pc == entry.pc:
-        # create a new entry if the max limit is reached
-        if s.limit_lockstep and len( entry.cores ) == s.num_ports:
-          #print "Limited group creating a new entry for pc: %x" % sim.states[core].pc
-          new_entry = GangEntry()
-          new_entry.pc = sim.states[core].pc
-          new_entry.cores.append( core )
-          new_entry.count = 1
-          sim.states[core].ganged = True
-          s.gang_table.append( new_entry )
-          match = True
-          break
-        # append to existing group
-        else:
-          entry.count += 1
-          #print "appending to entry for pc: %x, %d" % (sim.states[core].pc, entry.count)
-          sim.states[core].ganged = True
-          entry.cores.append( core )
-          match = True
+    if sim.states[core].lockstep:
+      for entry in s.gang_table:
+        # a match exists
+        if sim.states[core].pc == entry.pc:
+          # append to existing group if can fit it
+          if s.limit_lockstep and len( entry.cores ) != s.num_ports or not s.limit_lockstep:
+            entry.count += 1
+            #print "appending to entry for pc: %x, %d" % (sim.states[core].pc, entry.count)
+            sim.states[core].ganged = True
+            entry.cores.append( core )
+            match = True
+            break
 
     # create a new entry
     if not match:
