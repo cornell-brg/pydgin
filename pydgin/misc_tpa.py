@@ -48,6 +48,148 @@ class Task():
     s.m_target_chunk_sz = 0
 
 #-------------------------------------------------------------------------
+# MT thread select
+#-------------------------------------------------------------------------
+
+class ThreadSelect():
+
+  #-----------------------------------------------------------------------
+  # constructor
+  #-----------------------------------------------------------------------
+
+  def __init__( s, num_cores, line_sz, sched_limit ):
+    s.switch_interval = sched_limit
+    s.top_priority    = num_cores-1
+    s.l0_mask         = ~(line_sz - 1) & 0xFFFFFFFF
+
+  #-----------------------------------------------------------------------
+  # get_next_pc
+  #-----------------------------------------------------------------------
+
+  def get_next_pc( s, sim ):
+    next_pc   = sim.states[s.top_priority].pc
+    next_core = s.top_priority
+    for x in xrange( sim.ncores ):
+      s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+      if not sim.states[s.top_priority].stop:
+        next_pc   = sim.states[s.top_priority].pc
+        next_core = s.top_priority
+        break
+    return next_pc, next_core
+
+  #-----------------------------------------------------------------------
+  # rr_min_pc
+  #-----------------------------------------------------------------------
+
+  def rr_min_pc( s, sim ):
+    min_pc   = sys.maxint
+    min_core = 0
+
+    # select the minimum-pc by considering only active cores
+    if s.switch_interval > 0:
+      for core in xrange( sim.ncores ):
+        if sim.states[core].pc < min_pc and not sim.states[core].stop:
+          min_pc = sim.states[core].pc
+          min_core = core
+      s.switch_interval -= 1
+      #if sim.states[0].debug.enabled( "tpa" ):
+      #  print "min-pc: %x %d" % ( min_pc, min_core )
+    # round-robin arbitration
+    elif s.switch_interval == 0:
+      min_pc, min_core = s.get_next_pc( sim )
+      s.switch_interval = sim.sched_limit
+      #if sim.states[0].debug.enabled( "tpa" ):
+      #  print "rr   : %x %d" % ( min_pc, min_core )
+    else:
+      print "Something wrong in scheduling tick: %d" % sim.states[0].num_insts
+      raise AssertionError
+
+    return min_pc, min_core
+
+  #-----------------------------------------------------------------------
+  # rr_min_sp_pc
+  #-----------------------------------------------------------------------
+
+  def rr_min_sp_pc( s, sim ):
+    min_sp   = sys.maxint
+    min_pc   = 0
+    min_core = 0
+    # select the minimum-pc by considering only active cores
+    if s.switch_interval > 0:
+      for core in xrange( sim.ncores ):
+        if not sim.states[core].stop:
+          if sim.states[core].rf[ sp ] < min_sp:
+            min_pc = sim.states[core].pc
+            min_core = core
+          elif sim.states[core].rf[ sp ] ==  min_sp and sim.states[core].pc < min_pc:
+            min_pc = sim.states[core].pc
+            min_core = core
+      s.switch_interval -= 1
+      #if sim.states[0].debug.enabled( "tpa" ):
+      #  print "min-sp: %x %d" % ( min_pc, min_core )
+    # round-robin arbitration
+    elif s.switch_interval == 0:
+      min_pc, min_core = s.get_next_pc( sim )
+      s.switch_interval = sim.sched_limit
+      #if sim.states[0].debug.enabled( "tpa" ):
+      #  print "rr   : %x %d" % ( min_pc, min_core )
+    else:
+      print "Something wrong in scheduling tick: %d" % sim.states[0].num_insts
+      raise AssertionError
+
+    return min_pc, min_core
+
+  #-----------------------------------------------------------------------
+  # xtick
+  #-----------------------------------------------------------------------
+
+  def xtick( s, sim ):
+    # clear all state here first
+    for core in xrange( sim.ncores ):
+      sim.states[core].active = False
+      sim.states[core].istall = True
+      sim.states[core].insn_str = ' :'
+
+    active_pc   = 0
+    active_core = 0
+
+    # round-robin for given port bandwidth
+    if sim.reconvergence == 0:
+      active_pc, active_core = s.get_next_pc( sim )
+
+    # round-robin + min-pc hybrid reconvergence
+    elif sim.reconvergence == 1:
+      active_pc, active_core = s.rr_min_pc( sim )
+
+    # round-robin + min-sp/pc hybrid reconvergence
+    elif sim.reconvergence == 2:
+      active_pc, active_core = s.rr_min_sp_pc( sim )
+
+    # update stats
+    sim.states[active_core].insn_str = 'S:'
+    sim.states[active_core].active = True
+    sim.states[active_core].istall = False
+
+    parallel_mode = sim.states[active_core].wsrt_mode or sim.states[active_core].spmd_mode
+
+    # collect stats for L0 here
+    if sim.states[0].stats_en and parallel_mode:
+      if (sim.states[active_core].pc & s.l0_mask) in sim.states[active_core].l0_buffer:
+        sim.states[active_core].l0_hits += 1
+        sim.total_imem_accesses += 1
+      else:
+        sim.unique_imem_accesses += 1
+        sim.total_imem_accesses += 1
+
+    # add the line to the l0 buffer if there is a l0 buffer present
+    if (sim.states[active_core].pc & s.l0_mask) not in sim.states[active_core].l0_buffer:
+      if sim.states[active_core].l0_buffer:
+        sim.states[active_core].l0_buffer.pop(0)
+      sim.states[active_core].l0_buffer.append(sim.states[active_core].pc & s.l0_mask)
+
+    return active_core
+
+#-------------------------------------------------------------------------
 # ReconvergenceManager
 #-------------------------------------------------------------------------
 # NOTE: By default there is always fetch combining turned on

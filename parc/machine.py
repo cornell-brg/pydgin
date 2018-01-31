@@ -92,6 +92,9 @@ class State( Machine ):
     self.start_task = False  # used to indicate start of a task
     self.ganged     = False  # used to indicate if a thread is part of a lockstep group
 
+    # barrier limit for each core
+    self.barrier_limit = 0
+
     # resource conflicts
     self.imem_stalls = 0
     self.dmem_stalls = 0

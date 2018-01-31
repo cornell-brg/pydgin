@@ -29,6 +29,7 @@ from pydgin.misc_tpa import colors
 from pydgin.misc_tpa import MemCoalescer
 from pydgin.misc_tpa import LLFUAllocator
 from pydgin.misc_tpa import ReconvergenceManager
+from pydgin.misc_tpa import ThreadSelect
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
@@ -97,6 +98,7 @@ class Sim( object ):
     self.lockstep           = 0     # lockstep see options
     self.task_lockstep      = False # used in lockstep
     self.limit_lockstep     = False # set the max lockstep group size to resources
+    self.mt                 = False # toggle to indicate MT mode
 
     # stats
     # NOTE: Collect the stats below only when in parallel mode
@@ -207,6 +209,7 @@ class Sim( object ):
     --sched-limit     Limit for scheduling to guarantee forward progress
     --outfile         Name for the output trace dump
     --limit-lockstep  Limit the max group size to resources for lockstep execution
+    --mt              Multithread-mode (runs a different loop)
   """
 
   #-----------------------------------------------------------------------
@@ -222,6 +225,169 @@ class Sim( object ):
   @elidable
   def next_core_id( self, core_id ):
     return ( core_id + 1 ) % self.ncores
+
+  #-----------------------------------------------------------------------
+  # run_mt
+  #-----------------------------------------------------------------------
+  # NOTE: MT mode should always run with one instruction port
+
+  def run_mt( self ):
+
+    max_insts = self.max_insts
+    max_ticks = self.max_ticks
+    core_id   = 0
+    ltrace_pc = 0
+
+    thread_select = ThreadSelect( self.ncores, self.icache_line_sz, self.sched_limit )
+
+    while self.states[0].running:
+      # check if we have reached the end of the maximum instructions and
+      # exit if necessary
+      if max_insts != 0 and self.states[0].num_insts >= max_insts:
+        print "Reached the max_insts (%d), exiting." % max_insts
+        break
+
+      # check if we have reached the end of the maximum ticks and exit if
+      # necessary
+      if max_ticks != 0 and self.tick_ctr >= max_ticks:
+        print "Reached the max_ticks (%d), exiting." % max_ticks
+        break
+
+      if self.states[0].stats_en:
+        self.tick_ctr += 1
+
+      # select an active thread
+      active_core = thread_select.xtick( self )
+
+      # sanity checks
+      if not self.states[active_core].active and not self.states[active_core].stop or active_core == -1:
+        print "MT: Something wrong selected core is not active! tick: %d" % self.states[0].num_insts
+        raise AssertionError
+
+      # if all cores are not halting
+      # NOTE: there always should be an active core selected
+      if self.states[active_core]:
+        s   = self.states[active_core]
+        pc  = s.fetch_pc()
+        mem = s.mem
+
+        # fetch
+        inst_bits = mem.iread( pc, 4 )
+
+        try:
+          # frontend
+          inst, pre_exec_fun, exec_fun = self.decode( inst_bits )
+
+          # collect linetrace pc here
+          ltrace_pc = s.pc
+
+          # only to collect LLFU and mem operations
+          if pre_exec_fun:
+            pre_exec_fun( s, inst )
+          else:
+            parallel_mode = s.wsrt_mode or s.spmd_mode
+            if self.states[0].stats_en and parallel_mode:
+              s.int_insts += 1
+
+          # backend
+          exec_fun( s, inst )
+
+        except FatalError as error:
+          print "Exception in (pc: 0x%s), aborting!" % pad_hex( pc )
+          print "Exception message: %s" % error.msg
+          break
+
+        if self.states[0].debug.enabled( "insts" ):
+          print pad( "%x" % s.pc, 8, " ", False ),
+          print "C%s a:%d i:%d s:%d c:%d g:%d l:%d %s %s %s" % (
+                  active_core, s.active, s.istall, s.stall, s.clear, s.ganged, s.lockstep,
+                  pad_hex( inst_bits ),
+                  pad( inst.str, 12 ),
+                  pad( "%d" % s.num_insts, 8 ), ),
+          print
+
+        if self.states[0].debug.enabled( "regdump" ):
+          print "C%d" % active_core
+          s.rf.print_regs( per_row=4 )
+
+        s.num_insts += 1
+        if s.stats_en: s.stat_num_insts += 1
+
+      # count steps in stats region
+      if self.states[0].stats_en: self.total_steps += 1
+
+      # barrier stuff
+      for state in self.states:
+        if state.stop:
+          state.barrier_ctr += 1
+
+      # check for early exit at a barrier hint or if any core has hit the
+      # max limit
+      all_waiting = True
+      reset_core  = False
+      for state in self.states:
+        if state.barrier_ctr == state.barrier_limit:
+          reset_core = True
+        if not state.barrier_ctr > 0:
+          all_waiting = False
+
+      # check which cores can proceed
+      # NOTE: I currently opportunistically wakeup any other core that is
+      # waiting when a core has hit the barrier limit
+      if all_waiting or reset_core:
+        waiting_cores = []
+        for state in self.states:
+          if state.barrier_ctr > 0:
+            waiting_cores.append( state.core_id )
+
+        for core in waiting_cores:
+          if self.adaptive_hint:
+            # found other cores
+            # NOTE: IMPORTANT TBD
+            # maybe there should be max limit? Collect hits/misses stats
+            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) != 0:
+              self.states[core].barrier_limit = self.states[core].barrier_limit + self.barrier_delta if self.states[core].barrier_limit < self.barrier_limit else self.barrier_limit
+            # paid the cost at barrier and found no partner
+            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) == 0:
+              self.states[core].barrier_limit = self.states[core].barrier_limit - self.barrier_delta if self.states[core].barrier_limit > self.barrier_delta else self.barrier_delta
+
+          self.states[core].barrier_ctr = 0
+          self.states[core].stop = False
+          self.states[core].active = True
+          self.states[core].pc += 4
+
+      # linetrace
+      if self.linetrace:
+        if self.states[0].stats_en:
+          print colors.cyan + "[C%d] " % active_core + colors.end,
+          if self.states[active_core].active:
+            s = self.states[active_core]
+            parallel_mode = s.wsrt_mode or s.spmd_mode
+            # core0 in serial section
+            if self.color and not parallel_mode and active_core==0 :
+              print colors.white + s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ) + colors.end
+            # others in bthread control function
+            elif self.color and not parallel_mode:
+              print colors.blue + s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ) + colors.end
+            # cores in spmd region
+            elif self.color and s.spmd_mode:
+              print colors.purple + s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ) + colors.end
+            # cores executing tasks in wsrt region
+            elif self.color and s.task_mode and parallel_mode:
+              print colors.green + s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ) + colors.end
+            # cores executing runtime function in wsrt region
+            elif self.color and s.runtime_mode and parallel_mode:
+              print colors.yellow + s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ) + colors.end
+            # No color requested
+            else:
+              print s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ),
+          else:
+            print "#b" + pad( "%x |" % ltrace_pc, 9, " ", False )
+
+    # print stats
+    print '\nDONE! Status =', self.states[0].status
+    print 'Total ticks Simulated = %d\n' % self.tick_ctr
+    print 'Total steps in stats region = %d' % self.total_steps
 
   #-----------------------------------------------------------------------
   # run
@@ -785,6 +951,7 @@ class Sim( object ):
                            "--simt",
                            "--sched-limit",
                            "--limit-lockstep",
+                           "--mt",
                          ]
 
       # go through the args one by one and parse accordingly
@@ -831,6 +998,9 @@ class Sim( object ):
 
           elif token == "--adaptive-hint":
             self.adaptive_hint = True
+
+          elif token == "--mt":
+            self.mt = True
 
           elif token in tokens_with_args:
             prev_token = token
@@ -1016,6 +1186,8 @@ class Sim( object ):
       # TPA microarchitectural parameters and configuration
       #-----------------------------------------------------------------
 
+      print "Executing in MT mode: ", bool( self.mt )
+
       # print the reconvergence scheme used
       if   self.reconvergence == 0: print "No reconvergence"
       elif self.reconvergence == 1: print "Min-pc, round-robin"
@@ -1024,8 +1196,10 @@ class Sim( object ):
         print "Invalid option for recovergence. Try --help for options."
         return 1
       # shreesha: default number of instruction ports
-      if self.inst_ports == 0:
+      if self.inst_ports == 0 and not self.mt:
         self.inst_ports = self.ncores
+      elif self.inst_ports == 0 and self.mt:
+        self.inst_ports = 1
       print "Inst ports: ", self.inst_ports
 
       # shreesha: default icache-line-sz
@@ -1107,7 +1281,10 @@ class Sim( object ):
 
       # Execute the program
 
-      self.run()
+      if self.mt:
+        self.run_mt()
+      else:
+        self.run()
 
       return 0
 
