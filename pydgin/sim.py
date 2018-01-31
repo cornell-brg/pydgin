@@ -74,7 +74,6 @@ class Sim( object ):
 
     # shreesha: adding extra stuff here
     self.reconvergence      = 0
-    self.barrier_count      = 0
     self.active_cores       = 0
     self.inst_ports         = 0     # Instruction bandwidth
     self.data_ports         = 0     # Data bandwidth
@@ -85,7 +84,11 @@ class Sim( object ):
     self.l0_buffer_sz       = 0     # L0 buffer size
     self.linetrace          = False
     self.color              = False
-    self.barrier_limit      = 100   # barrier hint limit
+    self.barrier_limit      = 250   # barrier hint limit
+    self.barrier_delta      = 0     # barrier delta limits
+    self.barrier_hits       = 0     # barrier success
+    self.barrier_miss       = 0     # barrier miss
+    self.adaptive_hint      = False # turn on adaptive barrier limits
     self.icoalesce          = True  # toggle instruction coalescing
     self.iword_match        = True  # toggle instruction word vs. line matching
     self.simt               = False # toggle to indicate simt frontend
@@ -194,10 +197,13 @@ class Sim( object ):
     --icache-line-sz  Cache line size in bytes
     --dcache-line-sz  Cache line size in bytes
     --l0-buffer-sz    L0 buffer size in icache-line-sz
+    --adaptive-hint   Turn on for adaptive hints
+    --barrier-delta   Default 50
     --barrier-limit   Max stall cycles for barrier limit
     --icoalesce       Toggle coalescing for instructions (default True)
     --iword-match     Toggle instruction word vs. line matching (default word)
     --simt            Toggle for SIMT frontend (default False)
+                      Really means shared frontend or not
     --sched-limit     Limit for scheduling to guarantee forward progress
     --outfile         Name for the output trace dump
     --limit-lockstep  Limit the max group size to resources for lockstep execution
@@ -485,21 +491,6 @@ class Sim( object ):
       parallel_mode = self.states[0].wsrt_mode or self.states[0].spmd_mode
       if self.states[0].stats_en and not parallel_mode: self.serial_steps += 1
 
-      # update barrier counts for stalling cores
-      for state in self.states:
-        if state.stop:
-          state.barrier_ctr += 1
-
-      # check for early exit at a barrier hint or if any core has hit the
-      # max limit
-      all_waiting = True
-      reset_core  = False
-      for state in self.states:
-        if state.barrier_ctr == self.barrier_limit:
-          reset_core = True
-        if not state.barrier_ctr > 0:
-          all_waiting = False
-
       #if self.states[0].debug.enabled( "tpa" ):
       #  print "backend : [",
       #  for core in range( self.ncores ):
@@ -516,17 +507,46 @@ class Sim( object ):
       #    else:
       #      print "%d:n," %core,
       #  print "]"
+      # update barrier counts for stalling cores
+
+      for state in self.states:
+        if state.stop:
+          state.barrier_ctr += 1
+
+      # check for early exit at a barrier hint or if any core has hit the
+      # max limit
+      all_waiting = True
+      reset_core  = False
+      for state in self.states:
+        if state.barrier_ctr == state.barrier_limit:
+          reset_core = True
+        if not state.barrier_ctr > 0:
+          all_waiting = False
 
       # check which cores can proceed
       # NOTE: I currently opportunistically wakeup any other core that is
       # waiting when a core has hit the barrier limit
       if all_waiting or reset_core:
+        waiting_cores = []
         for state in self.states:
           if state.barrier_ctr > 0:
-            state.barrier_ctr = 0
-            state.stop = False
-            state.active = True
-            state.pc += 4
+            waiting_cores.append( state.core_id )
+
+        for core in waiting_cores:
+          if self.adaptive_hint:
+            # found other cores
+            # NOTE: IMPORTANT TBD
+            # maybe there should be max limit? Collect hits/misses stats
+            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) != 0:
+              self.states[core].barrier_limit = self.states[core].barrier_limit + self.barrier_delta if self.states[core].barrier_limit < self.barrier_limit else self.barrier_limit
+            # paid the cost at barrier and found no partner
+            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) == 0:
+              self.states[core].barrier_limit = self.states[core].barrier_limit - self.barrier_delta if self.states[core].barrier_limit > self.barrier_delta else self.barrier_delta
+
+          self.states[core].barrier_ctr = 0
+          self.states[core].stop = False
+          self.states[core].active = True
+          self.states[core].pc += 4
 
       # shreesha: linetrace
       if self.linetrace:
@@ -757,7 +777,9 @@ class Sim( object ):
                            "--icache-line-sz",
                            "--dcache-line-sz",
                            "--l0-buffer-sz",
+                           "--adaptive-hint",
                            "--barrier-limit",
+                           "--barrier-delta",
                            "--icoalesce",
                            "--iword-match",
                            "--simt",
@@ -806,6 +828,9 @@ class Sim( object ):
 
           elif token == "--limit-lockstep":
             self.limit_lockstep = True
+
+          elif token == "--adaptive-hint":
+            self.adaptive_hint = True
 
           elif token in tokens_with_args:
             prev_token = token
@@ -900,6 +925,9 @@ class Sim( object ):
           elif prev_token == "--barrier-limit":
             self.barrier_limit = int(token)
 
+          elif prev_token == "--barrier-delta":
+            self.barrier_delta = int(token)
+
           elif prev_token == "--sched-limit":
             self.sched_limit = int(token)
 
@@ -946,6 +974,8 @@ class Sim( object ):
           self.states[i].lockstep = True
         elif self.lockstep == 2:
           self.task_lockstep = True
+        # barrier limit
+        self.states[i].barrier_limit = self.barrier_limit
 
       # set accel rf mode
 
@@ -1064,6 +1094,11 @@ class Sim( object ):
       self.fpu_allocator.configure( self.ncores, self.fpu_ports, self.lockstep, self.limit_lockstep )
 
       print "Barrier limit: ", self.barrier_limit
+      print "Adaptive barriers enabled: ", bool( self.adaptive_hint )
+      if self.barrier_delta == 0:
+        self.barrier_delta = 50
+      print "Barrier Delta: ", self.barrier_delta
+
       if self.sched_limit == 0:
         self.sched_limit = self.ncores
       print "Scheduling limit: ", self.sched_limit

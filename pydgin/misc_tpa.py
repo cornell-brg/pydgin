@@ -104,32 +104,60 @@ class ReconvergenceManager():
       sim.unique_imem_accesses += 1
       sim.total_imem_accesses += 1
 
-    # SIMT L0 Buffer present
-    if sim.simt and sim.l0_buffer_sz != 0:
-      if (sim.states[core].pc & s.l0_mask) in sim.simt_l0_buffer:
-        if sim.states[0].stats_en and parallel_mode:
-          sim.simt_l0_hits += 1
-          sim.total_imem_accesses += 1
+    # collect stats for SIMT here
+    if sim.states[0].stats_en and parallel_mode and sim.simt:
+      if (sim.states[core].pc & s.l0_mask) in sim.states[core].l0_buffer:
+        sim.states[core].l0_hits += 1
+        sim.total_imem_accesses += 1
       else:
-        # add the line to the l0 buffer if there is a l0 buffer present
-        if sim.simt_l0_buffer:
-          sim.simt_l0_buffer.pop(0)
-        sim.simt_l0_buffer.append(sim.states[core].pc & s.l0_mask)
-        if sim.states[0].stats_en and parallel_mode:
-          sim.unique_imem_accesses += 1
-          sim.total_imem_accesses += 1
-    # SIMT but no l0 buffer present
-    elif sim.simt and sim.l0_buffer_sz == 0:
-      if sim.states[0].stats_en and parallel_mode:
         sim.unique_imem_accesses += 1
         sim.total_imem_accesses += 1
-    # Not SIMT but l0 buffer present
-    elif not sim.simt and sim.l0_buffer_sz != 0:
-      # add the line to the l0 buffer if there is a l0 buffer present
-      if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer:
-        if sim.states[core].l0_buffer:
-          sim.states[core].l0_buffer.pop(0)
-        sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
+
+    # add the line to the l0 buffer if there is a l0 buffer present
+    if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer:
+      if sim.states[core].l0_buffer:
+        sim.states[core].l0_buffer.pop(0)
+      sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
+
+    #---------------------------------------------------------------------
+    # Uncomment for unified SIMT L0 buffer
+    #---------------------------------------------------------------------
+    # NOTE: 01/30/2018 Disabling this feature for now.
+    #
+    #
+    # stats for non-SIMT frontend
+    #parallel_mode = sim.states[core].wsrt_mode or sim.states[core].spmd_mode
+    #if sim.states[0].stats_en and parallel_mode and not sim.simt:
+    #  sim.unique_imem_accesses += 1
+    #  sim.total_imem_accesses += 1
+    #
+    ## SIMT L0 Buffer present
+    #if sim.simt and sim.l0_buffer_sz != 0:
+    #  if (sim.states[core].pc & s.l0_mask) in sim.simt_l0_buffer:
+    #    if sim.states[0].stats_en and parallel_mode:
+    #      sim.simt_l0_hits += 1
+    #      sim.total_imem_accesses += 1
+    #  else:
+    #    # add the line to the l0 buffer if there is a l0 buffer present
+    #    if sim.simt_l0_buffer:
+    #      sim.simt_l0_buffer.pop(0)
+    #    sim.simt_l0_buffer.append(sim.states[core].pc & s.l0_mask)
+    #    if sim.states[0].stats_en and parallel_mode:
+    #      sim.unique_imem_accesses += 1
+    #      sim.total_imem_accesses += 1
+    ## SIMT but no l0 buffer present
+    #elif sim.simt and sim.l0_buffer_sz == 0:
+    #  if sim.states[0].stats_en and parallel_mode:
+    #    sim.unique_imem_accesses += 1
+    #    sim.total_imem_accesses += 1
+    ## Not SIMT but l0 buffer present
+    #elif not sim.simt and sim.l0_buffer_sz != 0:
+    #  # add the line to the l0 buffer if there is a l0 buffer present
+    #  if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer:
+    #    if sim.states[core].l0_buffer:
+    #      sim.states[core].l0_buffer.pop(0)
+    #    sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
+    #---------------------------------------------------------------------
 
   #-----------------------------------------------------------------------
   # update_pcs
@@ -153,8 +181,11 @@ class ReconvergenceManager():
         if sim.states[0].stats_en and parallel_mode:
           sim.total_coalesces     += 1
           sim.total_imem_accesses += 1
+
+        # NOTE: 01/30/2018: Changing SIMT L0 buffer behavior
+        #if not sim.simt and sim.l0_buffer_sz != 0:
         # add the line to the l0 buffer if there is a l0 buffer present
-        if not sim.simt and sim.l0_buffer_sz != 0:
+        if sim.l0_buffer_sz != 0:
           if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer:
             if sim.states[core].l0_buffer:
               sim.states[core].l0_buffer.pop(0)
@@ -268,6 +299,8 @@ class ReconvergenceManager():
         sim.states[core].istall = False
 
     # check if any cores have cached in the line in the l0 buffer
+    # NOTE: The code below is enabled only for architectures when the
+    # frontend is not shared
     if sim.l0_buffer_sz != 0 and not sim.simt:
       for core in xrange( sim.ncores ):
         l0_line_addr = sim.states[core].pc & s.l0_mask
