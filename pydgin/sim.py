@@ -238,7 +238,11 @@ class Sim( object ):
     core_id   = 0
     ltrace_pc = 0
 
-    thread_select = ThreadSelect( self.ncores, self.icache_line_sz, self.sched_limit )
+    l0_mask = ~(self.icache_line_sz - 1) & 0xFFFFFFFF
+
+    last_active_pc = 0
+
+    thread_select = ThreadSelect( self.ncores, self.sched_limit )
 
     while self.states[0].running:
       # check if we have reached the end of the maximum instructions and
@@ -288,6 +292,61 @@ class Sim( object ):
             parallel_mode = s.wsrt_mode or s.spmd_mode
             if self.states[0].stats_en and parallel_mode:
               s.int_insts += 1
+
+          #---------------------------------------------------------------
+          # Collect stats
+          #---------------------------------------------------------------
+          # collect frontend stats here
+
+          if s.spmd_mode:
+            self.total_spmd     += 1
+            self.total_parallel += 1
+          elif s.wsrt_mode and s.task_mode:
+            self.total_task     += 1
+            self.total_wsrt     += 1
+            self.total_parallel += 1
+          elif s.wsrt_mode and s.runtime_mode:
+            self.total_runtime  += 1
+            self.total_wsrt     += 1
+            self.total_parallel += 1
+
+          # can't "draft"
+          if s.pc != last_active_pc:
+            # collect total instructions
+            if s.spmd_mode:
+              self.unique_spmd    += 1
+              self.unique_insts   += 1
+            elif s.wsrt_mode and s.task_mode:
+              self.unique_task    += 1
+              self.unique_insts   += 1
+            elif s.wsrt_mode and s.runtime_mode:
+              self.unique_runtime += 1
+              self.unique_insts   += 1
+            # update L0 state and stats here
+            if (s.pc & l0_mask) in s.l0_buffer:
+              s.insn_str = 'L:'
+              if s.spmd_mode or s.wsrt_mode:
+                s.l0_hits += 1
+                self.total_imem_accesses += 1
+            # add the line to the l0 buffer if there is a l0 buffer present
+            if (s.pc & l0_mask) not in s.l0_buffer:
+              s.insn_str = 'S:'
+              if s.l0_buffer:
+                s.l0_buffer.pop(0)
+              s.l0_buffer.append( s.pc & l0_mask )
+              if s.spmd_mode or s.wsrt_mode:
+                self.unique_imem_accesses += 1
+                self.total_imem_accesses += 1
+          # currently drafting
+          else:
+            s.insn_str = 'C:'
+            if s.spmd_mode or s.wsrt_mode:
+              self.total_coalesces += 1
+              self.total_imem_accesses += 1
+          #---------------------------------------------------------------
+
+          # save the current pc before retiring
+          last_active_pc = s.pc
 
           # backend
           exec_fun( s, inst )
@@ -388,6 +447,91 @@ class Sim( object ):
     print '\nDONE! Status =', self.states[0].status
     print 'Total ticks Simulated = %d\n' % self.tick_ctr
     print 'Total steps in stats region = %d' % self.total_steps
+    print
+
+    # print instruction fetch stats
+    print 'Total insts in parallel regions = %d' % self.total_parallel
+    print 'Unique insts in parallel regions = %d' % self.unique_insts
+    redundant_insts = self.total_parallel - self.unique_insts
+    if self.total_parallel:
+      print 'Redundancy in parallel regions = %f' % ( 100*redundant_insts/float( self.total_parallel ) )
+    print
+
+    print "Total insts in spmd region = %d " % self.total_spmd
+    print 'Unique spmd insts = %d' % self.unique_spmd
+    redundant_spmd = self.total_spmd - self.unique_spmd
+    if self.total_spmd:
+      print 'Redundancy in spmd regions = %f' % ( 100*redundant_spmd/float( self.total_spmd ) )
+    print
+
+    print "Total insts in tasks = %d " % self.total_task
+    print "Total insts in runtime = %d " % self.total_runtime
+    print "Total insts in wsrt region = %d " % self.total_wsrt
+    print 'Unique wsrt insts = %d' % ( self.unique_runtime + self.unique_task )
+    redundant_wsrt = self.total_wsrt - ( self.unique_runtime + self.unique_task )
+    if self.total_wsrt:
+      print 'Redundancy in wsrt regions = %f' % ( 100*redundant_wsrt/float( self.total_wsrt ) )
+
+    if self.total_wsrt:
+      print "Percent of task insts = %f" % ( 100*self.total_task /float( self.total_wsrt ) )
+    print 'Unique task insts = %d' % self.unique_task
+    redundant_task = self.total_task - self.unique_task
+    if self.total_task:
+      print 'Redundancy in task regions = %f' % ( 100*redundant_task/float( self.total_task ) )
+
+    print 'Unique runtime insts = %d' % self.unique_runtime
+    redundant_runtime = self.total_runtime - self.unique_runtime
+    if self.total_runtime:
+      print 'Redundancy in runtime regions = %f' % ( 100*redundant_runtime/float( self.total_runtime ) )
+    print
+
+    print 'Total instruction accesses in parallel regions = %d' % self.total_imem_accesses
+    print 'Unique instruction accesses in parallel regions = %d' % self.unique_imem_accesses
+    total_l0_hits = 0
+    for state in self.states:
+      total_l0_hits = total_l0_hits + state.l0_hits
+      print 'L0 hits for core %d : %d' % ( state.core_id, state.l0_hits )
+    print 'Total hits in Core L0 buffer: %d' % total_l0_hits
+    print 'Total hits in SIMT L0 buffer: %d' % self.simt_l0_hits
+    print 'Total number of coalesced instruction accesses: %d' % self.total_coalesces
+    redundant_imem_accesses = self.total_imem_accesses - self.unique_imem_accesses
+    if self.total_imem_accesses:
+      print 'Savings for instruction accesses in parallel regions = %f' % ( 100*redundant_imem_accesses/float( self.total_imem_accesses ) )
+      print 'Savings due to Core L0 buffers: %f' % ( 100*total_l0_hits/float( self.total_imem_accesses ) )
+      print 'Savings due to SIMT L0 buffers: %f' % ( 100*self.simt_l0_hits/float( self.total_imem_accesses ) )
+      print 'Savings due to coalescing: %f' % ( 100*self.total_coalesces/float( self.total_imem_accesses ) )
+    print
+
+    # print data accesses
+    print 'Total data accesses in parallel regions = %d' % self.total_dmem_accesses
+    print 'Unique data accesses in parallel regions = %d' % self.unique_dmem_accesses
+    redundant_dmem_accesses = self.total_dmem_accesses - self.unique_dmem_accesses
+    if self.total_dmem_accesses:
+      print 'Savings for data accesses in parallel regions = %f' % ( 100*redundant_dmem_accesses/float( self.total_dmem_accesses ) )
+    print
+
+    # print instruction mix
+    total_int_insts   = 0
+    total_load_insts  = 0
+    total_store_insts = 0
+    total_amo_insts   = 0
+    total_mdu_insts   = 0
+    total_fpu_insts   = 0
+    for state in self.states:
+      total_int_insts   = total_int_insts   +  state.int_insts
+      total_load_insts  = total_load_insts  +  state.load_insts
+      total_store_insts = total_store_insts +  state.store_insts
+      total_amo_insts   = total_amo_insts   +  state.amo_insts
+      total_mdu_insts   = total_mdu_insts   +  state.mdu_insts
+      total_fpu_insts   = total_fpu_insts   +  state.fpu_insts
+    print 'Instructions mix in parallel regions'
+    print 'integer = %d' % ( total_int_insts )
+    print 'load    = %d' % ( total_load_insts )
+    print 'store   = %d' % ( total_store_insts )
+    print 'amo     = %d' % ( total_amo_insts )
+    print 'mdu     = %d' % ( total_mdu_insts )
+    print 'fpu     = %d' % ( total_fpu_insts )
+    print
 
   #-----------------------------------------------------------------------
   # run
