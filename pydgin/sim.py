@@ -522,7 +522,7 @@ class Sim( object ):
     if self.total_steps:
       print 'Percent insts in parallel region = %f\n' % ( 100*parallel_region/float( self.total_steps ) )
 
-    # print instruction fetch stats
+    # print instruction stats
     print 'Total insts in parallel regions = %d' % self.total_parallel
     print 'Unique insts in parallel regions = %d' % self.unique_insts
     redundant_insts = self.total_parallel - self.unique_insts
@@ -795,6 +795,20 @@ class Sim( object ):
             print "Exception message: %s" % error.msg
             break
 
+      if self.simt and len(unique_pcs) > self.inst_ports:
+        print "SIMT mode can't have number of active PC's greater than available frontends! tick: %d" % ( self.states[0].num_insts )
+        print
+        for i in xrange( self.ncores ):
+          s = self.states[ i ]
+          print pad( "%x" % s.pc, 8, " ", False ),
+          print "C%s a:%d i:%d s:%d c:%d g:%d l:%d %s %s %s" % (
+                  i, s.active, s.istall, s.stall, s.clear, s.ganged, s.lockstep,
+                  pad_hex( s.inst_bits ),
+                  pad( s.inst.str, 12 ),
+                  pad( "%d" % s.num_insts, 8 ), ),
+          print
+        raise AssertionError
+
       if self.states[0].debug.enabled( "insts" ):
         for i in xrange( self.ncores ):
           s = self.states[ i ]
@@ -1009,6 +1023,7 @@ class Sim( object ):
     if self.outfile:
       self.out_fd.close()
 
+    # print stats
     print '\nDONE! Status =', self.states[0].status
     print 'Total ticks Simulated = %d\n' % self.tick_ctr
 
@@ -1018,6 +1033,7 @@ class Sim( object ):
     if self.total_steps:
       print 'Percent insts in parallel region = %f\n' % ( 100*parallel_region/float( self.total_steps ) )
 
+    # print instruction stats
     print 'Total insts in parallel regions = %d' % self.total_parallel
     print 'Unique insts in parallel regions = %d' % self.unique_insts
     redundant_insts = self.total_parallel - self.unique_insts
@@ -1053,6 +1069,7 @@ class Sim( object ):
       print 'Redundancy in runtime regions = %f' % ( 100*redundant_runtime/float( self.total_runtime ) )
     print
 
+    # print imem accesses
     print 'Total instruction accesses in parallel regions = %d' % self.total_imem_accesses
     print 'Unique instruction accesses in parallel regions = %d' % self.unique_imem_accesses
     total_l0_hits = 0
@@ -1070,11 +1087,61 @@ class Sim( object ):
       print 'Savings due to coalescing: %f' % ( 100*self.total_coalesces/float( self.total_imem_accesses ) )
     print
 
+    # print frontend stats
+    print 'Total frontend accesses in parallel regions = %d' % self.total_frontend
+    print 'Unique frontend accesses in parallel regions = %d' % self.unique_frontend
+    redundant_frontend = self.total_frontend - self.unique_frontend
+    if self.total_frontend:
+      print 'Savings for frontend accesses in parallel regions = %f' % ( 100*redundant_frontend/float( self.total_frontend ) )
+    print
+
+    # print execute stats
+    print 'Total number of executed instructions = %d' % self.total_executes
+    print 'Unique executed instructions = %d' % self.unique_executes
+    redundant_executes = self.total_executes - self.unique_executes
+    if self.total_executes:
+      print "Savings for executed instructions = %f" % ( 100*redundant_executes/float( self.total_executes ) )
+    print
+
+    # print data accesses
     print 'Total data accesses in parallel regions = %d' % self.total_dmem_accesses
     print 'Unique data accesses in parallel regions = %d' % self.unique_dmem_accesses
     redundant_dmem_accesses = self.total_dmem_accesses - self.unique_dmem_accesses
     if self.total_dmem_accesses:
       print 'Savings for data accesses in parallel regions = %f' % ( 100*redundant_dmem_accesses/float( self.total_dmem_accesses ) )
+    print
+
+    # total work
+    total_work = self.total_imem_accesses + self.total_frontend + self.total_executes + self.total_dmem_accesses
+    unique_work = self.unique_imem_accesses + self.unique_frontend + self.unique_executes + self.unique_dmem_accesses
+    print 'Total work in parallel regions = %d' % total_work
+    print 'Unique work in parallel regions = %d' % unique_work
+    redundant_work = total_work - unique_work
+    if total_work:
+      print 'Savings in work in parallel regions = %f' % ( 100*redundant_work/float(total_work) )
+    print
+
+    # print instruction mix
+    total_int_insts   = 0
+    total_load_insts  = 0
+    total_store_insts = 0
+    total_amo_insts   = 0
+    total_mdu_insts   = 0
+    total_fpu_insts   = 0
+    for state in self.states:
+      total_int_insts   = total_int_insts   +  state.int_insts
+      total_load_insts  = total_load_insts  +  state.load_insts
+      total_store_insts = total_store_insts +  state.store_insts
+      total_amo_insts   = total_amo_insts   +  state.amo_insts
+      total_mdu_insts   = total_mdu_insts   +  state.mdu_insts
+      total_fpu_insts   = total_fpu_insts   +  state.fpu_insts
+    print 'Instructions mix in parallel regions'
+    print 'integer = %d' % ( total_int_insts )
+    print 'load    = %d' % ( total_load_insts )
+    print 'store   = %d' % ( total_store_insts )
+    print 'amo     = %d' % ( total_amo_insts )
+    print 'mdu     = %d' % ( total_mdu_insts )
+    print 'fpu     = %d' % ( total_fpu_insts )
     print
 
     # print stall counts
@@ -1103,29 +1170,6 @@ class Sim( object ):
     print pad( "%d |" % total_dmem_stalls, 12, " ", False ),
     print pad( "%d |" % total_mdu_stalls, 12, " ", False ),
     print pad( "%d |" % total_fpu_stalls, 12, " ", False )
-    print
-
-    # print instruction mix
-    total_int_insts   = 0
-    total_load_insts  = 0
-    total_store_insts = 0
-    total_amo_insts   = 0
-    total_mdu_insts   = 0
-    total_fpu_insts   = 0
-    for state in self.states:
-      total_int_insts   = total_int_insts   +  state.int_insts
-      total_load_insts  = total_load_insts  +  state.load_insts
-      total_store_insts = total_store_insts +  state.store_insts
-      total_amo_insts   = total_amo_insts   +  state.amo_insts
-      total_mdu_insts   = total_mdu_insts   +  state.mdu_insts
-      total_fpu_insts   = total_fpu_insts   +  state.fpu_insts
-    print 'Instructions mix in parallel regions'
-    print 'integer = %d' % ( total_int_insts )
-    print 'load    = %d' % ( total_load_insts )
-    print 'store   = %d' % ( total_store_insts )
-    print 'amo     = %d' % ( total_amo_insts )
-    print 'mdu     = %d' % ( total_mdu_insts )
-    print 'fpu     = %d' % ( total_fpu_insts )
     print
 
     # show all stats
@@ -1453,6 +1497,9 @@ class Sim( object ):
 
       # shreesha: l0 buffer size
       print "SIMT Frontend: ", bool(self.simt)
+      if self.simt:
+        print "  setting the word match to be true!"
+        self.iword_match = True
       print "SIMT L0 buffer : ", bool(self.simt) and self.l0_buffer_sz > 0
       print "L0 buffer size in cache lines: %d" % ( self.l0_buffer_sz )
 

@@ -253,15 +253,22 @@ class ReconvergenceManager():
     if sim.states[0].stats_en and parallel_mode and not sim.simt:
       sim.unique_imem_accesses += 1
       sim.total_imem_accesses += 1
+      sim.unique_frontend += 1
+      sim.total_frontend  += 1
 
     # collect stats for SIMT here
     if sim.states[0].stats_en and parallel_mode and sim.simt:
       if (sim.states[core].pc & s.l0_mask) in sim.states[core].l0_buffer:
+        sim.states[core].insn_str = 'L:'
         sim.states[core].l0_hits += 1
         sim.total_imem_accesses += 1
+        sim.unique_frontend += 1
+        sim.total_frontend  += 1
       else:
         sim.unique_imem_accesses += 1
         sim.total_imem_accesses += 1
+        sim.unique_frontend += 1
+        sim.total_frontend  += 1
 
     # add the line to the l0 buffer if there is a l0 buffer present
     if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer:
@@ -331,6 +338,11 @@ class ReconvergenceManager():
         if sim.states[0].stats_en and parallel_mode:
           sim.total_coalesces     += 1
           sim.total_imem_accesses += 1
+          # NOTE: for a instruction that is coalescing and there is a
+          # unique frontend do not count the total frontend work again!
+          if not sim.simt:
+            sim.unique_frontend += 1
+          sim.total_frontend  += 1
 
         # NOTE: 01/30/2018: Changing SIMT L0 buffer behavior
         #if not sim.simt and sim.l0_buffer_sz != 0:
@@ -462,6 +474,8 @@ class ReconvergenceManager():
           if sim.states[0].stats_en and parallel_mode:
             sim.states[core].l0_hits += 1
             sim.total_imem_accesses += 1
+            sim.unique_frontend += 1
+            sim.total_frontend  += 1
           sim.states[core].insn_str = 'L:'
 
     # all cores all either stalling or have reached a barrier or have
