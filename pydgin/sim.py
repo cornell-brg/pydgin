@@ -374,6 +374,8 @@ class Sim( object ):
 
       # count steps in stats region
       if self.states[0].stats_en: self.total_steps += 1
+      parallel_mode = self.states[0].wsrt_mode or self.states[0].spmd_mode
+      if self.states[0].stats_en and not parallel_mode: self.serial_steps += 1
 
       # barrier stuff
       for state in self.states:
@@ -446,8 +448,12 @@ class Sim( object ):
     # print stats
     print '\nDONE! Status =', self.states[0].status
     print 'Total ticks Simulated = %d\n' % self.tick_ctr
+
+    print 'Serial steps in stats region = %d' % self.serial_steps
     print 'Total steps in stats region = %d' % self.total_steps
-    print
+    parallel_region = self.total_steps - self.serial_steps
+    if self.total_steps:
+      print 'Percent insts in parallel region = %f\n' % ( 100*parallel_region/float( self.total_steps ) )
 
     # print instruction fetch stats
     print 'Total insts in parallel regions = %d' % self.total_parallel
