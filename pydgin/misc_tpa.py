@@ -48,6 +48,47 @@ class Task():
     s.m_target_chunk_sz = 0
 
 #-------------------------------------------------------------------------
+# OperandsStruct
+#-------------------------------------------------------------------------
+
+class OperandsStruct():
+
+  def __init__(s):
+    s.valid    = False  # indicates if instruction does any computation
+    s.src0_val = False
+    s.src0     = 0
+    s.src1_val = False
+    s.src1     = 0
+
+  def __eq__(s, other):
+    # not the same instruction format
+    if s.src0_val != other.src0_val or s.src1_val != other.src1_val:
+      return False
+
+    # source 0 present but not equal
+    if s.src0_val == True and other.src0_val == True:
+      if s.src0 != other.src0:
+        return False
+
+    # source 1 present but not equal
+    if s.src1_val == True and other.src1_val == True:
+      if s.src1 != other.src1:
+        return False
+
+    return True
+
+  def __str__( s ):
+    if s.valid:
+      res = ""
+      if s.src0_val:
+        res += "%8x " % s.src0
+      if s.src1_val:
+        res += "%8x " % s.src1
+      return res
+    else:
+      return "No opreands"
+
+#-------------------------------------------------------------------------
 # MT thread select
 #-------------------------------------------------------------------------
 

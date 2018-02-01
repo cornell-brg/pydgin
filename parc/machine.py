@@ -4,7 +4,9 @@
 
 from pydgin.machine import Machine
 from pydgin.storage import RegisterFile
+
 from pydgin.misc_tpa import MemRequest
+from pydgin.misc_tpa import OperandsStruct
 
 #-----------------------------------------------------------------------
 # State
@@ -94,7 +96,10 @@ class State( Machine ):
     self.ganged     = False  # used to indicate if a thread is part of a lockstep group
 
     # used for MT execution
-    self.dmemreq    = MemRequest()
+    self.dmemreq = MemRequest()
+
+    # operands for value similarity
+    self.operands = OperandsStruct()
 
     # barrier limit for each core
     self.barrier_limit = 0

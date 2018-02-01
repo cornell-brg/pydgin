@@ -292,12 +292,14 @@ encodings = [
 # nop
 #-----------------------------------------------------------------------
 def execute_nop( s, inst ):
+  s.operands.valid = False
   s.pc += 4
 
 #-----------------------------------------------------------------------
 # mfc0
 #-----------------------------------------------------------------------
 def execute_mfc0( s, inst ):
+  s.operands.valid = False
   #if   inst.rd ==  1: pass
   #  s.rf[ inst.rt ] = src[ s.src_ptr ]
   #  s.src_ptr += 1
@@ -329,6 +331,7 @@ def execute_mfc0( s, inst ):
 # mtc0
 #-----------------------------------------------------------------------
 def execute_mtc0( s, inst ):
+  s.operands.valid = False
   if   inst.rd == reg_map['status']:
     if s.testbin:
       val = s.rf[inst.rt]
@@ -376,6 +379,11 @@ def execute_mtc0( s, inst ):
 # addu
 #-----------------------------------------------------------------------
 def execute_addu( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[ inst.rd ] = trim_32( s.rf[ inst.rs ] + s.rf[ inst.rt ] )
   s.pc += 4
 
@@ -383,6 +391,11 @@ def execute_addu( s, inst ):
 # subu
 #-----------------------------------------------------------------------
 def execute_subu( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[inst.rd] = trim_32( s.rf[inst.rs] - s.rf[inst.rt] )
   s.pc += 4
 
@@ -390,6 +403,11 @@ def execute_subu( s, inst ):
 # and
 #-----------------------------------------------------------------------
 def execute_and( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[inst.rd] = s.rf[inst.rs] & s.rf[inst.rt]
   s.pc += 4
 
@@ -397,6 +415,11 @@ def execute_and( s, inst ):
 # or
 #-----------------------------------------------------------------------
 def execute_or( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[inst.rd] = s.rf[inst.rs] | s.rf[inst.rt]
   s.pc += 4
 
@@ -404,6 +427,11 @@ def execute_or( s, inst ):
 # xor
 #-----------------------------------------------------------------------
 def execute_xor( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[inst.rd] = s.rf[inst.rs] ^ s.rf[inst.rt]
   s.pc += 4
 
@@ -411,6 +439,11 @@ def execute_xor( s, inst ):
 # nor
 #-----------------------------------------------------------------------
 def execute_nor( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[inst.rd] = trim_32( ~(s.rf[inst.rs] | s.rf[inst.rt]) )
   s.pc += 4
 
@@ -418,6 +451,11 @@ def execute_nor( s, inst ):
 # slt
 #-----------------------------------------------------------------------
 def execute_slt( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[inst.rd] = signed( s.rf[inst.rs] ) < signed( s.rf[inst.rt] )
   s.pc += 4
 
@@ -425,6 +463,11 @@ def execute_slt( s, inst ):
 # sltu
 #-----------------------------------------------------------------------
 def execute_sltu( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[inst.rd] = s.rf[inst.rs] < s.rf[inst.rt]
   s.pc += 4
 
@@ -441,6 +484,11 @@ def pre_execute_mul( s, inst ):
     s.mdu_insts += 1
 
 def execute_mul( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[ inst.rd ] = trim_32( s.rf[ inst.rs ] * s.rf[ inst.rt ] )
   s.pc += 4
 
@@ -458,6 +506,11 @@ def pre_execute_div( s, inst ):
 
 # http://stackoverflow.com/a/6084608
 def execute_div( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   x    = signed( s.rf[ inst.rs ] )
   y    = signed( s.rf[ inst.rt ] )
   sign = -1 if (x < 0)^(y < 0) else 1
@@ -478,6 +531,11 @@ def pre_execute_divu( s, inst ):
     s.mdu_insts += 1
 
 def execute_divu( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[ inst.rd ] = s.rf[ inst.rs ] / s.rf[ inst.rt ]
   s.pc += 4
 
@@ -495,6 +553,11 @@ def pre_execute_rem( s, inst ):
 
 # http://stackoverflow.com/a/6084608
 def execute_rem( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   x = signed( s.rf[ inst.rs ] )
   y = signed( s.rf[ inst.rt ] )
 
@@ -514,6 +577,11 @@ def pre_execute_remu( s, inst ):
     s.mdu_insts += 1
 
 def execute_remu( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[ inst.rd ] = s.rf[ inst.rs ] % s.rf[ inst.rt ]
   s.pc += 4
 
@@ -525,6 +593,10 @@ def execute_remu( s, inst ):
 # addiu
 #-----------------------------------------------------------------------
 def execute_addiu( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = False
   s.rf[ inst.rt ] = trim_32( s.rf[ inst.rs ] + sext_16( inst.imm ) )
   s.pc += 4
 
@@ -532,6 +604,10 @@ def execute_addiu( s, inst ):
 # andi
 #-----------------------------------------------------------------------
 def execute_andi( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = False
   s.rf[inst.rt] = s.rf[inst.rs] & inst.imm
   s.pc += 4
 
@@ -539,6 +615,10 @@ def execute_andi( s, inst ):
 # ori
 #-----------------------------------------------------------------------
 def execute_ori( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = False
   s.rf[inst.rt] = s.rf[inst.rs] | inst.imm
   s.pc += 4
 
@@ -546,6 +626,10 @@ def execute_ori( s, inst ):
 # xori
 #-----------------------------------------------------------------------
 def execute_xori( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = False
   s.rf[inst.rt] = s.rf[inst.rs] ^ inst.imm
   s.pc += 4
 
@@ -553,6 +637,10 @@ def execute_xori( s, inst ):
 # slti
 #-----------------------------------------------------------------------
 def execute_slti( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = False
   s.rf[inst.rt] = signed( s.rf[inst.rs] ) < signed( sext_16(inst.imm) )
   s.pc += 4
 
@@ -560,6 +648,10 @@ def execute_slti( s, inst ):
 # sltiu
 #-----------------------------------------------------------------------
 def execute_sltiu( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = False
   s.rf[inst.rt] = s.rf[inst.rs] < sext_16(inst.imm)
   s.pc += 4
 
@@ -571,6 +663,10 @@ def execute_sltiu( s, inst ):
 # sll
 #-----------------------------------------------------------------------
 def execute_sll( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rt ]
+  s.operands.src1_val = False
   s.rf[inst.rd] = trim_32( s.rf[inst.rt] << inst.shamt )
   s.pc += 4
 
@@ -578,6 +674,10 @@ def execute_sll( s, inst ):
 # srl
 #-----------------------------------------------------------------------
 def execute_srl( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rt ]
+  s.operands.src1_val = False
   s.rf[inst.rd] = s.rf[inst.rt] >> inst.shamt
   s.pc += 4
 
@@ -585,6 +685,10 @@ def execute_srl( s, inst ):
 # sra
 #-----------------------------------------------------------------------
 def execute_sra( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rt ]
+  s.operands.src1_val = False
   s.rf[inst.rd] = trim_32( signed( s.rf[inst.rt] ) >> inst.shamt )
   s.pc += 4
 
@@ -592,6 +696,11 @@ def execute_sra( s, inst ):
 # sllv
 #-----------------------------------------------------------------------
 def execute_sllv( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[inst.rd] = trim_32( s.rf[inst.rt] << trim_5( s.rf[inst.rs] ) )
   s.pc += 4
 
@@ -599,6 +708,11 @@ def execute_sllv( s, inst ):
 # srlv
 #-----------------------------------------------------------------------
 def execute_srlv( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   s.rf[inst.rd] = s.rf[inst.rt] >> trim_5( s.rf[inst.rs] )
   s.pc += 4
 
@@ -606,6 +720,11 @@ def execute_srlv( s, inst ):
 # srav
 #-----------------------------------------------------------------------
 def execute_srav( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   # TODO: should it really be masked like this?
   s.rf[inst.rd] = trim_32( signed( s.rf[inst.rt] ) >> trim_5( s.rf[inst.rs] ) )
   s.pc += 4
@@ -618,6 +737,7 @@ def execute_srav( s, inst ):
 # j
 #-----------------------------------------------------------------------
 def execute_j( s, inst ):
+  s.operands.valid    = False
   s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
 
 #-----------------------------------------------------------------------
@@ -625,6 +745,7 @@ def execute_j( s, inst ):
 #-----------------------------------------------------------------------
 
 def execute_jal( s, inst ):
+  s.operands.valid    = False
   s.rf[31] = s.pc + 4
   s.pc = ((s.pc + 4) & 0xF0000000) | (inst.jtarg << 2)
   s.returns = s.returns + 1
@@ -649,6 +770,7 @@ def execute_jal( s, inst ):
 #-----------------------------------------------------------------------
 
 def execute_jr( s, inst ):
+  s.operands.valid    = False
   s.pc = s.rf[inst.rs]
   s.returns = s.returns - 1
 
@@ -674,6 +796,7 @@ def execute_jr( s, inst ):
 # jalr
 #-----------------------------------------------------------------------
 def execute_jalr( s, inst ):
+  s.operands.valid    = False
   s.rf[inst.rd] = s.pc + 4
   s.pc = s.rf[inst.rs]
   s.returns = s.returns + 1
@@ -696,6 +819,10 @@ def execute_jalr( s, inst ):
 # lui
 #-----------------------------------------------------------------------
 def execute_lui( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = inst.imm
+  s.operands.src1_val = False
   s.rf[ inst.rt ] = inst.imm << 16
   s.pc += 4
 
@@ -707,6 +834,11 @@ def execute_lui( s, inst ):
 # beq
 #-----------------------------------------------------------------------
 def execute_beq( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   if s.rf[inst.rs] == s.rf[inst.rt]:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
@@ -716,6 +848,11 @@ def execute_beq( s, inst ):
 # bne
 #-----------------------------------------------------------------------
 def execute_bne( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst. rt ]
   if s.rf[inst.rs] != s.rf[inst.rt]:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
@@ -725,6 +862,10 @@ def execute_bne( s, inst ):
 # blez
 #-----------------------------------------------------------------------
 def execute_blez( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = False
   if signed( s.rf[inst.rs] ) <= 0:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
@@ -734,6 +875,10 @@ def execute_blez( s, inst ):
 # bgtz
 #-----------------------------------------------------------------------
 def execute_bgtz( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = False
   if signed( s.rf[inst.rs] ) > 0:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
@@ -743,6 +888,10 @@ def execute_bgtz( s, inst ):
 # bltz
 #-----------------------------------------------------------------------
 def execute_bltz( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = False
   if signed( s.rf[inst.rs] ) < 0:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
@@ -752,6 +901,10 @@ def execute_bltz( s, inst ):
 # bgez
 #-----------------------------------------------------------------------
 def execute_bgez( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst. rs ]
+  s.operands.src1_val = False
   if signed( s.rf[inst.rs] ) >= 0:
     s.pc  = s.pc + 4 + (signed(sext_16(inst.imm)) << 2)
   else:
@@ -777,6 +930,11 @@ def pre_execute_lw( s, inst ):
     s.load_insts += 1
 
 def execute_lw( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = inst.rs
+  s.operands.src1_val = True
+  s.operands.src1     = inst.imm
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 4 )
   s.pc += 4
@@ -797,6 +955,11 @@ def pre_execute_lh( s, inst ):
     s.load_insts += 1
 
 def execute_lh( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = inst.rs
+  s.operands.src1_val = True
+  s.operands.src1     = inst.imm
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = sext_16( s.mem.read( addr, 2 ) )
   s.pc += 4
@@ -817,6 +980,11 @@ def pre_execute_lhu( s, inst ):
     s.load_insts += 1
 
 def execute_lhu( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = inst.rs
+  s.operands.src1_val = True
+  s.operands.src1     = inst.imm
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 2 )
   s.pc += 4
@@ -837,6 +1005,11 @@ def pre_execute_lb( s, inst ):
     s.load_insts += 1
 
 def execute_lb( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = inst.rs
+  s.operands.src1_val = True
+  s.operands.src1     = inst.imm
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = sext_8( s.mem.read( addr, 1 ) )
   s.pc += 4
@@ -857,6 +1030,11 @@ def pre_execute_lbu( s, inst ):
     s.load_insts += 1
 
 def execute_lbu( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = inst.rs
+  s.operands.src1_val = True
+  s.operands.src1     = inst.imm
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.rf[inst.rt] = s.mem.read( addr, 1 )
   s.pc += 4
@@ -881,6 +1059,11 @@ def pre_execute_sw( s, inst ):
     s.store_insts += 1
 
 def execute_sw( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = inst.rs
+  s.operands.src1_val = True
+  s.operands.src1     = inst.imm
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 4, s.rf[inst.rt] )
   s.pc += 4
@@ -901,6 +1084,11 @@ def pre_execute_sh( s, inst ):
     s.store_insts += 1
 
 def execute_sh( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = inst.rs
+  s.operands.src1_val = True
+  s.operands.src1     = inst.imm
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 2, s.rf[inst.rt] )
   s.pc += 4
@@ -921,6 +1109,11 @@ def pre_execute_sb( s, inst ):
     s.store_insts += 1
 
 def execute_sb( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = inst.rs
+  s.operands.src1_val = True
+  s.operands.src1     = inst.imm
   addr = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
   s.mem.write( addr, 1, s.rf[inst.rt] )
   s.pc += 4
@@ -929,6 +1122,7 @@ def execute_sb( s, inst ):
 # movn
 #-----------------------------------------------------------------------
 def execute_movn( s, inst ):
+  s.operands.valid    = False
   if s.rf[inst.rt] != 0:
     s.rf[inst.rd] = s.rf[inst.rs]
   s.pc += 4
@@ -937,6 +1131,7 @@ def execute_movn( s, inst ):
 # movz
 #-----------------------------------------------------------------------
 def execute_movz( s, inst ):
+  s.operands.valid    = False
   if s.rf[inst.rt] == 0:
     s.rf[inst.rd] = s.rf[inst.rs]
   s.pc += 4
@@ -957,6 +1152,7 @@ def execute_syscall( s, inst ):
   #  syscall_funcs[ syscall_number ]( s )
   #else:
   #  print "WARNING: syscall not implemented!", syscall_number
+  s.operands.valid    = False
   do_syscall( s )
   s.pc += 4
 
@@ -965,6 +1161,7 @@ def execute_syscall( s, inst ):
 #-----------------------------------------------------------------------
 # Note that eret is only meaningful if we're running in pkernel mode
 def execute_eret( s, inst ):
+  s.operands.valid    = False
   assert s.pkernel
   s.pc = s.epc + 4
 
@@ -988,6 +1185,7 @@ def pre_execute_amo_add( s, inst ):
     s.amo_insts += 1
 
 def execute_amo_add( s, inst ):
+  s.operands.valid    = False
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, trim_32(temp + s.rf[inst.rt]) )
   s.rf[ inst.rd ] = temp
@@ -1009,6 +1207,7 @@ def pre_execute_amo_and( s, inst ):
     s.amo_insts += 1
 
 def execute_amo_and( s, inst ):
+  s.operands.valid    = False
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, temp & s.rf[inst.rt] )
   s.rf[ inst.rd ] = temp
@@ -1030,6 +1229,7 @@ def pre_execute_amo_or( s, inst ):
     s.amo_insts += 1
 
 def execute_amo_or( s, inst ):
+  s.operands.valid    = False
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, temp | s.rf[inst.rt] )
   s.rf[ inst.rd ] = temp
@@ -1051,6 +1251,7 @@ def pre_execute_amo_xchg( s, inst ):
     s.amo_insts += 1
 
 def execute_amo_xchg( s, inst ):
+  s.operands.valid    = False
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, s.rf[inst.rt] )
   s.rf[ inst.rd ] = temp
@@ -1072,6 +1273,7 @@ def pre_execute_amo_min( s, inst ):
     s.amo_insts += 1
 
 def execute_amo_min( s, inst ):
+  s.operands.valid    = False
   temp = s.mem.read( s.rf[ inst.rs ], 4 )
   s.mem.write( s.rf[inst.rs], 4, min( temp, s.rf[inst.rt] ) )
   s.rf[ inst.rd ] = temp
@@ -1086,6 +1288,7 @@ def execute_amo_min( s, inst ):
 #-----------------------------------------------------------------------
 def execute_syncl( s, inst ):
   # TODO: sync doesn't do anything in pydgin
+  s.operands.valid    = False
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -1094,6 +1297,7 @@ def execute_syncl( s, inst ):
 # Not to be confused with XLOOPS instructions
 def execute_xloop( s, inst ):
   print 'WARNING: xloop implemented as noop!'
+  s.operands.valid    = False
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -1101,6 +1305,7 @@ def execute_xloop( s, inst ):
 #-----------------------------------------------------------------------
 def execute_utidx( s, inst ):
   print 'WARNING: utidx implemented as noop!'
+  s.operands.valid    = False
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -1108,6 +1313,7 @@ def execute_utidx( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mtuts( s, inst ):
   print 'WARNING: mtuts implemented as noop!'
+  s.operands.valid    = False
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -1115,6 +1321,7 @@ def execute_mtuts( s, inst ):
 #-----------------------------------------------------------------------
 def execute_mfuts( s, inst ):
   raise FatalError('mfuts is unsupported!')
+  s.operands.valid    = False
   s.pc += 4
 
 #-----------------------------------------------------------------------
@@ -1134,6 +1341,11 @@ def pre_execute_add_s( s, inst ):
     s.fpu_insts += 1
 
 def execute_add_s( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst.fs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst.ft ]
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = float2bits( a + b )
@@ -1152,6 +1364,11 @@ def pre_execute_sub_s( s, inst ):
     s.fpu_insts += 1
 
 def execute_sub_s( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst.fs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst.ft ]
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = float2bits( a - b )
@@ -1170,6 +1387,11 @@ def pre_execute_mul_s( s, inst ):
     s.fpu_insts += 1
 
 def execute_mul_s( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst.fs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst.ft ]
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = float2bits( a * b )
@@ -1188,6 +1410,11 @@ def pre_execute_div_s( s, inst ):
     s.fpu_insts += 1
 
 def execute_div_s( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst.fs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst.ft ]
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = float2bits( a / b )
@@ -1206,6 +1433,11 @@ def pre_execute_c_eq_s( s, inst ):
     s.fpu_insts += 1
 
 def execute_c_eq_s( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst.fs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst.ft ]
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = 1 if a == b else 0
@@ -1224,6 +1456,11 @@ def pre_execute_c_lt_s( s, inst ):
     s.fpu_insts += 1
 
 def execute_c_lt_s( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst.fs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst.ft ]
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = 1 if a < b else 0
@@ -1242,6 +1479,11 @@ def pre_execute_c_le_s( s, inst ):
     s.fpu_insts += 1
 
 def execute_c_le_s( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst.fs ]
+  s.operands.src1_val = True
+  s.operands.src1     = s.rf[ inst.ft ]
   a = bits2float( s.rf[ inst.fs ] )
   b = bits2float( s.rf[ inst.ft ] )
   s.rf[ inst.fd ] = 1 if a <= b else 0
@@ -1260,6 +1502,10 @@ def pre_execute_cvt_w_s( s, inst ):
     s.fpu_insts += 1
 
 def execute_cvt_w_s( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst.fs ]
+  s.operands.src1_val = False
   x = bits2float( s.rf[ inst.fs ] )
   s.rf[ inst.fd ] = trim_32( int( x ) )
   s.pc += 4
@@ -1277,6 +1523,10 @@ def pre_execute_cvt_s_w( s, inst ):
     s.fpu_insts += 1
 
 def execute_cvt_s_w( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst.fs ]
+  s.operands.src1_val = False
   x = signed( s.rf[ inst.fs ] )
   s.rf[ inst.fd ] = float2bits( float( x ) )
   s.pc += 4
@@ -1294,6 +1544,10 @@ def pre_execute_trunc_w_s( s, inst ):
     s.fpu_insts += 1
 
 def execute_trunc_w_s( s, inst ):
+  s.operands.valid    = True
+  s.operands.src0_val = True
+  s.operands.src0     = s.rf[ inst.fs ]
+  s.operands.src1_val = False
   # TODO: check for overflow
   x = bits2float( s.rf[ inst.fs ] )
   s.rf[ inst.fd ] = trim_32(int(x))  # round down
@@ -1363,6 +1617,7 @@ def execute_addiu_xi( s, inst ):
 # accelerator regfile instead of the scalar regfile. This is swapped back
 # when we return from the pcall.
 def execute_pcall( s, inst ):
+  s.operands.valid    = False
   s.xpc_pcall_type = 'pcall'
   s.xpc_en         = True
   s.xpc_start_idx  = s.rf[ inst.rs ]
@@ -1400,6 +1655,7 @@ def execute_pcall( s, inst ):
 # that went above 2^16, so we changed it to 24 bits start and 8 bits
 # size.
 def execute_pcallr( s, inst ):
+  s.operands.valid    = False
   s.xpc_pcall_type = 'pcallr'
   s.xpc_en         = True
   s.xpc_start_idx  = s.rf[ inst.rs ] >> 8
@@ -1426,6 +1682,7 @@ def execute_pcallr( s, inst ):
 # in the single-tile XPC because we need one giant pcall for the entire
 # loop.
 def execute_pcallzr( s, inst ):
+  s.operands.valid    = False
   s.xpc_pcall_type = 'pcallzr'
   s.xpc_en         = True
   s.xpc_start_idx  = 0
@@ -1449,6 +1706,7 @@ def execute_pcallzr( s, inst ):
 # This variant of pcall looks just like a jalr, except it puts a return
 # trigger in r31 so that jr knows when the pcall is over.
 def execute_pcallrx( s, inst ):
+  s.operands.valid    = False
   s.xpc_pcall_type  = 'pcallrx'
   s.xpc_en          = True
 
@@ -1468,6 +1726,7 @@ def execute_pcallrx( s, inst ):
 #-------------------------------------------------------------------------
 # Move a value from the scalar regfile to the accelerator regfile.
 def execute_mtx( s, inst ):
+  s.operands.valid    = False
   s.xpc_rf[inst.rs] = s.scalar_rf[inst.rt]
   s.pc += 4
 
@@ -1476,6 +1735,7 @@ def execute_mtx( s, inst ):
 #-------------------------------------------------------------------------
 # Move a value from the accelerator regfile to the scalar regfile.
 def execute_mfx( s, inst ):
+  s.operands.valid    = False
   s.scalar_rf[inst.rt] = s.xpc_rf[inst.rs]
   s.pc += 4
 
@@ -1491,6 +1751,7 @@ def execute_mfx( s, inst ):
 # rs = address
 
 def execute_mtxr( s, inst ):
+  s.operands.valid    = False
   base = s.rf[inst.rs]
   for i in range( 1, s.rf[inst.shamt] ):
     offset = i * 4
@@ -1505,6 +1766,7 @@ def execute_mtxr( s, inst ):
 # stat
 #-----------------------------------------------------------------------
 def execute_stat( s, inst ):
+  s.operands.valid    = False
   s.pc += 4
   stat_en = inst.stat_en
   stat_id = inst.stat_id
@@ -1560,6 +1822,7 @@ def execute_stat( s, inst ):
 # mug
 #-----------------------------------------------------------------------
 def execute_mug( s, inst ):
+  s.operands.valid    = False
   s.pc += 4
 
 #=======================================================================
@@ -1572,6 +1835,7 @@ def execute_mug( s, inst ):
 # HACK: Used as enq instruction
 
 def execute_addu_xi( s, inst ):
+  s.operands.valid    = False
   task_addr = trim_32( s.rf[inst.rt] )
   task = Task()
   task.m_func_ptr        = s.mem.read( task_addr + 0,  4 )
@@ -1603,6 +1867,7 @@ def execute_addu_xi( s, inst ):
 # HACK: Used as deq instruction
 
 def execute_subu_xi( s, inst ):
+  s.operands.valid    = False
   if len( s.sim_ptr.task_queue ) != 0:
     task_addr = trim_32( s.rf[inst.rt] )
     task      = s.sim_ptr.task_queue.pop(0)
@@ -1633,6 +1898,7 @@ def execute_subu_xi( s, inst ):
 # HACK: used as the hint for corner-turns
 
 def execute_psync( s, inst ):
+  s.operands.valid    = False
   for task in s.local_queue:
     if len( s.sim_ptr.task_queue ) == 0:
       s.sim_ptr.task_queue = [task]
@@ -1654,6 +1920,7 @@ def execute_psync( s, inst ):
 #    s.pc += 4
 
 def execute_stop( s, inst ):
+  s.operands.valid    = False
   s.stop = True
   s.active = False
 
@@ -1661,6 +1928,7 @@ def execute_stop( s, inst ):
 # hint_wl
 #-----------------------------------------------------------------------
 def execute_hint_wl( s, inst ):
+  s.operands.valid    = False
   s.pc += 4
 
 #=======================================================================

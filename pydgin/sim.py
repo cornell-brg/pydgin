@@ -31,6 +31,7 @@ from pydgin.misc_tpa import LLFUAllocator
 from pydgin.misc_tpa import ReconvergenceManager
 from pydgin.misc_tpa import ThreadSelect
 from pydgin.misc_tpa import MemRequest
+from pydgin.misc_tpa import OperandsStruct
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
@@ -118,6 +119,10 @@ class Sim( object ):
     self.total_dmem_accesses  = 0 # total number of dmem accesses
     self.total_coalesces      = 0 # total number of instruction coalesces
     self.simt_l0_hits         = 0 # total hits in simt l0 buffer
+
+    self.total_executes       = 0 # Total instructions that produce a value
+    self.unique_executes     = 0 # Unique instructions that produce a value
+
     # NOTE: Total number of instructions in timing loop
     self.total_steps     = 0
     self.serial_steps    = 0
@@ -244,6 +249,7 @@ class Sim( object ):
 
     last_active_pc = 0
     last_mem_req   = MemRequest()
+    last_operands  = OperandsStruct()
 
     thread_select = ThreadSelect( self.ncores, self.sched_limit )
 
@@ -340,6 +346,12 @@ class Sim( object ):
               if s.spmd_mode or s.wsrt_mode:
                 self.unique_imem_accesses += 1
                 self.total_imem_accesses += 1
+
+            # stats for value similarity
+            if s.operands.valid and ( s.spmd_mode or s.wsrt_mode ):
+              self.unique_executes += 1
+              self.total_executes += 1
+
           # currently drafting
           else:
             s.insn_str = 'C:'
@@ -347,8 +359,18 @@ class Sim( object ):
               self.total_coalesces += 1
               self.total_imem_accesses += 1
 
+              # stats for value similarity
+              if   s.operands == last_operands and s.operands.valid:
+                self.total_executes += 1
+              elif s.operands.valid:
+                self.unique_executes += 1
+                self.total_executes += 1
+
           # save the current pc before retiring
           last_active_pc = s.pc
+
+          # save the current operands
+          last_operands = s.operands
 
           # stats for data access
           if s.dmem:
@@ -382,6 +404,15 @@ class Sim( object ):
                   pad_hex( inst_bits ),
                   pad( inst.str, 12 ),
                   pad( "%d" % s.num_insts, 8 ), ),
+          print
+
+        if self.states[0].debug.enabled( "operands" ):
+          print "C%s %s " % ( s.core_id,  pad( inst.str, 9 )),
+          if s.operands.valid:
+            if s.operands.src0_val:
+              print pad_hex( s.operands.src0 ) + " ",
+            if s.operands.src1_val:
+              print pad_hex( s.operands.src1 ),
           print
 
         if self.states[0].debug.enabled( "regdump" ):
@@ -533,6 +564,14 @@ class Sim( object ):
     redundant_dmem_accesses = self.total_dmem_accesses - self.unique_dmem_accesses
     if self.total_dmem_accesses:
       print 'Savings for data accesses in parallel regions = %f' % ( 100*redundant_dmem_accesses/float( self.total_dmem_accesses ) )
+    print
+
+    # print total execute stats
+    print 'Total number of executed instructions = %d' % self.total_executes
+    print 'Unique executed instructions = %d' % self.unique_executes
+    redundant_executes = self.total_executes - self.unique_executes
+    if self.total_executes:
+      print "Savings for executed instructions = %f" % ( 100*redundant_executes/float( self.total_executes ) )
     print
 
     # print instruction mix
