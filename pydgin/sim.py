@@ -242,7 +242,7 @@ class Sim( object ):
     max_insts = self.max_insts
     max_ticks = self.max_ticks
     core_id   = 0
-    ltrace_pc = 0
+    pre_execute_pc = 0
 
     l0_mask = ~(self.icache_line_sz - 1) & 0xFFFFFFFF
     dmem_mask = ~(self.dcache_line_sz - 1) & 0xFFFFFFFF
@@ -291,8 +291,8 @@ class Sim( object ):
           # frontend
           inst, pre_exec_fun, exec_fun = self.decode( inst_bits )
 
-          # collect linetrace pc here
-          ltrace_pc = s.pc
+          # collect linetrace pc here (pc before execute)
+          pre_execute_pc = s.pc
 
           # only to collect LLFU and mem operations
           if pre_exec_fun:
@@ -347,30 +347,12 @@ class Sim( object ):
                 self.unique_imem_accesses += 1
                 self.total_imem_accesses += 1
 
-            # stats for value similarity
-            if s.operands.valid and ( s.spmd_mode or s.wsrt_mode ):
-              self.unique_executes += 1
-              self.total_executes += 1
-
           # currently drafting
           else:
             s.insn_str = 'C:'
             if s.spmd_mode or s.wsrt_mode:
               self.total_coalesces += 1
               self.total_imem_accesses += 1
-
-              # stats for value similarity
-              if   s.operands == last_operands and s.operands.valid:
-                self.total_executes += 1
-              elif s.operands.valid:
-                self.unique_executes += 1
-                self.total_executes += 1
-
-          # save the current pc before retiring
-          last_active_pc = s.pc
-
-          # save the current operands
-          last_operands = s.operands
 
           # stats for data access
           if s.dmem:
@@ -384,13 +366,42 @@ class Sim( object ):
               else:
                 self.unique_dmem_accesses += 1
                 self.total_dmem_accesses += 1
-
-            # save current mem request
-            last_mem_req = s.dmemreq
           #---------------------------------------------------------------
 
           # backend
           exec_fun( s, inst )
+
+          #---------------------------------------------------------------
+          # Collect value similarity stats
+          #---------------------------------------------------------------
+          # can't draft
+          if s.spmd_mode or s.wsrt_mode:
+            if pre_execute_pc != last_active_pc:
+              # stats for value similarity
+              if s.operands.valid:
+                self.unique_executes += 1
+                self.total_executes += 1
+            # check drafting
+            else:
+              if s.operands.compare( last_operands ) and s.operands.valid:
+                #print "Draft: %s" % ( inst.str )
+                #print "   src0: v:%d v:%d %d %d" % ( s.operands.src0_val, last_operands.src0_val, s.operands.src0, last_operands.src0 )
+                #print "   src1: v:%d v:%d %d %d" % ( s.operands.src1_val, last_operands.src1_val, s.operands.src1, last_operands.src1 )
+                self.total_executes += 1
+              elif s.operands.valid:
+                self.unique_executes += 1
+                self.total_executes += 1
+          #---------------------------------------------------------------
+
+          # save the current pc before retiring
+          last_active_pc = pre_execute_pc
+
+          # save operand state
+          last_operands = s.operands
+
+          # save current mem request
+          if s.dmem:
+            last_mem_req = s.dmemreq
 
         except FatalError as error:
           print "Exception in (pc: 0x%s), aborting!" % pad_hex( pc )
@@ -476,24 +487,24 @@ class Sim( object ):
             parallel_mode = s.wsrt_mode or s.spmd_mode
             # core0 in serial section
             if self.color and not parallel_mode and active_core==0 :
-              print colors.white + s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ) + colors.end
+              print colors.white + s.insn_str + pad( "%x |" % pre_execute_pc, 9, " ", False ) + colors.end
             # others in bthread control function
             elif self.color and not parallel_mode:
-              print colors.blue + s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ) + colors.end
+              print colors.blue + s.insn_str + pad( "%x |" % pre_execute_pc, 9, " ", False ) + colors.end
             # cores in spmd region
             elif self.color and s.spmd_mode:
-              print colors.purple + s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ) + colors.end
+              print colors.purple + s.insn_str + pad( "%x |" % pre_execute_pc, 9, " ", False ) + colors.end
             # cores executing tasks in wsrt region
             elif self.color and s.task_mode and parallel_mode:
-              print colors.green + s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ) + colors.end
+              print colors.green + s.insn_str + pad( "%x |" % pre_execute_pc, 9, " ", False ) + colors.end
             # cores executing runtime function in wsrt region
             elif self.color and s.runtime_mode and parallel_mode:
-              print colors.yellow + s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ) + colors.end
+              print colors.yellow + s.insn_str + pad( "%x |" % pre_execute_pc, 9, " ", False ) + colors.end
             # No color requested
             else:
-              print s.insn_str + pad( "%x |" % ltrace_pc, 9, " ", False ),
+              print s.insn_str + pad( "%x |" % pre_execute_pc, 9, " ", False ),
           else:
-            print "#b" + pad( "%x |" % ltrace_pc, 9, " ", False )
+            print "#b" + pad( "%x |" % pre_execute_pc, 9, " ", False )
 
     # print stats
     print '\nDONE! Status =', self.states[0].status

@@ -60,7 +60,7 @@ class OperandsStruct():
     s.src1_val = False
     s.src1     = 0
 
-  def __eq__(s, other):
+  def compare(s, other):
     # not the same instruction format
     if s.src0_val != other.src0_val or s.src1_val != other.src1_val:
       return False
@@ -76,17 +76,6 @@ class OperandsStruct():
         return False
 
     return True
-
-  def __str__( s ):
-    if s.valid:
-      res = ""
-      if s.src0_val:
-        res += "%8x " % s.src0
-      if s.src1_val:
-        res += "%8x " % s.src1
-      return res
-    else:
-      return "No opreands"
 
 #-------------------------------------------------------------------------
 # MT thread select
