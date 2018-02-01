@@ -30,6 +30,7 @@ from pydgin.misc_tpa import MemCoalescer
 from pydgin.misc_tpa import LLFUAllocator
 from pydgin.misc_tpa import ReconvergenceManager
 from pydgin.misc_tpa import ThreadSelect
+from pydgin.misc_tpa import MemRequest
 
 def jitpolicy(driver):
   from rpython.jit.codewriter.policy import JitPolicy
@@ -239,8 +240,10 @@ class Sim( object ):
     ltrace_pc = 0
 
     l0_mask = ~(self.icache_line_sz - 1) & 0xFFFFFFFF
+    dmem_mask = ~(self.dcache_line_sz - 1) & 0xFFFFFFFF
 
     last_active_pc = 0
+    last_mem_req   = MemRequest()
 
     thread_select = ThreadSelect( self.ncores, self.sched_limit )
 
@@ -343,10 +346,26 @@ class Sim( object ):
             if s.spmd_mode or s.wsrt_mode:
               self.total_coalesces += 1
               self.total_imem_accesses += 1
-          #---------------------------------------------------------------
 
           # save the current pc before retiring
           last_active_pc = s.pc
+
+          # stats for data access
+          if s.dmem:
+            s.dmem = False
+            s.dmemreq.addr = s.dmemreq.addr & dmem_mask
+            # can coalesce load
+            parallel_mode = s.wsrt_mode or s.spmd_mode
+            if self.states[0].stats_en and parallel_mode:
+              if s.dmemreq.type_ == 0 and last_mem_req.type_ == 0 and s.dmemreq.addr == last_mem_req.addr:
+                self.total_dmem_accesses += 1
+              else:
+                self.unique_dmem_accesses += 1
+                self.total_dmem_accesses += 1
+
+            # save current mem request
+            last_mem_req = s.dmemreq
+          #---------------------------------------------------------------
 
           # backend
           exec_fun( s, inst )

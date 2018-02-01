@@ -4,6 +4,7 @@
 
 from pydgin.machine import Machine
 from pydgin.storage import RegisterFile
+from pydgin.misc_tpa import MemRequest
 
 #-----------------------------------------------------------------------
 # State
@@ -91,6 +92,9 @@ class State( Machine ):
     self.lockstep   = False  # used to indicate if a thread is allowed to participate in lockstep or not
     self.start_task = False  # used to indicate start of a task
     self.ganged     = False  # used to indicate if a thread is part of a lockstep group
+
+    # used for MT execution
+    self.dmemreq    = MemRequest()
 
     # barrier limit for each core
     self.barrier_limit = 0

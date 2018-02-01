@@ -765,15 +765,13 @@ def execute_bgez( s, inst ):
 # lw
 #-----------------------------------------------------------------------
 def pre_execute_lw( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 0
-  dmemreq.len_  = 4
-  dmemreq.addr  = s.rf[inst.rs]
-  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 0
+  s.dmemreq.len_  = 4
+  s.dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.load_insts += 1
@@ -787,15 +785,13 @@ def execute_lw( s, inst ):
 # lh
 #-----------------------------------------------------------------------
 def pre_execute_lh( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 0
-  dmemreq.len_  = 2
-  dmemreq.addr  = s.rf[inst.rs]
-  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 0
+  s.dmemreq.len_  = 2
+  s.dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.load_insts += 1
@@ -809,15 +805,13 @@ def execute_lh( s, inst ):
 # lhu
 #-----------------------------------------------------------------------
 def pre_execute_lhu( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 0
-  dmemreq.len_  = 2
-  dmemreq.addr  = s.rf[inst.rs]
-  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 0
+  s.dmemreq.len_  = 2
+  s.dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.load_insts += 1
@@ -831,15 +825,13 @@ def execute_lhu( s, inst ):
 # lb
 #-----------------------------------------------------------------------
 def pre_execute_lb( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 0
-  dmemreq.len_  = 1
-  dmemreq.addr  = s.rf[inst.rs]
-  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 0
+  s.dmemreq.len_  = 1
+  s.dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.load_insts += 1
@@ -853,15 +845,13 @@ def execute_lb( s, inst ):
 # lbu
 #-----------------------------------------------------------------------
 def pre_execute_lbu( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 0
-  dmemreq.len_  = 1
-  dmemreq.addr  = s.rf[inst.rs]
-  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 0
+  s.dmemreq.len_  = 1
+  s.dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.load_insts += 1
@@ -879,15 +869,13 @@ def execute_lbu( s, inst ):
 # sw
 #-----------------------------------------------------------------------
 def pre_execute_sw( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 1
-  dmemreq.len_  = 4
-  dmemreq.addr  = s.rf[inst.rs]
-  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 1
+  s.dmemreq.len_  = 4
+  s.dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.store_insts += 1
@@ -901,15 +889,13 @@ def execute_sw( s, inst ):
 # sh
 #-----------------------------------------------------------------------
 def pre_execute_sh( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 1
-  dmemreq.len_  = 2
-  dmemreq.addr  = s.rf[inst.rs]
-  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 1
+  s.dmemreq.len_  = 2
+  s.dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.store_insts += 1
@@ -923,15 +909,13 @@ def execute_sh( s, inst ):
 # sb
 #-----------------------------------------------------------------------
 def pre_execute_sb( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 1
-  dmemreq.len_  = 1
-  dmemreq.addr  = s.rf[inst.rs]
-  dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 1
+  s.dmemreq.len_  = 1
+  s.dmemreq.addr  = trim_32( s.rf[inst.rs] + sext_16(inst.imm) )
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.store_insts += 1
@@ -992,14 +976,13 @@ def execute_eret( s, inst ):
 # amo.add
 #-----------------------------------------------------------------------
 def pre_execute_amo_add( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 2
-  dmemreq.len_  = 4
-  dmemreq.addr  = s.rf[inst.rs]
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 2
+  s.dmemreq.len_  = 4
+  s.dmemreq.addr  = s.rf[inst.rs]
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.amo_insts += 1
@@ -1014,14 +997,13 @@ def execute_amo_add( s, inst ):
 # amo.and
 #-----------------------------------------------------------------------
 def pre_execute_amo_and( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 2
-  dmemreq.len_  = 4
-  dmemreq.addr  = s.rf[inst.rs]
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 2
+  s.dmemreq.len_  = 4
+  s.dmemreq.addr  = s.rf[inst.rs]
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.amo_insts += 1
@@ -1036,14 +1018,13 @@ def execute_amo_and( s, inst ):
 # amo.or
 #-----------------------------------------------------------------------
 def pre_execute_amo_or( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 2
-  dmemreq.len_  = 4
-  dmemreq.addr  = s.rf[inst.rs]
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 2
+  s.dmemreq.len_  = 4
+  s.dmemreq.addr  = s.rf[inst.rs]
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.amo_insts += 1
@@ -1058,14 +1039,13 @@ def execute_amo_or( s, inst ):
 # amo.xchg
 #-----------------------------------------------------------------------
 def pre_execute_amo_xchg( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 2
-  dmemreq.len_  = 4
-  dmemreq.addr  = s.rf[inst.rs]
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 2
+  s.dmemreq.len_  = 4
+  s.dmemreq.addr  = s.rf[inst.rs]
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.amo_insts += 1
@@ -1080,14 +1060,13 @@ def execute_amo_xchg( s, inst ):
 # amo.min
 #-----------------------------------------------------------------------
 def pre_execute_amo_min( s, inst ):
-  s.dmem        = True
-  s.stall       = True
-  s.curr_pc     = s.pc
-  dmemreq       = MemRequest()
-  dmemreq.type_ = 2
-  dmemreq.len_  = 4
-  dmemreq.addr  = s.rf[inst.rs]
-  s.sim_ptr.dmem_coalescer.set_request( s.core_id, dmemreq )
+  s.dmem          = True
+  s.stall         = True
+  s.curr_pc       = s.pc
+  s.dmemreq.type_ = 2
+  s.dmemreq.len_  = 4
+  s.dmemreq.addr  = s.rf[inst.rs]
+  s.sim_ptr.dmem_coalescer.set_request( s.core_id, s.dmemreq )
   parallel_mode = s.wsrt_mode or s.spmd_mode
   if s.sim_ptr.states[0].stats_en and parallel_mode:
     s.amo_insts += 1
