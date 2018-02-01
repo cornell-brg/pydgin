@@ -121,7 +121,10 @@ class Sim( object ):
     self.simt_l0_hits         = 0 # total hits in simt l0 buffer
 
     self.total_executes       = 0 # Total instructions that produce a value
-    self.unique_executes     = 0 # Unique instructions that produce a value
+    self.unique_executes      = 0 # Unique instructions that produce a value
+
+    self.total_frontend       = 0 # Total frontend usage
+    self.unique_frontend      = 0 # Unique frontend usage
 
     # NOTE: Total number of instructions in timing loop
     self.total_steps     = 0
@@ -337,6 +340,7 @@ class Sim( object ):
               if s.spmd_mode or s.wsrt_mode:
                 s.l0_hits += 1
                 self.total_imem_accesses += 1
+                self.total_frontend += 1
             # add the line to the l0 buffer if there is a l0 buffer present
             if (s.pc & l0_mask) not in s.l0_buffer:
               s.insn_str = 'S:'
@@ -346,6 +350,8 @@ class Sim( object ):
               if s.spmd_mode or s.wsrt_mode:
                 self.unique_imem_accesses += 1
                 self.total_imem_accesses += 1
+                self.unique_frontend += 1
+                self.total_frontend += 1
 
           # currently drafting
           else:
@@ -353,6 +359,7 @@ class Sim( object ):
             if s.spmd_mode or s.wsrt_mode:
               self.total_coalesces += 1
               self.total_imem_accesses += 1
+              self.total_frontend += 1
 
           # stats for data access
           if s.dmem:
@@ -378,9 +385,8 @@ class Sim( object ):
           if s.spmd_mode or s.wsrt_mode:
             if pre_execute_pc != last_active_pc:
               # stats for value similarity
-              if s.operands.valid:
-                self.unique_executes += 1
-                self.total_executes += 1
+              self.unique_executes += 1
+              self.total_executes += 1
             # check drafting
             else:
               if s.operands.compare( last_operands ) and s.operands.valid:
@@ -388,7 +394,7 @@ class Sim( object ):
                 #print "   src0: v:%d v:%d %d %d" % ( s.operands.src0_val, last_operands.src0_val, s.operands.src0, last_operands.src0 )
                 #print "   src1: v:%d v:%d %d %d" % ( s.operands.src1_val, last_operands.src1_val, s.operands.src1, last_operands.src1 )
                 self.total_executes += 1
-              elif s.operands.valid:
+              else:
                 self.unique_executes += 1
                 self.total_executes += 1
           #---------------------------------------------------------------
@@ -552,6 +558,7 @@ class Sim( object ):
       print 'Redundancy in runtime regions = %f' % ( 100*redundant_runtime/float( self.total_runtime ) )
     print
 
+    # print imem accesses
     print 'Total instruction accesses in parallel regions = %d' % self.total_imem_accesses
     print 'Unique instruction accesses in parallel regions = %d' % self.unique_imem_accesses
     total_l0_hits = 0
@@ -569,6 +576,22 @@ class Sim( object ):
       print 'Savings due to coalescing: %f' % ( 100*self.total_coalesces/float( self.total_imem_accesses ) )
     print
 
+    # print frontend stats
+    print 'Total frontend accesses in parallel regions = %d' % self.total_frontend
+    print 'Unique frontend accesses in parallel regions = %d' % self.unique_frontend
+    redundant_frontend = self.total_frontend - self.unique_frontend
+    if self.total_frontend:
+      print 'Savings for frontend accesses in parallel regions = %f' % ( 100*redundant_frontend/float( self.total_frontend ) )
+    print
+
+    # print execute stats
+    print 'Total number of executed instructions = %d' % self.total_executes
+    print 'Unique executed instructions = %d' % self.unique_executes
+    redundant_executes = self.total_executes - self.unique_executes
+    if self.total_executes:
+      print "Savings for executed instructions = %f" % ( 100*redundant_executes/float( self.total_executes ) )
+    print
+
     # print data accesses
     print 'Total data accesses in parallel regions = %d' % self.total_dmem_accesses
     print 'Unique data accesses in parallel regions = %d' % self.unique_dmem_accesses
@@ -577,12 +600,14 @@ class Sim( object ):
       print 'Savings for data accesses in parallel regions = %f' % ( 100*redundant_dmem_accesses/float( self.total_dmem_accesses ) )
     print
 
-    # print total execute stats
-    print 'Total number of executed instructions = %d' % self.total_executes
-    print 'Unique executed instructions = %d' % self.unique_executes
-    redundant_executes = self.total_executes - self.unique_executes
-    if self.total_executes:
-      print "Savings for executed instructions = %f" % ( 100*redundant_executes/float( self.total_executes ) )
+    # total work
+    total_work = self.total_imem_accesses + self.total_frontend + self.total_executes + self.total_dmem_accesses
+    unique_work = self.unique_imem_accesses + self.unique_frontend + self.unique_executes + self.unique_dmem_accesses
+    print 'Total work in parallel regions = %d' % total_work
+    print 'Unique work in parallel regions = %d' % unique_work
+    redundant_work = total_work - unique_work
+    if total_work:
+      print 'Savings in work in parallel regions = %f' % ( 100*redundant_work/float(total_work) )
     print
 
     # print instruction mix
