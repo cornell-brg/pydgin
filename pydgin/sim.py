@@ -91,6 +91,7 @@ class Sim( object ):
     self.barrier_delta      = 0     # barrier delta limits
     self.barrier_hits       = 0     # barrier success
     self.barrier_miss       = 0     # barrier miss
+    self.num_tasks          = 0     # number of tasks executed
     self.adaptive_hint      = False # turn on adaptive barrier limits
     self.icoalesce          = True  # toggle instruction coalescing
     self.iword_match        = True  # toggle instruction word vs. line matching
@@ -469,15 +470,29 @@ class Sim( object ):
             waiting_cores.append( state.core_id )
 
         for core in waiting_cores:
+          curr_limit = self.states[core].barrier_limit
           if self.adaptive_hint:
             # found other cores
-            # NOTE: IMPORTANT TBD
-            # maybe there should be max limit? Collect hits/misses stats
-            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) != 0:
-              self.states[core].barrier_limit = self.states[core].barrier_limit + self.barrier_delta if self.states[core].barrier_limit < self.barrier_limit else self.barrier_limit
+            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) > 1:
+              self.states[core].barrier_limit = self.states[core].barrier_limit - self.barrier_delta if self.states[core].barrier_limit > self.barrier_delta else self.barrier_limit
+              self.barrier_hits += 1
             # paid the cost at barrier and found no partner
-            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) == 0:
-              self.states[core].barrier_limit = self.states[core].barrier_limit - self.barrier_delta if self.states[core].barrier_limit > self.barrier_delta else self.barrier_delta
+            elif (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) == 1:
+              self.states[core].barrier_limit = self.states[core].barrier_limit + self.barrier_delta if self.states[core].barrier_limit < self.barrier_limit else self.barrier_delta
+              self.barrier_miss += 1
+            # match because of sync up
+            elif len( waiting_cores ) > 1:
+              self.barrier_hits += 1
+          else:
+            # matched someone by waiting
+            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) > 1:
+              self.barrier_hits += 1
+            # paid the cost at barrier and found no partner
+            elif (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) == 1:
+              self.barrier_miss += 1
+            # match because of sync up
+            elif len( waiting_cores ) > 1:
+              self.barrier_hits += 1
 
           self.states[core].barrier_ctr = 0
           self.states[core].stop = False
@@ -977,15 +992,29 @@ class Sim( object ):
             waiting_cores.append( state.core_id )
 
         for core in waiting_cores:
+          curr_limit = self.states[core].barrier_limit
           if self.adaptive_hint:
             # found other cores
-            # NOTE: IMPORTANT TBD
-            # maybe there should be max limit? Collect hits/misses stats
-            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) != 0:
-              self.states[core].barrier_limit = self.states[core].barrier_limit + self.barrier_delta if self.states[core].barrier_limit < self.barrier_limit else self.barrier_limit
+            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) > 1:
+              self.states[core].barrier_limit = self.states[core].barrier_limit - self.barrier_delta if self.states[core].barrier_limit > self.barrier_delta else self.barrier_limit
+              self.barrier_hits += 1
             # paid the cost at barrier and found no partner
-            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) == 0:
-              self.states[core].barrier_limit = self.states[core].barrier_limit - self.barrier_delta if self.states[core].barrier_limit > self.barrier_delta else self.barrier_delta
+            elif (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) == 1:
+              self.states[core].barrier_limit = self.states[core].barrier_limit + self.barrier_delta if self.states[core].barrier_limit < self.barrier_limit else self.barrier_delta
+              self.barrier_miss += 1
+            # match because of sync up
+            elif len( waiting_cores ) > 1:
+              self.barrier_hits += 1
+          else:
+            # matched someone by waiting
+            if (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) > 1:
+              self.barrier_hits += 1
+            # paid the cost at barrier and found no partner
+            elif (self.states[core].barrier_ctr == self.states[core].barrier_limit) and len( waiting_cores ) == 1:
+              self.barrier_miss += 1
+            # match because of sync up
+            elif len( waiting_cores ) > 1:
+              self.barrier_hits += 1
 
           self.states[core].barrier_ctr = 0
           self.states[core].stop = False
@@ -1140,6 +1169,11 @@ class Sim( object ):
     if total_work:
       print 'Savings in work in parallel regions = %f' % ( 100*redundant_work/float(total_work) )
     print
+
+    # barrier stats
+    print "Barrier hits: ", self.barrier_hits
+    print "Barrier misses: ", self.barrier_miss
+    print "Total tasks: ", self.num_tasks
 
     # print instruction mix
     total_int_insts   = 0
@@ -1453,7 +1487,10 @@ class Sim( object ):
         elif self.lockstep == 2:
           self.task_lockstep = True
         # barrier limit
-        self.states[i].barrier_limit = self.barrier_limit
+        if self.adaptive_hint:
+          self.states[i].barrier_limit = self.barrier_delta
+        else:
+          self.states[i].barrier_limit = self.barrier_limit
 
       # set accel rf mode
 

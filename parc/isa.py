@@ -805,6 +805,7 @@ def execute_jalr( s, inst ):
   # executing a task has been set, if this is true then we are executing in
   # task mode, record where we entered the task mode & reset runtime mode
   if s.runtime_mode and s.stat_inst_en[10] and s.wsrt_mode:
+    s.sim_ptr.num_tasks += 1
     s.start_task = True
     s.runtime_mode = False
     s.task_mode = True
@@ -1921,8 +1922,11 @@ def execute_psync( s, inst ):
 
 def execute_stop( s, inst ):
   s.operands.valid    = False
-  s.stop = True
-  s.active = False
+  if s.sim_ptr.states[0].stats_en:
+    s.stop = True
+    s.active = False
+  else:
+    s.pc += 4
 
 #-----------------------------------------------------------------------
 # hint_wl

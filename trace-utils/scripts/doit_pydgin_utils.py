@@ -190,6 +190,8 @@ def get_base_evaldict():
   evaldict['sched_limit']     = 0     # Limit for switching arbitration
   evaldict['dumptrace']       = False # Dump trace
   evaldict['limit_lockstep']  = False # Match lockstep group size to resources
+  evaldict['adaptive_hint']   = False # Adaptive hints
+  evaldict['barrier_delta']   = 0     # Delta steps for hint modulation
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -261,6 +263,8 @@ def gen_trace_per_app( evaldict ):
   sched_limit     = evaldict["sched_limit"]
   dumptrace       = evaldict["dumptrace"]
   limit_lockstep  = evaldict["limit_lockstep"]
+  adaptive_hint   = evaldict["adaptive_hint"]
+  barrier_delta   = evaldict["barrier_delta"]
 
   # default options for serial code
   if serial:
@@ -343,6 +347,10 @@ def gen_trace_per_app( evaldict ):
         if limit_lockstep:
           extra_pydgin_opts += "--limit-lockstep "
 
+        if adaptive_hint:
+          extra_pydgin_opts += "--adaptive-hint "
+
+        extra_pydgin_opts += "--barrier-delta %(barrier_delta)s " % { 'barrier_delta' : barrier_delta }
         extra_pydgin_opts += "--lockstep %(lockstep)s " % { 'lockstep' : lockstep }
         extra_pydgin_opts += "--sched-limit %(sched_limit)s " % { 'sched_limit' : sched_limit }
         extra_pydgin_opts += "--barrier-limit %(barrier_limit)s " % { 'barrier_limit' : barrier_limit }
@@ -508,7 +516,8 @@ def gen_plot_per_app( plotdict ):
     app_name = re.sub("-parc", '', app)
     app_name = re.sub("-mtpull", '', app_name)
     app_name = re.sub("-mt", '', app_name)
-    app_name = app_short_name_dict[app]
+    app_name = re.sub("-small", '', app_name)
+    app_name = app_short_name_dict[app_name]
 
     # For each app group in app_dict[app]
     for group, app_opts_list in app_dict[app].iteritems():
