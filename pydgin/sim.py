@@ -795,6 +795,8 @@ class Sim( object ):
             print "Exception message: %s" % error.msg
             break
 
+      #frontend-----------------------------------------------------------
+
       if self.simt and len(unique_pcs) > self.inst_ports:
         print "SIMT mode can't have number of active PC's greater than available frontends! tick: %d" % ( self.states[0].num_insts )
         print
@@ -860,7 +862,7 @@ class Sim( object ):
       # shreesha: linetrace
       # NOTE: collect the linetrace before commit as pc get's updated else
       pc_list = []
-
+      unique_operands = {}
       for core in xrange( self.ncores ):
 
         s = self.states[ core ]
@@ -881,10 +883,29 @@ class Sim( object ):
 
             exec_fun( s, inst )
 
+            if s.spmd_mode or s.wsrt_mode:
+              self.total_executes += 1
+              match = False
+              for key in unique_operands.keys():
+                if s.operands.compare( key ) and s.operands.valid:
+                  match = True
+                  break
+              if not match and s.operands.valid:
+                unique_operands[ s.operands ] = s.operands
+
           except FatalError as error:
             print "Exception in execute (pc: 0x%s), aborting!" % pad_hex( s.pc )
             print "Exception message: %s" % error.msg
             break
+
+        if self.states[0].debug.enabled( "operands" ):
+          print "C%s %s " % ( s.core_id,  pad( s.inst.str, 9 )),
+          if s.operands.valid:
+            if s.operands.src0_val:
+              print pad_hex( s.operands.src0 ) + " ",
+            if s.operands.src1_val:
+              print pad_hex( s.operands.src1 ),
+          print
 
         if self.states[0].debug.enabled( "regdump" ):
           print "C%d" % core
@@ -894,11 +915,10 @@ class Sim( object ):
           s.num_insts += 1
           if s.stats_en: s.stat_num_insts += 1
 
-          # check if we have reached the end of the maximum instructions and
-          # exit if necessary
-          #if max_insts != 0 and s.num_insts >= max_insts:
-          #  print "Reached the max_insts (%d), exiting." % max_insts
-          #  break
+      #backend------------------------------------------------------------
+
+      # value similarity stats
+      self.unique_executes += len( unique_operands )
 
       # collect all stall stats
       for tc in self.states:
