@@ -17,8 +17,10 @@ def task_pydgin_sims_debug():
 
   # bmark params
   evaldict['app_group']       = ["small","mtpull"]
-  evaldict['app_list']        = ['ubmark-tpa-vvmult']
+  #evaldict['app_list']        = ['ubmark-tpa-vvmult']
   #evaldict['app_list']        = ['bilateral']
+  evaldict['app_list']        = ['uts']
+  #evaldict['app_list']        = ['cilk-knapsack-parc-mtpull']
   evaldict['app_dict']        = app_dict
 
   # uarch params
@@ -30,14 +32,18 @@ def task_pydgin_sims_debug():
   evaldict['data_ports']      = 2
   evaldict['mdu_ports']       = 2
   evaldict['fpu_ports']       = 2
-  evaldict['analysis']        = 0
+  evaldict['analysis']        = 1
   evaldict['lockstep']        = 1
   evaldict['barrier_limit']   = 1
   evaldict['iword_match']     = False
   evaldict['icoalesce']       = True
+  evaldict['limit_lockstep']  = False
+  evaldict['adaptive_hint']   = False
+  evaldict['barrier_delta']   = 25
+
 
   # extra params
-  #evaldict['extra_app_opts']  = ' --verify '
+  #evaldict['extra_app_opts']  = ' --dataset tiny '
   #evaldict['dumptrace']       = True
 
   # misc params
@@ -45,7 +51,7 @@ def task_pydgin_sims_debug():
   evaldict['runtime']         = True
 
   # debug options
-  evaldict['linetrace']       = True
+  #evaldict['linetrace']       = True
   evaldict['color']           = True
 
   yield gen_trace_per_app( evaldict )

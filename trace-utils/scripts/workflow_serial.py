@@ -15,7 +15,7 @@ def task_pydgin_serial_sims():
   evaldict['doc']         = os.path.basename(__file__).rstrip('c')
 
   evaldict['app_group']   = ["small","scalar"]
-  evaldict['app_list']    = app_serial_list
+  evaldict['app_list']    = app_serial_subset
   evaldict['serial']      = True
   evaldict['app_dict']    = app_dict
   evaldict['cluster']     = True

@@ -19,8 +19,9 @@ def task_pydgin_plot():
 
   # bmark params
   plotdict['app_group']   = ["small","mtpull"]
-  plotdict['app_list']    = ['bilateral']
+  #plotdict['app_list']    = ['bilateral']
+  plotdict['app_list']    = ['uts']
   plotdict['app_dict']    = app_dict
-  plotdict['time_slice']  = "11000:11200"
+  plotdict['time_slice']  = "0:30000"
 
   yield gen_plot_per_app( plotdict )

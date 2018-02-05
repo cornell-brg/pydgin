@@ -791,6 +791,9 @@ class Sim( object ):
               elif s.wsrt_mode and s.runtime_mode:
                 self.unique_runtime += 1
                 self.unique_insts   += 1
+              # collect frontend stats
+              if s.spmd_mode or s.wsrt_mode:
+                self.unique_frontend += 1
 
             # collect total instructions
             if s.spmd_mode:
@@ -804,6 +807,9 @@ class Sim( object ):
               self.total_runtime  += 1
               self.total_wsrt     += 1
               self.total_parallel += 1
+            # collect frontend stats
+            if s.spmd_mode or s.wsrt_mode:
+              self.total_frontend += 1
 
           except FatalError as error:
             print "Exception in decode (pc: 0x%s), aborting!" % pad_hex( pc )

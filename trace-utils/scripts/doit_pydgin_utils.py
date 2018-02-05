@@ -192,6 +192,7 @@ def get_base_evaldict():
   evaldict['limit_lockstep']  = False # Match lockstep group size to resources
   evaldict['adaptive_hint']   = False # Adaptive hints
   evaldict['barrier_delta']   = 0     # Delta steps for hint modulation
+  evaldict['mt']              = False # Indicate an MT frontend
 
   # These params should definitely be overwritten in the workflow
   evaldict['basename']   = basename     # Name of the task
@@ -265,6 +266,7 @@ def gen_trace_per_app( evaldict ):
   limit_lockstep  = evaldict["limit_lockstep"]
   adaptive_hint   = evaldict["adaptive_hint"]
   barrier_delta   = evaldict["barrier_delta"]
+  mt              = evaldict["mt"]
 
   # default options for serial code
   if serial:
@@ -337,6 +339,9 @@ def gen_trace_per_app( evaldict ):
 
         if simt:
           extra_pydgin_opts += "--simt "
+
+        if mt:
+          extra_pydgin_opts += "--mt "
 
         if not icoalesce:
           extra_pydgin_opts += "--icoalesce "
