@@ -137,9 +137,12 @@ def task_runtime_md():
 # helper script to submit a job on the cluster
 
 def submit_job( cmd, name, folder ):
+  with open( folder + "/" + name + ".sh", "w" ) as out:
+    out.write( "#!/bin/bash\n")
+    out.write( cmd )
   import clusterjob
   jobscript = clusterjob.JobScript(
-    body     = cmd,
+    body     = "source " + folder + "/" + name + ".sh",
     jobname  = name,
     backend  = 'pbs',
     queue    = 'batch',

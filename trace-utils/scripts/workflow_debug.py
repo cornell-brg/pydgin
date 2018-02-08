@@ -17,9 +17,9 @@ def task_pydgin_sims_debug():
 
   # bmark params
   evaldict['app_group']       = ["small","mtpull"]
-  #evaldict['app_list']        = ['ubmark-tpa-vvmult']
+  evaldict['app_list']        = ['ubmark-tpa-vvmult']
   #evaldict['app_list']        = ['bilateral']
-  evaldict['app_list']        = ['uts']
+  #evaldict['app_list']        = ['uts']
   #evaldict['app_list']        = ['cilk-knapsack-parc-mtpull']
   evaldict['app_dict']        = app_dict
 
@@ -47,7 +47,7 @@ def task_pydgin_sims_debug():
   #evaldict['dumptrace']       = True
 
   # misc params
-  evaldict['cluster']         = False
+  evaldict['cluster']         = True
   evaldict['runtime']         = True
 
   # debug options
