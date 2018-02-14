@@ -110,27 +110,18 @@ def is_pareto_front(row, stats, xlabel, ylabel):
   return is_max_x and is_max_y and is_double
 
 #-------------------------------------------------------------------------
-# plot_per_app()
+# subsample_configs
 #-------------------------------------------------------------------------
-# NOTE: Each data-point is a list of lists where each nested list
-# represents a unique configuration and each configuration list is in turn
-# a nested list of x,y points for the scatter plot
-#
-# Example:
-#  data = [
-#    [[1,1],[2,2]], # group 1
-#    [[3,3],[4,4]], # group 2
-#   ]
 
-def subsample_configs( prefix_str, smart_sharing, barrier_limit ):
+def subsample_configs( prefix_str, smart_sharing, lockstep ):
   configs = []
 
   #for limit_lockstep in range( 2 ):
   limit_lockstep = 0
 
-  for adaptive_hint in range( 2 ):
-    for analysis in [0,1]:
-      for lockstep in range( 2 ):
+  for analysis in [0,1]:
+    for barrier_limit in [1,1000]:
+      for adaptive_hint in range( 2 ):
         config_str = prefix_str + g_config_str % (
           g_insn_ports,
           g_ncores,
@@ -146,15 +137,96 @@ def subsample_configs( prefix_str, smart_sharing, barrier_limit ):
   return configs
 
 g_labels = [
-  "rr",
-  "rr-lock",
-  "rr-ah",
-  "rr-lock-ah",
-  "pc",
-  "pc-lock",
-  "pc-ah",
-  "pc-lock-ah",
+  "rr-base",
+  "rr-base-ah",
+  "rr-hint",
+  "rr-hint-ah",
+  "pc-base",
+  "pc-base-ah",
+  "pc-hint",
+  "pc-hint-ah",
 ]
+
+#-------------------------------------------------------------------------
+# plot_all()
+#-------------------------------------------------------------------------
+# NOTE: Each data-point is a list of lists where each nested list
+# represents a unique configuration and each configuration list is in turn
+# a nested list of x,y points for the scatter plot
+#
+# Example:
+#  data = [
+#    [[1,1],[2,2]], # group 1
+#    [[3,3],[4,4]], # group 2
+#   ]
+
+def plot_all( prefix_str, apps, opts, df, pareto_frontier=False ):
+
+  opts.num_cols = 2
+  opts.num_rows = 2
+
+  # select a set of configs
+  index = 0
+  for lockstep in range( 2 ):
+    for smart_sharing in range( 2 ):
+      configs = subsample_configs( prefix_str, smart_sharing, lockstep )
+      data    = []
+      stats   = pd.DataFrame()
+      savings_label = 'frontend'
+      for config in configs:
+        temp = []
+        for app in apps:
+          try:
+            speedup = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
+            savings = df[(df.config == config) & (df.app == app)].iloc[0][savings_label]
+            temp.append( [speedup, savings] )
+            if pareto_frontier:
+              stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', 'speedup', savings_label]] )
+          except:
+            temp.append( [float('nan')]*2 )
+        data.append( temp )
+
+      opts.data           = data
+      opts.labels         = [[],g_labels]
+      opts.legend_ncol    = len(configs)
+      opts.rotate_labels  = True
+      opts.plot_idx       = index+1
+      opts.colors         = brg_plot.colors['unique20']
+      opts.title          = '(smart share-%d, lock-%d)' % ( smart_sharing, lockstep )
+      opts.pareto_points  = pareto_frontier
+      if pareto_frontier:
+        is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'speedup', savings_label),axis=1)
+        config_pareto = stats.ix[is_pareto].sort_values(by='speedup')
+        opts.pareto_data = [config_pareto['speedup'].values, config_pareto[savings_label].values]
+
+      if (index+1) % opts.num_cols == 0:
+        opts.legend_enabled = True
+        opts.legend_ncol    = len(configs)/2
+        opts.legend_bbox    = (-0.6,1.1,1.,0.1)
+      else:
+        opts.legend_enabled = False
+      if index == opts.num_cols*opts.num_rows - 1:
+        opts.file_name       = 'scatter-all.pdf'
+        opts.subplots_hspace = 0.5
+        opts.fig.text(0.5, 0, 'Speedup', ha='center', fontsize=14)
+        opts.fig.text(-0.02, 0.5, 'Work Savings (%)', va='center', rotation='vertical', fontsize=14)
+
+      # plot data
+      brg_plot.add_plot( opts )
+      index = index + 1
+
+#-------------------------------------------------------------------------
+# plot_per_app()
+#-------------------------------------------------------------------------
+# NOTE: Each data-point is a list of lists where each nested list
+# represents a unique configuration and each configuration list is in turn
+# a nested list of x,y points for the scatter plot
+#
+# Example:
+#  data = [
+#    [[1,1],[2,2]], # group 1
+#    [[3,3],[4,4]], # group 2
+#   ]
 
 def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
 
@@ -163,12 +235,12 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
 
   # select a set of configs
   index = 0
-  for smart_sharing in range( 2 ):
-    for barrier_limit in [1,1000]:
-      configs = subsample_configs( prefix_str, smart_sharing, barrier_limit )
+  for lockstep in range( 2 ):
+    for smart_sharing in range( 2 ):
+      configs = subsample_configs( prefix_str, smart_sharing, lockstep )
       data    = []
       stats   = pd.DataFrame()
-      savings_label = 'total_savings'
+      savings_label = 'frontend'
       for config in configs:
         try:
           speedup = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
@@ -185,7 +257,7 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
       opts.rotate_labels  = True
       opts.plot_idx       = index+1
       opts.colors         = brg_plot.colors['unique20']
-      opts.title          = '(smart-share-%d, hint-%d)' % ( smart_sharing, barrier_limit )
+      opts.title          = '(smart share-%d, lock-%d)' % ( smart_sharing, lockstep )
       opts.pareto_points  = pareto_frontier
       if pareto_frontier:
         is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'speedup', savings_label),axis=1)
@@ -202,7 +274,7 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
         opts.file_name       = '%(app)s-scatter.pdf' % { 'app' : app }
         opts.subplots_hspace = 0.5
         opts.fig.text(0.5, 0, 'Speedup', ha='center', fontsize=14)
-        opts.fig.text(-0.02, 0.5, 'Potential Savings (%)', va='center', rotation='vertical', fontsize=14)
+        opts.fig.text(-0.02, 0.5, 'Work Savings (%)', va='center', rotation='vertical', fontsize=14)
         opts.fig.text(0.5, 1.05, app, ha='center', fontsize=14)
 
       # plot data
@@ -219,9 +291,9 @@ def plot( df, prefix_str, per_app_plot, pareto_frontier ):
   # scatter plot
   #-----------------------------------------------------------------------
 
+  apps = df.app.unique()
   if per_app_plot:
-    apps = df.app.unique()
-    apps = ['bilateral']
+    apps = ['dict']
     for app in  apps:
       # create plot options dict
       opts = brg_plot.PlotOptions()
@@ -241,7 +313,22 @@ def plot( df, prefix_str, per_app_plot, pareto_frontier ):
       plot_per_app( prefix_str, app, opts, df, pareto_frontier )
       break
   else:
-    print "NOT IMPLEMENTED YET!"
+    # create plot options dict
+    opts = brg_plot.PlotOptions()
+    attribute_dict = \
+    {
+      'show'            : False,
+      'plot_type'       : 'scatter',
+      'figsize'         : (8.0, 8.0),
+      'rotate_labels'   : False,
+      'markersize'      : 50,
+      'labels_fontsize' : 1,
+      'legend_enabled'  : False,
+    }
+    for name, value in attribute_dict.iteritems():
+      setattr( opts, name, value )
+
+    plot_all( prefix_str, apps, opts, df, pareto_frontier )
 
 #-------------------------------------------------------------------------
 # main
