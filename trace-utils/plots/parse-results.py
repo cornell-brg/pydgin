@@ -28,7 +28,7 @@ def execute(cmd):
 # global variables
 #-------------------------------------------------------------------------
 
-g_prefix_path = "../"
+g_prefix_path = "../ccores/"
 
 g_configs_dict = {}
 
@@ -63,7 +63,7 @@ def summarize():
 
   with open( res_file, 'w' ) as out:
 
-    out.write('app,config,steps,iredundancy,isavings\n')
+    out.write('app,config,steps,isavings,frontend,execute,dsavings,total_savings\n')
 
     for config_dir,config in g_configs_dict.iteritems():
       resultsdir_path = g_prefix_path + config_dir
@@ -81,32 +81,41 @@ def summarize():
             continue
 
           res_file =  resultsdir_path + '/' + subfolder + '/' + subfolder + '.out'
-          cmd      = 'grep -r -A 60 "Serial steps in stats region =" %(res_file)s' % { 'res_file' : res_file }
+          cmd      = 'grep -r -A 70 "Serial steps in stats region =" %(res_file)s' % { 'res_file' : res_file }
           lines    = execute( cmd )
 
-          steps       = 0
-          iredundancy = 0
-          isavings    = 0
+          steps         = 0
+          isavings      = 0
+          frontend_redn = 0
+          value_redn    = 0
+          dsavings      = 0
+          total_savings = 0
 
           for line in lines.split('\n'):
             if line != '':
               if   'Total steps in stats region' in line:
                 steps = int( line.split()[-1] )
-              elif 'Redundancy in parallel regions' in line:
-                iredundancy = float( line.split()[-1] )
               elif 'Savings for instruction accesses in parallel regions' in line:
                 isavings = float( line.split()[-1] )
+              elif 'Savings for frontend accesses' in line:
+                frontend_redn = float( line.split()[-1] )
+              elif 'Savings for executed instructions' in line:
+                value_redn = float( line.split()[-1] )
+              elif 'Savings for data accesses in parallel regions' in line:
+                dsavings = float( line.split()[-1] )
+              elif 'Savings in work in parallel regions' in line:
+                total_savings = float( line.split()[-1] )
 
           if config == "serial":
-            out.write('{},{},{},{},{}\n'.format(app,config,steps,iredundancy,isavings))
+            out.write('{},{},{},{},{},{},{},{}\n'.format(app,config,steps,isavings,frontend_redn,value_redn,dsavings,total_savings))
           else:
-            out.write('{},{},{},{},{}\n'.format(app_short_name_dict[app],config,steps,iredundancy,isavings))
+            out.write('{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,steps,isavings,frontend_redn,value_redn,dsavings,total_savings))
         except:
           print "{} {}: Results file not present".format( config, subfolder )
           if config == "serial":
-            out.write('{},{},{},{},{}\n'.format(app,0,0,0,0))
+            out.write('{},{},{},{},{},{},{},{}\n'.format(app,config,0,0,0,0,0,0))
           else:
-            out.write('{},{},{},{},{}\n'.format(app_short_name_dict[app],0,0,0,0))
+            out.write('{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,0,0,0,0,0,0))
           continue
 
 #-------------------------------------------------------------------------

@@ -1,0 +1,305 @@
+#!/usr/bin/env python
+#=========================================================================
+# tpa-scatter-plot-dsa [options]
+#=========================================================================
+#
+#  -h --help           Display this message
+#
+#  --per-app-plot      Enable scatter plots for each kernel 
+#  --spmd              Select spmd data-points 
+#  --wsrt              Select wsrt data-points
+#  --pareto-frontier   Add a pareto-frontier
+#
+# Author : Shreesha Srinath
+# Date   : February 13th, 2018
+#
+# Script creates scatter subplots for all the configurations where all
+# knobs are varied for a given static configuration. Currently, care only
+# about per app plot
+#
+
+import argparse
+import re
+import math
+import sys
+
+import pandas as pd
+
+import brg_plot
+
+from common import *
+
+#-------------------------------------------------------------------------
+# Command line processing
+#-------------------------------------------------------------------------
+
+class ArgumentParserWithCustomError(argparse.ArgumentParser):
+  def error( self, msg = "" ):
+    if ( msg ): print("\n ERROR: %s" % msg)
+    print("")
+    file = open( sys.argv[0] )
+    for ( lineno, line ) in enumerate( file ):
+      if ( line[0] != '#' ): sys.exit(msg != "")
+      if ( (lineno == 2) or (lineno >= 4) ): print( line[1:].rstrip("\n") )
+
+def parse_cmdline():
+  p = ArgumentParserWithCustomError( add_help=False )
+
+  # Standard command line arguments
+
+  p.add_argument( "-h", "--help",    action="store_true" )
+
+  # Additional commane line arguments for the simulator
+
+  p.add_argument( "--per-app-plot",    action="store_true",  default=False )
+  p.add_argument( "--spmd",            action="store_true",  default=False )
+  p.add_argument( "--wsrt",            action="store_true",  default=False )
+  p.add_argument( "--pareto-frontier", action="store_true",  default=False )
+
+  opts = p.parse_args()
+  if opts.help: p.error()
+  return opts
+
+#-------------------------------------------------------------------------
+# Global variables
+#-------------------------------------------------------------------------
+
+# Will vary based on the static configuration in question and ccores vs. simt
+g_ncores       = 8
+g_insn_ports   = 1
+g_resources    = 1
+
+g_base_str     = "1L0-1I-8F-1L-0C-0TS-0LO-1-0LL-0AH"
+g_config_str   = "1L0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
+
+g_config_list = []
+for smart_sharing in range( 2 ):
+  for lockstep in range( 2 ):
+    for limit_lockstep in range( 2 ):
+      for analysis in [0,1]:
+        for adaptive_hint in range( 2 ):
+          for barrier_limit in [1,1000]:
+            config_str = g_config_str % (
+              g_insn_ports,
+              g_ncores,
+              g_resources,
+              smart_sharing,
+              analysis,
+              lockstep,
+              barrier_limit,
+              limit_lockstep,
+              adaptive_hint
+            )
+            g_config_list.append( config_str )
+
+#-------------------------------------------------------------------------
+# is_pareto_front()
+#-------------------------------------------------------------------------
+# reference:
+# http://hinnefe2.github.io/python/tools/2015/09/21/mario-kart.html
+
+def is_pareto_front(row, stats, xlabel, ylabel):
+  x = row[xlabel]
+  y = row[ylabel]
+  # look for points with the same y value but larger x value
+  is_max_x = stats.loc[stats[ylabel]==y].max()[xlabel] <= x
+  # look for points with the same x value but larger y value
+  is_max_y = stats.loc[stats[xlabel]==x].max()[ylabel] <= y
+  # look for points that are larger in both x and y
+  is_double = len(stats.loc[(stats[xlabel]>x) & (stats[ylabel]>y)])==0
+  return is_max_x and is_max_y and is_double
+
+#-------------------------------------------------------------------------
+# plot_per_app()
+#-------------------------------------------------------------------------
+# NOTE: Each data-point is a list of lists where each nested list
+# represents a unique configuration and each configuration list is in turn
+# a nested list of x,y points for the scatter plot
+#
+# Example:
+#  data = [
+#    [[1,1],[2,2]], # group 1
+#    [[3,3],[4,4]], # group 2
+#   ]
+
+def subsample_configs( prefix_str, smart_sharing, barrier_limit ):
+  configs = []
+
+  #for limit_lockstep in range( 2 ):
+  limit_lockstep = 0
+
+  for adaptive_hint in range( 2 ):
+    for analysis in [0,1]:
+      for lockstep in range( 2 ):
+        config_str = prefix_str + g_config_str % (
+          g_insn_ports,
+          g_ncores,
+          g_resources,
+          smart_sharing,
+          analysis,
+          lockstep,
+          barrier_limit,
+          limit_lockstep,
+          adaptive_hint,
+        )
+        configs.append( config_str )
+  return configs
+
+g_labels = [
+  "rr",
+  "rr-lock",
+  "rr-ah",
+  "rr-lock-ah",
+  "pc",
+  "pc-lock",
+  "pc-ah",
+  "pc-lock-ah",
+]
+
+def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
+
+  opts.num_cols = 2
+  opts.num_rows = 2
+
+  # select a set of configs
+  index = 0
+  for smart_sharing in range( 2 ):
+    for barrier_limit in [1,1000]:
+      configs = subsample_configs( prefix_str, smart_sharing, barrier_limit )
+      data    = []
+      stats   = pd.DataFrame()
+      savings_label = 'total_savings'
+      for config in configs:
+        try:
+          speedup = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
+          savings = df[(df.config == config) & (df.app == app)].iloc[0][savings_label]
+          data.append( [[speedup, savings]] )
+          if pareto_frontier:
+            stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', 'speedup', savings_label]] )
+        except:
+          data.append( [[float('nan')]*2] )
+
+      opts.data           = data
+      opts.labels         = [[],g_labels]
+      opts.legend_ncol    = len(configs)
+      opts.rotate_labels  = True
+      opts.plot_idx       = index+1
+      opts.colors         = brg_plot.colors['unique20']
+      opts.title          = '(smart-share-%d, hint-%d)' % ( smart_sharing, barrier_limit )
+      opts.pareto_points  = pareto_frontier
+      if pareto_frontier:
+        is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'speedup', savings_label),axis=1)
+        config_pareto = stats.ix[is_pareto].sort_values(by='speedup')
+        opts.pareto_data = [config_pareto['speedup'].values, config_pareto[savings_label].values]
+
+      if (index+1) % opts.num_cols == 0:
+        opts.legend_enabled = True
+        opts.legend_ncol    = len(configs)/2
+        opts.legend_bbox    = (-0.6,1.1,1.,0.1)
+      else:
+        opts.legend_enabled = False
+      if index == opts.num_cols*opts.num_rows - 1:
+        opts.file_name       = '%(app)s-scatter.pdf' % { 'app' : app }
+        opts.subplots_hspace = 0.5
+        opts.fig.text(0.5, 0, 'Speedup', ha='center', fontsize=14)
+        opts.fig.text(-0.02, 0.5, 'Potential Savings (%)', va='center', rotation='vertical', fontsize=14)
+        opts.fig.text(0.5, 1.05, app, ha='center', fontsize=14)
+
+      # plot data
+      brg_plot.add_plot( opts )
+      index = index + 1
+
+#-------------------------------------------------------------------------
+# plot
+#-------------------------------------------------------------------------
+
+def plot( df, prefix_str, per_app_plot, pareto_frontier ):
+
+  #-----------------------------------------------------------------------
+  # scatter plot
+  #-----------------------------------------------------------------------
+
+  if per_app_plot:
+    apps = df.app.unique()
+    apps = ['bilateral']
+    for app in  apps:
+      # create plot options dict
+      opts = brg_plot.PlotOptions()
+      attribute_dict = \
+      {
+        'show'            : False,
+        'plot_type'       : 'scatter',
+        'figsize'         : (8.0, 8.0),
+        'rotate_labels'   : False,
+        'markersize'      : 50,
+        'labels_fontsize' : 1,
+        'legend_enabled'  : False,
+      }
+      for name, value in attribute_dict.iteritems():
+        setattr( opts, name, value )
+
+      plot_per_app( prefix_str, app, opts, df, pareto_frontier )
+      break
+  else:
+    print "NOT IMPLEMENTED YET!"
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+  opts = parse_cmdline()
+
+  # select spmd vs. wsrt
+  # NOTE: change this based on ccors vs. simt
+  prefix_str = ""
+  if opts.spmd:
+    prefix_str = 'conj-cores-spmd-' 
+  elif opts.wsrt:
+    prefix_str = 'conj-cores-wsrt-'
+  else:
+    print "Select spmd or wsrt!"
+    exit(1)
+
+  # depending on spmd vs. wsrt options select the configurations
+  g_config_list = [ prefix_str + cfg for cfg in g_config_list ]
+
+  # read the results dataframe
+  all_results_df = pd.read_csv( "sim-results.csv" ) 
+
+  # get the subset of configs
+  df = all_results_df[all_results_df.config.isin(g_config_list)].copy()
+
+  # get the baseline dataframe for baseline
+  g_base_str = prefix_str + g_base_str
+  base_df = df[df.config == g_base_str].copy()
+
+  # loop through configs and normalize results
+  for app in app_list:
+    try:
+      # baseline
+      ts, = base_df[base_df.app == app]['steps']
+      # update steps to speedup inplace
+      df.loc[df.app == app, ['steps']] = \
+        float(ts) / df.loc[ df.app == app, ['steps']]
+    except:
+      print "Skipping app: ", app
+      continue
+
+  # replace any value that is zero with float 'nan' to skip plotting
+  df[df==0] = float('nan')
+
+  # column steps renamed to speedup
+  df = df.rename(columns = { 'steps': 'speedup' })
+
+  # save the results
+  df.to_csv('%s-results.csv' % g_base_str, index=False)
+
+  # option to plot all results or just per app-kernel
+  per_app_plot = opts.per_app_plot
+
+  # option to show the pareto frontier
+  pareto_frontier = opts.pareto_frontier
+
+  # create plots
+  plot( df, prefix_str, per_app_plot, pareto_frontier )
