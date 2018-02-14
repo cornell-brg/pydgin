@@ -33,6 +33,15 @@ g_prefix_path = "../ccores/"
 g_configs_dict = {}
 
 #-------------------------------------------------------------------------
+# isclose
+#-------------------------------------------------------------------------
+# copylifted:
+# https://stackoverflow.com/questions/5595425/what-is-the-best-way-to-compare-floats-for-almost-equality-in-python
+
+def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+    return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+#-------------------------------------------------------------------------
 # populate_configs()
 #-------------------------------------------------------------------------
 
@@ -126,10 +135,11 @@ def summarize():
           unique_work   = unique_iaccess + unique_front + unique_execute + unique_daccess
           total_savings = 100*float( total_work - unique_work )/total_work
           l0_hits       = 100*float( total_l0_hits )/total_work
-          icoalesces    = 100*float( total_iaccess - total_l0_hits - total_coalesce )/total_work
+          icoalesces    = 100*float( total_coalesce )/total_work
           frontend_redn = 100*float( total_front - unique_front )/total_work
           value_redn    = 100*float( total_execute - unique_execute )/total_work
           dsavings      = 100*float( total_daccess - unique_daccess )/total_work
+          isavings      = 100*float( total_iaccess - unique_iaccess )/total_work
           if config == "serial":
             out.write('{},{},{},{},{},{},{},{},{}\n'.format(app,config,steps,l0_hits,icoalesces,frontend_redn,value_redn,dsavings,total_savings))
           else:

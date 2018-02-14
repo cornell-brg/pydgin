@@ -114,10 +114,10 @@ def subsample_configs( prefix_str, smart_sharing, lockstep ):
           adaptive_hint,
         )
         configs.append( config_str )
-  print
-  for cfg in configs:
-    print cfg
-  print
+  #print 
+  #for cfg in configs:
+  #  print cfg
+  #print
   return configs
 
 g_labels = [

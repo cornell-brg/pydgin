@@ -293,6 +293,7 @@ def plot( df, prefix_str, per_app_plot, pareto_frontier ):
 
   apps = df.app.unique()
   if per_app_plot:
+    apps = ['dict']
     for app in  apps:
       if app not in app_list:
         continue
