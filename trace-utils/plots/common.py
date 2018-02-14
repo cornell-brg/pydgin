@@ -33,7 +33,7 @@ app_short_name_dict = OrderedDict([
   #('dither'                       , 'dither'), # debug simt configs
   #('viterbi'                      , 'viterbi'), # debug simt configs
 
-   pbbs
+  # pbbs
   ('pbbs-bfs-deterministicBFS'    , 'bfs-d'),
   ('pbbs-bfs-ndBFS'               , 'bfs-nd'),
   ('pbbs-dict-deterministicHash'  , 'dict'),

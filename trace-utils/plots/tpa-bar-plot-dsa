@@ -1,0 +1,260 @@
+#!/usr/bin/env python
+#=========================================================================
+# tpa-bar-plot-dsa [options]
+#=========================================================================
+#
+#  -h --help           Display this message
+#
+#  --per-app-plot      Enable bar plots for each kernel 
+#  --spmd              Select spmd data-points 
+#  --wsrt              Select wsrt data-points
+#
+# Author : Shreesha Srinath
+# Date   : February 14th, 2018
+#
+# Script creates bar subplots for all the configurations where all
+# knobs are varied for a given static configuration.
+#
+
+import argparse
+import re
+import math
+import sys
+
+import pandas as pd
+
+import brg_plot
+
+from common import *
+
+#-------------------------------------------------------------------------
+# Command line processing
+#-------------------------------------------------------------------------
+
+class ArgumentParserWithCustomError(argparse.ArgumentParser):
+  def error( self, msg = "" ):
+    if ( msg ): print("\n ERROR: %s" % msg)
+    print("")
+    file = open( sys.argv[0] )
+    for ( lineno, line ) in enumerate( file ):
+      if ( line[0] != '#' ): sys.exit(msg != "")
+      if ( (lineno == 2) or (lineno >= 4) ): print( line[1:].rstrip("\n") )
+
+def parse_cmdline():
+  p = ArgumentParserWithCustomError( add_help=False )
+
+  # Standard command line arguments
+
+  p.add_argument( "-h", "--help",    action="store_true" )
+
+  # Additional commane line arguments for the simulator
+
+  p.add_argument( "--per-app-plot",    action="store_true",  default=False )
+  p.add_argument( "--spmd",            action="store_true",  default=False )
+  p.add_argument( "--wsrt",            action="store_true",  default=False )
+
+  opts = p.parse_args()
+  if opts.help: p.error()
+  return opts
+
+#-------------------------------------------------------------------------
+# Global variables
+#-------------------------------------------------------------------------
+
+# Will vary based on the static configuration in question and ccores vs. simt
+g_ncores       = 8
+g_insn_ports   = 1
+g_resources    = 1
+
+g_base_str     = "1L0-1I-8F-1L-0C-0TS-0LO-1-0LL-0AH"
+g_config_str   = "1L0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
+
+g_config_list = []
+for smart_sharing in range( 2 ):
+  for lockstep in range( 2 ):
+    for limit_lockstep in range( 2 ):
+      for analysis in [0,1]:
+        for adaptive_hint in range( 2 ):
+          for barrier_limit in [1,1000]:
+            config_str = g_config_str % (
+              g_insn_ports,
+              g_ncores,
+              g_resources,
+              smart_sharing,
+              analysis,
+              lockstep,
+              barrier_limit,
+              limit_lockstep,
+              adaptive_hint
+            )
+            g_config_list.append( config_str )
+
+#-------------------------------------------------------------------------
+# subsample_configs
+#-------------------------------------------------------------------------
+
+def subsample_configs( prefix_str, smart_sharing, lockstep ):
+  configs = []
+
+  #for limit_lockstep in range( 2 ):
+  limit_lockstep = 0
+
+  for analysis in [0,1]:
+    for barrier_limit in [1,1000]:
+      for adaptive_hint in range( 2 ):
+        config_str = prefix_str + g_config_str % (
+          g_insn_ports,
+          g_ncores,
+          g_resources,
+          smart_sharing,
+          analysis,
+          lockstep,
+          barrier_limit,
+          limit_lockstep,
+          adaptive_hint,
+        )
+        configs.append( config_str )
+  print
+  for cfg in configs:
+    print cfg
+  print
+  return configs
+
+g_labels = [
+  "rr-base",
+  "rr-base-ah",
+  "rr-hint",
+  "rr-hint-ah",
+  "pc-base",
+  "pc-base-ah",
+  "pc-hint",
+  "pc-hint-ah",
+]
+
+#-------------------------------------------------------------------------
+# plot_per_app()
+#-------------------------------------------------------------------------
+# NOTE: Each stacked bar plot is a list with each of the stacked components
+# being the elements of the list. The data is essentially is a list of
+# lists where each list represents a configuration. For the labels,
+# labels[0] should be the configs, labels[1] represents the stacked bar
+# components
+
+g_stack_labels  = ['l0_hits', 'icoalesces', 'frontend', 'execute', 'dsavings']
+
+def plot_per_app( prefix_str, app, opts, df ):
+
+  opts.num_cols = 2
+  opts.num_rows = 2
+
+  # select a set of configs
+  index = 0
+  for lockstep in range( 2 ):
+    for smart_sharing in range( 2 ):
+      configs = subsample_configs( prefix_str, smart_sharing, lockstep )
+      data    = []
+      for config in configs:
+        temp = []
+        try:
+          for stack_label in g_stack_labels:
+            temp.append( df[(df.config == config) & (df.app == app)].iloc[0][stack_label] )
+          data.append( temp )
+        except:
+          data.append( [float('nan')]*5 )
+
+      opts.data           = data
+      opts.labels         = [g_labels,g_stack_labels]
+      opts.rotate_labels  = True
+      opts.plot_idx       = index+1
+      opts.colors         =  [ '#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a' ]
+      opts.title          = '(smart share-%d, lock-%d)' % ( smart_sharing, lockstep )
+
+      if (index+1) % opts.num_cols == 0:
+        opts.legend_enabled = True
+        opts.legend_ncol    = 5
+        opts.legend_bbox    = (-0.6,1.1,1.,0.1)
+      else:
+        opts.legend_enabled = False
+      if index == opts.num_cols*opts.num_rows - 1:
+        opts.file_name       = '%(app)s-bar.pdf' % { 'app' : app }
+        opts.subplots_hspace = 0.6
+        opts.fig.text(-0.02, 0.5, 'Work Savings (%)', va='center', rotation='vertical', fontsize=14)
+        opts.fig.text(0.5, 1.05, app, ha='center', fontsize=14)
+
+      # plot data
+      brg_plot.add_plot( opts )
+      index = index + 1
+
+#-------------------------------------------------------------------------
+# plot
+#-------------------------------------------------------------------------
+
+def plot( df, prefix_str, per_app_plot ):
+
+  #-----------------------------------------------------------------------
+  # bar plot
+  #-----------------------------------------------------------------------
+
+  apps = df.app.unique()
+  if per_app_plot:
+    for app in  apps:
+      if app not in app_list:
+        continue
+      # create plot options dict
+      opts = brg_plot.PlotOptions()
+      attribute_dict = \
+      {
+        'show'            : False,
+        'plot_type'       : 'stacked_bar',
+        'figsize'         : (8.0, 8.0),
+        'rotate_labels'   : False,
+        'markersize'      : 50,
+        'labels_fontsize' : 1,
+        'legend_enabled'  : False,
+        'bar_width'       : 0.5,
+      }
+      for name, value in attribute_dict.iteritems():
+        setattr( opts, name, value )
+
+      plot_per_app( prefix_str, app, opts, df )
+  else:
+    print "Not Implemented!"  
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+  opts = parse_cmdline()
+
+  # select spmd vs. wsrt
+  # NOTE: change this based on ccors vs. simt
+  prefix_str = ""
+  if opts.spmd:
+    prefix_str = 'conj-cores-spmd-' 
+  elif opts.wsrt:
+    prefix_str = 'conj-cores-wsrt-'
+  else:
+    print "Select spmd or wsrt!"
+    exit(1)
+
+  # depending on spmd vs. wsrt options select the configurations
+  g_config_list = [ prefix_str + cfg for cfg in g_config_list ]
+
+  # read the results dataframe
+  all_results_df = pd.read_csv( "sim-results.csv" ) 
+
+  # get the subset of configs
+  df = all_results_df[all_results_df.config.isin(g_config_list)].copy()
+
+  # replace any value that is zero with float 'nan' to skip plotting
+  df[df==0] = float('nan')
+
+  # save the results
+  df.to_csv('%s-results.csv' % g_base_str, index=False)
+
+  # option to plot all results or just per app-kernel
+  per_app_plot = opts.per_app_plot
+
+  # create plots
+  plot( df, prefix_str, per_app_plot )

@@ -63,7 +63,7 @@ def summarize():
 
   with open( res_file, 'w' ) as out:
 
-    out.write('app,config,steps,isavings,frontend,execute,dsavings,total_savings\n')
+    out.write('app,config,steps,l0_hits,icoalesces,frontend,execute,dsavings,total_savings\n')
 
     for config_dir,config in g_configs_dict.iteritems():
       resultsdir_path = g_prefix_path + config_dir
@@ -84,38 +84,62 @@ def summarize():
           cmd      = 'grep -r -A 70 "Serial steps in stats region =" %(res_file)s' % { 'res_file' : res_file }
           lines    = execute( cmd )
 
-          steps         = 0
-          isavings      = 0
-          frontend_redn = 0
-          value_redn    = 0
-          dsavings      = 0
-          total_savings = 0
+          steps          = 0
+          unique_iaccess = 0
+          unique_front   = 0
+          unique_execute = 0
+          unique_daccess = 0
+          total_iaccess  = 0
+          total_front    = 0
+          total_execute  = 0
+          total_daccess  = 0
+          total_l0_hits  = 0
+          total_coalesce = 0
 
           for line in lines.split('\n'):
             if line != '':
               if   'Total steps in stats region' in line:
                 steps = int( line.split()[-1] )
-              elif 'Savings for instruction accesses in parallel regions' in line:
-                isavings = float( line.split()[-1] )
-              elif 'Savings for frontend accesses' in line:
-                frontend_redn = float( line.split()[-1] )
-              elif 'Savings for executed instructions' in line:
-                value_redn = float( line.split()[-1] )
-              elif 'Savings for data accesses in parallel regions' in line:
-                dsavings = float( line.split()[-1] )
-              elif 'Savings in work in parallel regions' in line:
-                total_savings = float( line.split()[-1] )
+              elif 'Total instruction accesses in parallel regions' in line:
+                total_iaccess = int( line.split()[-1] )
+              elif 'Unique instruction accesses in parallel regions' in line:
+                unique_iaccess = int( line.split()[-1] )
+              elif 'Total hits in Core L0 buffer' in line:
+                total_l0_hits = int( line.split()[-1] )
+              elif 'Total number of coalesced instruction accesses' in line:
+                total_coalesce = int( line.split()[-1] )
+              elif 'Total frontend accesses in parallel regions' in line:
+                total_front = int( line.split()[-1] )
+              elif 'Unique frontend accesses in parallel regions' in line:
+                unique_front = int( line.split()[-1] )
+              elif 'Total number of executed instructions' in line:
+                total_execute = int( line.split()[-1] )
+              elif 'Unique executed instructions' in line:
+                unique_execute = int( line.split()[-1] )
+              elif 'Total data accesses in parallel regions' in line:
+                total_daccess = int( line.split()[-1] )
+              elif 'Unique data accesses in parallel regions' in line:
+                unique_daccess = int( line.split()[-1] )
 
+
+          total_work    = total_iaccess + total_front + total_execute + total_daccess
+          unique_work   = unique_iaccess + unique_front + unique_execute + unique_daccess
+          total_savings = 100*float( total_work - unique_work )/total_work
+          l0_hits       = 100*float( total_l0_hits )/total_work
+          icoalesces    = 100*float( total_iaccess - total_l0_hits - total_coalesce )/total_work
+          frontend_redn = 100*float( total_front - unique_front )/total_work
+          value_redn    = 100*float( total_execute - unique_execute )/total_work
+          dsavings      = 100*float( total_daccess - unique_daccess )/total_work
           if config == "serial":
-            out.write('{},{},{},{},{},{},{},{}\n'.format(app,config,steps,isavings,frontend_redn,value_redn,dsavings,total_savings))
+            out.write('{},{},{},{},{},{},{},{},{}\n'.format(app,config,steps,l0_hits,icoalesces,frontend_redn,value_redn,dsavings,total_savings))
           else:
-            out.write('{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,steps,isavings,frontend_redn,value_redn,dsavings,total_savings))
+            out.write('{},{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,steps,l0_hits,icoalesces,frontend_redn,value_redn,dsavings,total_savings))
         except:
           print "{} {}: Results file not present".format( config, subfolder )
           if config == "serial":
-            out.write('{},{},{},{},{},{},{},{}\n'.format(app,config,0,0,0,0,0,0))
+            out.write('{},{},{},{},{},{},{},{},{}\n'.format(app,config,0,0,0,0,0,0,0))
           else:
-            out.write('{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,0,0,0,0,0,0))
+            out.write('{},{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,0,0,0,0,0,0,0))
           continue
 
 #-------------------------------------------------------------------------

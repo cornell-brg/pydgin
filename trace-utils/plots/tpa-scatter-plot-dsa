@@ -172,7 +172,7 @@ def plot_all( prefix_str, apps, opts, df, pareto_frontier=False ):
       configs = subsample_configs( prefix_str, smart_sharing, lockstep )
       data    = []
       stats   = pd.DataFrame()
-      savings_label = 'frontend'
+      savings_label = 'total_savings'
       for config in configs:
         temp = []
         for app in apps:
@@ -240,7 +240,7 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
       configs = subsample_configs( prefix_str, smart_sharing, lockstep )
       data    = []
       stats   = pd.DataFrame()
-      savings_label = 'frontend'
+      savings_label = 'total_savings'
       for config in configs:
         try:
           speedup = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
