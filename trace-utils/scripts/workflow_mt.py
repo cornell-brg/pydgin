@@ -12,7 +12,7 @@ from doit_pydgin_utils import *
 
 def task_mt_wsrt():
 
-  ncores        = 8
+  ncores        = 4
   l0_buffer_sz  = 1
   barrier_delta = 50
 
@@ -30,7 +30,7 @@ def task_mt_wsrt():
           adaptive_hint
         )
         evaldict['basename']        = "sim-" + base_str
-        evaldict['resultsdir']      = "mt-wsrt/results-" + base_str
+        evaldict['resultsdir']      = "four-core-pbbs/results-" + base_str
         evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
         # bmark params
@@ -51,6 +51,7 @@ def task_mt_wsrt():
         evaldict['barrier_limit']   = barrier_limit
         evaldict['adaptive_hint']   = bool( adaptive_hint )
         evaldict['barrier_delta']   = barrier_delta
+        evaldict['sched_limit']     = ncores - 1
         evaldict['mt']              = True
 
         # misc params
@@ -65,7 +66,7 @@ def task_mt_wsrt():
 
 def task_mt_spmd():
 
-  ncores        = 8
+  ncores        = 4
   l0_buffer_sz  = 1
   barrier_delta = 50
 
@@ -83,7 +84,7 @@ def task_mt_spmd():
           adaptive_hint
         )
         evaldict['basename']        = "sim-" + base_str
-        evaldict['resultsdir']      = "mt-spmd/results-" + base_str
+        evaldict['resultsdir']      = "four-core-pbbs/results-" + base_str
         evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
         # bmark params
@@ -104,6 +105,7 @@ def task_mt_spmd():
         evaldict['barrier_limit']   = barrier_limit
         evaldict['adaptive_hint']   = bool( adaptive_hint )
         evaldict['barrier_delta']   = barrier_delta
+        evaldict['sched_limit']     = ncores - 1
         evaldict['mt']              = True
 
         # misc params

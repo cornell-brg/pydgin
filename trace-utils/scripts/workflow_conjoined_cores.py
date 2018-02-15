@@ -16,7 +16,7 @@ from doit_pydgin_utils import *
 
 def task_conjoined_cores_wsrt():
 
-  ncores        = 8
+  ncores        = 4
   l0_buffer_sz  = 1
   barrier_delta = 50
 
@@ -46,7 +46,7 @@ def task_conjoined_cores_wsrt():
                     adaptive_hint
                   )
                   evaldict['basename']        = "sim-" + base_str
-                  evaldict['resultsdir']      = "ccores/results-" + base_str
+                  evaldict['resultsdir']      = "four-core-pbbs/results-" + base_str
                   evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
                   # bmark params
@@ -84,7 +84,7 @@ def task_conjoined_cores_wsrt():
 
 def task_conjoined_cores_spmd():
 
-  ncores        = 8
+  ncores        = 4
   l0_buffer_sz  = 1
   barrier_delta = 50
 
@@ -114,7 +114,7 @@ def task_conjoined_cores_spmd():
                     adaptive_hint
                   )
                   evaldict['basename']        = "sim-" + base_str
-                  evaldict['resultsdir']      = "ccores/results-" + base_str
+                  evaldict['resultsdir']      = "four-core-pbbs/results-" + base_str
                   evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
                   # bmark params

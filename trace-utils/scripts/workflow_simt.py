@@ -18,7 +18,7 @@ from doit_pydgin_utils import *
 
 def task_simt_wsrt():
 
-  ncores       = 8
+  ncores       = 4
   l0_buffer_sz = 1
   barrier_delta = 50
 
@@ -46,7 +46,7 @@ def task_simt_wsrt():
                 adaptive_hint,
               )
               evaldict['basename']        = "sim-" + base_str
-              evaldict['resultsdir']      = "simt/results-" + base_str
+              evaldict['resultsdir']      = "four-core-pbbs/results-" + base_str
               evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
               # bmark params
@@ -85,7 +85,7 @@ def task_simt_wsrt():
 
 def task_simt_spmd():
 
-  ncores       = 8
+  ncores       = 4
   l0_buffer_sz = 1
   barrier_delta = 50
 
@@ -113,7 +113,7 @@ def task_simt_spmd():
                 adaptive_hint,
               )
               evaldict['basename']        = "sim-" + base_str
-              evaldict['resultsdir']      = "simt/results-" + base_str
+              evaldict['resultsdir']      = "four-core-pbbs/results-" + base_str
               evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
               # bmark params

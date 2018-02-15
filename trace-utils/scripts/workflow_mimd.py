@@ -13,7 +13,7 @@ from doit_pydgin_utils import *
 
 def task_mimd_wsrt():
 
-  ncores        = 8
+  ncores        = 4
   l0_buffer_sz  = 1
   barrier_delta = 50
 
@@ -24,7 +24,7 @@ def task_mimd_wsrt():
 
       # task info
       evaldict['basename']        = "sim-mimd-wsrt-limit-%d-%dAH" % ( barrier_limit, adaptive_hint )
-      evaldict['resultsdir']      = "mimd/results-mimd-wsrt-limit-%d-%dAH" % ( barrier_limit, adaptive_hint )
+      evaldict['resultsdir']      = "four-core-pbbs/results-mimd-wsrt-limit-%d-%dAH" % ( barrier_limit, adaptive_hint )
       evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
       # bmark params
@@ -58,7 +58,7 @@ def task_mimd_wsrt():
 
 def task_mimd_spmd():
 
-  ncores        = 8
+  ncores        = 4
   l0_buffer_sz  = 1
   barrier_delta = 50
 
@@ -69,7 +69,7 @@ def task_mimd_spmd():
 
       # task info
       evaldict['basename']        = "sim-mimd-spmd-limit-%d-%dAH" % ( barrier_limit, adaptive_hint )
-      evaldict['resultsdir']      = "mimd/results-mimd-spmd-limit-%d-%dAH" % ( barrier_limit, adaptive_hint )
+      evaldict['resultsdir']      = "four-core-pbbs/results-mimd-spmd-limit-%d-%dAH" % ( barrier_limit, adaptive_hint )
       evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
       # bmark params

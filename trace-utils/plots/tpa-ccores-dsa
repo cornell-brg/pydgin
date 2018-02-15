@@ -5,7 +5,6 @@
 #
 #  -h --help           Display this message
 #
-#  --per-app-plot      Enable scatter plots for each kernel 
 #  --spmd              Select spmd data-points 
 #  --wsrt              Select wsrt data-points
 #  --pareto-frontier   Add a pareto-frontier
@@ -51,7 +50,6 @@ def parse_cmdline():
 
   # Additional commane line arguments for the simulator
 
-  p.add_argument( "--per-app-plot",    action="store_true",  default=False )
   p.add_argument( "--spmd",            action="store_true",  default=False )
   p.add_argument( "--wsrt",            action="store_true",  default=False )
   p.add_argument( "--pareto-frontier", action="store_true",  default=False )
@@ -67,7 +65,7 @@ def parse_cmdline():
 # Will vary based on the static configuration in question and ccores vs. simt
 g_ncores       = 4
 g_insn_ports   = 2
-g_resources    = 2
+g_resources    = 1
 
 g_base_str     = "1L0-%dI-%dF-%dL-0C-0TS-0LO-1-0LL-0AH" % ( g_insn_ports, g_ncores, g_resources )
 g_config_str   = "1L0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
@@ -91,6 +89,8 @@ for smart_sharing in range( 2 ):
               adaptive_hint
             )
             g_config_list.append( config_str )
+
+g_stack_labels  = ['l0_hits', 'icoalesces', 'frontend', 'execute', 'dsavings']
 
 #-------------------------------------------------------------------------
 # is_pareto_front()
@@ -122,8 +122,8 @@ def subsample_configs( prefix_str, smart_sharing, lockstep ):
         for adaptive_hint in range( 2 ):
           if adaptive_hint == 1 and barrier_limit == 1:
             continue
-          #if limit_lockstep == 1 and lockstep == 0 or ( limit_lockstep == 1 and lockstep == 1 and g_resources == 1):
-          #  continue
+          if g_resources == 1 and limit_lockstep == 1:  
+            continue
           config_str = prefix_str + g_config_str % (
             g_insn_ports,
             g_ncores,
@@ -138,88 +138,31 @@ def subsample_configs( prefix_str, smart_sharing, lockstep ):
           configs.append( config_str )
   return configs
 
-g_labels = [
-  "rr-base",
-  "rr-hint",
-  "rr-hint-ah",
-  "rr-base-lim",
-  "rr-hint-lim",
-  "rr-hint-ah-lim",
-  "pc-base",
-  "pc-hint",
-  "pc-hint-ah",
-  "pc-base-lim",
-  "pc-hint-lim",
-  "pc-hint-ah-lim",
-]
-
-#-------------------------------------------------------------------------
-# plot_all()
-#-------------------------------------------------------------------------
-# NOTE: Each data-point is a list of lists where each nested list
-# represents a unique configuration and each configuration list is in turn
-# a nested list of x,y points for the scatter plot
-#
-# Example:
-#  data = [
-#    [[1,1],[2,2]], # group 1
-#    [[3,3],[4,4]], # group 2
-#   ]
-
-def plot_all( prefix_str, apps, opts, df, pareto_frontier=False ):
-
-  opts.num_cols = 2
-  opts.num_rows = 2
-
-  # select a set of configs
-  index = 0
-  for lockstep in range( 2 ):
-    for smart_sharing in range( 2 ):
-      configs = subsample_configs( prefix_str, smart_sharing, lockstep )
-      data    = []
-      stats   = pd.DataFrame()
-      savings_label = 'total_savings'
-      for config in configs:
-        temp = []
-        for app in apps:
-          try:
-            speedup = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
-            savings = df[(df.config == config) & (df.app == app)].iloc[0][savings_label]
-            temp.append( [speedup, savings] )
-            if pareto_frontier:
-              stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', 'speedup', savings_label]] )
-          except:
-            temp.append( [float('nan')]*2 )
-        data.append( temp )
-
-      opts.data           = data
-      opts.labels         = [[],g_labels]
-      opts.legend_ncol    = len(configs)
-      opts.rotate_labels  = True
-      opts.plot_idx       = index+1
-      opts.colors         = brg_plot.colors['unique20']
-      opts.title          = '(smart share-%d, lock-%d)' % ( smart_sharing, lockstep )
-      opts.pareto_points  = pareto_frontier
-      if pareto_frontier:
-        is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'speedup', savings_label),axis=1)
-        config_pareto = stats.ix[is_pareto].sort_values(by='speedup')
-        opts.pareto_data = [config_pareto['speedup'].values, config_pareto[savings_label].values]
-
-      if (index+1) % opts.num_cols == 0:
-        opts.legend_enabled = True
-        opts.legend_ncol    = len(configs)/2
-        opts.legend_bbox    = (-0.6,1.1,1.,0.1)
-      else:
-        opts.legend_enabled = False
-      if index == opts.num_cols*opts.num_rows - 1:
-        opts.file_name       = 'scatter-all.pdf'
-        opts.subplots_hspace = 0.5
-        opts.fig.text(0.5, 0, 'Speedup', ha='center', fontsize=14)
-        opts.fig.text(-0.02, 0.5, 'Work Savings (%)', va='center', rotation='vertical', fontsize=14)
-
-      # plot data
-      brg_plot.add_plot( opts )
-      index = index + 1
+g_labels = []
+if g_resources > 1:
+  g_labels = [
+    "rr-base",
+    "rr-hint",
+    "rr-hint-ah",
+    "rr-base-lim",
+    "rr-hint-lim",
+    "rr-hint-ah-lim",
+    "pc-base",
+    "pc-hint",
+    "pc-hint-ah",
+    "pc-base-lim",
+    "pc-hint-lim",
+    "pc-hint-ah-lim",
+  ]
+else:
+  g_labels = [
+    "rr-base",
+    "rr-hint",
+    "rr-hint-ah",
+    "pc-base",
+    "pc-hint",
+    "pc-hint-ah",
+  ]
 
 #-------------------------------------------------------------------------
 # plot_per_app()
@@ -236,14 +179,16 @@ def plot_all( prefix_str, apps, opts, df, pareto_frontier=False ):
 
 def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
 
-  opts.num_cols = 2
+  opts.num_cols = 4
   opts.num_rows = 2
 
   # select a set of configs
-  index = 0
+  index = 1
   for lockstep in range( 2 ):
     for smart_sharing in range( 2 ):
       configs = subsample_configs( prefix_str, smart_sharing, lockstep )
+
+      # 1. plot the scatter plot
       data    = []
       stats   = pd.DataFrame()
       savings_label = 'total_savings'
@@ -257,11 +202,11 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
         except:
           data.append( [[float('nan')]*2] )
 
+      opts.plot_type      = 'scatter'
       opts.data           = data
       opts.labels         = [[],g_labels]
-      opts.legend_ncol    = len(configs)
       opts.rotate_labels  = True
-      opts.plot_idx       = index+1
+      opts.plot_idx       = index
       opts.colors         = brg_plot.colors['unique20']
       opts.title          = '(smart share-%d, lock-%d)' % ( smart_sharing, lockstep )
       opts.pareto_points  = pareto_frontier
@@ -270,62 +215,76 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
         config_pareto = stats.ix[is_pareto].sort_values(by='speedup')
         opts.pareto_data = [config_pareto['speedup'].values, config_pareto[savings_label].values]
 
-      if (index+1) % opts.num_cols == 0:
+      if index == 1:
         opts.legend_enabled = True
-        opts.legend_ncol    = len(configs)/2
-        opts.legend_bbox    = (-0.6,1.1,1.,0.1)
+        opts.legend_ncol    = 4
+        opts.legend_bbox    = (1.0,1.1,1.,0.1)
       else:
         opts.legend_enabled = False
-      if index == opts.num_cols*opts.num_rows - 1:
-        opts.file_name       = '%(app)s-scatter.pdf' % { 'app' : app }
-        opts.subplots_hspace = 0.5
-        opts.fig.text(0.5, 0, 'Speedup', ha='center', fontsize=14)
-        opts.fig.text(-0.02, 0.5, 'Work Savings (%)', va='center', rotation='vertical', fontsize=14)
-        opts.fig.text(0.5, 1.05, app, ha='center', fontsize=14)
+
+      opts.ylabel = 'Work Savings(%)'
+      opts.xlabel = 'Speedup'
 
       # plot data
       brg_plot.add_plot( opts )
-      index = index + 1
+
+      # 2. plot the bar plot
+      data    = []
+      for config in configs:
+        temp = []
+        try:
+          for stack_label in g_stack_labels:
+            temp.append( df[(df.config == config) & (df.app == app)].iloc[0][stack_label] )
+          data.append( temp )
+        except:
+          data.append( [float('nan')]*5 )
+
+      opts.plot_type       = 'stacked_bar'
+      opts.bar_width       = 0.5
+      opts.data            = data
+      opts.labels          = [g_labels,g_stack_labels]
+      opts.rotate_labels   = True
+      opts.plot_idx        = index + 1
+      opts.colors          =  [ '#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a' ]
+      opts.title           = '(smart share-%d, lock-%d)' % ( smart_sharing, lockstep )
+      opts.subplots_hspace = 0.5
+      opts.subplots_wspace = 1.0
+
+      if index == 1:
+        opts.legend_enabled = True
+        opts.legend_ncol    = 3
+        opts.legend_bbox    = (1.8,1.1,1.,0.1)
+      else:
+        opts.legend_enabled = False
+
+      opts.ylabel = None
+      opts.xlabel = None
+
+      if index == opts.num_cols*opts.num_rows-1:
+        opts.file_name = '%(app)s-ccores.pdf' % { 'app' : app }
+        opts.fig.text(0.5, 1.1, app, ha='center', fontsize=14)
+
+      # plot data
+      brg_plot.add_plot( opts )
+      index = index + 2
 
 #-------------------------------------------------------------------------
 # plot
 #-------------------------------------------------------------------------
 
-def plot( df, prefix_str, per_app_plot, pareto_frontier ):
-
-  #-----------------------------------------------------------------------
-  # scatter plot
-  #-----------------------------------------------------------------------
+def plot( df, prefix_str, pareto_frontier ):
 
   apps = df.app.unique()
-  if per_app_plot:
-    for app in  apps:
-      if app not in app_list:
-        continue
-      # create plot options dict
-      opts = brg_plot.PlotOptions()
-      attribute_dict = \
-      {
-        'show'            : False,
-        'plot_type'       : 'scatter',
-        'figsize'         : (8.0, 8.0),
-        'rotate_labels'   : False,
-        'markersize'      : 50,
-        'labels_fontsize' : 1,
-        'legend_enabled'  : False,
-      }
-      for name, value in attribute_dict.iteritems():
-        setattr( opts, name, value )
-
-      plot_per_app( prefix_str, app, opts, df, pareto_frontier )
-  else:
+  for app in  apps:
+    if app not in app_list:
+      continue
     # create plot options dict
     opts = brg_plot.PlotOptions()
     attribute_dict = \
     {
       'show'            : False,
       'plot_type'       : 'scatter',
-      'figsize'         : (8.0, 8.0),
+      'figsize'         : (16.0, 8.0),
       'rotate_labels'   : False,
       'markersize'      : 50,
       'labels_fontsize' : 1,
@@ -334,7 +293,7 @@ def plot( df, prefix_str, per_app_plot, pareto_frontier ):
     for name, value in attribute_dict.iteritems():
       setattr( opts, name, value )
 
-    plot_all( prefix_str, apps, opts, df, pareto_frontier )
+    plot_per_app( prefix_str, app, opts, df, pareto_frontier )
 
 #-------------------------------------------------------------------------
 # main
@@ -388,11 +347,8 @@ if __name__ == "__main__":
   # save the results
   df.to_csv('%s-results.csv' % g_base_str, index=False)
 
-  # option to plot all results or just per app-kernel
-  per_app_plot = opts.per_app_plot
-
   # option to show the pareto frontier
   pareto_frontier = opts.pareto_frontier
 
   # create plots
-  plot( df, prefix_str, per_app_plot, pareto_frontier )
+  plot( df, prefix_str, pareto_frontier )
