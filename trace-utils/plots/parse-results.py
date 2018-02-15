@@ -28,7 +28,7 @@ def execute(cmd):
 # global variables
 #-------------------------------------------------------------------------
 
-g_prefix_path = "../ccores/"
+g_prefix_path = "../four-core/"
 
 g_configs_dict = {}
 
@@ -72,7 +72,7 @@ def summarize():
 
   with open( res_file, 'w' ) as out:
 
-    out.write('app,config,steps,l0_hits,icoalesces,frontend,execute,dsavings,total_savings\n')
+    out.write('app,config,steps,isavings,l0_hits,icoalesces,frontend,execute,dsavings,total_savings\n')
 
     for config_dir,config in g_configs_dict.iteritems():
       resultsdir_path = g_prefix_path + config_dir
@@ -141,15 +141,15 @@ def summarize():
           dsavings      = 100*float( total_daccess - unique_daccess )/total_work
           isavings      = 100*float( total_iaccess - unique_iaccess )/total_work
           if config == "serial":
-            out.write('{},{},{},{},{},{},{},{},{}\n'.format(app,config,steps,l0_hits,icoalesces,frontend_redn,value_redn,dsavings,total_savings))
+            out.write('{},{},{},{},{},{},{},{},{},{}\n'.format(app,config,steps,isavings,l0_hits,icoalesces,frontend_redn,value_redn,dsavings,total_savings))
           else:
-            out.write('{},{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,steps,l0_hits,icoalesces,frontend_redn,value_redn,dsavings,total_savings))
+            out.write('{},{},{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,steps,isavings,l0_hits,icoalesces,frontend_redn,value_redn,dsavings,total_savings))
         except:
           print "{} {}: Results file not present".format( config, subfolder )
           if config == "serial":
-            out.write('{},{},{},{},{},{},{},{},{}\n'.format(app,config,0,0,0,0,0,0,0))
+            out.write('{},{},{},{},{},{},{},{},{},{}\n'.format(app,config,0,0,0,0,0,0,0,0))
           else:
-            out.write('{},{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,0,0,0,0,0,0,0))
+            out.write('{},{},{},{},{},{},{},{},{},{}\n'.format(app_short_name_dict[app],config,0,0,0,0,0,0,0,0))
           continue
 
 #-------------------------------------------------------------------------
