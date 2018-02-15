@@ -65,11 +65,11 @@ def parse_cmdline():
 #-------------------------------------------------------------------------
 
 # Will vary based on the static configuration in question and ccores vs. simt
-g_ncores       = 8
-g_insn_ports   = 1
-g_resources    = 1
+g_ncores       = 4
+g_insn_ports   = 2
+g_resources    = 2
 
-g_base_str     = "1L0-1I-8F-1L-0C-0TS-0LO-1-0LL-0AH"
+g_base_str     = "1L0-%dI-%dF-%dL-0C-0TS-0LO-1-0LL-0AH" % ( g_insn_ports, g_ncores, g_resources )
 g_config_str   = "1L0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
 
 g_config_list = []
@@ -116,35 +116,41 @@ def is_pareto_front(row, stats, xlabel, ylabel):
 def subsample_configs( prefix_str, smart_sharing, lockstep ):
   configs = []
 
-  #for limit_lockstep in range( 2 ):
-  limit_lockstep = 0
-
-  for analysis in [0,1]:
-    for barrier_limit in [1,1000]:
-      for adaptive_hint in range( 2 ):
-        config_str = prefix_str + g_config_str % (
-          g_insn_ports,
-          g_ncores,
-          g_resources,
-          smart_sharing,
-          analysis,
-          lockstep,
-          barrier_limit,
-          limit_lockstep,
-          adaptive_hint,
-        )
-        configs.append( config_str )
+  for limit_lockstep in [0,1]:
+    for analysis in [0,1]:
+      for barrier_limit in [1,1000]:
+        for adaptive_hint in range( 2 ):
+          if adaptive_hint == 1 and barrier_limit == 1:
+            continue
+          #if limit_lockstep == 1 and lockstep == 0 or ( limit_lockstep == 1 and lockstep == 1 and g_resources == 1):
+          #  continue
+          config_str = prefix_str + g_config_str % (
+            g_insn_ports,
+            g_ncores,
+            g_resources,
+            smart_sharing,
+            analysis,
+            lockstep,
+            barrier_limit,
+            limit_lockstep,
+            adaptive_hint,
+          )
+          configs.append( config_str )
   return configs
 
 g_labels = [
   "rr-base",
-  "rr-base-ah",
   "rr-hint",
   "rr-hint-ah",
+  "rr-base-lim",
+  "rr-hint-lim",
+  "rr-hint-ah-lim",
   "pc-base",
-  "pc-base-ah",
   "pc-hint",
   "pc-hint-ah",
+  "pc-base-lim",
+  "pc-hint-lim",
+  "pc-hint-ah-lim",
 ]
 
 #-------------------------------------------------------------------------
@@ -293,7 +299,6 @@ def plot( df, prefix_str, per_app_plot, pareto_frontier ):
 
   apps = df.app.unique()
   if per_app_plot:
-    apps = ['dict']
     for app in  apps:
       if app not in app_list:
         continue
