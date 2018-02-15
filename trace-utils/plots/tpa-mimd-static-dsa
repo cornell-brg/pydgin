@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-ccores-dsa [options]
+# tpa-mimd-static-dsa [options]
 #=========================================================================
 #
 #  -h --help           Display this message
@@ -65,7 +65,7 @@ def parse_cmdline():
 # Will vary based on the static configuration in question and ccores vs. simt
 g_ncores       = 4
 g_insn_ports   = 2
-g_resources    = 1
+g_resources    = 4
 
 g_base_str     = "1L0-%dI-%dF-%dL-0C-0TS-0LO-1-0LL-0AH" % ( g_insn_ports, g_ncores, g_resources )
 g_config_str   = "1L0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
@@ -113,56 +113,34 @@ def is_pareto_front(row, stats, xlabel, ylabel):
 # subsample_configs
 #-------------------------------------------------------------------------
 
-def subsample_configs( prefix_str, smart_sharing, lockstep ):
+def subsample_configs( prefix_str, smart_sharing, analysis ):
   configs = []
 
-  for limit_lockstep in [0,1]:
-    for analysis in [0,1]:
-      for barrier_limit in [1,1000]:
-        for adaptive_hint in range( 2 ):
-          if adaptive_hint == 1 and barrier_limit == 1:
-            continue
-          if g_resources == 1 and limit_lockstep == 1:  
-            continue
-          config_str = prefix_str + g_config_str % (
-            g_insn_ports,
-            g_ncores,
-            g_resources,
-            smart_sharing,
-            analysis,
-            lockstep,
-            barrier_limit,
-            limit_lockstep,
-            adaptive_hint,
-          )
-          configs.append( config_str )
+  lockstep       = 0
+  limit_lockstep = 0
+  for barrier_limit in [1,1000]:
+    for adaptive_hint in range( 2 ):
+      if adaptive_hint == 1 and barrier_limit == 1:
+        continue
+      config_str = prefix_str + g_config_str % (
+        g_insn_ports,
+        g_ncores,
+        g_resources,
+        smart_sharing,
+        analysis,
+        lockstep,
+        barrier_limit,
+        limit_lockstep,
+        adaptive_hint,
+      )
+      configs.append( config_str )
   return configs
 
-g_labels = []
-if g_resources > 1:
-  g_labels = [
-    "rr-base",
-    "rr-hint",
-    "rr-hint-ah",
-    "rr-base-lim",
-    "rr-hint-lim",
-    "rr-hint-ah-lim",
-    "pc-base",
-    "pc-hint",
-    "pc-hint-ah",
-    "pc-base-lim",
-    "pc-hint-lim",
-    "pc-hint-ah-lim",
-  ]
-else:
-  g_labels = [
-    "rr-base",
-    "rr-hint",
-    "rr-hint-ah",
-    "pc-base",
-    "pc-hint",
-    "pc-hint-ah",
-  ]
+g_labels = [
+  "no-hint",
+  "hint",
+  "hint-ah",
+]
 
 #-------------------------------------------------------------------------
 # plot_per_app()
@@ -184,9 +162,9 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
 
   # select a set of configs
   index = 1
-  for lockstep in range( 2 ):
+  for analysis in range( 2 ):
     for smart_sharing in range( 2 ):
-      configs = subsample_configs( prefix_str, smart_sharing, lockstep )
+      configs = subsample_configs( prefix_str, smart_sharing, analysis )
 
       # 1. plot the scatter plot
       data    = []
@@ -208,7 +186,7 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
       opts.rotate_labels  = True
       opts.plot_idx       = index
       opts.colors         = brg_plot.colors['unique20']
-      opts.title          = '(smart share-%d, lock-%d)' % ( smart_sharing, lockstep )
+      opts.title          = '(smart share-%d, %s)' % ( smart_sharing, 'rr' if analysis == 0 else 'pc' )
       opts.pareto_points  = pareto_frontier
       if pareto_frontier:
         is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'speedup', savings_label),axis=1)
@@ -246,7 +224,7 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
       opts.rotate_labels   = True
       opts.plot_idx        = index + 1
       opts.colors          =  [ '#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a' ]
-      opts.title           = '(smart share-%d, lock-%d)' % ( smart_sharing, lockstep )
+      opts.title          = '(smart share-%d, %s)' % ( smart_sharing, 'rr' if analysis == 0 else 'pc' )
       opts.subplots_hspace = 0.5
       opts.subplots_wspace = 1.0
 
