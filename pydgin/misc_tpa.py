@@ -90,6 +90,7 @@ class ThreadSelect():
   def __init__( s, num_cores, sched_limit ):
     s.switch_interval = sched_limit
     s.top_priority    = num_cores-1
+    s.wait_count      = [0] * num_cores
 
   #-----------------------------------------------------------------------
   # get_next_pc
@@ -107,32 +108,52 @@ class ThreadSelect():
     return next_pc, next_core
 
   #-----------------------------------------------------------------------
+  # get_next
+  #-----------------------------------------------------------------------
+  # NOTE: Used by min-pc or min-sp/pc arbiters
+
+  def get_next( s, sim ):
+    grant = s.top_priority
+    if s.wait_count[grant] >= sim.ncores  and not sim.states[grant].stop:
+      s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+      return grant
+    else:
+      for i in xrange( sim.ncores ):
+        grant = 0 if grant == sim.ncores-1 else grant+1
+        if s.wait_count[grant] >= sim.ncores and not sim.states[grant].stop:
+          s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+          return grant
+    return grant
+
+  #-----------------------------------------------------------------------
   # rr_min_pc
   #-----------------------------------------------------------------------
+  # 02/17/2018
+  # NOTE: Changed the min-pc arbitration. The idea is to first check if
+  # there is a thread that has been starving for a while and prioritize
+  # that thread for forward progress else the scheduling policy is
+  # prioritized towards the min-pc
 
   def rr_min_pc( s, sim ):
+
     min_pc   = sys.maxint
     min_core = 0
 
-    # select the minimum-pc by considering only active cores
-    if s.switch_interval > 0:
-      for core in xrange( sim.ncores ):
-        if sim.states[core].pc < min_pc and not sim.states[core].stop:
-          min_pc = sim.states[core].pc
-          min_core = core
-      s.switch_interval -= 1
-      #if sim.states[0].debug.enabled( "tpa" ):
-      #  print "min-pc: %x %d" % ( min_pc, min_core )
-    # round-robin arbitration
-    elif s.switch_interval == 0:
-      min_pc, min_core = s.get_next_pc( sim )
-      s.switch_interval = sim.sched_limit
-      #if sim.states[0].debug.enabled( "tpa" ):
-      #  print "rr   : %x %d" % ( min_pc, min_core )
-    else:
-      print "Something wrong in scheduling tick: %d" % sim.states[0].num_insts
-      raise AssertionError
+    # check if there is a core that has hit it's max time interval
+    prioritized_core = s.get_next( sim )
+    if s.wait_count[prioritized_core] >= sim.ncores and not sim.states[prioritized_core].stop:
+      min_pc   = sim.states[prioritized_core].pc
+      min_core = prioritized_core
+      #print "rr   : %x %d" % ( min_pc, min_core )
+      return min_pc, min_core
 
+    # select the min-pc for threads otherwise
+    for core in xrange( sim.ncores ):
+      if sim.states[core].pc < min_pc and not sim.states[core].stop:
+        min_pc = sim.states[core].pc
+        min_core = core
+
+    #print "min-pc: %x %d" % ( min_pc, min_core )
     return min_pc, min_core
 
   #-----------------------------------------------------------------------
@@ -141,32 +162,40 @@ class ThreadSelect():
 
   def rr_min_sp_pc( s, sim ):
     min_sp   = sys.maxint
-    min_pc   = 0
+    min_pc   = sys.maxint
     min_core = 0
-    # select the minimum-pc by considering only active cores
-    if s.switch_interval > 0:
-      for core in xrange( sim.ncores ):
-        if not sim.states[core].stop:
-          if sim.states[core].rf[ sp ] < min_sp:
-            min_pc = sim.states[core].pc
-            min_core = core
-          elif sim.states[core].rf[ sp ] ==  min_sp and sim.states[core].pc < min_pc:
-            min_pc = sim.states[core].pc
-            min_core = core
-      s.switch_interval -= 1
-      #if sim.states[0].debug.enabled( "tpa" ):
-      #  print "min-sp: %x %d" % ( min_pc, min_core )
-    # round-robin arbitration
-    elif s.switch_interval == 0:
-      min_pc, min_core = s.get_next_pc( sim )
-      s.switch_interval = sim.sched_limit
-      #if sim.states[0].debug.enabled( "tpa" ):
-      #  print "rr   : %x %d" % ( min_pc, min_core )
-    else:
-      print "Something wrong in scheduling tick: %d" % sim.states[0].num_insts
-      raise AssertionError
 
+    # check if there is a core that has hit it's max time interval
+    prioritized_core = s.get_next( sim )
+    if s.wait_count[prioritized_core] >= sim.ncores and not sim.states[prioritized_core].stop:
+      min_pc   = sim.states[prioritized_core].pc
+      min_core = prioritized_core
+      #print "rr   : %x %d" % ( min_pc, min_core )
+      return min_pc, min_core
+
+    # select the min-sp/pc for threads otherwise
+    for core in xrange( sim.ncores ):
+      if not sim.states[core].stop:
+        if sim.states[core].rf[ sp ] < min_sp:
+          min_pc = sim.states[core].pc
+          min_core = core
+        elif sim.states[core].rf[ sp ] ==  min_sp and sim.states[core].pc < min_pc:
+          min_pc = sim.states[core].pc
+          min_core = core
+
+    #print "min-sp: %x %d" % ( min_pc, min_core )
     return min_pc, min_core
+
+  #-----------------------------------------------------------------------
+  # update_wait_counts
+  #-----------------------------------------------------------------------
+
+  def update_wait_counts( s, sim ):
+    for core in xrange( sim.ncores ):
+      if not sim.states[core].active and not sim.states[core].stop:
+        s.wait_count[core] += 1
+      else:
+        s.wait_count[core] = 0
 
   #-----------------------------------------------------------------------
   # xtick
@@ -195,7 +224,13 @@ class ThreadSelect():
     # update state
     sim.states[active_core].active = True
 
+    # update wait counts
+    if sim.reconvergence != 0:
+      s.update_wait_counts( sim )
+
     return active_core
+
+#ThreadSelect-------------------------------------------------------------
 
 #-------------------------------------------------------------------------
 # ReconvergenceManager
@@ -216,12 +251,14 @@ class ReconvergenceManager():
     s.mask            = 0
     s.l0_mask         = 0
     s.coalesce        = True
+    s.wait_count      = []
 
   #-----------------------------------------------------------------------
   # configure
   #-----------------------------------------------------------------------
 
   def configure( s, num_cores, coalesce, word_match, line_sz, sched_limit ):
+    s.wait_count      = [0] * num_cores
     s.switch_interval = sched_limit
     s.top_priority    = num_cores-1
     # enable coaelscing
@@ -270,46 +307,6 @@ class ReconvergenceManager():
         sim.states[core].l0_buffer.pop(0)
       sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
 
-    #---------------------------------------------------------------------
-    # Uncomment for unified SIMT L0 buffer
-    #---------------------------------------------------------------------
-    # NOTE: 01/30/2018 Disabling this feature for now.
-    #
-    #
-    # stats for non-SIMT frontend
-    #parallel_mode = sim.states[core].wsrt_mode or sim.states[core].spmd_mode
-    #if sim.states[0].stats_en and parallel_mode and not sim.simt:
-    #  sim.unique_imem_accesses += 1
-    #  sim.total_imem_accesses += 1
-    #
-    ## SIMT L0 Buffer present
-    #if sim.simt and sim.l0_buffer_sz != 0:
-    #  if (sim.states[core].pc & s.l0_mask) in sim.simt_l0_buffer:
-    #    if sim.states[0].stats_en and parallel_mode:
-    #      sim.simt_l0_hits += 1
-    #      sim.total_imem_accesses += 1
-    #  else:
-    #    # add the line to the l0 buffer if there is a l0 buffer present
-    #    if sim.simt_l0_buffer:
-    #      sim.simt_l0_buffer.pop(0)
-    #    sim.simt_l0_buffer.append(sim.states[core].pc & s.l0_mask)
-    #    if sim.states[0].stats_en and parallel_mode:
-    #      sim.unique_imem_accesses += 1
-    #      sim.total_imem_accesses += 1
-    ## SIMT but no l0 buffer present
-    #elif sim.simt and sim.l0_buffer_sz == 0:
-    #  if sim.states[0].stats_en and parallel_mode:
-    #    sim.unique_imem_accesses += 1
-    #    sim.total_imem_accesses += 1
-    ## Not SIMT but l0 buffer present
-    #elif not sim.simt and sim.l0_buffer_sz != 0:
-    #  # add the line to the l0 buffer if there is a l0 buffer present
-    #  if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer:
-    #    if sim.states[core].l0_buffer:
-    #      sim.states[core].l0_buffer.pop(0)
-    #    sim.states[core].l0_buffer.append(sim.states[core].pc & s.l0_mask)
-    #---------------------------------------------------------------------
-
   #-----------------------------------------------------------------------
   # update_pcs
   #-----------------------------------------------------------------------
@@ -333,8 +330,6 @@ class ReconvergenceManager():
           sim.total_coalesces     += 1
           sim.total_imem_accesses += 1
 
-        # NOTE: 01/30/2018: Changing SIMT L0 buffer behavior
-        #if not sim.simt and sim.l0_buffer_sz != 0:
         # add the line to the l0 buffer if there is a l0 buffer present
         if sim.l0_buffer_sz != 0:
           if (sim.states[core].pc & s.l0_mask) not in sim.states[core].l0_buffer:
@@ -365,31 +360,56 @@ class ReconvergenceManager():
     return next_pc, next_core
 
   #-----------------------------------------------------------------------
+  # get_next
+  #-----------------------------------------------------------------------
+  # NOTE: Used by min-pc or min-sp/pc arbiters
+
+  def get_next( s, sim ):
+    grant = s.top_priority
+    if s.wait_count[grant] >= sim.ncores  and grant not in s.scheduled_list:
+      #print "old pri: ", s.top_priority,
+      s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+      #print " new pri: ", s.top_priority
+      return grant
+    else:
+      for i in xrange( sim.ncores ):
+        grant = 0 if grant == sim.ncores-1 else grant+1
+        if s.wait_count[grant] >= sim.ncores and grant not in s.scheduled_list:
+          #print "old pri: ", s.top_priority,
+          s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
+          #print " new pri: ", s.top_priority
+          return grant
+    return grant
+
+  #-----------------------------------------------------------------------
   # rr_min_pc
   #-----------------------------------------------------------------------
+  # 02/17/2018
+  # NOTE: Changed the min-pc arbitration. The idea is to first check if
+  # there is a thread that has been starving for a while and prioritize
+  # that thread for forward progress else the scheduling policy is
+  # prioritized towards the min-pc
 
   def rr_min_pc( s, sim ):
+
     min_pc   = sys.maxint
     min_core = 0
-    # select the minimum-pc by considering only active cores
-    if s.switch_interval > 0:
-      for core in xrange( sim.ncores ):
-        if sim.states[core].pc < min_pc and core not in s.scheduled_list:
-          min_pc = sim.states[core].pc
-          min_core = core
-      s.switch_interval -= 1
-      #if sim.states[0].debug.enabled( "tpa" ):
-      #  print "min-pc: %x %d" % ( min_pc, min_core )
-    # round-robin arbitration
-    elif s.switch_interval == 0:
-      min_pc, min_core = s.get_next_pc( sim )
-      s.switch_interval = sim.sched_limit
-      #if sim.states[0].debug.enabled( "tpa" ):
-      #  print "rr   : %x %d" % ( min_pc, min_core )
-    else:
-      print "Something wrong in scheduling tick: %d" % sim.states[0].num_insts
-      raise AssertionError
 
+    # check if there is a core that has hit it's max time interval
+    prioritized_core = s.get_next( sim )
+    if s.wait_count[prioritized_core] >= sim.ncores and prioritized_core not in s.scheduled_list:
+      min_pc   = sim.states[prioritized_core].pc
+      min_core = prioritized_core
+      #print "rr   : %x %d" % ( min_pc, min_core )
+      return min_pc, min_core
+
+    # select the min-pc for threads otherwise
+    for core in xrange( sim.ncores ):
+      if sim.states[core].pc < min_pc and core not in s.scheduled_list:
+        min_pc = sim.states[core].pc
+        min_core = core
+
+    #print "min-pc: %x %d" % ( min_pc, min_core )
     return min_pc, min_core
 
   #-----------------------------------------------------------------------
@@ -398,38 +418,53 @@ class ReconvergenceManager():
 
   def rr_min_sp_pc( s, sim ):
     min_sp   = sys.maxint
-    min_pc   = 0
+    min_pc   = sys.maxint
     min_core = 0
-    # select the minimum-pc by considering only active cores
-    if s.switch_interval > 0:
-      for core in xrange( sim.ncores ):
-        if core not in s.scheduled_list:
-          if sim.states[core].rf[ sp ] < min_sp:
-            min_pc = sim.states[core].pc
-            min_core = core
-          elif sim.states[core].rf[ sp ] ==  min_sp and sim.states[core].pc < min_pc:
-            min_pc = sim.states[core].pc
-            min_core = core
-      s.switch_interval -= 1
-      #if sim.states[0].debug.enabled( "tpa" ):
-      #  print "min-sp: %x %d" % ( min_pc, min_core )
-    # round-robin arbitration
-    elif s.switch_interval == 0:
-      min_pc, min_core = s.get_next_pc( sim )
-      s.switch_interval = sim.sched_limit
-      #if sim.states[0].debug.enabled( "tpa" ):
-      #  print "rr   : %x %d" % ( min_pc, min_core )
-    else:
-      print "Something wrong in scheduling tick: %d" % sim.states[0].num_insts
-      raise AssertionError
 
+    # check if there is a core that has hit it's max time interval
+    prioritized_core = s.get_next( sim )
+    if s.wait_count[prioritized_core] >= sim.ncores and prioritized_core not in s.scheduled_list:
+      min_pc   = sim.states[prioritized_core].pc
+      min_core = prioritized_core
+      #print "rr   : %x %d" % ( min_pc, min_core )
+      return min_pc, min_core
+
+    # select the min-sp/pc for threads otherwise
+    for core in xrange( sim.ncores ):
+      if core not in s.scheduled_list:
+        if sim.states[core].rf[ sp ] < min_sp:
+          min_pc   = sim.states[core].pc
+          min_core = core
+        elif sim.states[core].rf[ sp ] ==  min_sp and sim.states[core].pc < min_pc:
+          min_pc   = sim.states[core].pc
+          min_core = core
+
+    #print "min-sp: %x %d" % ( min_pc, min_core )
     return min_pc, min_core
+
+  #-----------------------------------------------------------------------
+  # update_wait_counts
+  #-----------------------------------------------------------------------
+
+  def update_wait_counts( s, sim ):
+    for core in xrange( sim.ncores ):
+      stalling = sim.states[core].stall or sim.states[core].stop or sim.states[core].clear
+      if not sim.states[core].active and not stalling:
+        s.wait_count[core] += 1
+      else:
+        s.wait_count[core] = 0
 
   #-----------------------------------------------------------------------
   # xtick
   #-----------------------------------------------------------------------
 
   def xtick( s, sim ):
+
+    #print "waiting: ", s.wait_count
+    #print "pcs [",
+    #for core in range( sim.ncores ):
+    #  print "%x," % sim.states[core].pc,
+    #print "]"
 
     # do not consider a core that is stalling or reached hw barroer
     s.scheduled_list = []
@@ -502,6 +537,12 @@ class ReconvergenceManager():
         all_done = s.update_pcs( sim, line_addr )
         if all_done:
           break
+
+    # update wait counts
+    if sim.reconvergence != 0:
+      s.update_wait_counts( sim )
+
+#ReconvergenceManager------------------------------------------------------
 
 #-------------------------------------------------------------------------
 # GangEntry

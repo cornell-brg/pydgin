@@ -956,24 +956,75 @@ class Sim( object ):
       parallel_mode = self.states[0].wsrt_mode or self.states[0].spmd_mode
       if self.states[0].stats_en and not parallel_mode: self.serial_steps += 1
 
-      #if self.states[0].debug.enabled( "tpa" ):
-      #  print "backend : [",
-      #  for core in range( self.ncores ):
-      #    if self.states[core].istall:
-      #      print "%d:i," % core,
-      #    elif self.states[core].stall:
-      #      print "%d:s," % core,
-      #    elif self.states[core].stop:
-      #      print "%d:b," % core,
-      #    elif self.states[core].clear:
-      #      print "%d:w," % core,
-      #    elif self.states[core].active:
-      #      print "%d:a," % core,
-      #    else:
-      #      print "%d:n," %core,
-      #  print "]"
-      # update barrier counts for stalling cores
+      if self.states[0].debug.enabled( "tpa" ):
+        print "backend : [",
+        for core in range( self.ncores ):
+          if self.states[core].istall:
+            print "%d:i," % core,
+          elif self.states[core].stall:
+            print "%d:s," % core,
+          elif self.states[core].stop:
+            print "%d:b," % core,
+          elif self.states[core].clear:
+            print "%d:w," % core,
+          elif self.states[core].active:
+            print "%d:a," % core,
+          else:
+            print "%d:n," %core,
+        print "]"
 
+      #-------------------------------------------------------------------
+      # shreesha: linetrace
+      if self.linetrace:
+        if self.states[0].stats_en:
+          for i in range( self.ncores ):
+            stall  = False
+            clear  = False
+            active = False
+            #NOTE: the linetrace is not perfect but is a start
+            #lockstep execution is a pain to show
+            stall  = self.states[i].stall or self.states[i].istall
+            clear  = self.states[i].clear
+            active = self.states[i].active
+
+            if active and not ( stall or clear):
+              parallel_mode = self.states[i].wsrt_mode or self.states[i].spmd_mode
+              # core0 in serial section
+              if self.color and not parallel_mode and i ==0 :
+                print colors.white + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
+              # others in bthread control function
+              elif self.color and not parallel_mode:
+                print colors.blue + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
+              # cores in spmd region
+              elif self.color and self.states[i].spmd_mode:
+                print colors.purple + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
+              # cores executing tasks in wsrt region
+              elif self.color and self.states[i].task_mode and parallel_mode:
+                print colors.green + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
+              # cores executing runtime function in wsrt region
+              elif self.color and self.states[i].runtime_mode and parallel_mode:
+                print colors.yellow + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
+              # No color requested
+              else:
+                print  self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ),
+            elif stall:
+              if self.states[i].istall:
+                print pad( "#i |", 11, " ", False ),
+              if self.states[i].dmem:
+                print pad( "#d |", 11, " ", False ),
+              elif self.states[i].mdu:
+                print pad( "#m |", 11, " ", False ),
+              elif self.states[i].fpu:
+                print pad( "#f |", 11, " ", False ),
+            elif clear:
+                print pad( "#w |", 11, " ", False ),
+            else:
+              print pad( " |", 11, " ", False ),
+          print
+      #linetrace----------------------------------------------------------
+
+
+      # update barrier counts for stalling cores
       for state in self.states:
         if state.stop:
           state.barrier_ctr += 1
@@ -1026,54 +1077,6 @@ class Sim( object ):
           self.states[core].stop = False
           self.states[core].active = True
           self.states[core].pc += 4
-
-      # shreesha: linetrace
-      if self.linetrace:
-        if self.states[0].stats_en:
-          for i in range( self.ncores ):
-            stall  = False
-            clear  = False
-            active = False
-            #NOTE: the linetrace is not perfect but is a start
-            #lockstep execution is a pain to show
-            stall  = self.states[i].stall or self.states[i].istall
-            clear  = self.states[i].clear
-            active = self.states[i].active
-
-            if active and not ( stall or clear):
-              parallel_mode = self.states[i].wsrt_mode or self.states[i].spmd_mode
-              # core0 in serial section
-              if self.color and not parallel_mode and i ==0 :
-                print colors.white + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
-              # others in bthread control function
-              elif self.color and not parallel_mode:
-                print colors.blue + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
-              # cores in spmd region
-              elif self.color and self.states[i].spmd_mode:
-                print colors.purple + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
-              # cores executing tasks in wsrt region
-              elif self.color and self.states[i].task_mode and parallel_mode:
-                print colors.green + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
-              # cores executing runtime function in wsrt region
-              elif self.color and self.states[i].runtime_mode and parallel_mode:
-                print colors.yellow + self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ) + colors.end,
-              # No color requested
-              else:
-                print  self.states[i].insn_str + pad( "%x |" % pc_list[i], 9, " ", False ),
-            elif stall:
-              if self.states[i].istall:
-                print pad( "#i |", 11, " ", False ),
-              if self.states[i].dmem:
-                print pad( "#d |", 11, " ", False ),
-              elif self.states[i].mdu:
-                print pad( "#m |", 11, " ", False ),
-              elif self.states[i].fpu:
-                print pad( "#f |", 11, " ", False ),
-            elif clear:
-                print pad( "#w |", 11, " ", False ),
-            else:
-              print pad( " |", 11, " ", False ),
-          print
 
     if self.outfile:
       self.out_fd.close()
