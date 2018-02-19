@@ -34,9 +34,9 @@ g_path = './'
 def merge_pdfs( config, outfile ):
   merge_files = []
   for app in app_list:
-    if not os.path.isfile( g_path + app + '-%.pdf' % config ):
+    if not os.path.isfile( g_path + app + '-%s.pdf' % config ):
       continue
-    merge_files.append( g_path + app + '-%.pdf' % config )
+    merge_files.append( g_path + app + '-%s.pdf' % config )
   merge_files = ' '.join( merge_files )
   cmd = 'pdftk ' + merge_files + ' output ' + outfile
   execute( cmd )

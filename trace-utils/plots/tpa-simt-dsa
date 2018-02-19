@@ -82,23 +82,30 @@ g_resources    = 2
 g_base_str     = "1L0-%dI-%dF-%dL-1C-0TS-1LO-1-0LL-0AH" % ( g_insn_ports, g_insn_ports, g_resources )
 g_config_str   = "1L0-%dI-%dF-%dL-1C-%dTS-1LO-%d-%dLL-%dAH"
 
-g_config_list = []
-for limit_lockstep in range( 2 ):
-  for analysis in [0,1]:
-    for adaptive_hint in range( 2 ):
-      for barrier_limit in [1,1000]:
-        config_str = g_config_str % (
-          g_insn_ports,
-          g_insn_ports,
-          g_resources,
-          analysis,
-          barrier_limit,
-          limit_lockstep,
-          adaptive_hint
-        )
-        g_config_list.append( config_str )
+g_config_list  = []
+g_stack_labels = ['imem', 'frontend', 'dmem', 'backend']
 
-g_stack_labels  = ['imem', 'frontend', 'dmem', 'backend']
+#-------------------------------------------------------------------------
+# populate_configs()
+#-------------------------------------------------------------------------
+
+def populate_configs( insn_ports, resources ):
+  config_list = []
+  for limit_lockstep in range( 2 ):
+    for analysis in [0,1]:
+      for adaptive_hint in range( 2 ):
+        for barrier_limit in [1,1000]:
+          config_str = g_config_str % (
+            insn_ports,
+            insn_ports,
+            resources,
+            analysis,
+            barrier_limit,
+            limit_lockstep,
+            adaptive_hint
+          )
+          config_list.append( config_str )
+  return config_list
 
 #-------------------------------------------------------------------------
 # is_pareto_front()
@@ -331,7 +338,10 @@ if __name__ == "__main__":
     print "Select spmd or wsrt!"
     exit(1)
 
+  g_base_str = "1L0-%dI-%dF-%dL-1C-0TS-1LO-1-0LL-0AH" % ( g_insn_ports, g_insn_ports, g_resources )
+
   # depending on spmd vs. wsrt options select the configurations
+  g_config_list = populate_configs( g_insn_ports, g_resources )
   g_config_list = [ prefix_str + cfg for cfg in g_config_list ]
 
   # process the raw data for the subset of config list

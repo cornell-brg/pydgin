@@ -37,8 +37,6 @@ if __name__ == "__main__":
     cmds = []
     cmds.append( './tpa-mimd-dsa --%s' % rt )
     cmds.append( 'cp *.pdf results/mimd/%s/.' % rt )
-    cmds.append( 'cp common.py results/mimd/%s/.' % rt )
-    cmds.append( 'cp pdf-merge.py results/mimd/%s/.' % rt )
     cmds.append( 'rm *.pdf' )
     with open( 'results/mimd/%s/%s.log' % ( rt, rt ), 'w' ) as out:
       for cmd in cmds:
@@ -53,8 +51,6 @@ if __name__ == "__main__":
       cmds = []
       cmds.append( './tpa-mimd-static-dsa --g_ncores 4 --g_insn_ports %d --g_resources 4 --%s' % ( insn_ports, rt ) )
       cmds.append( 'cp *.pdf results/mimd-static-%dI/%s/.' % ( insn_ports, rt ) )
-      cmds.append( 'cp common.py results/mimd-static-%dI/%s/.' % ( insn_ports, rt ) )
-      cmds.append( 'cp pdf-merge.py results/mimd-static-%dI/%s/.' % ( insn_ports, rt ) )
       cmds.append( 'rm *.pdf' )
       with open( 'results/mimd-static-%dI/%s/%s.log' % ( insn_ports, rt, rt ), 'w' ) as out:
         for cmd in cmds:
@@ -70,8 +66,6 @@ if __name__ == "__main__":
         cmds = []
         cmds.append( './tpa-ccores-dsa --g_ncores 4 --g_insn_ports %d --g_resources %d --%s' % ( insn_ports, resources, rt ) )
         cmds.append( 'cp *.pdf results/ccores-%dI-%dL/%s/.' % ( insn_ports, resources, rt ) )
-        cmds.append( 'cp common.py results/ccores-%dI-%dL/%s/.' % ( insn_ports, resources, rt ) )
-        cmds.append( 'cp pdf-merge.py results/ccores-%dI-%dL/%s/.' % ( insn_ports, resources, rt ) )
         cmds.append( 'rm *.pdf' )
         with open( 'results/ccores-%dI-%dL/%s/%s.log' % ( insn_ports, resources, rt, rt ), 'w' ) as out:
           for cmd in cmds:
@@ -86,8 +80,6 @@ if __name__ == "__main__":
       cmds = []
       cmds.append( './tpa-simt-static-dsa --g_ncores 4 --g_insn_ports %d --g_resources 4 --%s' % ( insn_ports, rt ) )
       cmds.append( 'cp *.pdf results/simt-static-%dI/%s/.' % ( insn_ports, rt ) )
-      cmds.append( 'cp common.py results/simt-static-%dI/%s/.' % ( insn_ports, rt ) )
-      cmds.append( 'cp pdf-merge.py results/simt-static-%dI/%s/.' % ( insn_ports, rt ) )
       cmds.append( 'rm *.pdf' )
       with open( 'results/simt-static-%dI/%s/%s.log' % ( insn_ports, rt, rt ), 'w' ) as out:
         for cmd in cmds:
@@ -103,8 +95,6 @@ if __name__ == "__main__":
         cmds = []
         cmds.append( './tpa-simt-dsa --g_ncores 4 --g_insn_ports %d --g_resources %d --%s' % ( insn_ports, resources, rt ) )
         cmds.append( 'cp *.pdf results/simt-%dI-%dL/%s/.' % ( insn_ports, resources, rt ) )
-        cmds.append( 'cp common.py results/simt-%dI-%dL/%s/.' % ( insn_ports, resources, rt ) )
-        cmds.append( 'cp pdf-merge.py results/simt-%dI-%dL/%s/.' % ( insn_ports, resources, rt ) )
         cmds.append( 'rm *.pdf' )
         with open( 'results/simt-%dI-%dL/%s/%s.log' % ( insn_ports, resources, rt, rt ), 'w' ) as out:
           for cmd in cmds:
@@ -118,10 +108,14 @@ if __name__ == "__main__":
     cmds = []
     cmds.append( './tpa-mt-dsa --%s' % rt )
     cmds.append( 'cp *.pdf results/mt/%s/.' % rt )
-    cmds.append( 'cp common.py results/mt/%s/.' % rt )
-    cmds.append( 'cp pdf-merge.py results/mt/%s/.' % rt )
     cmds.append( 'rm *.pdf' )
     with open( 'results/mt/%s/%s.log' % ( rt, rt ), 'w' ) as out:
       for cmd in cmds:
         log = execute( cmd )
         out.write( log )
+
+  cmd = 'cp common.py results/.'
+  execute( cmd )
+
+  cmd = 'cp summarize-results.py results/.'
+  execute( cmd )
