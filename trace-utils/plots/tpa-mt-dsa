@@ -5,6 +5,8 @@
 #
 #  -h --help           Display this message
 #
+#  --speedup           Select speedup or execution time (default exec time)
+#  --savings           Select savings or work (default work)
 #  --spmd              Select spmd data-points 
 #  --wsrt              Select wsrt data-points
 #  --pareto-frontier   Add a pareto-frontier
@@ -27,6 +29,7 @@ import pandas as pd
 import brg_plot
 
 from common import *
+from process_data import *
 
 #-------------------------------------------------------------------------
 # Command line processing
@@ -50,6 +53,8 @@ def parse_cmdline():
 
   # Additional commane line arguments for the simulator
 
+  p.add_argument( "--speedup",         action="store_true",  default=False )
+  p.add_argument( "--savings",         action="store_true",  default=False )
   p.add_argument( "--spmd",            action="store_true",  default=False )
   p.add_argument( "--wsrt",            action="store_true",  default=False )
   p.add_argument( "--pareto-frontier", action="store_true",  default=False )
@@ -84,7 +89,7 @@ g_labels = [
 "mt-pc-hint-ah",
 ]
 
-g_stack_labels  = ['l0_hits', 'icoalesces', 'frontend', 'execute', 'dsavings']
+g_stack_labels  = ['imem', 'frontend', 'dmem', 'backend']
 
 #-------------------------------------------------------------------------
 # is_pareto_front()
@@ -116,7 +121,7 @@ def is_pareto_front(row, stats, xlabel, ylabel):
 #    [[3,3],[4,4]], # group 2
 #   ]
 
-def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
+def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, pareto_frontier=False ):
 
   opts.num_cols = 2
   opts.num_rows = 1
@@ -124,18 +129,21 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
   index   = 0
   data    = []
   stats   = pd.DataFrame()
-  savings_label = 'total_savings'
+  x_label = 'steps'
+  y_label = 'total'
   for config in g_config_list:
     try:
-      speedup = df[(df.config == config) & (df.app == app)].iloc[0]['speedup']
-      savings = df[(df.config == config) & (df.app == app)].iloc[0][savings_label]
+      speedup = df[(df.config == config) & (df.app == app)].iloc[0][x_label]
+      savings = df[(df.config == config) & (df.app == app)].iloc[0][y_label]
       data.append( [[speedup, savings]] )
       if pareto_frontier:
-        stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', 'speedup', savings_label]] )
+        stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', x_label, y_label]] )
     except:
       data.append( [[float('nan')]*2] )
 
   # first add the scatter plot
+  opts.xrange         = [0.8,1.3]
+  opts.yrange         = [0,100]
   opts.data           = data
   opts.labels         = [[],g_labels]
   opts.rotate_labels  = True
@@ -143,13 +151,25 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
   opts.colors         = brg_plot.colors['unique20']
   opts.pareto_points  = pareto_frontier
   if pareto_frontier:
-    is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'speedup', savings_label),axis=1)
-    config_pareto = stats.ix[is_pareto].sort_values(by='speedup')
-    opts.pareto_data = [config_pareto['speedup'].values, config_pareto[savings_label].values]
+    is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, x_label, y_label),axis=1)
+    config_pareto = stats.ix[is_pareto].sort_values(by=x_label)
+    opts.pareto_data = [config_pareto[x_label].values, config_pareto[y_label].values]
   opts.legend_enabled  = True
   opts.legend_ncol     = 2
-  opts.ylabel          = 'Work Savings (%)'
-  opts.xlabel          = 'Speedup'
+
+  if savings_label and speedup_label:
+    opts.ylabel = 'Work Savings(%)'
+    opts.xlabel = 'Speedup'
+  elif not savings_label and speedup_label:
+    opts.ylabel = 'Work (%)'
+    opts.xlabel = 'Speedup'
+  elif savings_label and not speedup_label:
+    opts.ylabel = 'Work Savings(%)'
+    opts.xlabel = 'Norm. Steps'
+  elif not savings_label and not speedup_label:
+    opts.ylabel = 'Work (%)'
+    opts.xlabel = 'Norm. Steps'
+
 
   # plot data
   brg_plot.add_plot( opts )
@@ -166,6 +186,7 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
     except:
       data.append( [float('nan')]*5 )
 
+  opts.xrange          = None
   opts.plot_type       = 'stacked_bar'
   opts.bar_width       = 0.5
   opts.data            = data
@@ -175,7 +196,6 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
   opts.colors          =  [ '#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a' ]
   opts.plot_idx        = index + 1
   opts.file_name       = '%(app)s-mt.pdf' % { 'app' : app }
-  opts.ylabel          = 'Work Savings (%)'
   opts.xlabel          = None
   opts.subplots_hspace = 0.5
   opts.fig.text(0.5, 1.20, app, ha='center', fontsize=14)
@@ -187,7 +207,7 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
 # plot
 #-------------------------------------------------------------------------
 
-def plot( df, prefix_str, pareto_frontier ):
+def plot( savings, speedup, df, prefix_str, pareto_frontier ):
 
   #-----------------------------------------------------------------------
   # scatter plot
@@ -212,7 +232,7 @@ def plot( df, prefix_str, pareto_frontier ):
     for name, value in attribute_dict.iteritems():
       setattr( opts, name, value )
 
-    plot_per_app( prefix_str, app, opts, df, pareto_frontier )
+    plot_per_app( savings, speedup, prefix_str, app, opts, df, pareto_frontier )
 
 #-------------------------------------------------------------------------
 # main
@@ -235,39 +255,11 @@ if __name__ == "__main__":
   # depending on spmd vs. wsrt options select the configurations
   g_config_list = [ prefix_str + cfg for cfg in g_config_list ]
 
-  # read the results dataframe
-  all_results_df = pd.read_csv( "sim-results.csv" ) 
-
-  # get the subset of configs
-  df = all_results_df[all_results_df.config.isin(g_config_list)].copy()
-
-  # get the baseline dataframe for baseline
-  g_base_str = prefix_str + g_base_str
-  base_df = df[df.config == g_base_str].copy()
-
-  # loop through configs and normalize results
-  for app in app_list:
-    try:
-      # baseline
-      ts, = base_df[base_df.app == app]['steps']
-      # update steps to speedup inplace
-      df.loc[df.app == app, ['steps']] = \
-        float(ts) / df.loc[ df.app == app, ['steps']]
-    except:
-      print "Skipping app: ", app
-      continue
-
-  # replace any value that is zero with float 'nan' to skip plotting
-  df[df==0] = float('nan')
-
-  # column steps renamed to speedup
-  df = df.rename(columns = { 'steps': 'speedup' })
-
-  # save the results
-  df.to_csv('%s-results.csv' % g_base_str, index=False)
+  # process the raw data for the subset of config list
+  df = process_data( prefix_str, g_base_str, g_config_list, opts.speedup, opts.savings )
 
   # option to show the pareto frontier
   pareto_frontier = opts.pareto_frontier
 
   # create plots
-  plot( df, prefix_str, pareto_frontier )
+  plot( opts.savings, opts.speedup,  df, prefix_str, pareto_frontier )
