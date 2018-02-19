@@ -5,6 +5,9 @@
 #
 #  -h --help           Display this message
 #
+#  --g_ncores          Number of cores
+#  --g_insn_ports      Number of instruction ports
+#  --g_resources       Number of backend resources
 #  --speedup           Select speedup or execution time (default exec time)
 #  --savings           Select savings or work (default work)
 #  --spmd              Select spmd data-points 
@@ -52,6 +55,10 @@ def parse_cmdline():
   p.add_argument( "-h", "--help",    action="store_true" )
 
   # Additional commane line arguments for the simulator
+
+  p.add_argument( "--g_ncores",     type=int, action="store", default=4)
+  p.add_argument( "--g_insn_ports", type=int, action="store", default=1)
+  p.add_argument( "--g_resources",  type=int, action="store", default=1)
 
   p.add_argument( "--speedup",         action="store_true",  default=False )
   p.add_argument( "--savings",         action="store_true",  default=False )
@@ -144,8 +151,8 @@ def subsample_configs( prefix_str, smart_sharing, lockstep ):
   return configs
 
 g_labels = []
-if g_resources > 1:
-  g_labels = [
+g_labels_list = [
+  [
     "rr-no-hint",
     "rr-hint",
     "rr-hint-ah",
@@ -158,9 +165,8 @@ if g_resources > 1:
     "mpc-no-hint-lim",
     "mpc-hint-lim",
     "mpc-hint-ah-lim",
-  ]
-else:
-  g_labels = [
+  ],
+  [
     "rr-no-hint",
     "rr-hint",
     "rr-hint-ah",
@@ -168,6 +174,7 @@ else:
     "mpc-hint",
     "mpc-hint-ah",
   ]
+]
 
 #-------------------------------------------------------------------------
 # plot_per_app()
@@ -320,6 +327,15 @@ def plot( savings, speedup, df, prefix_str, pareto_frontier ):
 
 if __name__ == "__main__":
   opts = parse_cmdline()
+
+  g_ncores     = opts.g_ncores
+  g_insn_ports = opts.g_insn_ports
+  g_resources  = opts.g_resources
+
+  if g_resources > 1:
+    g_labels = g_labels_list[0]
+  else:
+    g_labels = g_labels_list[1]
 
   # select spmd vs. wsrt
   # NOTE: change this based on ccors vs. simt

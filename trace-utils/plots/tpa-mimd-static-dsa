@@ -5,7 +5,10 @@
 #
 #  -h --help           Display this message
 #
-#  --speedup           Select speedup or execution time (default exec time)
+#  --g_ncores          Number of cores
+#  --g_insn_ports      Number of instruction ports
+#  --g_resources       Number of backend resources
+#  --speedup           Select speedup or execution time (default exec time
 #  --savings           Select savings or work (default work)
 #  --spmd              Select spmd data-points 
 #  --wsrt              Select wsrt data-points
@@ -53,6 +56,10 @@ def parse_cmdline():
 
   # Additional commane line arguments for the simulator
 
+  p.add_argument( "--g_ncores",     type=int, action="store", default=4)
+  p.add_argument( "--g_insn_ports", type=int, action="store", default=1)
+  p.add_argument( "--g_resources",  type=int, action="store", default=1)
+
   p.add_argument( "--speedup",         action="store_true",  default=False )
   p.add_argument( "--savings",         action="store_true",  default=False )
   p.add_argument( "--spmd",            action="store_true",  default=False )
@@ -69,7 +76,7 @@ def parse_cmdline():
 
 # Will vary based on the static configuration in question and ccores vs. simt
 g_ncores       = 4
-g_insn_ports   = 2
+g_insn_ports   = 1
 g_resources    = 4
 
 g_base_str     = "1L0-%dI-%dF-%dL-0C-0TS-0LO-1-0LL-0AH" % ( g_insn_ports, g_ncores, g_resources )
@@ -298,6 +305,10 @@ def plot( savings, speedup, df, prefix_str, pareto_frontier ):
 
 if __name__ == "__main__":
   opts = parse_cmdline()
+
+  g_ncores     = opts.g_ncores
+  g_insn_ports = opts.g_insn_ports
+  g_resources  = opts.g_resources
 
   # select spmd vs. wsrt
   # NOTE: change this based on ccors vs. simt
