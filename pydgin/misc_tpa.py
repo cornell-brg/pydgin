@@ -114,13 +114,13 @@ class ThreadSelect():
 
   def get_next( s, sim ):
     grant = s.top_priority
-    if s.wait_count[grant] >= sim.ncores  and not sim.states[grant].stop:
+    if s.wait_count[grant] > sim.ncores  and not sim.states[grant].stop:
       s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
       return grant
     else:
       for i in xrange( sim.ncores ):
         grant = 0 if grant == sim.ncores-1 else grant+1
-        if s.wait_count[grant] >= sim.ncores and not sim.states[grant].stop:
+        if s.wait_count[grant] > sim.ncores and not sim.states[grant].stop:
           s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
           return grant
     return grant
@@ -141,7 +141,7 @@ class ThreadSelect():
 
     # check if there is a core that has hit it's max time interval
     prioritized_core = s.get_next( sim )
-    if s.wait_count[prioritized_core] >= sim.ncores and not sim.states[prioritized_core].stop:
+    if s.wait_count[prioritized_core] > sim.ncores and not sim.states[prioritized_core].stop:
       min_pc   = sim.states[prioritized_core].pc
       min_core = prioritized_core
       #print "rr   : %x %d" % ( min_pc, min_core )
@@ -167,7 +167,7 @@ class ThreadSelect():
 
     # check if there is a core that has hit it's max time interval
     prioritized_core = s.get_next( sim )
-    if s.wait_count[prioritized_core] >= sim.ncores and not sim.states[prioritized_core].stop:
+    if s.wait_count[prioritized_core] > sim.ncores and not sim.states[prioritized_core].stop:
       min_pc   = sim.states[prioritized_core].pc
       min_core = prioritized_core
       #print "rr   : %x %d" % ( min_pc, min_core )
@@ -366,7 +366,7 @@ class ReconvergenceManager():
 
   def get_next( s, sim ):
     grant = s.top_priority
-    if s.wait_count[grant] >= sim.ncores  and grant not in s.scheduled_list:
+    if s.wait_count[grant] > sim.ncores  and grant not in s.scheduled_list:
       #print "old pri: ", s.top_priority,
       s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
       #print " new pri: ", s.top_priority
@@ -374,7 +374,7 @@ class ReconvergenceManager():
     else:
       for i in xrange( sim.ncores ):
         grant = 0 if grant == sim.ncores-1 else grant+1
-        if s.wait_count[grant] >= sim.ncores and grant not in s.scheduled_list:
+        if s.wait_count[grant] > sim.ncores and grant not in s.scheduled_list:
           #print "old pri: ", s.top_priority,
           s.top_priority = 0 if s.top_priority == sim.ncores-1 else s.top_priority+1
           #print " new pri: ", s.top_priority
@@ -397,7 +397,7 @@ class ReconvergenceManager():
 
     # check if there is a core that has hit it's max time interval
     prioritized_core = s.get_next( sim )
-    if s.wait_count[prioritized_core] >= sim.ncores and prioritized_core not in s.scheduled_list:
+    if s.wait_count[prioritized_core] > sim.ncores and prioritized_core not in s.scheduled_list:
       min_pc   = sim.states[prioritized_core].pc
       min_core = prioritized_core
       #print "rr   : %x %d" % ( min_pc, min_core )
@@ -423,7 +423,7 @@ class ReconvergenceManager():
 
     # check if there is a core that has hit it's max time interval
     prioritized_core = s.get_next( sim )
-    if s.wait_count[prioritized_core] >= sim.ncores and prioritized_core not in s.scheduled_list:
+    if s.wait_count[prioritized_core] > sim.ncores and prioritized_core not in s.scheduled_list:
       min_pc   = sim.states[prioritized_core].pc
       min_core = prioritized_core
       #print "rr   : %x %d" % ( min_pc, min_core )
