@@ -182,7 +182,7 @@ else:
 #    [[3,3],[4,4]], # group 2
 #   ]
 
-def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
+def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, pareto_frontier=False ):
 
   opts.num_cols = 4
   opts.num_rows = 2
@@ -196,17 +196,19 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
       # 1. plot the scatter plot
       data    = []
       stats   = pd.DataFrame()
-      savings_label = 'total'
+      x_label = 'steps'
+      y_label = 'total'
       for config in configs:
         try:
-          speedup = df[(df.config == config) & (df.app == app)].iloc[0]['steps']
-          savings = df[(df.config == config) & (df.app == app)].iloc[0][savings_label]
+          speedup = df[(df.config == config) & (df.app == app)].iloc[0][x_label]
+          savings = df[(df.config == config) & (df.app == app)].iloc[0][y_label]
           data.append( [[speedup, savings]] )
           if pareto_frontier:
-            stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', 'steps', savings_label]] )
+            stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', x_label, y_label]] )
         except:
           data.append( [[float('nan')]*2] )
 
+      opts.xrange         = [0.6,1.4]
       opts.yrange         = [0,100]
       opts.plot_type      = 'scatter'
       opts.data           = data
@@ -217,9 +219,9 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
       opts.title          = '(smart share-%d, lock-%d)' % ( smart_sharing, lockstep )
       opts.pareto_points  = pareto_frontier
       if pareto_frontier:
-        is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'steps', savings_label),axis=1)
-        config_pareto = stats.ix[is_pareto].sort_values(by='steps')
-        opts.pareto_data = [config_pareto['steps'].values, config_pareto[savings_label].values]
+        is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, x_label, y_label),axis=1)
+        config_pareto = stats.ix[is_pareto].sort_values(by=x_label)
+        opts.pareto_data = [config_pareto[x_label].values, config_pareto[y_label].values]
 
       if index == 1:
         opts.legend_enabled = True
@@ -228,8 +230,18 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
       else:
         opts.legend_enabled = False
 
-      opts.ylabel = 'Work Savings(%)'
-      opts.xlabel = 'Speedup'
+      if savings_label and speedup_label:
+        opts.ylabel = 'Work Savings(%)'
+        opts.xlabel = 'Speedup'
+      elif not savings_label and speedup_label:
+        opts.ylabel = 'Work (%)'
+        opts.xlabel = 'Speedup'
+      elif savings_label and not speedup_label:
+        opts.ylabel = 'Work Savings(%)'
+        opts.xlabel = 'Norm. Steps'
+      elif not savings_label and not speedup_label:
+        opts.ylabel = 'Work (%)'
+        opts.xlabel = 'Norm. Steps'
 
       # plot data
       brg_plot.add_plot( opts )
@@ -255,6 +267,7 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
       opts.title           = '(smart share-%d, lock-%d)' % ( smart_sharing, lockstep )
       opts.subplots_hspace = 0.5
       opts.subplots_wspace = 1.0
+      opts.xrange          = None
 
       if index == 1:
         opts.legend_enabled = True
@@ -278,7 +291,7 @@ def plot_per_app( prefix_str, app, opts, df, pareto_frontier=False ):
 # plot
 #-------------------------------------------------------------------------
 
-def plot( df, prefix_str, pareto_frontier ):
+def plot( savings, speedup, df, prefix_str, pareto_frontier ):
 
   apps = df.app.unique()
   for app in  apps:
@@ -299,7 +312,7 @@ def plot( df, prefix_str, pareto_frontier ):
     for name, value in attribute_dict.iteritems():
       setattr( opts, name, value )
 
-    plot_per_app( prefix_str, app, opts, df, pareto_frontier )
+    plot_per_app( savings, speedup, prefix_str, app, opts, df, pareto_frontier )
 
 #-------------------------------------------------------------------------
 # main
@@ -329,4 +342,4 @@ if __name__ == "__main__":
   pareto_frontier = opts.pareto_frontier
 
   # create plots
-  plot( df, prefix_str, pareto_frontier )
+  plot( opts.savings, opts.speedup,  df, prefix_str, pareto_frontier )
