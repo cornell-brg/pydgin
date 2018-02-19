@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-mt-dsa [options]
+# tpa-simt-dsa [options]
 #=========================================================================
 #
 #  -h --help           Display this message
@@ -12,10 +12,10 @@
 #  --pareto-frontier   Add a pareto-frontier
 #
 # Author : Shreesha Srinath
-# Date   : February 15th, 2018
+# Date   : February 19th, 2018
 #
 # Script creates scatter subplots for all the configurations where all
-# knobs are varied for a given static configuration. Currently, care only
+# knobs are varied for a given configuration. Currently, care only
 # about per app plot
 #
 
@@ -67,27 +67,29 @@ def parse_cmdline():
 # Global variables
 #-------------------------------------------------------------------------
 
-# Will vary based on the static configuration in question and ccores vs. simt
-g_base_str    = '0TS-1-0AH' 
-g_config_str  = '%dTS-%d-%dAH'
+# Will vary based on the configuration in question and ccores vs. simt
+g_ncores       = 4
+g_insn_ports   = 1
+g_resources    = 2
+
+g_base_str     = "1L0-%dI-%dF-%dL-1C-0TS-1LO-1-0LL-0AH" % ( g_insn_ports, g_insn_ports, g_resources )
+g_config_str   = "1L0-%dI-%dF-%dL-1C-%dTS-1LO-%d-%dLL-%dAH"
 
 g_config_list = []
-for analysis in [0,1]:
-  for barrier_limit in [1,1000]:
+for limit_lockstep in range( 2 ):
+  for analysis in [0,1]:
     for adaptive_hint in range( 2 ):
-      if barrier_limit == 1 and adaptive_hint == 1:
-        continue
-      config_str = g_config_str % ( analysis, barrier_limit, adaptive_hint )
-      g_config_list.append( config_str )
-
-g_labels = [
-"rr-no-hint",
-"rr-hint",
-"rr-hint-ah",
-"mpc-no-hint",
-"mpc-hint",
-"mpc-hint-ah",
-]
+      for barrier_limit in [1,1000]:
+        config_str = g_config_str % (
+          g_insn_ports,
+          g_insn_ports,
+          g_resources,
+          analysis,
+          barrier_limit,
+          limit_lockstep,
+          adaptive_hint
+        )
+        g_config_list.append( config_str )
 
 g_stack_labels  = ['imem', 'frontend', 'dmem', 'backend']
 
@@ -109,6 +111,49 @@ def is_pareto_front(row, stats, xlabel, ylabel):
   return is_max_x and is_max_y and is_double
 
 #-------------------------------------------------------------------------
+# subsample_configs
+#-------------------------------------------------------------------------
+
+def subsample_configs( prefix_str, analysis ):
+  configs = []
+
+  for limit_lockstep in [0,1]:
+    for barrier_limit in [1,1000]:
+      for adaptive_hint in range( 2 ):
+        if adaptive_hint == 1 and barrier_limit == 1:
+          continue
+        if g_resources == 1 and limit_lockstep == 1:  
+          continue
+        config_str = prefix_str + g_config_str % (
+          g_insn_ports,
+          g_insn_ports,
+          g_resources,
+          analysis,
+          barrier_limit,
+          limit_lockstep,
+          adaptive_hint
+        )
+        configs.append( config_str )
+  return configs
+
+g_labels = []
+if g_resources > 1:
+  g_labels = [
+    "no-hint",
+    "hint",
+    "hint-ah",
+    "no-hint-lim",
+    "hint-lim",
+    "hint-ah-lim",
+  ]
+else:
+  g_labels = [
+    "no-hint",
+    "hint",
+    "hint-ah",
+  ]
+
+#-------------------------------------------------------------------------
 # plot_per_app()
 #-------------------------------------------------------------------------
 # NOTE: Each data-point is a list of lists where each nested list
@@ -124,94 +169,112 @@ def is_pareto_front(row, stats, xlabel, ylabel):
 def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, pareto_frontier=False ):
 
   opts.num_cols = 2
-  opts.num_rows = 1
+  opts.num_rows = 2
 
-  index   = 0
-  data    = []
-  stats   = pd.DataFrame()
-  x_label = 'steps'
-  y_label = 'total'
-  for config in g_config_list:
-    try:
-      speedup = df[(df.config == config) & (df.app == app)].iloc[0][x_label]
-      savings = df[(df.config == config) & (df.app == app)].iloc[0][y_label]
-      data.append( [[speedup, savings]] )
-      if pareto_frontier:
-        stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', x_label, y_label]] )
-    except:
-      data.append( [[float('nan')]*2] )
+  # select a set of configs
+  index = 1
+  for analysis in range( 2 ):
+    configs = subsample_configs( prefix_str, analysis )
 
-  # first add the scatter plot
-  opts.xrange         = [0.8,1.3]
-  opts.yrange         = [0,100]
-  opts.data           = data
-  opts.labels         = [[],g_labels]
-  opts.rotate_labels  = True
-  opts.plot_idx       = index+1
-  opts.colors         = brg_plot.colors['unique20']
-  opts.pareto_points  = pareto_frontier
-  if pareto_frontier:
-    is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, x_label, y_label),axis=1)
-    config_pareto = stats.ix[is_pareto].sort_values(by=x_label)
-    opts.pareto_data = [config_pareto[x_label].values, config_pareto[y_label].values]
-  opts.legend_enabled  = True
-  opts.legend_ncol     = 2
+    # 1. plot the scatter plot
+    data    = []
+    stats   = pd.DataFrame()
+    x_label = 'steps'
+    y_label = 'total'
+    for config in configs:
+      try:
+        speedup = df[(df.config == config) & (df.app == app)].iloc[0][x_label]
+        savings = df[(df.config == config) & (df.app == app)].iloc[0][y_label]
+        data.append( [[speedup, savings]] )
+        if pareto_frontier:
+          stats = stats.append( df.loc[(df.config == config) & (df.app == app), ['config', x_label, y_label]] )
+      except:
+        data.append( [[float('nan')]*2] )
 
-  if savings_label and speedup_label:
-    opts.ylabel = 'Work Savings(%)'
-    opts.xlabel = 'Speedup'
-  elif not savings_label and speedup_label:
-    opts.ylabel = 'Work (%)'
-    opts.xlabel = 'Speedup'
-  elif savings_label and not speedup_label:
-    opts.ylabel = 'Work Savings(%)'
-    opts.xlabel = 'Norm. Steps'
-  elif not savings_label and not speedup_label:
-    opts.ylabel = 'Work (%)'
-    opts.xlabel = 'Norm. Steps'
+    opts.xrange         = [0.5,1.5]
+    opts.yrange         = [0,100]
+    opts.plot_type      = 'scatter'
+    opts.data           = data
+    opts.labels         = [[],g_labels]
+    opts.rotate_labels  = True
+    opts.plot_idx       = index
+    opts.colors         = brg_plot.colors['unique20']
+    opts.title          = '%s' % ( 'rr' if analysis == 0 else 'mpc' )
+    opts.pareto_points  = pareto_frontier
+    if pareto_frontier:
+      is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, x_label, y_label),axis=1)
+      config_pareto = stats.ix[is_pareto].sort_values(by=x_label)
+      opts.pareto_data = [config_pareto[x_label].values, config_pareto[y_label].values]
 
+    if index == 1:
+      opts.legend_enabled = True
+      opts.legend_ncol    = 2
+      opts.legend_bbox    = (0,1.1,1.,0.1)
+    else:
+      opts.legend_enabled = False
 
-  # plot data
-  brg_plot.add_plot( opts )
-  index = index + 1
+    if savings_label and speedup_label:
+      opts.ylabel = 'Work Savings(%)'
+      opts.xlabel = 'Speedup'
+    elif not savings_label and speedup_label:
+      opts.ylabel = 'Work (%)'
+      opts.xlabel = 'Speedup'
+    elif savings_label and not speedup_label:
+      opts.ylabel = 'Work Savings(%)'
+      opts.xlabel = 'Norm. Steps'
+    elif not savings_label and not speedup_label:
+      opts.ylabel = 'Work (%)'
+      opts.xlabel = 'Norm. Steps'
 
-  # plot the bar plot now
-  data = []
-  for config in g_config_list:
-    temp = []
-    try:
-      for stack_label in g_stack_labels:
-        temp.append( df[(df.config == config) & (df.app == app)].iloc[0][stack_label] )
-      data.append( temp )
-    except:
-      data.append( [float('nan')]*5 )
+    # plot data
+    brg_plot.add_plot( opts )
 
-  opts.xrange          = None
-  opts.plot_type       = 'stacked_bar'
-  opts.bar_width       = 0.5
-  opts.data            = data
-  opts.ncol            = 3
-  opts.labels          = [g_labels,g_stack_labels]
-  opts.rotate_labels   = True
-  opts.colors          =  [ '#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a' ]
-  opts.plot_idx        = index + 1
-  opts.file_name       = '%(app)s-mt.pdf' % { 'app' : app }
-  opts.xlabel          = None
-  opts.subplots_hspace = 0.5
-  opts.fig.text(0.5, 1.20, app, ha='center', fontsize=14)
-  
-  # plot data
-  brg_plot.add_plot( opts )
+    # 2. plot the bar plot
+    data    = []
+    for config in configs:
+      temp = []
+      try:
+        for stack_label in g_stack_labels:
+          temp.append( df[(df.config == config) & (df.app == app)].iloc[0][stack_label] )
+        data.append( temp )
+      except:
+        data.append( [float('nan')]*5 )
+
+    opts.plot_type       = 'stacked_bar'
+    opts.bar_width       = 0.5
+    opts.data            = data
+    opts.labels          = [g_labels,g_stack_labels]
+    opts.rotate_labels   = True
+    opts.plot_idx        = index + 1
+    opts.colors          =  [ '#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a' ]
+    opts.title           = '%s' % ( 'rr' if analysis == 0 else 'mpc' )
+    opts.subplots_hspace = 0.5
+    opts.subplots_wspace = 1.0
+    opts.xrange          = None
+
+    if index == 1:
+      opts.legend_enabled = True
+      opts.legend_ncol    = 2
+      opts.legend_bbox    = (0,1.1,1.,0.1)
+    else:
+      opts.legend_enabled = False
+
+    opts.ylabel = None
+    opts.xlabel = None
+
+    if index == opts.num_cols*opts.num_rows-1:
+      opts.file_name = '%(app)s-simt.pdf' % { 'app' : app }
+      opts.fig.text(0.5, 1.1, app, ha='center', fontsize=14)
+
+    # plot data
+    brg_plot.add_plot( opts )
+    index = index + 2
 
 #-------------------------------------------------------------------------
 # plot
 #-------------------------------------------------------------------------
 
 def plot( savings, speedup, df, prefix_str, pareto_frontier ):
-
-  #-----------------------------------------------------------------------
-  # scatter plot
-  #-----------------------------------------------------------------------
 
   apps = df.app.unique()
   for app in  apps:
@@ -223,7 +286,7 @@ def plot( savings, speedup, df, prefix_str, pareto_frontier ):
     {
       'show'            : False,
       'plot_type'       : 'scatter',
-      'figsize'         : (8.0, 4.0),
+      'figsize'         : (8.0, 8.0),
       'rotate_labels'   : False,
       'markersize'      : 50,
       'labels_fontsize' : 1,
@@ -245,9 +308,9 @@ if __name__ == "__main__":
   # NOTE: change this based on ccors vs. simt
   prefix_str = ""
   if opts.spmd:
-    prefix_str = 'mt-spmd-' 
+    prefix_str = 'simt-spmd-' 
   elif opts.wsrt:
-    prefix_str = 'mt-wsrt-'
+    prefix_str = 'simt-wsrt-'
   else:
     print "Select spmd or wsrt!"
     exit(1)

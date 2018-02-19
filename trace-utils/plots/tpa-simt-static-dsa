@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-mimd-dsa [options]
+# tpa-simt-static-dsa [options]
 #=========================================================================
 #
 #  -h --help           Display this message
@@ -12,7 +12,7 @@
 #  --pareto-frontier   Add a pareto-frontier
 #
 # Author : Shreesha Srinath
-# Date   : February 15th, 2018
+# Date   : February 19th, 2018
 #
 # Script creates scatter subplots for all the configurations where all
 # knobs are varied for a given static configuration. Currently, care only
@@ -68,24 +68,39 @@ def parse_cmdline():
 #-------------------------------------------------------------------------
 
 # Will vary based on the static configuration in question and ccores vs. simt
-g_base_str    = '1-0AH' 
-g_config_str  = '%d-%dAH'
+g_ncores       = 4
+g_insn_ports   = 1
+g_resources    = 4
+
+g_base_str     = "1L0-%dI-%dF-%dL-1C-0TS-1LO-1-0LL-0AH" % ( g_insn_ports, g_insn_ports, g_resources )
+g_config_str   = "1L0-%dI-%dF-%dL-1C-%dTS-1LO-%d-0LL-%dAH"
 
 g_config_list = []
-for barrier_limit in [1,1000]:
-  for adaptive_hint in range( 2 ):
-    if barrier_limit == 1 and adaptive_hint == 1:
-      continue
-    config_str = g_config_str % ( barrier_limit, adaptive_hint )
-    g_config_list.append( config_str )
-
-g_labels = [
-"no-hint",
-"hint",
-"hint-ah",
-]
+for analysis in [0,1]:
+  for barrier_limit in [1,1000]:
+    for adaptive_hint in range( 2 ):
+      if barrier_limit == 1 and adaptive_hint == 1:
+        continue
+      config_str = g_config_str % (
+        g_insn_ports,
+        g_insn_ports,
+        g_resources,
+        analysis,
+        barrier_limit,
+        adaptive_hint
+      )
+      g_config_list.append( config_str )
 
 g_stack_labels  = ['imem', 'frontend', 'dmem', 'backend']
+
+g_labels = [
+  "rr-no-hint",
+  "rr-hint",
+  "rr-hint-ah",
+  "mpc-no-hint",
+  "mpc-hint",
+  "mpc-hint-ah",
+]
 
 #-------------------------------------------------------------------------
 # is_pareto_front()
@@ -138,7 +153,7 @@ def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, paret
       data.append( [[float('nan')]*2] )
 
   # first add the scatter plot
-  opts.xrange         = [0.8,1.3]
+  opts.xrange         = [0.5,1.5]
   opts.yrange         = [0,100]
   opts.data           = data
   opts.labels         = [[],g_labels]
@@ -198,15 +213,12 @@ def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, paret
   # plot data
   brg_plot.add_plot( opts )
 
+
 #-------------------------------------------------------------------------
 # plot
 #-------------------------------------------------------------------------
 
 def plot( savings, speedup, df, prefix_str, pareto_frontier ):
-
-  #-----------------------------------------------------------------------
-  # scatter plot
-  #-----------------------------------------------------------------------
 
   apps = df.app.unique()
   for app in  apps:
@@ -240,9 +252,9 @@ if __name__ == "__main__":
   # NOTE: change this based on ccors vs. simt
   prefix_str = ""
   if opts.spmd:
-    prefix_str = 'mimd-spmd-' 
+    prefix_str = 'simt-spmd-' 
   elif opts.wsrt:
-    prefix_str = 'mimd-wsrt-'
+    prefix_str = 'simt-wsrt-'
   else:
     print "Select spmd or wsrt!"
     exit(1)

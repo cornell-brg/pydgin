@@ -194,7 +194,7 @@ def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, paret
       opts.rotate_labels  = True
       opts.plot_idx       = index
       opts.colors         = brg_plot.colors['unique20']
-      opts.title          = '(smart share-%d, %s)' % ( smart_sharing, 'rr' if analysis == 0 else 'pc' )
+      opts.title          = '(smart share-%d, %s)' % ( smart_sharing, 'rr' if analysis == 0 else 'mpc' )
       opts.pareto_points  = pareto_frontier
       if pareto_frontier:
         is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, x_label, y_label),axis=1)
@@ -242,7 +242,7 @@ def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, paret
       opts.rotate_labels   = True
       opts.plot_idx        = index + 1
       opts.colors          =  [ '#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a' ]
-      opts.title          = '(smart share-%d, %s)' % ( smart_sharing, 'rr' if analysis == 0 else 'pc' )
+      opts.title           = '(smart share-%d, %s)' % ( smart_sharing, 'rr' if analysis == 0 else 'mpc' )
       opts.subplots_hspace = 0.5
       opts.subplots_wspace = 1.0
       opts.xrange          = None

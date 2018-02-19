@@ -146,27 +146,27 @@ def subsample_configs( prefix_str, smart_sharing, lockstep ):
 g_labels = []
 if g_resources > 1:
   g_labels = [
-    "rr-base",
+    "rr-no-hint",
     "rr-hint",
     "rr-hint-ah",
-    "rr-base-lim",
+    "rr-no-hint-lim",
     "rr-hint-lim",
     "rr-hint-ah-lim",
-    "pc-base",
-    "pc-hint",
-    "pc-hint-ah",
-    "pc-base-lim",
-    "pc-hint-lim",
-    "pc-hint-ah-lim",
+    "mpc-no-hint",
+    "mpc-hint",
+    "mpc-hint-ah",
+    "mpc-no-hint-lim",
+    "mpc-hint-lim",
+    "mpc-hint-ah-lim",
   ]
 else:
   g_labels = [
-    "rr-base",
+    "rr-no-hint",
     "rr-hint",
     "rr-hint-ah",
-    "pc-base",
-    "pc-hint",
-    "pc-hint-ah",
+    "mpc-no-hint",
+    "mpc-hint",
+    "mpc-hint-ah",
   ]
 
 #-------------------------------------------------------------------------
