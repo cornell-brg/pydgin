@@ -103,8 +103,8 @@ if __name__ == "__main__":
         cmd = 'mkdir -p results/simt-%dI-%dL/%s' % ( insn_ports, resources, rt )
         execute( cmd )
         cmds = []
-        plots  = './tpa-simt-dsa --g_ncores 4 --g_insn_ports %d --g_resources %d --%s' % ( insn_ports, resources, rt )
-        plots += ' --norm-insts' if norm_insts else ''
+        plot  = './tpa-simt-dsa --g_ncores 4 --g_insn_ports %d --g_resources %d --%s' % ( insn_ports, resources, rt )
+        plot += ' --norm-insts' if norm_insts else ''
         cmds.append( plot )
         cmds.append( 'cp *.pdf results/simt-%dI-%dL/%s/.' % ( insn_ports, resources, rt ) )
         cmds.append( 'rm *.pdf' )
