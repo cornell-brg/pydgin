@@ -89,22 +89,19 @@ def process_data( prefix_str, base_str, config_list, speedup, savings ):
         continue
   #-----------------------------------------------------------------------
 
+  # save normalized instructions count
+  for app in df.app.unique():
+    try:
+      base_insts = df.loc[ (df.app == app) & (df.config == base_str),'total_insts'].iloc[0]
+      df.loc[df.app == app, 'total_insts'] = df.loc[df.app==app,'total_insts'] / base_insts
+    except:
+      continue
+  stats['total_insts']   = df.apply( lambda row: row.total_insts, axis=1)
+
   # replace any value that is zero with float 'nan' to skip plotting
   stats[stats==0] = float('nan')
 
   # save the results
   stats.to_csv('%s-results.csv' % base_str, index=False)
-
-  #-----------------------------------------------------------------------
-  # Sanity check
-  for app in df.app.unique():
-    try:
-      print app,
-      base_insts = df.loc[ (df.app == app) & (df.config == base_str),'total_insts'].iloc[0]
-      df.loc[df.app == app, 'total_insts'] = df.loc[df.app==app,'total_insts'] / base_insts
-      print (df.loc[df.app == app, 'total_insts'].describe()[['mean','std']].to_frame().T)
-    except:
-      continue
-  #-----------------------------------------------------------------------
 
   return stats

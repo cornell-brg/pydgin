@@ -231,10 +231,16 @@ class PlotOptions:
 
     # Subplot adjust values
     self.subplots_hspace = 0
+    self.subplots_wspace = 0
 
     # pareto-frontier points
     self.pareto_points = False
     self.pareto_data   = []
+
+    # combined line plots
+    self.combined_line_markersz = 8
+    self.combined_line_plot     = []
+    self.combined_line_ylabel   = ''
 
     random.seed( 0xdeadbeef )
 
@@ -318,6 +324,9 @@ def add_plot( opt ):
 
   if opt.subplots_hspace:
     plt.subplots_adjust(hspace=opt.subplots_hspace)
+
+  if opt.subplots_wspace:
+    plt.subplots_adjust(wspace=opt.subplots_wspace)
 
   if opt.file_name != None and opt.file_name != "":
     for file in opt.file_name.split():
@@ -761,6 +770,17 @@ def add_bar_plot( ax, opt ):
 
   ax.yaxis.grid(True)
 
+  # combined line plots
+  if opt.combined_line_plot:
+    ax_line = ax.twinx()
+    ax_line.plot( ax.get_xticks(), opt.combined_line_plot,
+                  marker='.',
+                  markersize=opt.combined_line_markersz,
+                  color='k',
+                  linestyle='--' )
+    ax_line.set_ylim( [0.8,1.2] )
+    if opt.combined_line_ylabel:
+      ax_line.set_ylabel( opt.combined_line_ylabel )
 
 def set_legend( ax, opt, legend, legend_labels ):
   if not opt.legend_enabled:

@@ -25,6 +25,8 @@ def execute(cmd):
 
 if __name__ == "__main__":
 
+  norm_insts = False
+
   # clean up the existing results
   if os.path.exists( "results" ):
     cmd = 'rm -r results'
@@ -35,7 +37,9 @@ if __name__ == "__main__":
     cmd = 'mkdir -p results/mimd/%s' % rt
     execute( cmd )
     cmds = []
-    cmds.append( './tpa-mimd-dsa --%s' % rt )
+    plot  = './tpa-mimd-dsa --%s' % rt
+    plot += ' --norm-insts' if norm_insts else ''
+    cmds.append( plot )
     cmds.append( 'cp *.pdf results/mimd/%s/.' % rt )
     cmds.append( 'rm *.pdf' )
     with open( 'results/mimd/%s/%s.log' % ( rt, rt ), 'w' ) as out:
@@ -49,7 +53,9 @@ if __name__ == "__main__":
       cmd = 'mkdir -p results/mimd-static-%dI/%s' % ( insn_ports, rt )
       execute( cmd )
       cmds = []
-      cmds.append( './tpa-mimd-static-dsa --g_ncores 4 --g_insn_ports %d --g_resources 4 --%s' % ( insn_ports, rt ) )
+      plot  = './tpa-mimd-static-dsa --g_ncores 4 --g_insn_ports %d --g_resources 4 --%s' % ( insn_ports, rt )
+      plot += ' --norm-insts' if norm_insts else ''
+      cmds.append( plot )
       cmds.append( 'cp *.pdf results/mimd-static-%dI/%s/.' % ( insn_ports, rt ) )
       cmds.append( 'rm *.pdf' )
       with open( 'results/mimd-static-%dI/%s/%s.log' % ( insn_ports, rt, rt ), 'w' ) as out:
@@ -64,7 +70,9 @@ if __name__ == "__main__":
         cmd = 'mkdir -p results/ccores-%dI-%dL/%s' % ( insn_ports, resources, rt )
         execute( cmd )
         cmds = []
-        cmds.append( './tpa-ccores-dsa --g_ncores 4 --g_insn_ports %d --g_resources %d --%s' % ( insn_ports, resources, rt ) )
+        plot  = './tpa-ccores-dsa --g_ncores 4 --g_insn_ports %d --g_resources %d --%s' % ( insn_ports, resources, rt )
+        plot += ' --norm-insts' if norm_insts else ''
+        cmds.append( plot )
         cmds.append( 'cp *.pdf results/ccores-%dI-%dL/%s/.' % ( insn_ports, resources, rt ) )
         cmds.append( 'rm *.pdf' )
         with open( 'results/ccores-%dI-%dL/%s/%s.log' % ( insn_ports, resources, rt, rt ), 'w' ) as out:
@@ -78,7 +86,9 @@ if __name__ == "__main__":
       cmd = 'mkdir -p results/simt-static-%dI/%s' % ( insn_ports, rt )
       execute( cmd )
       cmds = []
-      cmds.append( './tpa-simt-static-dsa --g_ncores 4 --g_insn_ports %d --g_resources 4 --%s' % ( insn_ports, rt ) )
+      plot  = './tpa-simt-static-dsa --g_ncores 4 --g_insn_ports %d --g_resources 4 --%s' % ( insn_ports, rt )
+      plot += ' --norm-insts' if norm_insts else ''
+      cmds.append( plot )
       cmds.append( 'cp *.pdf results/simt-static-%dI/%s/.' % ( insn_ports, rt ) )
       cmds.append( 'rm *.pdf' )
       with open( 'results/simt-static-%dI/%s/%s.log' % ( insn_ports, rt, rt ), 'w' ) as out:
@@ -93,7 +103,9 @@ if __name__ == "__main__":
         cmd = 'mkdir -p results/simt-%dI-%dL/%s' % ( insn_ports, resources, rt )
         execute( cmd )
         cmds = []
-        cmds.append( './tpa-simt-dsa --g_ncores 4 --g_insn_ports %d --g_resources %d --%s' % ( insn_ports, resources, rt ) )
+        plots  = './tpa-simt-dsa --g_ncores 4 --g_insn_ports %d --g_resources %d --%s' % ( insn_ports, resources, rt )
+        plots += ' --norm-insts' if norm_insts else ''
+        cmds.append( plot )
         cmds.append( 'cp *.pdf results/simt-%dI-%dL/%s/.' % ( insn_ports, resources, rt ) )
         cmds.append( 'rm *.pdf' )
         with open( 'results/simt-%dI-%dL/%s/%s.log' % ( insn_ports, resources, rt, rt ), 'w' ) as out:
@@ -106,7 +118,9 @@ if __name__ == "__main__":
     cmd = 'mkdir -p results/mt/%s' % rt
     execute( cmd )
     cmds = []
-    cmds.append( './tpa-mt-dsa --%s' % rt )
+    plot  = './tpa-mt-dsa --%s' % rt
+    plot += ' --norm-insts' if norm_insts else ''
+    cmds.append( plot )
     cmds.append( 'cp *.pdf results/mt/%s/.' % rt )
     cmds.append( 'rm *.pdf' )
     with open( 'results/mt/%s/%s.log' % ( rt, rt ), 'w' ) as out:

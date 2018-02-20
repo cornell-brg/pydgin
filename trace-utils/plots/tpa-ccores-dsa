@@ -13,6 +13,7 @@
 #  --spmd              Select spmd data-points 
 #  --wsrt              Select wsrt data-points
 #  --pareto-frontier   Add a pareto-frontier
+#  --norm-insts        Show normalized instruction counts
 #
 # Author : Shreesha Srinath
 # Date   : February 13th, 2018
@@ -65,6 +66,7 @@ def parse_cmdline():
   p.add_argument( "--spmd",            action="store_true",  default=False )
   p.add_argument( "--wsrt",            action="store_true",  default=False )
   p.add_argument( "--pareto-frontier", action="store_true",  default=False )
+  p.add_argument( "--norm-insts",      action="store_true",  default=False )
 
   opts = p.parse_args()
   if opts.help: p.error()
@@ -196,7 +198,7 @@ g_labels_list = [
 #    [[3,3],[4,4]], # group 2
 #   ]
 
-def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, pareto_frontier=False ):
+def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, norm_insts=False, pareto_frontier=False ):
 
   opts.num_cols = 4
   opts.num_rows = 2
@@ -222,7 +224,7 @@ def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, paret
         except:
           data.append( [[float('nan')]*2] )
 
-      opts.xrange         = [0.6,1.4]
+      #opts.xrange         = [0.6,1.4]
       opts.yrange         = [0,100]
       opts.plot_type      = 'scatter'
       opts.data           = data
@@ -290,12 +292,23 @@ def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, paret
       else:
         opts.legend_enabled = False
 
-      opts.ylabel = None
       opts.xlabel = None
 
       if index == opts.num_cols*opts.num_rows-1:
         opts.file_name = '%(app)s-ccores.pdf' % { 'app' : app }
         opts.fig.text(0.5, 1.1, app, ha='center', fontsize=14)
+
+      # combined line plots showing normalized insn. counts
+      if norm_insts:
+        line_data = []
+        for config in configs:
+          try:
+            line_data.append( df.loc[(df.config == config) & (df.app == app), 'total_insts'].iloc[0] )
+          except:
+            line_data.append( float('nan') )
+        opts.combined_line_markersz = 8
+        opts.combined_line_plot     = line_data
+        opts.combined_line_ylabel   = 'Norm. Inst. Count'
 
       # plot data
       brg_plot.add_plot( opts )
@@ -305,7 +318,7 @@ def plot_per_app( savings_label, speedup_label, prefix_str, app, opts, df, paret
 # plot
 #-------------------------------------------------------------------------
 
-def plot( savings, speedup, df, prefix_str, pareto_frontier ):
+def plot( savings, speedup, df, prefix_str, norm_insts, pareto_frontier ):
 
   apps = df.app.unique()
   for app in  apps:
@@ -326,7 +339,7 @@ def plot( savings, speedup, df, prefix_str, pareto_frontier ):
     for name, value in attribute_dict.iteritems():
       setattr( opts, name, value )
 
-    plot_per_app( savings, speedup, prefix_str, app, opts, df, pareto_frontier )
+    plot_per_app( savings, speedup, prefix_str, app, opts, df, norm_insts, pareto_frontier )
 
 #-------------------------------------------------------------------------
 # main
@@ -367,5 +380,8 @@ if __name__ == "__main__":
   # option to show the pareto frontier
   pareto_frontier = opts.pareto_frontier
 
+  # option to show normalized insts
+  norm_insts = opts.norm_insts
+
   # create plots
-  plot( opts.savings, opts.speedup,  df, prefix_str, pareto_frontier )
+  plot( opts.savings, opts.speedup,  df, prefix_str, norm_insts, pareto_frontier )
