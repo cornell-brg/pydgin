@@ -1,0 +1,208 @@
+#!/usr/bin/env python
+#=========================================================================
+# tpa-imix-plot [options]
+#=========================================================================
+#
+#  -h --help           Display this message
+#
+#  --absolute          Show absolute instruction counts
+#  --no-spmd           Turn off spmd data-points 
+#  --no-wsrt           Turn off wsrt data-points
+#  --wsrt-splits       Show in tasks vs. runtime instruction splits
+#
+# Author : Shreesha Srinath
+# Date   : February 20th, 2018
+
+import argparse
+import re
+import math
+import sys
+
+import pandas as pd
+
+import brg_plot
+
+from common import *
+
+#-------------------------------------------------------------------------
+# Command line processing
+#-------------------------------------------------------------------------
+
+class ArgumentParserWithCustomError(argparse.ArgumentParser):
+  def error( self, msg = "" ):
+    if ( msg ): print("\n ERROR: %s" % msg)
+    print("")
+    file = open( sys.argv[0] )
+    for ( lineno, line ) in enumerate( file ):
+      if ( line[0] != '#' ): sys.exit(msg != "")
+      if ( (lineno == 2) or (lineno >= 4) ): print( line[1:].rstrip("\n") )
+
+def parse_cmdline():
+  p = ArgumentParserWithCustomError( add_help=False )
+
+  # Standard command line arguments
+
+  p.add_argument( "-h", "--help", action="store_true" )
+
+  # Additional commane line arguments for the simulator
+
+  p.add_argument( "--wsrt-splits",  action="store_true",  default=False )
+  p.add_argument( "--absolute",     action="store_true",  default=False )
+  p.add_argument( "--no-spmd",      action="store_false", default=True  )
+  p.add_argument( "--no-wsrt",      action="store_false", default=True  )
+
+  opts = p.parse_args()
+  if opts.help: p.error()
+  return opts
+
+#-------------------------------------------------------------------------
+# Global variables
+#-------------------------------------------------------------------------
+
+g_config_str = "1-0AH" # mimd 
+
+#-------------------------------------------------------------------------
+# plot_all_apps()
+#-------------------------------------------------------------------------
+
+def plot_all_apps( opts, df, spmd=True, wsrt=True, absolute=True, wsrt_splits=False ):
+
+  opts.num_cols = 1
+  opts.num_rows = 1
+
+  configs = []
+
+  if spmd: 
+    config = 'mimd-spmd-' + g_config_str
+    configs.append( config )
+
+  if wsrt: 
+    config = 'mimd-wsrt-' + g_config_str
+    configs.append( config )
+
+  data = []
+  labels = []
+  for app in app_list:
+
+    if spmd:
+      labels.append( "spmd-%s" % app )
+
+    if wsrt:
+      labels.append( "wsrt-%s" % app )
+
+    for config in configs:
+      temp = []
+      if wsrt_splits:
+        try:
+          row = df[(df.config == config) & (df.app == app)]
+          temp.append( row.iloc[0]['total_task'] )
+          temp.append( row.iloc[0]['total_rt'] )
+        except:
+          temp = [float('nan')]*2
+      else:
+        try:
+          row = df[(df.config == config) & (df.app == app)]
+          temp.append( row.iloc[0]['integer'] )
+          temp.append( row.iloc[0]['load'] )
+          temp.append( row.iloc[0]['store'] )
+          temp.append( row.iloc[0]['amo'] )
+          temp.append( row.iloc[0]['mdu'] )
+          temp.append( row.iloc[0]['fpu'] )
+        except:
+          temp = [float('nan')]*6
+      data.append( temp )
+
+  if wsrt_splits:
+    legend = ['task','runtime']
+    opts.ylabel = "Task vs. Runtime (%)" 
+  else:
+    opts.colors = [
+      '#616161',
+      '#ffffcc',
+      '#a8ddb5',
+      '#7bccc4',
+      '#43a2ca',
+      '#0868ac'
+    ]
+    legend = ['int','ld','st','amo','mdu','fpu']
+    if absolute: 
+      opts.ylabel = "Insn. breakdown" 
+    else: 
+      opts.ylabel = "Percent Insn. breakdown" 
+
+  opts.data           = data
+  opts.labels         = [labels,legend]
+  opts.rotate_labels  = True
+  opts.legend_enabled = True
+  if wsrt_splits:
+    opts.legend_ncol  = 2
+    opts.file_name    = 'wsrt-split.pdf' % { 'app' : app }
+  else:
+    opts.legend_ncol  = 6
+    opts.file_name    = 'imix.pdf' % { 'app' : app }
+
+  # plot data
+  brg_plot.add_plot( opts )
+
+#-------------------------------------------------------------------------
+# plot
+#-------------------------------------------------------------------------
+
+def plot( df, spmd, wsrt, absolute, wsrt_splits ):
+
+  #-----------------------------------------------------------------------
+  # scatter plot
+  #-----------------------------------------------------------------------
+
+  # create plot options dict
+  opts = brg_plot.PlotOptions()
+  attribute_dict = \
+  {
+    'show'            : False,
+    'plot_type'       : 'stacked_bar',
+    'figsize'         : (16.0, 4.0),
+    'rotate_labels'   : False,
+    'markersize'      : 50,
+    'labels_fontsize' : 1,
+    'legend_enabled'  : False,
+    'bar_width'       : 0.5,
+  }
+  for name, value in attribute_dict.iteritems():
+    setattr( opts, name, value )
+
+  plot_all_apps( opts, df, spmd, wsrt, absolute, wsrt_splits )
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+  opts = parse_cmdline()
+
+  df = pd.read_csv( 'imix-results.csv' )
+  if opts.wsrt_splits:
+    df.loc[:,['total_rt','total_task']] = df.loc[:,['total_rt','total_task']].div(df.total_wsrt, axis=0)
+    df.loc[:,['total_rt','total_task']] = df.loc[:,['total_rt','total_task']].multiply(100, axis=0)
+  else:
+    # calculate percent breakdowns
+    if not opts.absolute:
+      df.loc[:,['integer','load','store','amo','mdu','fpu']] = df.loc[:,['integer','load','store','amo','mdu','fpu']].div(df.total_insts, axis=0)
+      df.loc[:,['integer','load','store','amo','mdu','fpu']] = df.loc[:,['integer','load','store','amo','mdu','fpu']].multiply(100, axis=0)
+
+  # option to plot absolute numbers
+  absolute = opts.absolute
+
+  # option to plot only spmd data
+  spmd = opts.no_spmd
+
+  # option to plot only wsrt data
+  wsrt = opts.no_wsrt
+
+  # option to plot wsrt splits
+  wsrt_splits = opts.wsrt_splits
+  if wsrt_splits:
+    spmd = False
+    absolute = False
+
+  # create plots
+  plot( df, spmd, wsrt, absolute, wsrt_splits )

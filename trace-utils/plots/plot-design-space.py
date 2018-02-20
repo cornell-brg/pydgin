@@ -1,7 +1,7 @@
 #=========================================================================
-# run-design-space.py
+# plot-design-space.py
 #=========================================================================
-# Script runs the design space
+# Script plots the design space
 
 import os
 import re
