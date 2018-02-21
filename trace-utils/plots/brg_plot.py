@@ -33,6 +33,15 @@ import sys
 
 # This defines various color schemes. These are pulled from colorbrewer2.org
 colors = {
+    # Sequential PuBuGn
+    'pubugn3' : ['#ece2f0', '#a6bddb', '#1c9099'],
+    'pubugn4' : ['#f6eff7', '#bdc9e1', '#67a9cf', '#02818a'],
+    'pubugn5' : ['#f6eff7', '#bdc9e1', '#67a9cf', '#1c9099', '#016c59'],
+    'pubugn6' : ['#f6eff7', '#d0d1e6', '#a6bddb', '#67a9cf', '#1c9099', '#016c59'],
+    'pubugn7' : ['#f6eff7', '#d0d1e6', '#a6bddb', '#67a9cf', '#3690c0', '#02818a', '#016450'],
+    'pubugn8' : ['#f6eff7', '#d0d1e6', '#a6bddb', '#67a9cf', '#3690c0', '#02818a', '#016450'],
+    'pubugn9' : ['#fff7fb', '#ece2f0', '#d0d1e6', '#a6bddb', '#67a9cf', '#3690c0', '#02818a', '#016c59', '#014636'],
+
     # Sequential Blues
     'blue3' : ['#deebf7', '#9ecae1', '#3182bd'], # 3-class Blues
     'blue4' : ['#eff3ff', '#bdd7e7', '#6baed6', '#2171b5'], # 4-class Blues
@@ -125,6 +134,9 @@ class PlotOptions:
     # option to rotate labels when there are many of them
     self.rotate_labels = False
     self.rotate_labels_angle = -45
+
+    # option to move lables for clustered stacked plots
+    self.label_dist = 0
 
     # set the font size for the rest of things
     self.fontsize = 12
@@ -716,7 +728,7 @@ def add_clustered_stacked_bar( ax, opt ):
   # add the group labels now
   ind = ind + bar_linewidth/2.
   for i in range(len(opt.labels[0])):
-    ax.text( ind[i], -40, opt.labels[0][i],
+    ax.text( ind[i], opt.label_dist, opt.labels[0][i],
              fontsize=opt.fontsize, ha="center" )
 
   set_common( ax, opt )
