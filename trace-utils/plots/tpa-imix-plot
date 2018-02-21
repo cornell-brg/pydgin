@@ -189,6 +189,8 @@ if __name__ == "__main__":
       df.loc[:,['integer','load','store','amo','mdu','fpu']] = df.loc[:,['integer','load','store','amo','mdu','fpu']].div(df.total_insts, axis=0)
       df.loc[:,['integer','load','store','amo','mdu','fpu']] = df.loc[:,['integer','load','store','amo','mdu','fpu']].multiply(100, axis=0)
 
+  df.to_csv( 'imix-normalized.csv' )
+
   # option to plot absolute numbers
   absolute = opts.absolute
 

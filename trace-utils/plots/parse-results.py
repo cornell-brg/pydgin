@@ -28,7 +28,7 @@ def execute(cmd):
 # global variables
 #-------------------------------------------------------------------------
 
-g_prefix_path = "../fast-spin/"
+g_prefix_path = "../new-spin/"
 
 g_configs_dict = {}
 
