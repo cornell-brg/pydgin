@@ -109,6 +109,7 @@ class PlotOptions:
 
     self.valid_plot_types = [
         'bar',
+        'clustered_stacked_bar',
         'stacked_bar',
         'scatter_bar',
         'scatter',
@@ -308,6 +309,8 @@ def add_plot( opt ):
     add_boxplot_plot( ax, opt )
   elif opt.plot_type == "heatmap":
     add_heatmap_plot( ax, opt )
+  elif opt.plot_type == "clustered_stacked_bar":
+    add_clustered_stacked_bar( ax, opt )
   else:
     add_bar_plot( ax, opt )
   opt.plot_idx += 1
@@ -621,6 +624,103 @@ def add_scatter_plot( ax, opt ):
   ax.xaxis.grid(True)
   ax.yaxis.grid(True)
 
+def add_clustered_stacked_bar( ax, opt ):
+
+  # Determine number of subcategories based on labels
+  num_cat = len( opt.labels[0] )
+  num_subcat = len( opt.labels[1] )
+
+  # number of stacks in the stacked bar plot
+  num_stacks = len( opt.labels[2] )
+
+  # base for all indices
+  ind = np.arange( num_cat )
+  ind = ind + (1-opt.bar_width)/2
+
+  # width of each bar
+  width = opt.bar_width / num_subcat
+
+  indexes = []
+  bar_data = []
+
+  for s in xrange( num_subcat ):
+    indexes.append( ind + s * width )
+    # list of lists
+    tmp_list = []
+    for c in xrange( num_cat ):
+      tmp_list.append( opt.data[s][c] )
+    bar_data.append( np.array( tmp_list ) )
+
+  bars = []
+
+  bar_linewidth = 0.5
+  for i in xrange( num_subcat ):
+    bottom = np.array( [0.0] * num_cat )
+    for j in xrange( num_cat ):
+      for k in xrange( num_stacks ):
+        bars.append( ax.bar( indexes[i][j], bar_data[i][j][k], width, \
+                             color=opt.get_color(k), \
+                             linewidth=bar_linewidth, \
+                             bottom=bottom[j],
+                             hatch=opt.get_hatch(k)
+                            ) )
+        bottom[j] += bar_data[i][j][k]
+
+  # we force that there is no empty space to the right
+  ax.set_xlim( (0.0, 0.0 + num_cat ) )
+
+  # set the xtick params based on the actual bar positions
+  indexes = np.concatenate(indexes).ravel()
+  ax.set_xticks( indexes )
+
+  ax.tick_params( labelsize=opt.fontsize )
+
+  # duplicate the label for each configuration
+  xlabels = []
+  for label in opt.labels[1]:
+    xlabels += [label] * len(opt.labels[0])
+
+  ax.tick_params( labelsize=opt.fontsize )
+  if opt.labels:
+    if opt.rotate_labels:
+      ax.set_xticklabels( xlabels, \
+                          verticalalignment="top", \
+                          y=0.01, \
+                          horizontalalignment="left" \
+                                  if opt.rotate_labels_angle > 0 \
+                                  else "right", \
+                          rotation=-opt.rotate_labels_angle, \
+                          fontsize=opt.labels_fontsize )
+    else:
+      ax.set_xticklabels( xlabels, \
+                          verticalalignment="top", \
+                          y=0.01, \
+                          fontsize=opt.labels_fontsize )
+
+
+  # if yrange is specified, we set the value
+  if opt.yrange is not None:
+    ax.set_ylim( opt.yrange )
+
+  # draw the normalization line
+  if opt.normalize_line is not None:
+    ax.axhline( y=opt.normalize_line, color='k' )
+
+  # Add the legend stuff.
+  if num_subcat > 1:
+    legend_labels = opt.labels[2]
+    # bars use the first element
+    legend_bars   = map( lambda x: x[0], bars )
+    set_legend( ax, opt, legend_bars, legend_labels )
+
+  # add the group labels now
+  ind = ind + bar_linewidth/2.
+  for i in range(len(opt.labels[0])):
+    ax.text( ind[i], -40, opt.labels[0][i],
+             fontsize=opt.fontsize, ha="center" )
+
+  set_common( ax, opt )
+
 
 def add_bar_plot( ax, opt ):
 
@@ -727,7 +827,7 @@ def add_bar_plot( ax, opt ):
   if opt.plot_type == "stacked_bar":
     ax.set_xticks( ind )
   else:
-    ax.set_xticks( ind + opt.bar_width/2. )
+    ax.set_xticks( ind + bar_linewidth/2. )
 
   ax.tick_params( labelsize=opt.fontsize )
   if opt.labels:
