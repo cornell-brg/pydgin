@@ -173,46 +173,6 @@ app_group_cilk = OrderedDict([
   ('cilk-matmul'                  , 'matmul'),
   #('cilk-cholesky'                , 'clsky'),
 ])
-
-app_short_name_dict = OrderedDict([
-
-  # custom
-  ('bilateral'                    , 'bilateral'),
-  ('dct8x8m'                      , 'dct8x8m'),
-  ('mriq'                         , 'mriq'),
-  ('rgb2cmyk'                     , 'rgb2cmyk'),
-  ('strsearch'                    , 'strsearch'),
-  ('uts'                          , 'uts'),
-  #('dither'                       , 'dither'), # debug simt configs
-  #('viterbi'                      , 'viterbi'), # debug simt configs
-
-  # pbbs
-  ('pbbs-bfs-deterministicBFS'    , 'bfs-d'),
-  ('pbbs-bfs-ndBFS'               , 'bfs-nd'),
-  ('pbbs-dict-deterministicHash'  , 'dict'),
-  ('pbbs-mis-ndMIS'               , 'mis'),
-  ('pbbs-rdups-deterministicHash' , 'rdups'),
-  ('pbbs-sa-parallelRange'        , 'sarray'),
-  ('pbbs-csort-quickSort'         , 'qsort'),
-  ('pbbs-csort-quickSort-1'       , 'qsort-1'),
-  ('pbbs-csort-quickSort-2'       , 'qsort-2'),
-  ('pbbs-csort-sampleSort'        , 'sampsort'),
-  ('pbbs-csort-sampleSort-1'      , 'sampsort-1'),
-  ('pbbs-csort-sampleSort-2'      , 'sampsort-2'),
-  ('pbbs-hull-quickHull'          , 'hull'),
-  #('pbbs-knn-octTree2Neighbors'   , 'knn'),
-  #('pbbs-nbody-parallelBarnesHut' , 'nbody'),
-  #('pbbs-st-ndST'                 , 'sptree'), # debug simt configs
-  #('pbbs-isort-blockRadixSort'    , 'radix-1'),
-  #('pbbs-isort-blockRadixSort-1'  , 'radix-2'),
-
-  # cilk
-  ('cilk-cilksort'                , 'cilksort'),
-  ('cilk-heat'                    , 'heat'),
-  ('cilk-knapsack'                , 'ksack'),
-  ('cilk-matmul'                  , 'matmul'),
-  #('cilk-cholesky'                , 'clsky'),
-])
 app_cilk_list = app_group_cilk.values()
 
 #-------------------------------------------------------------------------
