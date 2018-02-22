@@ -668,14 +668,14 @@ def add_clustered_stacked_bar( ax, opt ):
   indexes = np.concatenate(indexes).ravel()
   ax.set_xticks( indexes )
 
-  ax.tick_params( labelsize=opt.fontsize )
+  ax.tick_params( labelsize=opt.labels_fontsize )
 
   # duplicate the label for each configuration
   xlabels = []
   for label in opt.labels[1]:
     xlabels += [label] * len(opt.labels[0])
 
-  ax.tick_params( labelsize=opt.fontsize )
+  ax.tick_params( labelsize=opt.labels_fontsize )
   if opt.labels:
     if opt.rotate_labels:
       ax.set_xticklabels( xlabels, \
