@@ -83,26 +83,8 @@ colors = {
     # picked from here:
     # https://github.com/vega/vega/wiki/Scales#scale-range-literals
     'unique20' : [
-      '#1f77b4',
-      '#aec7e8',
-      '#ff7f0e',
-      '#ffbb78',
-      '#2ca02c',
-      '#98df8a',
-      '#d62728',
-      '#ff9896',
-      '#9467bd',
-      '#c5b0d5',
-      '#8c564b',
-      '#c49c94',
-      '#e377c2',
-      '#f7b6d2',
-      '#7f7f7f',
-      '#c7c7c7',
-      '#bcbd22',
-      '#dbdb8d',
-      '#17becf',
-      '#9edae5',
+      '#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', '#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5',
+      '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#7f7f7f', '#c7c7c7', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5',
     ]
   }
 
@@ -726,7 +708,7 @@ def add_clustered_stacked_bar( ax, opt ):
     set_legend( ax, opt, legend_bars, legend_labels )
 
   # add the group labels now
-  ind = ind + bar_linewidth/2.
+  ind = ind + (num_subcat-1)*(width/2)
   for i in range(len(opt.labels[0])):
     ax.text( ind[i], opt.label_dist, opt.labels[0][i],
              fontsize=opt.fontsize, ha="center" )
@@ -839,7 +821,7 @@ def add_bar_plot( ax, opt ):
   if opt.plot_type == "stacked_bar":
     ax.set_xticks( ind )
   else:
-    ax.set_xticks( ind + bar_linewidth/2. )
+    ax.set_xticks( ind + (num_subcat-1)*(width/2) )
 
   ax.tick_params( labelsize=opt.fontsize )
   if opt.labels:
