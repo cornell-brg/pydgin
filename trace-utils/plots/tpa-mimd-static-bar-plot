@@ -1,0 +1,401 @@
+#!/usr/bin/env python
+#=========================================================================
+# tpa-mimd-static-bar-plot [options]
+#=========================================================================
+#
+#  -h --help          Display this message
+#
+#  --g_ncores         Number of cores
+#  --g_insn_ports     Number of instruction ports
+#  --g_resources      Number of backend resources
+#  --app-group        Select app-group
+#                       [custom,pbbs,cilk]
+#  --runtime          Select runtime
+#                       [spmd,wsrt]
+#
+# Author : Shreesha Srinath
+# Date   : February 21st, 2018
+#
+# Bar plots for work vs. steps normalized to mimd configuration for the
+# mimd-static configuration
+
+import argparse
+import re
+import math
+import sys
+
+import pandas as pd
+pd.set_option('display.width', 100)
+
+import brg_plot
+
+from common import *
+from process_data import *
+
+#-------------------------------------------------------------------------
+# Command line processing
+#-------------------------------------------------------------------------
+
+class ArgumentParserWithCustomError(argparse.ArgumentParser):
+  def error( self, msg = "" ):
+    if ( msg ): print("\n ERROR: %s" % msg)
+    print("")
+    file = open( sys.argv[0] )
+    for ( lineno, line ) in enumerate( file ):
+      if ( line[0] != '#' ): sys.exit(msg != "")
+      if ( (lineno == 2) or (lineno >= 4) ): print( line[1:].rstrip("\n") )
+
+def parse_cmdline():
+  p = ArgumentParserWithCustomError( add_help=False )
+
+  # Standard command line arguments
+
+  p.add_argument( "-h", "--help",    action="store_true" )
+
+  # Additional commane line arguments for the simulator
+
+  p.add_argument( "--speedup", action="store_true", default=False )
+  p.add_argument( "--savings", action="store_true", default=False )
+
+  p.add_argument( "--g_ncores",     type=int, action="store", default=4)
+  p.add_argument( "--g_insn_ports", type=int, action="store", default=1)
+  p.add_argument( "--g_resources",  type=int, action="store", default=4)
+
+  p.add_argument( "--runtime", action="store", default="spmd",
+                  choices=["spmd", "wsrt"])
+  p.add_argument( "--app-group", action="store", default="custom",
+                  choices=["custom", "pbbs","cilk"])
+
+  opts = p.parse_args()
+  if opts.help: p.error()
+  return opts
+
+#-------------------------------------------------------------------------
+# Global variables
+#-------------------------------------------------------------------------
+g_ncores       = 4
+g_insn_ports   = 1
+g_resources    = 1
+
+# NOTE: set these based on the static configuration
+g_config_str   = "1L0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
+
+# used for the stack bar plots
+g_stacks       = ['unique_daccess', 'unique_execute', 'unique_frontend', 'unique_iaccess']
+mimd_stacks    = ['total_daccess', 'total_execute', 'total_frontend', 'total_iaccess']
+g_stack_labels = ['dmem', 'backend', 'frontend', 'imem']
+
+# NOTE: set these based on the static configuration
+g_cfg_labels = [
+  "mimd          (a)",
+  "1-rr-0c-0l-*h (b)",
+  "1-rr-1c-0l-0h (c)",
+  "1-rr-1c-0l-1h (d)",
+  "1-pc-0c-0l-*h (e)",
+  "1-pc-1c-0l-0h (f)",
+  "1-pc-1c-0l-1h (g)",
+  "2-rr-0c-0l-*h (h)",
+  "2-rr-1c-0l-0h (i)",
+  "2-rr-1c-0l-1h (j)",
+  "2-pc-0c-0l-*h (k)",
+  "2-pc-1c-0l-0h (l)",
+  "2-pc-1c-0l-1h (m)",
+]
+
+#-------------------------------------------------------------------------
+# select_plot_configs()
+#-------------------------------------------------------------------------
+# NOTE: select configs based on the static configuration
+# Function should return a list of configs for the plot script where each
+# config is a subcategory of the bar plot
+
+def select_plot_configs( runtime ):
+  lockstep       = 0
+  limit_lockstep = 0  
+  adaptive_hint  = 0
+  
+  config_list = []
+  prefix_str  = 'conj-cores-%s-' % runtime
+
+  for insn_ports in [1,2]:
+    for analysis in [0,1]: 
+      # n-ts-0c-0l-*h
+      config_list.append( 
+        prefix_str + 
+        g_config_str % ( 
+          insn_ports, 
+          g_ncores, 
+          g_resources, 
+          0,              # coalescing
+          analysis,       # thread-selection
+          lockstep,       # lockstep
+          1,              # hint
+          limit_lockstep,
+          adaptive_hint 
+        )
+      )
+      # n-ts-1c-0l-0h
+      # n-ts-1c-0l-1h
+      for barrier_limit in [1,1000]:
+        config_list.append( 
+          prefix_str + 
+          g_config_str % ( 
+            insn_ports, 
+            g_ncores, 
+            g_resources, 
+            1,              # coalescing
+            analysis,       # thread-selection
+            lockstep,       # lockstep
+            barrier_limit,  # hint
+            limit_lockstep,
+            adaptive_hint 
+          )
+        )
+  return config_list
+
+#-------------------------------------------------------------------------
+# draw_errorbars
+#-------------------------------------------------------------------------
+# NOTE: Will have to tweak this for each static configuration
+
+def draw_errorbars( opts, apps, df, runtime, perf=True ):
+ 
+  # plot related calculations 
+  if   perf: num_subcat = len(opts.data[0])
+  else     : num_subcat = len(opts.labels[1])
+  width  = opts.bar_width / num_subcat
+  offset = (1-opts.bar_width)/2
+
+  # config strings related stuff
+  prefix_str   = 'conj-cores-%s-' % runtime
+  mimd_cfg_str = 'mimd-%s-1-0AH'
+  mimd_cfg     = mimd_cfg_str % runtime
+
+  #-----------------------------------------------------------------------
+  # std. deviation bars for: n-ts-0c-0l-*h
+  #-----------------------------------------------------------------------
+  lockstep       = 0
+  limit_lockstep = 0
+  adaptive_hint  = 0
+  index = 1
+  for insn_ports in [1,2]:
+    for analysis in [0,1]:
+      base_cfg = prefix_str + \
+        g_config_str % ( 
+          insn_ports, g_ncores, g_resources, 
+          0,              # coalescing
+          analysis,       # thread-selection
+          0,              # lockstep
+          1,              # hint
+          limit_lockstep,
+          adaptive_hint,
+        )
+      config_list = []
+      for barrier_limit in [1,1000]:
+        config_list.append( 
+          prefix_str + 
+          g_config_str % ( 
+            insn_ports, 
+            g_ncores, 
+            g_resources, 
+            0,              # coalescing
+            analysis,       # thread-selection
+            lockstep,       # lockstep
+            barrier_limit,  # hint 
+            limit_lockstep,
+            adaptive_hint 
+          )
+        )
+      stats = df.loc[df.config.isin(config_list), :]
+      error = []
+      yerror_pos = []
+      for app in apps:
+        if app not in stats.app.unique():
+          continue
+        try:
+          if perf:
+            mimd_steps = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'steps'].iloc[0])
+            normalized_steps = stats.loc[(stats.app==app) & (stats.config.isin(config_list)),'steps']/mimd_steps
+            error.append(normalized_steps.describe().get('std'))
+          else:
+            mimd_work = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
+            normalized_work = stats.loc[(stats.app==app) & (stats.config.isin(config_list)),'unique_work']/mimd_work
+            normalized_work = normalized_work * 100
+            error.append(normalized_work.describe().get('std'))
+            temp = 100*float(df.loc[(df.app == app) & (df.config == base_cfg), 'unique_work'].iloc[0])/mimd_work
+            yerror_pos.append( temp )
+        except:
+          print "Exception:", app, base_cfg
+          continue
+
+      # plot the errorbars now
+      indexes = [idx+offset for idx in xrange(len(error))]
+      error_y = 0
+      ax = opts.fig.gca()
+      for i,idx in enumerate(indexes):
+        if   perf : error_y = opts.data[i][index]
+        else      : error_y = yerror_pos[i]
+        ax.errorbar( idx + index*width, error_y, yerr=error[i], 
+          fmt='.', markersize=0, color='k', capsize=5 ) 
+      index = index + 3
+  
+  brg_plot.plt.draw()
+  #-----------------------------------------------------------------------
+
+#-------------------------------------------------------------------------
+# plot
+#-------------------------------------------------------------------------
+
+def plot( df, app_group, runtime ):
+  # list of apps based on the app group 
+  apps = []
+  if   app_group == "custom": apps = app_custom_list
+  elif app_group == "pbbs"  : apps = app_pbbs_list
+  elif app_group == "cilk"  : apps = app_cilk_list
+ 
+  # create plot options dict
+  opts = brg_plot.PlotOptions()
+  attribute_dict = \
+  {
+    'show'            : False,
+    'plot_type'       : 'bar',
+    'figsize'         : (20.0, 8.0),
+    'bar_width'       : 0.9,
+  }
+  for name, value in attribute_dict.iteritems():
+    setattr( opts, name, value )
+
+  opts.num_rows = 2
+  opts.num_cols = 1
+
+  index = 1
+  mimd_cfg_str = 'mimd-%s-1-0AH'
+  mimd_cfg    = mimd_cfg_str % runtime
+  config_list = select_plot_configs( runtime )
+
+  #---------------------------------------------------------------------
+  # 1. plot performance 
+  #---------------------------------------------------------------------
+
+  data   = []
+  labels = []
+  for app in apps: 
+    if app not in df.app.unique():
+      continue
+    temp = [] 
+    try:
+      # collect the mimd performance first
+      mimd_steps = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'steps'].iloc[0])
+      temp.append( mimd_steps / mimd_steps )
+      # collect the performance for the configs of interest
+      for cfg in config_list:
+        cfg_steps = df.loc[(df.app == app) & (df.config == cfg), 'steps'].iloc[0]
+        temp.append( cfg_steps / mimd_steps )
+      labels.append( app )
+      data.append( temp )
+    except:
+      continue
+
+  opts.plot_type       = 'bar'
+  opts.plot_idx       = index
+  opts.data           = data
+  opts.rotate_labels  = False
+  opts.labels         = [labels, g_cfg_labels]
+  opts.legend_ncol    = len( g_cfg_labels )/2 + 1
+  opts.legend_enabled = True
+  opts.ylabel         = 'Normalized Delay'
+  opts.colors         = brg_plot.colors['unique20']
+
+  brg_plot.add_plot( opts )
+  index = index + 1
+
+  draw_errorbars( opts, apps, df, runtime )
+  
+  #---------------------------------------------------------------------
+  # 2. plot work 
+  #---------------------------------------------------------------------
+
+  # collect the mimd work first
+  data   = []
+  labels = []
+  temp = []
+  for app in apps:
+    if app not in df.app.unique():
+      continue
+    try:
+      mimd_total = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
+      vals = [] 
+      for stack in mimd_stacks:
+        vals.append( df.loc[(df.app == app) & (df.config == mimd_cfg), stack].iloc[0] * 100 / mimd_total )
+      temp.append(vals)
+      labels.append( app )
+    except:
+      continue
+  data.append( temp )
+ 
+  # collect the work for all
+  for cfg in config_list:
+    temp = [] 
+    for app in apps:
+      if app not in df.app.unique():
+        continue
+      try:
+        mimd_total = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
+        vals = [] 
+        sumv = 0
+        for stack in g_stacks:
+          vals.append( df.loc[(df.app == app) & (df.config == cfg), stack].iloc[0] * 100 / mimd_total )
+          sumv += df.loc[(df.app == app) & (df.config == cfg), stack].iloc[0] * 100 / mimd_total
+        temp.append( vals )
+      except:
+        continue
+    data.append( temp )
+
+  opts.plot_idx            = index 
+  opts.plot_type           = 'clustered_stacked_bar'
+  opts.data                = data
+  opts.rotate_labels       = True
+  opts.rotate_labels_angle = 0
+  subcat_labels = [chr(i) for i in range(ord('a'),ord('m')+1)]
+  opts.labels              = [labels,subcat_labels,g_stack_labels]
+  opts.legend_ncol         = len( g_stack_labels )
+  opts.legend_enabled      = True
+  opts.label_dist          = -15
+  opts.ylabel              = 'Normalized Work (%)'
+  opts.colors              = ['#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a']
+
+  brg_plot.add_plot( opts )
+
+  draw_errorbars( opts, apps, df, runtime, perf=False )
+
+  if index == opts.num_rows * opts.num_cols:
+    opts.fig.text( 0.5, 1.1, 
+      '%s-%s\nxc-cores-NI-%dF-%dL' % ( app_group, runtime, g_ncores, g_resources ), 
+      ha='center', fontsize=16
+    )
+    brg_plot.plt.subplots_adjust(hspace=5)
+    brg_plot.plt.tight_layout()
+    file_name = '%s-%s-xc-cores-NI-%dF-%dL.pdf' % ( app_group, runtime, g_ncores, g_resources )
+    brg_plot.plt.savefig( file_name, bbox_inches="tight" )
+    print "saving %s" % file_name
+  index = index + 1
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+  # parse command line arguments
+  opts         = parse_cmdline()
+  g_insn_ports = opts.g_insn_ports
+  g_ncores     = opts.g_ncores
+  g_resources  = opts.g_resources
+  if g_ncores != g_resources:
+    print 'Number of cores must match backend resources for mimd-static configs!'
+    exit( 1 )
+
+  config_list = select_plot_configs( opts.runtime )
+  # read the data frame
+  df = pd.read_csv( "sim-results.csv" )
+
+  plot( df, opts.app_group, opts.runtime )
