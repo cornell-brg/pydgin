@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-simt-static-bar-plot [options]
+# tpa-simt-bar-plot [options]
 #=========================================================================
 #
 #  -h --help          Display this message
@@ -17,7 +17,7 @@
 # Date   : February 21st, 2018
 #
 # Bar plots for work vs. steps normalized to mimd configuration for the
-# simt-static configuration
+# simt configuration
 
 import argparse
 import re
@@ -112,7 +112,7 @@ def select_plot_configs( runtime ):
   config_list = []
   prefix_str  = 'simt-%s-' % runtime
 
-  for frontend in [1,2]:
+  for resources in [1,2]:
     for analysis in [0,1]: 
       # n-ts-1c-1l-0h
       # n-ts-1c-1l-1h
@@ -120,9 +120,9 @@ def select_plot_configs( runtime ):
         config_list.append( 
           prefix_str + 
           g_config_str % ( 
-            frontend, 
-            frontend, 
-            g_resources, 
+            resources, 
+            resources, 
+            resources, 
             1,              # coalescing
             analysis,       # thread-selection
             1,              # lockstep
@@ -259,12 +259,12 @@ def plot( df, app_group, runtime ):
 
   if index == opts.num_rows * opts.num_cols:
     opts.fig.text( 0.5, 1.1, 
-      '%s-%s\nxc-cores-NI-NF-%dL' % ( app_group, runtime, g_resources ), 
+      '%s-%s\nxc-cores-NI-NF-NL' % ( app_group, runtime ), 
       ha='center', fontsize=16
     )
     brg_plot.plt.subplots_adjust(hspace=5)
     brg_plot.plt.tight_layout()
-    file_name = '%s-%s-xc-cores-NI-NF-%dL.pdf' % ( app_group, runtime, g_resources )
+    file_name = '%s-%s-xc-cores-NI-NF-NL.pdf' % ( app_group, runtime )
     brg_plot.plt.savefig( file_name, bbox_inches="tight" )
     print "saving %s" % file_name
   index = index + 1
