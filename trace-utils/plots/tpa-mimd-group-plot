@@ -69,7 +69,7 @@ g_insn_ports   = 1
 g_resources    = 1
 
 # NOTE: set these based on the static configuration
-g_base_str     = "1L0-%dI-%dF-%dL-0C-0TS-0LO-1-0LL-0AH"
+g_base_str     = "1L0-%dI-%dF-%dL-0C-%dTS-0LO-1-0LL-0AH"
 g_config_str   = "1L0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
 
 # used for the stack bar plots
@@ -89,40 +89,11 @@ g_cfg_labels = [
 ]
 
 #-------------------------------------------------------------------------
-# populate_configs()
-#-------------------------------------------------------------------------
-# NOTE: select configs based on the static configuration
-
-def populate_configs( insn_ports, resources, ncores ):
-  lockstep       = 0
-  limit_lockstep = 0
-
-  config_list = []
-  for smart_sharing in range(2):
-    for analysis in range(2):
-      for adaptive_hint in range( 2 ):
-        for barrier_limit in [1,1000]:
-          # turning on adaptive hints without hints set makes less sense
-          if adaptive_hint == 1 and barrier_limit == 1:
-            continue
-          config_str = g_config_str % (
-            insn_ports,
-            ncores,
-            resources,
-            smart_sharing,
-            analysis,
-            lockstep,
-            barrier_limit,
-            limit_lockstep,
-            adaptive_hint
-          )
-          config_list.append( config_str )
-  return config_list
-
-#-------------------------------------------------------------------------
 # select_plot_configs()
 #-------------------------------------------------------------------------
 # NOTE: select configs based on the static configuration
+# Function should return a list of configs for the plot script where each
+# config is a subcategory of the bar plot
 
 def select_plot_configs( runtime ):
   lockstep       = 0
@@ -169,15 +140,27 @@ def select_plot_configs( runtime ):
 #-------------------------------------------------------------------------
 # NOTE: Will have to tweak this for each static configuration
 
-def draw_errorbars( opts, df, runtime ):
+def draw_errorbars( opts, df, runtime, perf=True ):
+ 
+  # plot related calculations 
+  if   perf: num_subcat = len(opts.data[0])
+  else     : num_subcat = len(opts.labels[1])
+  width  = opts.bar_width / num_subcat
+  offset = (1-opts.bar_width)/2
+
+  # config strings related stuff
   prefix_str   = 'conj-cores-%s-' % runtime
   mimd_cfg_str = 'mimd-%s-1-0AH'
   mimd_cfg     = mimd_cfg_str % runtime
 
-  # std. deviation for TS-0c-*
+  #-----------------------------------------------------------------------
+  # std. deviation for configs with no coalescing : ts-0c-*
+  #-----------------------------------------------------------------------
   lockstep       = 0
   limit_lockstep = 0
-  for analysis in [1]:
+  index = 1
+  for analysis in [0,1]:
+    base_cfg = prefix_str + g_base_str % ( g_insn_ports, g_ncores, g_resources, analysis )
     config_list = []
     for adaptive_hint in range( 2 ):
       for barrier_limit in [1,1000]:
@@ -196,22 +179,45 @@ def draw_errorbars( opts, df, runtime ):
           )
         )
     stats = df.loc[df.config.isin(config_list), :]
-    data = []
+    error = []
+    yerror_pos = []
     for app in app_list:
       if app not in stats.app.unique():
         continue
       try:
-        mimd_steps = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'steps'].iloc[0])
-        normalized_steps = stats.loc[(stats.app==app)&(stats.config.isin(config_list)),'steps']/mimd_steps
-        data.append(normalized_steps.describe().get('std'))
+        if perf:
+          mimd_steps = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'steps'].iloc[0])
+          normalized_steps = stats.loc[(stats.app==app) & (stats.config.isin(config_list)),'steps']/mimd_steps
+          error.append(normalized_steps.describe().get('std'))
+        else:
+          mimd_work = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
+          normalized_work = stats.loc[(stats.app==app) & (stats.config.isin(config_list)),'unique_work']/mimd_work
+          normalized_work = normalized_work * 100
+          error.append(normalized_work.describe().get('std'))
+          temp = 100*float(df.loc[(df.app == app) & (df.config == base_cfg), 'unique_work'].iloc[0])/mimd_work
+          yerror_pos.append( temp )
       except:
         continue
+
+    # plot the errorbars now
+    indexes = [idx+offset for idx in xrange(len(error))]
+    error_y = 0
+    ax = opts.fig.gca()
+    for i,idx in enumerate(indexes):
+      if   perf : error_y = opts.data[i][index]
+      else      : error_y = yerror_pos[i]
+      ax.errorbar( idx + index*width, error_y, yerr=error[i], 
+        fmt='.', markersize=0, color='k', capsize=4 ) 
+    index = index + 3
+  
+  brg_plot.plt.draw()
+  #-----------------------------------------------------------------------
 
 #-------------------------------------------------------------------------
 # plot
 #-------------------------------------------------------------------------
 
-def plot( df, spmd_base_cfg, configs ):
+def plot( df ):
   # create plot options dict
   opts = brg_plot.PlotOptions()
   attribute_dict = \
@@ -269,7 +275,7 @@ def plot( df, spmd_base_cfg, configs ):
     draw_errorbars( opts, df, runtime )
   
     #---------------------------------------------------------------------
-    # plot work 
+    # 2. plot work 
     #---------------------------------------------------------------------
 
     # collect the mimd work first
@@ -278,10 +284,7 @@ def plot( df, spmd_base_cfg, configs ):
     temp = []
     for app in app_list:
       try:
-        mimd_total = 0
-        for stack in mimd_stacks:
-          mimd_total += \
-            float(df.loc[(df.app == app) & (df.config == mimd_cfg), stack].iloc[0])
+        mimd_total = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
         vals = [] 
         for stack in mimd_stacks:
           vals.append( df.loc[(df.app == app) & (df.config == mimd_cfg), stack].iloc[0] * 100 / mimd_total )
@@ -296,13 +299,11 @@ def plot( df, spmd_base_cfg, configs ):
       temp = [] 
       for app in app_list:
         try:
-          mimd_total = 0
-          for stack in mimd_stacks:
-            mimd_total += \
-              float(df.loc[(df.app == app) & (df.config == mimd_cfg), stack].iloc[0])
+          mimd_total = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
           vals = [] 
           for stack in g_stacks:
             vals.append( df.loc[(df.app == app) & (df.config == cfg), stack].iloc[0] * 100 / mimd_total )
+          #print app, cfg, sum(vals), df.loc[(df.app == app) & (df.config == cfg), 'unique_work'].iloc[0] * 100 / mimd_total 
           temp.append( vals )
         except:
           continue
@@ -315,14 +316,19 @@ def plot( df, spmd_base_cfg, configs ):
     opts.labels          = [labels,g_cfg_labels,g_stack_labels]
     opts.legend_ncol     = len( g_stack_labels )
     opts.legend_enabled  = True
-    opts.subplots_hspace = 0.4
-    opts.label_dist      = -35
+    opts.subplots_hspace = 0.3
+    opts.label_dist      = -30
     opts.ylabel          = 'Work (%)'
     opts.colors          = ['#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a']
 
-    if index == opts.num_rows * opts.num_cols:
-      opts.file_name = 'xc-cores-%dI-%dF-%dL.pdf' % ( g_insn_ports, g_ncores, g_resources )
     brg_plot.add_plot( opts )
+
+    draw_errorbars( opts, df, runtime, perf=False )
+
+    if index == opts.num_rows * opts.num_cols:
+      brg_plot.plt.suptitle( '%s xc-cores-%dI-%dF-%dL' % ( runtime, g_insn_ports, g_ncores, g_resources ) )
+      brg_plot.plt.savefig( 'xc-cores-%dI-%dF-%dL.pdf' % ( g_insn_ports, g_ncores, g_resources ) )
+
     index = index + 1
 
 #-------------------------------------------------------------------------
@@ -339,18 +345,7 @@ if __name__ == "__main__":
     print 'Number of cores must match backend resources for mimd-static configs!'
     exit( 1 )
 
-  # populate relevant spmd and wsrt configs
-  config_strings = populate_configs( g_insn_ports, g_resources, g_ncores )
-  configs = []
-  for cfg in config_strings:
-    configs.append( 'conj-cores-spmd-' + cfg ) 
-    configs.append( 'conj-cores-wsrt-' + cfg )
- 
-  # get the spmd and wsrt base configs 
-  spmd_base_cfg = 'conj-cores-spmd-' + g_base_str % ( g_insn_ports, g_resources, g_ncores )
-  wsrt_base_cfg = 'conj-cores-wsrt-' + g_base_str % ( g_insn_ports, g_resources, g_ncores )
-
   # read the data frame
   df = pd.read_csv( "sim-results.csv" )
   
-  plot( df, spmd_base_cfg, configs )
+  plot( df )
