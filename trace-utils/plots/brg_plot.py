@@ -656,7 +656,8 @@ def add_clustered_stacked_bar( ax, opt ):
                              color=opt.get_color(k), \
                              linewidth=bar_linewidth, \
                              bottom=bottom[j],
-                             hatch=opt.get_hatch(k)
+                             hatch=opt.get_hatch(k),
+                             edgecolor='k'
                             ) )
         bottom[j] += bar_data[i][j][k]
 
@@ -714,7 +715,7 @@ def add_clustered_stacked_bar( ax, opt ):
              fontsize=opt.fontsize, ha="center" )
 
   set_common( ax, opt )
-
+  ax.yaxis.grid(True)
 
 def add_bar_plot( ax, opt ):
 
@@ -791,7 +792,8 @@ def add_bar_plot( ax, opt ):
                            color=opt.get_color(i), \
                            linewidth=bar_linewidth, \
                            bottom=bottom,
-                           hatch = opt.get_hatch(i)
+                           hatch = opt.get_hatch(i),
+                           edgecolor='k'
                           ) )
       # Annotate bars that exceed max y-axis value
       if opt.overflow_labels_enabled:

@@ -80,12 +80,12 @@ g_stack_labels = ['dmem', 'backend', 'frontend', 'imem']
 # NOTE: set these based on the static configuration
 g_cfg_labels = [
   "mimd",
-  "rr-0c-*",
+  "rr-0c-*h",
   "rr-1c-0h",
   "rr-1c-1h",
-  "pc-0c-*",
-  "pc-1c-0h",
-  "pc-1c-1h",
+  "mpc-0c-*h",
+  "mpc-1c-0h",
+  "mpc-1c-1h",
 ]
 
 #-------------------------------------------------------------------------
@@ -207,7 +207,7 @@ def draw_errorbars( opts, df, runtime, perf=True ):
       if   perf : error_y = opts.data[i][index]
       else      : error_y = yerror_pos[i]
       ax.errorbar( idx + index*width, error_y, yerr=error[i], 
-        fmt='.', markersize=0, color='k', capsize=4 ) 
+        fmt='.', markersize=0, color='k', capsize=5 ) 
     index = index + 3
   
   brg_plot.plt.draw()
@@ -224,18 +224,18 @@ def plot( df ):
   {
     'show'            : False,
     'plot_type'       : 'bar',
-    'figsize'         : (16.0, 8.0),
-    'bar_width'       : 0.6,
+    'figsize'         : (16.0, 16.0),
+    'bar_width'       : 0.5,
   }
   for name, value in attribute_dict.iteritems():
     setattr( opts, name, value )
 
-  opts.num_rows = 2
+  opts.num_rows = 4
   opts.num_cols = 1
 
   index = 1
   mimd_cfg_str = 'mimd-%s-1-0AH'
-  for runtime in ['spmd']: 
+  for runtime in ['spmd','wsrt']: 
     mimd_cfg    = mimd_cfg_str % runtime
     config_list = select_plot_configs( runtime )
 
@@ -260,13 +260,15 @@ def plot( df ):
       except:
         continue
 
+    opts.plot_type       = 'bar'
     opts.plot_idx       = index
     opts.data           = data
     opts.rotate_labels  = False
     opts.labels         = [labels, g_cfg_labels]
     opts.legend_ncol    = len( g_cfg_labels )
+    opts.legend_bbox    = (0,1.,1.,0.1)
     opts.legend_enabled = True
-    opts.ylabel         = 'Normalized steps'
+    opts.ylabel         = 'Normalized Delay'
     opts.colors         = brg_plot.colors['unique20']
 
     brg_plot.add_plot( opts )
@@ -315,10 +317,10 @@ def plot( df ):
     opts.rotate_labels   = True
     opts.labels          = [labels,g_cfg_labels,g_stack_labels]
     opts.legend_ncol     = len( g_stack_labels )
+    opts.legend_bbox     = (0,1.,1.,0.1)
     opts.legend_enabled  = True
-    opts.subplots_hspace = 0.3
-    opts.label_dist      = -30
-    opts.ylabel          = 'Work (%)'
+    opts.label_dist      = -40
+    opts.ylabel          = 'Normalized Work (%)'
     opts.colors          = ['#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a']
 
     brg_plot.add_plot( opts )
@@ -326,9 +328,13 @@ def plot( df ):
     draw_errorbars( opts, df, runtime, perf=False )
 
     if index == opts.num_rows * opts.num_cols:
-      brg_plot.plt.suptitle( '%s xc-cores-%dI-%dF-%dL' % ( runtime, g_insn_ports, g_ncores, g_resources ) )
-      brg_plot.plt.savefig( 'xc-cores-%dI-%dF-%dL.pdf' % ( g_insn_ports, g_ncores, g_resources ) )
-
+      opts.fig.text( 0.5, 1.0, 
+        '%s xc-cores-%dI-%dF-%dL' % ( runtime, g_insn_ports, g_ncores, g_resources ), 
+        ha='center', fontsize=14
+      )
+      brg_plot.plt.subplots_adjust(hspace=5)
+      brg_plot.plt.tight_layout()
+      brg_plot.plt.savefig( 'xc-cores-%dI-%dF-%dL.pdf' % ( g_insn_ports, g_ncores, g_resources ), bbox_inches="tight" )
     index = index + 1
 
 #-------------------------------------------------------------------------
