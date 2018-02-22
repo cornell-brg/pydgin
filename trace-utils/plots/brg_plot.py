@@ -681,8 +681,8 @@ def add_clustered_stacked_bar( ax, opt ):
       ax.set_xticklabels( xlabels, \
                           verticalalignment="top", \
                           y=0.01, \
-                          horizontalalignment="left" \
-                                  if opt.rotate_labels_angle > 0 \
+                          horizontalalignment="center" \
+                                  if opt.rotate_labels_angle >= 0 \
                                   else "right", \
                           rotation=-opt.rotate_labels_angle, \
                           fontsize=opt.labels_fontsize )
