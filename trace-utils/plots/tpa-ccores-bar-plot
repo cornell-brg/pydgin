@@ -373,8 +373,9 @@ def plot( df, app_group, runtime ):
     except:
       continue
 
-  opts.plot_type       = 'bar'
+  opts.plot_type      = 'bar'
   opts.plot_idx       = index
+  opts.normalize_line = 1
   opts.data           = data
   opts.rotate_labels  = False
   opts.labels         = [labels, g_cfg_labels]
@@ -419,10 +420,8 @@ def plot( df, app_group, runtime ):
       try:
         mimd_total = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
         vals = [] 
-        sumv = 0
         for stack in g_stacks:
           vals.append( df.loc[(df.app == app) & (df.config == cfg), stack].iloc[0] * 100 / mimd_total )
-          sumv += df.loc[(df.app == app) & (df.config == cfg), stack].iloc[0] * 100 / mimd_total
         temp.append( vals )
       except:
         continue
@@ -430,6 +429,7 @@ def plot( df, app_group, runtime ):
 
   opts.plot_idx            = index 
   opts.plot_type           = 'clustered_stacked_bar'
+  opts.normalize_line      = None
   opts.data                = data
   opts.rotate_labels       = True
   opts.rotate_labels_angle = 0
@@ -471,7 +471,6 @@ if __name__ == "__main__":
     print 'Number of cores must match backend resources for ccores configs!'
     exit( 1 )
 
-  config_list = select_plot_configs( opts.runtime )
   # read the data frame
   df = pd.read_csv( "sim-results.csv" )
 
