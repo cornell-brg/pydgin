@@ -36,15 +36,15 @@ app_list = [
   #'px-fib',
   #'ubmark-vvadd',
 
-  ## custom bmarks
-  #'bilateral',
-  #'dct8x8m',
-  #'rgb2cmyk',
-  #'mriq',
-  #'strsearch',
-  #'uts',
-  ##'dither',
-  ##'viterbi',
+  # custom bmarks
+  'bilateral',
+  'dct8x8m',
+  'rgb2cmyk',
+  'mriq',
+  'strsearch',
+  'uts',
+  #'dither',
+  #'viterbi',
 
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc-mtpull',
@@ -56,17 +56,19 @@ app_list = [
   'pbbs-mis-ndMIS-parc-mtpull',
   'pbbs-rdups-deterministicHash-parc-mtpull',
   'pbbs-sa-parallelRange-parc-mtpull',
-  'pbbs-st-ndST-parc-mtpull',
+
+  #'pbbs-st-ndST-parc-mtpull', -- debug simt configs
   #'pbbs-isort-blockRadixSort-parc-mtpull', #-- not sure about this yet
   #'pbbs-knn-octTree2Neighbors-parc-mtpull', #-- min-pc: std::bad_alloc assertion
   #'pbbs-nbody-parallelBarnesHut-parc-mtpull', #-- exception in pydgin!
 
   # cilk apps
-  #'cilk-cilksort-parc-mtpull',
-  #'cilk-heat-parc-mtpull',
-  #'cilk-knapsack-parc-mtpull',
-  #'cilk-matmul-parc-mtpull',
-  ##'cilk-cholesky-parc-mtpull', #-- min-pc: out-of-mem assertions from the app kernel
+  'cilk-cilksort-parc-mtpull',
+  'cilk-heat-parc-mtpull',
+  'cilk-knapsack-parc-mtpull',
+  'cilk-matmul-parc-mtpull',
+
+  #'cilk-cholesky-parc-mtpull', #-- min-pc: out-of-mem assertions from the app kernel
 ]
 
 app_wsrt_subset = [
@@ -92,15 +94,15 @@ app_list_spmd = [
   #'ubmark-vvadd',
   #'ubmark-bin-search',
 
-  ## custom bmarks
-  #'bilateral',
-  #'dct8x8m',
-  #'rgb2cmyk',
-  #'mriq',
-  #'strsearch',
-  #'uts',
-  ##'dither',
-  ##'viterbi',
+  # custom bmarks
+  'bilateral',
+  'dct8x8m',
+  'rgb2cmyk',
+  'mriq',
+  'strsearch',
+  'uts',
+  #'dither',
+  #'viterbi',
 
   # pbbs apps
   'pbbs-bfs-deterministicBFS-parc',
@@ -108,23 +110,24 @@ app_list_spmd = [
   'pbbs-dict-deterministicHash-parc',
   'pbbs-hull-quickHull-parc',
   'pbbs-mis-ndMIS-parc',
-  'pbbs-nbody-parallelBarnesHut-parc',
   'pbbs-rdups-deterministicHash-parc',
   'pbbs-sa-parallelRange-parc',
-  ##'pbbs-st-ndST-parc',
-  ##'pbbs-knn-octTree2Neighbors-parc', -- doesn't work for wsrt
-  ##'pbbs-isort-blockRadixSort-parc', -- figure out the issue here!
+
+  #'pbbs-st-ndST-parc', -- debug simt configs
+  #'pbbs-knn-octTree2Neighbors-parc', -- doesn't work for wsrt
+  #'pbbs-isort-blockRadixSort-parc', -- figure out the issue here!
+  #'pbbs-nbody-parallelBarnesHut-parc', -- needs debug
 ]
 
 app_serial_list = [
 
-  ## custom bmarks
-  #'bilateral',
-  #'dct8x8m',
-  #'rgb2cmyk',
-  #'mriq',
-  #'strsearch',
-  #'uts',
+  # custom bmarks
+  'bilateral',
+  'dct8x8m',
+  'rgb2cmyk',
+  'mriq',
+  'strsearch',
+  'uts',
 
   #'dither',
   #'viterbi',
@@ -134,20 +137,22 @@ app_serial_list = [
   'pbbs-csort-serialSort-parc',
   'pbbs-dict-serialHash-parc',
   'pbbs-hull-serialHull-parc',
-  'pbbs-isort-serialRadixSort-parc',
-  'pbbs-knn-serialNeighbors-parc',
   'pbbs-mis-serialMIS-parc',
-  'pbbs-nbody-serialBarnesHut-parc',
   'pbbs-rdups-serialHash-parc',
   'pbbs-sa-serialKS-parc',
-  'pbbs-st-serialST-parc',
 
-  ## cilk apps
-  ##'cilk-cholesky-parc',
-  #'cilk-cilksort-parc',
-  #'cilk-heat-parc',
-  #'cilk-knapsack-parc',
-  #'cilk-matmul-parc',
+  #'pbbs-nbody-serialBarnesHut-parc',
+  #'pbbs-st-serialST-parc',
+  #'pbbs-isort-serialRadixSort-parc',
+  #'pbbs-knn-serialNeighbors-parc',
+
+  # cilk apps
+
+  'cilk-cilksort-parc',
+  'cilk-heat-parc',
+  'cilk-knapsack-parc',
+  'cilk-matmul-parc',
+  #'cilk-cholesky-parc',
 ]
 
 app_serial_subset = [

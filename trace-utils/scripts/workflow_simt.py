@@ -46,7 +46,7 @@ def task_simt_wsrt():
                 adaptive_hint,
               )
               evaldict['basename']        = "sim-" + base_str
-              evaldict['resultsdir']      = "four-core-pbbs/results-" + base_str
+              evaldict['resultsdir']      = "final/results-" + base_str
               evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
               # bmark params
@@ -113,7 +113,7 @@ def task_simt_spmd():
                 adaptive_hint,
               )
               evaldict['basename']        = "sim-" + base_str
-              evaldict['resultsdir']      = "four-core-pbbs/results-" + base_str
+              evaldict['resultsdir']      = "final/results-" + base_str
               evaldict['doc']             = os.path.basename(__file__).rstrip('c')
 
               # bmark params
