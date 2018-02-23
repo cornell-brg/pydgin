@@ -104,5 +104,5 @@ if __name__ == "__main__":
   cmd = 'cp *.pdf results/.'
   execute( cmd )
 
-  cmd = 'cp plot-all-groups.py results/.'
+  cmd = 'cp pdf-merge-bars.py results/.'
   execute( cmd )
