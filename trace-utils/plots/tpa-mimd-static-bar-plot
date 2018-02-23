@@ -87,7 +87,7 @@ g_stack_labels = ['dmem', 'backend', 'frontend', 'imem']
 
 # NOTE: set these based on the static configuration
 g_cfg_labels = [
-  "mimd          (a)",
+  "mimd (a)",
   "1-rr-0c-0l-*h (b)",
   "1-rr-1c-0l-0h (c)",
   "1-rr-1c-0l-1h (d)",
