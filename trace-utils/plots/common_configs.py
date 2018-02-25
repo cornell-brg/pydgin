@@ -45,16 +45,25 @@ def populate_mimd_configs( runtime, basic=True ):
 # NOTE: based on the inputs generate either mimd-static or ccores cfgs
 
 def populate_ccores_configs( runtime, insn_ports, ncores, resources, basic=True ):
+  skip_lockstep = False
+  if ncores == resources:
+    skip_lockstep = True
   config_list = []
   for smart_sharing in range( 2 ):
     for lockstep in range( 2 ):
+      if skip_lockstep and lockstep == 1:
+        continue
       for limit_lockstep in range( 2 ):
         if basic and limit_lockstep == 1:
+          continue
+        elif lockstep == 0 and limit_lockstep == 1:
           continue
         for analysis in [0,1]:
           for barrier_limit in [1,1000]:
             for adaptive_hint in range( 2 ):
               if basic and adaptive_hint == 1:
+                continue
+              elif barrier_limit == 1 and adaptive_hint == 1:
                 continue
               config_str = g_ccores_config_str % (
                 runtime,
@@ -86,6 +95,8 @@ def populate_simt_configs( runtime, frontend, resources, basic=True ):
         for adaptive_hint in range( 2 ):
           if basic and adaptive_hint == 1:
             continue
+          elif barrier_limit == 1 and adaptive_hint == 1:
+            continue
           config_str = g_simt_config_str % (
             runtime,
             frontend,
@@ -109,6 +120,8 @@ def populate_mt_configs( runtime, basic=True ):
     for barrier_limit in [1,1000]:
       for adaptive_hint in range( 2 ):
         if basic and adaptive_hint == 1:
+          continue
+        elif barrier_limit == 1 and adaptive_hint == 1:
           continue
         config_str = g_mt_config_str % (
           runtime,
@@ -173,14 +186,14 @@ def format_config_names( basic=True ):
   for runtime in ['spmd','wsrt']:
     for resources in [1,2]:
       # mimd-static
-      configs_list += populate_ccores_configs( runtime, resources, max_resources, max_resources )
+      configs_list += populate_ccores_configs( runtime, resources, max_resources, max_resources, basic )
       # simt-static
-      configs_list += populate_simt_configs( runtime, resources, max_resources )
+      configs_list += populate_simt_configs( runtime, resources, max_resources, basic )
       # ccores
-      configs_list += populate_ccores_configs( runtime, resources, max_resources, resources )
+      configs_list += populate_ccores_configs( runtime, resources, max_resources, resources, basic )
       # simt
-      configs_list += populate_simt_configs( runtime, resources, resources )
-    configs_list += populate_mt_configs( runtime )
+      configs_list += populate_simt_configs( runtime, resources, resources, basic )
+    configs_list += populate_mt_configs( runtime, basic )
   configs_dict = {}
   for cfg in configs_list:
     name = cfg.lower()
