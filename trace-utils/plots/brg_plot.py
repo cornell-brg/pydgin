@@ -315,7 +315,7 @@ def add_plot( opt ):
   opt.ax = ax
 
   if opt.pareto_points:
-    ax.plot(opt.pareto_data[0],opt.pareto_data[1],'--',alpha=0.5)
+    ax.plot(opt.pareto_data[0],opt.pareto_data[1],'--',color='k',alpha=0.5)
 
   plt.tight_layout()
 
