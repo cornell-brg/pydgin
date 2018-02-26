@@ -412,12 +412,16 @@ def plot( df, app_group, runtime ):
   opts.normalize_line      = None
   opts.data                = data
   opts.rotate_labels       = True
-  opts.rotate_labels_angle = 0
   subcat_labels = [chr(i) for i in range(ord('a'),ord('q')+1)]
   opts.labels              = [labels,subcat_labels,g_stack_labels]
   opts.legend_ncol         = len( g_stack_labels )
   opts.legend_enabled      = True
-  opts.label_dist          = -15
+  if app_group == 'pbbs' and runtime == 'wsrt':
+    opts.label_dist          = -20
+    opts.rotate_labels_angle = 45
+  else:
+    opts.rotate_labels_angle = 0
+    opts.label_dist          = -15
   opts.ylabel              = 'Normalized Work (%)'
   opts.colors              = ['#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a']
 
