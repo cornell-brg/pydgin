@@ -127,7 +127,7 @@ if __name__ == "__main__":
   runtime = 'spmd'
 
   # read the results
-  df = pd.read_csv( "sim-results.csv" )
+  df = pd.read_csv( g_sim_results_file )
 
   # only select non-zero values as zero is missing data at the moment
   df = df[df!=0]
