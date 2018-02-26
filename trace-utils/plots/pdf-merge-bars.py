@@ -42,7 +42,15 @@ def merge_pdfs( outfile ):
       file_name = '%s-%s-xc-cores-NI-%dF-%dL.pdf' % ( group, runtime, g_ncores, g_ncores )
       merge_files.append( file_name )
 
-  # 2. ccores
+  # 2. simt-static
+  for runtime in ['spmd','wsrt']:
+    for group in ['custom','pbbs','cilk']:
+      if runtime == 'spmd' and group == 'cilk':
+        continue
+      file_name = '%s-%s-xc-cores-NI-NF-%dL.pdf' % ( group, runtime, g_ncores )
+      merge_files.append( file_name )
+
+  # 3. ccores
   for runtime in ['spmd','wsrt']:
     for group in ['custom','pbbs','cilk']:
       if runtime == 'spmd' and group == 'cilk':
@@ -50,13 +58,6 @@ def merge_pdfs( outfile ):
       file_name = '%s-%s-xc-cores-NI-%dF-NL.pdf' % ( group, runtime, g_ncores )
       merge_files.append( file_name )
 
-  # 3. simt-static
-  for runtime in ['spmd','wsrt']:
-    for group in ['custom','pbbs','cilk']:
-      if runtime == 'spmd' and group == 'cilk':
-        continue
-      file_name = '%s-%s-xc-cores-NI-NF-%dL.pdf' % ( group, runtime, g_ncores )
-      merge_files.append( file_name )
 
   # 4. simt
   for runtime in ['spmd','wsrt']:
