@@ -191,10 +191,34 @@ def plot( raw_df, runtime ):
   opts.legend_ncol    = len(g_cfg_labels)/2
   opts.legend_enabled = True
   opts.plot_idx       = index+1
-  opts.colors         = brg_plot.colors['unique20']
   opts.title          = runtime
   opts.ylabel         = 'Normalized Work % (geo. mean)'
   opts.xlabel         = 'Normalized Delay (geo. mean)'
+  opts.colors = [
+    '#252525', # mimd
+    '#6baed6', # mimd-static-1 
+    '#08519c', # mimd-static-2
+    '#74c476', # simt-static-1
+    '#006d2c', # simt-static-2
+    '#fd8d3c', # ccores-1
+    '#a63603', # ccores-2
+    '#9e9ac8', # simt-1
+    '#54278f', # simt-2
+    '#969696', # mt 
+  ]
+  opts.symbols = [
+    'o', # mimd
+    'v', # mimd-static-1
+    'v', # mimd-static-2
+    '^', # simt-static-1
+    '^', # simt-static-2
+    '>', # ccores-1
+    '>', # ccores-1
+    '<', # simt-1
+    '<', # simt-2
+    'o', # mt
+  ]
+  opts.hatch
 
   if index == opts.num_rows*opts.num_cols-1:
     opts.file_name = 'scatter-all.pdf'

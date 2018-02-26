@@ -93,7 +93,7 @@ def per_app( df, group_dict, configs_dict ):
 
     print "#"  + '='*73
     print "# " + runtime + " optimal config counts"
-    print "#"  + '='*73
+    print "#"  + '-'*73, "\n"
     counts = Counter( optimal_configs )
     for k,v in counts.iteritems():
       print "{:32s}".format( configs_dict[k] ), v
