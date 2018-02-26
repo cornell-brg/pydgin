@@ -168,14 +168,14 @@ def populate_configs( basic=True ):
 
 g_cfg_labels_dict = OrderedDict([
   ('mimd',         'mimd'        ),
-  ('mimd-static-1','cl-1I-4f-4l' ),
-  ('mimd-static-2','cl-2I-4f-4l' ),
-  ('simt-static-1','cl-1I-1f-4l' ),
-  ('simt-static-2','cl-2I-2f-4l' ),
-  ('ccores-1',     'cl-4I-4f-1l' ),
-  ('ccores-2',     'cl-4I-4f-2l' ),
-  ('simt-1',       'cl-1I-1f-1l' ),
-  ('simt-2',       'cl-2I-2f-2l' ),
+  ('mimd-static-1','cl-1i-4f-4l' ),
+  ('mimd-static-2','cl-2i-4f-4l' ),
+  ('simt-static-1','cl-1i-1f-4l' ),
+  ('simt-static-2','cl-2i-2f-4l' ),
+  ('ccores-1',     'cl-4i-4f-1l' ),
+  ('ccores-2',     'cl-4i-4f-2l' ),
+  ('simt-1',       'cl-1i-1f-1l' ),
+  ('simt-2',       'cl-2i-2f-2l' ),
   ('mt',           'mt'          ),
 ])
 g_cfg_labels = g_cfg_labels_dict.values()
