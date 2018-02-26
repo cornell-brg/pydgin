@@ -11,6 +11,8 @@ pd.set_option('display.width', 1000)
 
 from scipy.stats.mstats import gmean
 
+from collections import Counter
+
 from common import *
 from common_configs import *
 
@@ -63,6 +65,7 @@ def normalize_results( df ):
 def per_app( df, group_dict, configs_dict ):
   for runtime in ['spmd','wsrt']:
     rt_df = df.loc[df.config.str.contains(runtime)]
+    optimal_configs = []
     for app in app_list:
       if app not in rt_df.app.unique():
         continue
@@ -86,6 +89,15 @@ def per_app( df, group_dict, configs_dict ):
       for cfg in pareto_configs:
         print "{:32s}".format( cfg )
       print
+      optimal_configs += stats.loc[is_pareto,'config'].tolist()
+
+    print "#"  + '='*73
+    print "# " + runtime + " optimal config counts"
+    print "#"  + '='*73
+    counts = Counter( optimal_configs )
+    for k,v in counts.iteritems():
+      print "{:32s}".format( configs_dict[k] ), v
+    print
 
 #-------------------------------------------------------------------------
 # geo_mean
