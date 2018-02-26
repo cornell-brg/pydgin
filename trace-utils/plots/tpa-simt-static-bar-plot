@@ -281,6 +281,6 @@ if __name__ == "__main__":
   g_resources  = opts.g_resources
 
   # read the data frame
-  df = pd.read_csv( "sim-results.csv" )
+  df = pd.read_csv( g_sim_results_file )
 
   plot( df, opts.app_group, opts.runtime )

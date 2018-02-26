@@ -190,3 +190,5 @@ insn_file_list = [
   'insn-mix-spmd.csv',
   'insn-mix-wsrt.csv',
 ]
+
+g_sim_results_file = 'sim-results-formatted.csv'

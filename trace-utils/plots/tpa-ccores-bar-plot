@@ -456,6 +456,6 @@ if __name__ == "__main__":
     exit( 1 )
 
   # read the data frame
-  df = pd.read_csv( "sim-results.csv" )
+  df = pd.read_csv( g_sim_results_file )
 
   plot( df, opts.app_group, opts.runtime )
