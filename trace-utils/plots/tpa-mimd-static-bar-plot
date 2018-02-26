@@ -154,11 +154,11 @@ def select_plot_configs( runtime ):
   return config_list
 
 #-------------------------------------------------------------------------
-# draw_errorbars
+# draw_extras
 #-------------------------------------------------------------------------
 # NOTE: Will have to tweak this for each static configuration
 
-def draw_errorbars( opts, apps, df, runtime, perf=True ):
+def draw_extras( opts, apps, df, runtime, perf=True ):
  
   # plot related calculations 
   if   perf: num_subcat = len(opts.data[0])
@@ -207,36 +207,26 @@ def draw_errorbars( opts, apps, df, runtime, perf=True ):
           )
         )
       stats = df.loc[df.config.isin(config_list), :]
-      error = []
-      yerror_pos = []
+      data = []
       for app in apps:
         if app not in stats.app.unique():
           continue
-        try:
+        mimd_steps = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'steps'].iloc[0])
+        mimd_work = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
+        temp = []
+        for cfg in config_list:
           if perf:
-            mimd_steps = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'steps'].iloc[0])
-            normalized_steps = stats.loc[(stats.app==app) & (stats.config.isin(config_list)),'steps']/mimd_steps
-            error.append(normalized_steps.describe().get('std'))
+            temp.append( stats.loc[(stats.app==app) & (stats.config == cfg), 'steps'].iloc[0]/mimd_steps )
           else:
-            mimd_work = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
-            normalized_work = stats.loc[(stats.app==app) & (stats.config.isin(config_list)),'unique_work']/mimd_work
-            normalized_work = normalized_work * 100
-            error.append(normalized_work.describe().get('std'))
-            temp = 100*float(df.loc[(df.app == app) & (df.config == base_cfg), 'unique_work'].iloc[0])/mimd_work
-            yerror_pos.append( temp )
-        except:
-          print "Exception:", app, base_cfg
-          continue
+            temp.append( stats.loc[(stats.app==app) & (stats.config == cfg), 'unique_work'].iloc[0]*100/mimd_work )
+        data.append( temp )
 
-      # plot the errorbars now
-      indexes = [idx+offset for idx in xrange(len(error))]
-      error_y = 0
+      # plot the extras now
+      indexes = [idx+offset for idx in xrange(len(data))]
       ax = opts.fig.gca()
       for i,idx in enumerate(indexes):
-        if   perf : error_y = opts.data[i][index]
-        else      : error_y = yerror_pos[i]
-        ax.errorbar( idx + index*width, error_y, yerr=error[i], 
-          fmt='.', markersize=0, color='k', capsize=5 ) 
+        for y in data[i]:
+          ax.scatter( idx + index*width, y, s=50, color='k', marker='*', zorder=100 ) 
       index = index + 3
   
   brg_plot.plt.draw()
@@ -310,7 +300,7 @@ def plot( df, app_group, runtime ):
   brg_plot.add_plot( opts )
   index = index + 1
 
-  draw_errorbars( opts, apps, df, runtime )
+  draw_extras( opts, apps, df, runtime )
   
   #---------------------------------------------------------------------
   # 2. plot work 
@@ -366,7 +356,7 @@ def plot( df, app_group, runtime ):
 
   brg_plot.add_plot( opts )
 
-  draw_errorbars( opts, apps, df, runtime, perf=False )
+  draw_extras( opts, apps, df, runtime, perf=False )
 
   if index == opts.num_rows * opts.num_cols:
     opts.fig.text( 0.5, 1.1, 
