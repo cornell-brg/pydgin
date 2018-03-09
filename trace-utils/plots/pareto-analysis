@@ -225,6 +225,9 @@ if __name__ == "__main__":
   # read the results
   df = pd.read_csv( g_sim_results_file )
 
+  # skip non-zero values which indicate missing data
+  df = df[df!=0]
+
   # normalize the results for each runtime
   df = normalize_results( df )
 

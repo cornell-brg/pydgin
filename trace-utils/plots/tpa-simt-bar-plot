@@ -265,12 +265,12 @@ def plot( df, app_group, runtime ):
 
   if index == opts.num_rows * opts.num_cols:
     opts.fig.text( 0.5, 1.1, 
-      '%s-%s\nxc-cores-NI-NF-NL' % ( app_group, runtime ), 
+      '%s-%s\nCL-NI-NF-NL' % ( app_group, runtime ), 
       ha='center', fontsize=16
     )
     brg_plot.plt.subplots_adjust(hspace=5)
     brg_plot.plt.tight_layout()
-    file_name = '%s-%s-xc-cores-NI-NF-NL.pdf' % ( app_group, runtime )
+    file_name = '%s-%s-CL-NI-NF-NL.pdf' % ( app_group, runtime )
     brg_plot.plt.savefig( file_name, bbox_inches="tight" )
     print "saving %s" % file_name
   index = index + 1

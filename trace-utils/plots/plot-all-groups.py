@@ -25,7 +25,7 @@ def execute(cmd):
 
 if __name__ == "__main__":
 
-  norm_insts = False
+  component = "mem"
 
   # clean up the existing results
   if os.path.exists( "results" ):
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     for app_group in ['custom','pbbs','cilk']:
       if app_group == 'cilk' and rt == 'spmd':
         continue
-      plot  = './tpa-mimd-static-bar-plot --runtime %s ' % rt
+      plot  = './tpa-mimd-static-bar-plot --runtime %s --component %s ' % ( rt, component )
       plot += '--app-group %s ' % app_group
       plot += '--g_ncores 4 '
       plot += '--g_resources 4 '
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     for app_group in ['custom','pbbs','cilk']:
       if app_group == 'cilk' and rt == 'spmd':
         continue
-      plot  = './tpa-ccores-bar-plot --runtime %s ' % rt
+      plot  = './tpa-ccores-bar-plot --runtime %s --component %s ' % ( rt, component )
       plot += '--app-group %s ' % app_group
       plot += '--g_ncores 4 '
       cmds.append( plot )
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     for app_group in ['custom','pbbs','cilk']:
       if app_group == 'cilk' and rt == 'spmd':
         continue
-      plot  = './tpa-simt-static-bar-plot --runtime %s ' % rt
+      plot  = './tpa-simt-static-bar-plot --runtime %s --component %s ' % ( rt, component )
       plot += '--app-group %s ' % app_group
       plot += '--g_resources 4 '
       cmds.append( plot )
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     for app_group in ['custom','pbbs','cilk']:
       if app_group == 'cilk' and rt == 'spmd':
         continue
-      plot  = './tpa-simt-bar-plot --runtime %s ' % rt
+      plot  = './tpa-simt-bar-plot --runtime %s --component %s ' % ( rt, component )
       plot += '--app-group %s ' % app_group
       cmds.append( plot )
     for cmd in cmds:
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     for app_group in ['custom','pbbs','cilk']:
       if app_group == 'cilk' and rt == 'spmd':
         continue
-      plot  = './tpa-mt-bar-plot --runtime %s ' % rt
+      plot  = './tpa-mt-bar-plot --runtime %s --component %s ' % ( rt, component )
       plot += '--app-group %s ' % app_group
       cmds.append( plot )
     for cmd in cmds:
@@ -105,4 +105,10 @@ if __name__ == "__main__":
   execute( cmd )
 
   cmd = 'cp pdf-merge-bars.py results/.'
+  execute( cmd )
+
+  cmd = 'cp sim-results-final.csv results/.'
+  execute( cmd )
+
+  cmd = 'cp sim-results-formatted.csv results/.'
   execute( cmd )

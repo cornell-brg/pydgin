@@ -39,7 +39,7 @@ def merge_pdfs( outfile ):
     for group in ['custom','pbbs','cilk']:
       if runtime == 'spmd' and group == 'cilk':
         continue
-      file_name = '%s-%s-xc-cores-NI-%dF-%dL.pdf' % ( group, runtime, g_ncores, g_ncores )
+      file_name = '%s-%s-CL-NI-%dF-%dL.pdf' % ( group, runtime, g_ncores, g_ncores )
       merge_files.append( file_name )
 
   # 2. simt-static
@@ -47,7 +47,7 @@ def merge_pdfs( outfile ):
     for group in ['custom','pbbs','cilk']:
       if runtime == 'spmd' and group == 'cilk':
         continue
-      file_name = '%s-%s-xc-cores-NI-NF-%dL.pdf' % ( group, runtime, g_ncores )
+      file_name = '%s-%s-CL-NI-NF-%dL.pdf' % ( group, runtime, g_ncores )
       merge_files.append( file_name )
 
   # 3. ccores
@@ -55,7 +55,7 @@ def merge_pdfs( outfile ):
     for group in ['custom','pbbs','cilk']:
       if runtime == 'spmd' and group == 'cilk':
         continue
-      file_name = '%s-%s-xc-cores-NI-%dF-NL.pdf' % ( group, runtime, g_ncores )
+      file_name = '%s-%s-CL-NI-%dF-NL.pdf' % ( group, runtime, g_ncores )
       merge_files.append( file_name )
 
 
@@ -64,7 +64,7 @@ def merge_pdfs( outfile ):
     for group in ['custom','pbbs','cilk']:
       if runtime == 'spmd' and group == 'cilk':
         continue
-      file_name = '%s-%s-xc-cores-NI-NF-NL.pdf' % ( group, runtime )
+      file_name = '%s-%s-CL-NI-NF-NL.pdf' % ( group, runtime )
       merge_files.append( file_name )
 
   # 5. mt
@@ -72,7 +72,7 @@ def merge_pdfs( outfile ):
     for group in ['custom','pbbs','cilk']:
       if runtime == 'spmd' and group == 'cilk':
         continue
-      file_name = '%s-%s-mt.pdf' % ( group, runtime )
+      file_name = '%s-%s-CL-1I-1F-1L.pdf' % ( group, runtime )
       merge_files.append( file_name )
 
   merge_files = ' '.join( merge_files )
