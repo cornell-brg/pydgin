@@ -180,6 +180,8 @@ def plot( raw_df, runtime ):
   for group, config_list in group_dict.iteritems():
     temp = []
     for cfg in config_list:
+      if runtime not in cfg:
+        continue
       try: 
         delay = gmean(df.loc[df.config == cfg, 'normalized_delay'])
         yaxis = gmean(df.loc[df.config == cfg, 'normalized_yaxis'])
@@ -276,9 +278,6 @@ if __name__ == "__main__":
 
   # read the results
   df = pd.read_csv( g_sim_results_file )
-
-  # only select non-zero values as zero is missing data at the moment
-  df = df[df!=0]
 
   # create plots
   plot( df, opts.runtime )

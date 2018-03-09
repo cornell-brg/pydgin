@@ -277,7 +277,7 @@ def format_work( df ):
   # simt-static
   work_labels = ['unique_daccess', 'total_execute', 'unique_frontend', 'unique_iaccess']
   for frontend in [1,2]:
-    group_key   = "simt-static-%d" % resources
+    group_key   = "simt-static-%d" % frontend
     config_list = group_dict[group_key]
     for app in app_list:
       for cfg in config_list:
@@ -309,7 +309,7 @@ def format_work( df ):
           continue
 
   # mt
-  work_labels = ['unique_daccess', 'total_execute', 'unique_frontend', 'unique_iaccess']
+  work_labels = ['unique_daccess', 'unique_execute', 'unique_frontend', 'unique_iaccess']
   group_key   = "mt"
   config_list = group_dict[group_key]
   for app in app_list:
@@ -319,8 +319,6 @@ def format_work( df ):
         for label in work_labels:
           work += df.loc[(df.app==app) & (df.config == cfg), label].iloc[0]
         df.loc[(df.app==app) & (df.config == cfg), 'unique_work'] = work
-        df.loc[(df.app==app) & (df.config == cfg), 'unique_execute'] = \
-          df.loc[(df.app==app) & (df.config == cfg), 'total_execute']
       except:
         continue
 

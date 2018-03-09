@@ -175,10 +175,16 @@ def summarize():
             )
         except:
           print "{} {}: Results file not present".format( config, subfolder )
-          if config == "serial":
-            out.write( base_str.format(app,config,0,0,0,0,0,0,0,0,0,0,0,0,0,0) )
-          else:
-            out.write( base_str.format(app_short_name_dict[app],config,0,0,0,0,0,0,0,0,0,0,0,0,0,0) )
+          # NOTE:
+          # Do not add a row if the data is missing, plot scripts try and
+          # except for these scenarios but adding this messes up the gmean
+          # stats calculation as I am not sure how to deal with missing
+          # data using scipy gmean function
+          #
+          #if config == "serial":
+          #  out.write( base_str.format(app,config,0,0,0,0,0,0,0,0,0,0,0,0,0,0) )
+          #else:
+          #  out.write( base_str.format(app_short_name_dict[app],config,0,0,0,0,0,0,0,0,0,0,0,0,0,0) )
           continue
 
 #-------------------------------------------------------------------------
