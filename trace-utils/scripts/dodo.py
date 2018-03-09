@@ -110,3 +110,10 @@ def task_ubmark_pydgin_serial_sim():
   evaldict['cluster']     = True
 
   yield gen_trace_per_app( evaldict )
+
+#----------------------------------------------------------------------------
+# L0 experiments
+#----------------------------------------------------------------------------
+
+from workflow_conjoined_cores_l0 import *
+from workflow_simt_l0 import *
