@@ -10,6 +10,7 @@
 #   --g_resources      Number of backend resources
 #   --runtime          Select runtime
 #                       [spmd,wsrt]
+#  --component        Select component to be used for stack bar plots
 #
 # Author : Shreesha Srinath
 # Date   : February 25th, 2018
@@ -62,12 +63,21 @@ def parse_cmdline():
   p.add_argument( "--g_insn_ports", type=int, action="store", default=4)
   p.add_argument( "--g_resources",  type=int, action="store", default=4)
 
+  p.add_argument( "--component", action="store", default='mem', 
+                  choices=["iaccess","daccess","execute","frontend","mem","work"])
   p.add_argument( "--runtime", action="store", default="spmd",
                   choices=["spmd", "wsrt"])
 
   opts = p.parse_args()
   if opts.help: p.error()
   return opts
+
+#-------------------------------------------------------------------------
+# global variables
+#-------------------------------------------------------------------------
+g_total_label  = None
+g_unique_label = None
+g_ylabel       = None
 
 #-------------------------------------------------------------------------
 # normalize results
@@ -77,15 +87,15 @@ def parse_cmdline():
 def normalize_results( df, runtime ):
   base_cfg = g_mimd_base_str % runtime
   df['normalized_delay'] = df['steps']
-  df['normalized_work']  = df['unique_work']
+  df['normalized_yaxis'] = df[g_unique_label]
   for app in app_list:
     try:
       base_steps = float(df.loc[(df.app == app) & (df.config == base_cfg), 'steps'].iloc[0])
       df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_delay'] = \
         df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_delay'] / base_steps
-      base_work = float(df.loc[(df.app == app) & (df.config == base_cfg), 'total_work'].iloc[0])
-      df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_work'] = \
-        df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_work'] * 100/ base_work
+      base_yaxis = float(df.loc[(df.app == app) & (df.config == base_cfg), g_total_label].iloc[0])
+      df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_yaxis'] = \
+        df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_yaxis'] * 100/ base_yaxis
     except:
       continue
   return df    
@@ -115,16 +125,16 @@ def is_pareto_front(row, stats, xlabel, ylabel):
 #-------------------------------------------------------------------------
 
 def get_pareto_data( frame_data ):  
-  columns=['config','delay','work']
+  columns=['config','delay','yaxis']
   stats = pd.DataFrame(frame_data,columns=columns)  
-  is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'delay', 'work'), axis=1)
+  is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'delay', 'yaxis'), axis=1)
   configs = stats.loc[is_pareto,'config'].tolist()
   configs_dict = format_config_names() 
   pareto_configs = [configs_dict[x] for x in configs]
   for cfg in pareto_configs:
     print cfg
   pareto_data = stats.loc[is_pareto].sort_values(by='delay')
-  return [pareto_data['delay'].values, pareto_data['work'].values]
+  return [pareto_data['delay'].values, pareto_data['yaxis'].values]
 
 #-------------------------------------------------------------------------
 # plot
@@ -172,9 +182,9 @@ def plot( raw_df, runtime ):
     for cfg in config_list:
       try: 
         delay = gmean(df.loc[df.config == cfg, 'normalized_delay'])
-        work  = gmean(df.loc[df.config == cfg, 'normalized_work'])
-        temp.append( [delay, work] )
-        frame_data.append([cfg,delay,work])
+        yaxis = gmean(df.loc[df.config == cfg, 'normalized_yaxis'])
+        temp.append( [delay, yaxis] )
+        frame_data.append([cfg,delay,yaxis])
       except:
         print "Exception: {%s,%s,%s}" % ( group, app, cfg )
         continue
@@ -192,7 +202,7 @@ def plot( raw_df, runtime ):
   opts.legend_enabled = True
   opts.plot_idx       = index+1
   opts.title          = runtime
-  opts.ylabel         = 'Normalized Work % (geo. mean)'
+  opts.ylabel         = 'Normalized %s %% (geo. mean)' % ( g_ylabel ) 
   opts.xlabel         = 'Normalized Delay (geo. mean)'
   opts.colors = [
     '#252525', # mimd
@@ -221,7 +231,7 @@ def plot( raw_df, runtime ):
   opts.hatch
 
   if index == opts.num_rows*opts.num_cols-1:
-    opts.file_name = 'scatter-all.pdf'
+    opts.file_name = 'geo-mean.pdf'
 
   index = index + 1
 
@@ -238,6 +248,31 @@ if __name__ == "__main__":
   g_insn_ports = opts.g_insn_ports
   g_ncores     = opts.g_ncores
   g_resources  = opts.g_resources
+
+  if   opts.component == "work":
+    g_total_label  = "total_work"
+    g_unique_label = "unique_work"
+    g_ylabel       = "Work"
+  elif opts.component == "mem":
+    g_total_label  = "total_mem"
+    g_unique_label = "unique_mem"
+    g_ylabel       = "Mem. Access"
+  elif opts.component == "iaccess":
+    g_total_label  = "total_iaccess"
+    g_unique_label = "unique_iaccess"
+    g_ylabel       = "Insn. Access"
+  elif opts.component == "daccess":
+    g_total_label  = "total_daccess"
+    g_unique_label = "unique_daccess"
+    g_ylabel       = "Data Access"
+  elif opts.component == "frontend":
+    g_total_label  = "total_frontend"
+    g_unique_label = "unique_frontend"
+    g_ylabel       = "Frontend"
+  elif opts.component == "execute":
+    g_total_label  = "total_execute"
+    g_unique_label = "unique_execute"
+    g_ylabel       = "Backend"
 
   # read the results
   df = pd.read_csv( g_sim_results_file )

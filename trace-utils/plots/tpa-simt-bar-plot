@@ -62,7 +62,7 @@ def parse_cmdline():
   p.add_argument( "--g_insn_ports", type=int, action="store", default=1)
   p.add_argument( "--g_resources",  type=int, action="store", default=4)
 
-  p.add_argument( "--component", action="store", default='iaccess', 
+  p.add_argument( "--component", action="store", default='mem', 
                   choices=["iaccess","daccess","execute","frontend","mem","work"])
   p.add_argument( "--runtime", action="store", default="spmd",
                   choices=["spmd", "wsrt"])
