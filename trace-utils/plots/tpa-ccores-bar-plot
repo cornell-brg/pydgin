@@ -12,6 +12,7 @@
 #                       [custom,pbbs,cilk]
 #  --runtime          Select runtime
 #                       [spmd,wsrt]
+#  --component        Select component to be used for stack bar plots
 #
 # Author : Shreesha Srinath
 # Date   : February 21st, 2018
@@ -61,6 +62,8 @@ def parse_cmdline():
   p.add_argument( "--g_insn_ports", type=int, action="store", default=1)
   p.add_argument( "--g_resources",  type=int, action="store", default=1)
 
+  p.add_argument( "--component", action="store", default='iaccess', 
+                  choices=["iaccess","daccess","execute","frontend","mem","work"])
   p.add_argument( "--runtime", action="store", default="spmd",
                   choices=["spmd", "wsrt"])
   p.add_argument( "--app-group", action="store", default="custom",
@@ -81,9 +84,12 @@ g_resources    = 1
 g_config_str   = "1L0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
 
 # used for the stack bar plots
-g_stacks       = ['unique_daccess', 'unique_execute', 'unique_frontend', 'unique_iaccess']
-mimd_stacks    = ['total_daccess', 'total_execute', 'total_frontend', 'total_iaccess']
-g_stack_labels = ['dmem', 'backend', 'frontend', 'imem']
+g_stacks       = []
+g_mimd_stacks  = []
+g_stack_labels = []
+g_total_label  = None
+g_unique_label = None
+g_ylabel       = None
 
 # NOTE: set these based on the static configuration
 g_cfg_labels = [
@@ -221,13 +227,13 @@ def draw_extras( opts, apps, df, runtime, perf=True ):
         if app not in stats.app.unique():
           continue
         mimd_steps = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'steps'].iloc[0])
-        mimd_work = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
+        mimd_work = float(df.loc[(df.app == app) & (df.config == mimd_cfg), g_total_label].iloc[0])
         temp = []
         for cfg in config_list:
           if perf:
             temp.append( stats.loc[(stats.app==app) & (stats.config == cfg), 'steps'].iloc[0]/mimd_steps )
           else:
-            temp.append( stats.loc[(stats.app==app) & (stats.config == cfg), 'unique_work'].iloc[0]*100/mimd_work )
+            temp.append( stats.loc[(stats.app==app) & (stats.config == cfg), g_unique_label].iloc[0]*100/mimd_work )
         data.append( temp )
 
       # plot the extras now
@@ -279,13 +285,13 @@ def draw_extras( opts, apps, df, runtime, perf=True ):
         if app not in stats.app.unique():
           continue
         mimd_steps = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'steps'].iloc[0])
-        mimd_work = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
+        mimd_work = float(df.loc[(df.app == app) & (df.config == mimd_cfg), g_total_label].iloc[0])
         temp = []
         for cfg in config_list:
           if perf:
             temp.append( stats.loc[(stats.app==app) & (stats.config == cfg), 'steps'].iloc[0]/mimd_steps )
           else:
-            temp.append( stats.loc[(stats.app==app) & (stats.config == cfg), 'unique_work'].iloc[0]*100/mimd_work )
+            temp.append( stats.loc[(stats.app==app) & (stats.config == cfg), g_unique_label].iloc[0]*100/mimd_work )
         data.append( temp )
 
       # plot the extras now
@@ -381,9 +387,9 @@ def plot( df, app_group, runtime ):
     if app not in df.app.unique():
       continue
     try:
-      mimd_total = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
+      mimd_total = float(df.loc[(df.app == app) & (df.config == mimd_cfg), g_total_label].iloc[0])
       vals = [] 
-      for stack in mimd_stacks:
+      for stack in g_mimd_stacks:
         vals.append( df.loc[(df.app == app) & (df.config == mimd_cfg), stack].iloc[0] * 100 / mimd_total )
       temp.append(vals)
       labels.append( app )
@@ -398,7 +404,7 @@ def plot( df, app_group, runtime ):
       if app not in df.app.unique():
         continue
       try:
-        mimd_total = float(df.loc[(df.app == app) & (df.config == mimd_cfg), 'total_work'].iloc[0])
+        mimd_total = float(df.loc[(df.app == app) & (df.config == mimd_cfg), g_total_label].iloc[0])
         vals = [] 
         for stack in g_stacks:
           vals.append( df.loc[(df.app == app) & (df.config == cfg), stack].iloc[0] * 100 / mimd_total )
@@ -422,8 +428,8 @@ def plot( df, app_group, runtime ):
   else:
     opts.rotate_labels_angle = 0
     opts.label_dist          = -15
-  opts.ylabel              = 'Normalized Work (%)'
-  opts.colors              = ['#616161', '#ffffcc', '#8aae92', '#3f6699', '#113c4a']
+  opts.ylabel              = 'Normalized %s (%%)' % ( g_ylabel ) 
+  opts.colors              = g_colors
 
   brg_plot.add_plot( opts )
 
@@ -431,12 +437,12 @@ def plot( df, app_group, runtime ):
 
   if index == opts.num_rows * opts.num_cols:
     opts.fig.text( 0.5, 1.1, 
-      '%s-%s\nxc-cores-NI-%dF-NL' % ( app_group, runtime, g_ncores ), 
+      '%s-%s\nCL-NI-%dF-NL' % ( app_group, runtime, g_ncores ), 
       ha='center', fontsize=16
     )
     brg_plot.plt.subplots_adjust(hspace=5)
     brg_plot.plt.tight_layout()
-    file_name = '%s-%s-xc-cores-NI-%dF-NL.pdf' % ( app_group, runtime, g_ncores )
+    file_name = '%s-%s-CL-NI-%dF-NL.pdf' % ( app_group, runtime, g_ncores )
     brg_plot.plt.savefig( file_name, bbox_inches="tight" )
     print "saving %s" % file_name
   index = index + 1
@@ -454,6 +460,55 @@ if __name__ == "__main__":
   if g_insn_ports != g_resources:
     print 'Number of cores must match backend resources for ccores configs!'
     exit( 1 )
+
+  if   opts.component == "work":
+    g_stacks       = ['unique_daccess', 'unique_execute', 'unique_frontend', 'unique_iaccess']
+    g_mimd_stacks  = ['total_daccess', 'total_execute', 'total_frontend', 'total_iaccess']
+    g_stack_labels = ['dmem', 'backend', 'frontend', 'imem']
+    g_colors       = ['#616161', '#ffffcc', '#8aae92', '#3f6699']
+    g_total_label  = 'total_work'
+    g_unique_label = 'unique_work'
+    g_ylabel       = 'Work'
+  elif opts.component == "mem":
+    g_stacks       = ['unique_daccess', 'unique_iaccess']
+    g_mimd_stacks  = ['total_daccess',  'total_iaccess']
+    g_stack_labels = ['dmem', 'imem']
+    g_colors       = ['#616161', '#3f6699']
+    g_total_label  = 'total_mem'
+    g_unique_label = 'unique_mem'
+    g_ylabel       = 'Mem Access'
+  elif opts.component == "iaccess":
+    g_stacks       = ['unique_iaccess']
+    g_mimd_stacks  = ['total_iaccess']
+    g_stack_labels = ['imem']
+    g_colors       = ['#3f6699']
+    g_total_label  = 'total_iaccess'
+    g_unique_label = 'unique_iaccess'
+    g_ylabel       = 'Insn. Access'
+  elif opts.component == "daccess":
+    g_stacks       = ['unique_daccess']
+    g_mimd_stacks  = ['total_daccess']
+    g_stack_labels = ['dmem']
+    g_colors       = ['#616161']
+    g_total_label  = 'total_daccess'
+    g_unique_label = 'unique_daccess'
+    g_ylabel       = 'Data. Access'
+  elif opts.component == "execute":
+    g_stacks       = ['unique_execute']
+    g_mimd_stacks  = ['total_execute']
+    g_stack_labels = ['backend']
+    g_colors       = ['#ffffcc']
+    g_total_label  = 'total_execute'
+    g_unique_label = 'unique_execute'
+    g_ylabel       = 'Backend'
+  elif opts.component == "frontend":
+    g_stacks       = ['unique_frontend']
+    g_mimd_stacks  = ['total_frontend']
+    g_stack_labels = ['frontend']
+    g_colors       = ['#8aae92']
+    g_total_label  = 'total_frontend'
+    g_unique_label = 'unique_frontend'
+    g_ylabel       = 'Frontend'
 
   # read the data frame
   df = pd.read_csv( g_sim_results_file )

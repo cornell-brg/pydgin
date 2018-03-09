@@ -230,6 +230,8 @@ def format_config_names( basic=True ):
 # disables it.
 
 def format_work( df ):
+  df['total_mem']  = df['total_iaccess'] + df['total_daccess']
+  df['unique_mem'] = df['unique_iaccess'] + df['unique_daccess']
 
   # get all the groups partitioned by the uarchs
   group_dict = populate_configs( basic=False )

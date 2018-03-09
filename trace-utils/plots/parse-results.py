@@ -28,7 +28,7 @@ def execute(cmd):
 # global variables
 #-------------------------------------------------------------------------
 
-g_prefix_path = "../new-spin/"
+g_prefix_path = "../final/"
 
 g_configs_dict = {}
 
@@ -68,7 +68,7 @@ def populate_configs():
 
 def summarize():
 
-  res_file = 'sim-results.csv'
+  res_file = 'sim-results-final.csv'
 
   with open( res_file, 'w' ) as out:
 
