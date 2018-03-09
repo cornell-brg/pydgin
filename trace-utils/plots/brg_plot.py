@@ -276,8 +276,8 @@ def add_plot( opt ):
 
   # Set font
   plt.rcParams['font.size'] = opt.fontsize
-  plt.rcParams['font.family'] = 'sans-serif'
-  plt.rcParams['font.sans-serif'] = ['Arial']
+  plt.rcParams['font.family'] = 'serif'
+  plt.rcParams['font.serif']  = ['Times']
 
   if opt.fig == None:
     opt.fig = plt.figure( figsize=opt.figsize )
