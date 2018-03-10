@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-summarize-imem-only-plot [options]
+# tpa-summarize-imem-llfu-only-plot [options]
 #=========================================================================
 #
 #  -h --help          Display this message
@@ -68,7 +68,6 @@ g_cfg_str    = "-%dL0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
 def populate_configs( runtime ):
   ncores         = 4
   limit_lockstep = 0
-  lockstep       = 0
   adaptive_hint  = 0
   configs_list   = []
   cfg_prefix     = g_cfg_prefix % runtime
@@ -78,25 +77,26 @@ def populate_configs( runtime ):
         if coalescing == 0 and barrier_limit == 1000:
           continue
         for insn_ports in [1,2]:
-          for resources in [4]:
+          for resources in [1,2]:
             if (insn_ports != resources) and (resources < ncores):
               continue
-            for analysis in [0,1]:
-              configs_list.append(
-                cfg_prefix +
-                g_cfg_str % (
-                  l0_buffer_sz,
-                  insn_ports,
-                  ncores,
-                  resources,
-                  coalescing,
-                  analysis,
-                  lockstep,
-                  barrier_limit,
-                  limit_lockstep,
-                  adaptive_hint
+            for lockstep in [0,1]:
+              for analysis in [0,1]:
+                configs_list.append(
+                  cfg_prefix +
+                  g_cfg_str % (
+                    l0_buffer_sz,
+                    insn_ports,
+                    ncores,
+                    resources,
+                    coalescing,
+                    analysis,
+                    lockstep,
+                    barrier_limit,
+                    limit_lockstep,
+                    adaptive_hint
+                  )
                 )
-              )
   return configs_list
 
 #-------------------------------------------------------------------------
@@ -159,7 +159,7 @@ def filter_data( df, pattern, configs_list, kernels_list ):
 
   # populate data
   data  = []
-  for cfg_list in [no_color_list, color_list]:
+  for cfg_list in [no_color_list,color_list]:
     temp = []
     for cfg in cfg_list:
       for app in kernels_list:
@@ -194,7 +194,7 @@ def plot( df, base_df, runtime, configs_list ):
   {
     'show'            : False,
     'plot_type'       : 'scatter',
-    'figsize'         : (24.0, 8.0),
+    'figsize'         : (32.0, 8.0),
     'rotate_labels'   : False,
     'markersize'      : 60,
     'labels_fontsize' : 1,
@@ -204,7 +204,7 @@ def plot( df, base_df, runtime, configs_list ):
     setattr( opts, name, value )
 
   # plot array 
-  opts.num_cols       = 3
+  opts.num_cols       = 4
   opts.num_rows       = 1 
 
   #-----------------------------------------------------------------------
@@ -226,13 +226,26 @@ def plot( df, base_df, runtime, configs_list ):
   brg_plot.add_plot( opts )
 
   #-----------------------------------------------------------------------
+  # lockstep
+  #-----------------------------------------------------------------------
+
+  data = filter_data( df, "-1LO-", configs_list, kernels_list )
+
+  opts.data           = data
+  opts.index          = 2
+  opts.labels         = [[],['no lockstep','lockstep']]
+  opts.colors         = ['#616161', '#8aae92'] 
+  
+  brg_plot.add_plot( opts )
+
+  #-----------------------------------------------------------------------
   # min-pc vs. rr
   #-----------------------------------------------------------------------
 
   data = filter_data( df, "-1TS-", configs_list, kernels_list )
 
   opts.data           = data
-  opts.index          = 2
+  opts.index          = 3
   opts.labels         = [[],['rr','min-pc']]
   opts.colors         = ['#616161', '#8aae92'] 
   
@@ -245,7 +258,7 @@ def plot( df, base_df, runtime, configs_list ):
   data = filter_data( df, "-1-", configs_list, kernels_list )
 
   opts.data           = data
-  opts.index          = 3
+  opts.index          = 4
   opts.labels         = [[],['no hint','hint']]
   opts.colors         = ['#616161', '#8aae92'] 
   
@@ -253,7 +266,7 @@ def plot( df, base_df, runtime, configs_list ):
 
   opts.fig.text( 0.5, 1.07, "%s" % runtime.upper(), ha='center', fontsize=12)
   brg_plot.plt.tight_layout()
-  file_name = '%s-summarize-imem-only.pdf' % runtime
+  file_name = '%s-summarize-imem-llfu-only.pdf' % runtime
   brg_plot.plt.savefig( file_name, bbox_inches="tight" )
 
 #-------------------------------------------------------------------------
