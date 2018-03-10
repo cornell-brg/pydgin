@@ -121,9 +121,9 @@ class PlotOptions:
     self.label_dist = 0
 
     # set the font size for the rest of things
-    self.fontsize = 12
+    self.fontsize = 10
     # set the font size for the labels
-    self.labels_fontsize = 12
+    self.labels_fontsize = 10
     # Marker size
     if self.plot_type == 'scatter':
       self.markersize = 20

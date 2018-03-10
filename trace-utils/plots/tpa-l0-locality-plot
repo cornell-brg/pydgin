@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-redundancy-plot [options]
+# tpa-l0-locality-plot [options]
 #=========================================================================
 #
 #  -h --help          Display this message
 #
 #  --runtime          Select runtime
 #                       [spmd,wsrt]
-#  --component        Select what to plot
 #
 # Author : Shreesha Srinath
-# Date   : March 9th, 2018
+# Date   : March 10th, 2018
 #
 
 import argparse
@@ -48,8 +47,6 @@ def parse_cmdline():
 
   # Additional commane line arguments for the simulator
 
-  p.add_argument( "--component", action="store", default="redundancy",
-                  choices=["iaccess","redundancy"] )
   p.add_argument( "--runtime", action="store", default="spmd",
                   choices=["spmd", "wsrt"] )
 
@@ -72,8 +69,9 @@ if __name__ == "__main__":
 
   # compute normalized delay and iaccess
   base_cfg = 'mimd-%s-1-0AH' % runtime
-  df['normalized_delay']   = df['steps']
-  df['normalized_iaccess'] = df['unique_frontend']
+  df['normalized_delay']      = df['steps']
+  df['normalized_iaccess']    = df['unique_frontend']
+  df['normalized_iaccess_l0'] = df['unique_iaccess']
   for app in app_list:
     try:
       base_steps = float(df.loc[(df.app == app) & (df.config == base_cfg), 'steps'].iloc[0])
@@ -82,23 +80,10 @@ if __name__ == "__main__":
       base_iaccess = float(df.loc[(df.app == app) & (df.config == base_cfg), 'total_frontend'].iloc[0])
       df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_iaccess'] = \
         df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_iaccess'] * 100 / base_iaccess
+      df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_iaccess_l0'] = \
+        df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_iaccess_l0'] * 100 / base_iaccess
     except:
       continue
-
-  # compute redundancy
-  df['redundancy'] = df['total_frontend'] - df['unique_frontend'] 
-  df.loc[:,'redundancy'] *= 100.0
-  df['redundancy'] = df['redundancy']/df['total_frontend'] 
-
-  # set the option for what to plot
-  if p_opts.component == "iaccess":
-    ylabel  = "Normalized Insn. Access (%)"
-    ycolumn = "normalized_iaccess"
-    normalize_line = 100 
-  elif p_opts.component == "redundancy":
-    ylabel  = "Instruction Redundancy (%)"
-    ycolumn = "redundancy"
-    normalize_line = 75 
 
   # create plot options dict
   opts = brg_plot.PlotOptions()
@@ -120,9 +105,10 @@ if __name__ == "__main__":
   opts.num_cols = 1
   opts.num_rows = 1
 
+  # config list
   config_list = [
-    'mimd-%s-1-0AH' % runtime,
-    'mimd-%s-1000-0AH' % runtime,
+    'mimd-%s-1-0AH' % runtime,     
+    'mimd-%s-1000-0AH' % runtime,  
   ]
 
   # determine the apps
@@ -139,35 +125,58 @@ if __name__ == "__main__":
   delay_data = []
   yaxis_data = [] 
   labels = []
+
+  # first collect iaccess without L0
   for app in kernels_list:
     temp_delay = []
     temp_yaxis = []
+    # ideal        : iaccess 
+    # ideal + hint : iaccess
     for cfg in config_list:
       try: 
         delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
-        yaxis = df.loc[(df.config == cfg) & (df.app == app), ycolumn].iloc[0]
+        yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_iaccess'].iloc[0]
         temp_delay.append( delay ) 
         temp_yaxis.append( yaxis ) 
         if app not in labels:
           labels.append( app )
       except:
         continue
+    # ideal + L0        : iaccess_l0  
+    # ideal + L0 + hint : iaccess_l0  
+    for cfg in config_list:
+      try: 
+        delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
+        yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_iaccess_l0'].iloc[0]
+        temp_delay.append( delay ) 
+        temp_yaxis.append( yaxis ) 
+      except:
+        continue
+
     if temp_delay: delay_data.append( temp_delay )
     if temp_yaxis: yaxis_data.append( temp_yaxis )
 
+  # legend labels
+  legend_labels = [
+    'coalescing',
+    'coalsecing+hint',
+    'coalescing+L0',
+    'coalescing+L0+hint',
+  ]  
+
   # add plot
   opts.data           = yaxis_data  
-  opts.labels         = [labels,['baseline','hint']]
-  opts.legend_ncol    = 2
+  opts.labels         = [labels,legend_labels]
+  opts.legend_ncol    = 4
   opts.legend_enabled = True
   opts.plot_idx       = index+1
-  opts.ylabel         = ylabel
-  opts.normalize_line = normalize_line
-  opts.colors         = ['#616161', '#8aae92']
+  opts.ylabel         = "Normalized Instruction Access (%)"
+  opts.normalize_line = 100
+  opts.colors         = ['#616161', '#8aae92', '#3f6699', '#ffffcc']
   opts.legend_bbox    = (0,0.98,1.,0.1)
   brg_plot.add_plot( opts )
 
-  opts.fig.text( 0.52, 1.0, "%s" % runtime.upper(), ha='center', fontsize=10)
+  opts.fig.text( 0.5, 1.0, "%s" % runtime.upper(), ha='center', fontsize=10)
   brg_plot.plt.tight_layout()
-  file_name  = '%s-ideal.pdf' % runtime
+  file_name = '%s-ideal-l0-locality.pdf' % runtime
   brg_plot.plt.savefig( file_name, bbox_inches="tight" )
