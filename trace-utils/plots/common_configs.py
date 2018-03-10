@@ -323,3 +323,21 @@ def format_work( df ):
         continue
 
   return df
+
+#-------------------------------------------------------------------------
+# filter configs
+#-------------------------------------------------------------------------
+# NOTE: there is probably a much better way to this but I'm using what
+# works well enough for now
+
+def filter_configs( pattern, configs_list ):
+  # list with the pattern
+  present_list  = []
+  # list without the pattern
+  absent_list = []
+  for cfg in configs_list:
+    if re.search( pattern, cfg ):
+      present_list.append( cfg )
+    else:
+      absent_list.append( cfg )
+  return present_list, absent_list

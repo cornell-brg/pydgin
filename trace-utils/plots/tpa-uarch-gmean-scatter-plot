@@ -230,7 +230,6 @@ def plot( raw_df, runtime ):
     '<', # simt-2
     'o', # mt
   ]
-  opts.hatch
 
   if index == opts.num_rows*opts.num_cols-1:
     opts.file_name = 'geo-mean.pdf'
