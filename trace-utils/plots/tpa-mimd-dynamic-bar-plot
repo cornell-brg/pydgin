@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-mimd-dynamic-plot [options]
+# tpa-mimd-dynamic-bar-plot [options]
 #=========================================================================
 #
 #  -h --help          Display this message
@@ -211,5 +211,5 @@ if __name__ == "__main__":
 
   opts.fig.text( 0.5, 1.0, "%s" % runtime.upper(), ha='center', fontsize=10)
   brg_plot.plt.tight_layout()
-  file_name = '%s-mimd-dynamic.pdf' % runtime
+  file_name = '%s-mimd-dynamic-bar.pdf' % runtime
   brg_plot.plt.savefig( file_name, bbox_inches="tight" )
