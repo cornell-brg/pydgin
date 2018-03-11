@@ -583,7 +583,7 @@ def add_scatter_plot( ax, opt ):
           ax.arrow( start[0], start[1], \
                     diff[0], diff[1], shape="full", length_includes_head=True, \
                     head_width=head_width, head_length=head_length, \
-                    lw=0.5, overhang=0.0, zorder=2, \
+                    lw=1, overhang=0.0, zorder=2, \
                     color="#808080")
 
     if opt.labels_enabled: #and i > 0:
