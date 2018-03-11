@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-l0-locality-plot [options]
+# tpa-mimd-dynamic-plot [options]
 #=========================================================================
 #
 #  -h --help          Display this message
@@ -69,19 +69,22 @@ if __name__ == "__main__":
 
   # compute normalized delay and iaccess
   base_cfg = 'mimd-%s-1-0AH' % runtime
-  df['normalized_delay']      = df['steps']
-  df['normalized_iaccess']    = df['unique_frontend']
-  df['normalized_iaccess_l0'] = df['unique_iaccess']
+  df['delay']           = df['steps']
+  df['iaccess']         = df['unique_frontend']
+  df['iaccess_l0']      = df['unique_iaccess']
+  df['iaccess_l0_only'] = df['total_iaccess'] - df['total_l0_hits']
   for app in app_list:
     try:
       base_steps = float(df.loc[(df.app == app) & (df.config == base_cfg), 'steps'].iloc[0])
-      df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_delay'] = \
-        df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_delay'] / base_steps
+      df.loc[(df.app==app) & df.config.str.contains(runtime), 'delay'] = \
+        df.loc[(df.app==app) & df.config.str.contains(runtime), 'delay'] / base_steps
       base_iaccess = float(df.loc[(df.app == app) & (df.config == base_cfg), 'total_frontend'].iloc[0])
-      df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_iaccess'] = \
-        df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_iaccess'] * 100 / base_iaccess
-      df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_iaccess_l0'] = \
-        df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_iaccess_l0'] * 100 / base_iaccess
+      df.loc[(df.app==app) & df.config.str.contains(runtime), 'iaccess'] = \
+        df.loc[(df.app==app) & df.config.str.contains(runtime), 'iaccess'] * 100 / base_iaccess
+      df.loc[(df.app==app) & df.config.str.contains(runtime), 'iaccess_l0'] = \
+        df.loc[(df.app==app) & df.config.str.contains(runtime), 'iaccess_l0'] * 100 / base_iaccess
+      df.loc[(df.app==app) & df.config.str.contains(runtime), 'iaccess_l0_only'] = \
+        df.loc[(df.app==app) & df.config.str.contains(runtime), 'iaccess_l0_only'] * 100 / base_iaccess
     except:
       continue
 
@@ -91,7 +94,7 @@ if __name__ == "__main__":
   {
     'show'            : False,
     'plot_type'       : 'bar',
-    'figsize'         : (8.0, 4.0),
+    'figsize'         : (16.0, 8.0),
     'rotate_labels'   : True,
     'rotate_angle'    : 30,
     'markersize'      : 60,
@@ -103,7 +106,7 @@ if __name__ == "__main__":
 
   # plot array 
   opts.num_cols = 1
-  opts.num_rows = 1
+  opts.num_rows = 2
 
   # config list
   config_list = [
@@ -121,7 +124,6 @@ if __name__ == "__main__":
     kernels_list += app_pbbs_list
     kernels_list += app_cilk_list
 
-  index = 0
   delay_data = []
   yaxis_data = [] 
   labels = []
@@ -130,53 +132,84 @@ if __name__ == "__main__":
   for app in kernels_list:
     temp_delay = []
     temp_yaxis = []
-    # ideal        : iaccess 
-    # ideal + hint : iaccess
+    # dyn        : iaccess 
+    # dyn + hint : iaccess
     for cfg in config_list:
       try: 
-        delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
-        yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_iaccess'].iloc[0]
+        delay = df.loc[(df.config == cfg) & (df.app == app), 'delay'].iloc[0]
+        yaxis = df.loc[(df.config == cfg) & (df.app == app), 'iaccess'].iloc[0]
         temp_delay.append( delay ) 
         temp_yaxis.append( yaxis ) 
         if app not in labels:
           labels.append( app )
       except:
         continue
-    # ideal + L0        : iaccess_l0  
-    # ideal + L0 + hint : iaccess_l0  
+    # L0 : iaccess_l0_only
+    try:
+      cfg = config_list[0]
+      delay = df.loc[(df.config == cfg) & (df.app == app), 'delay'].iloc[0]
+      yaxis = df.loc[(df.config == cfg) & (df.app == app), 'iaccess_l0_only'].iloc[0]
+      temp_delay.append( delay )
+      temp_yaxis.append( yaxis )
+    except:
+      pass
+
+    # L0 + dyn        : iaccess_l0  
+    # L0 + dyn + hint : iaccess_l0  
     for cfg in config_list:
       try: 
-        delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
-        yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_iaccess_l0'].iloc[0]
+        delay = df.loc[(df.config == cfg) & (df.app == app), 'delay'].iloc[0]
+        yaxis = df.loc[(df.config == cfg) & (df.app == app), 'iaccess_l0'].iloc[0]
         temp_delay.append( delay ) 
         temp_yaxis.append( yaxis ) 
       except:
         continue
 
-    if temp_delay: delay_data.append( temp_delay )
-    if temp_yaxis: yaxis_data.append( temp_yaxis )
+    if temp_delay: 
+      # append baseline
+      temp_delay = [1] + temp_delay
+      delay_data.append( temp_delay )
+    if temp_yaxis: 
+      # append baseline
+      temp_yaxis = [100] + temp_yaxis
+      yaxis_data.append( temp_yaxis )
 
   # legend labels
   legend_labels = [
-    'coalescing',
-    'coalsecing+hint',
-    'coalescing+L0',
-    'coalescing+L0+hint',
+    'base',
+    'dyn',
+    'dyn+hint',
+    'l0',
+    'l0+dyn',
+    'l0+dyn+hint',
   ]  
 
-  # add plot
-  opts.data           = yaxis_data  
+  # add delay 
+  opts.data           = delay_data  
   opts.labels         = [labels,legend_labels]
-  opts.legend_ncol    = 4
+  opts.legend_ncol    = 6
   opts.legend_enabled = True
-  opts.plot_idx       = index+1
-  opts.ylabel         = "Normalized Instruction Access (%)"
-  opts.normalize_line = 100
-  opts.colors         = ['#616161', '#8aae92', '#3f6699', '#ffffcc']
+  opts.plot_idx       = 1
+  opts.ylabel         = "Normalized Delay"
+  opts.normalize_line = 1
+  opts.colors         = brg_plot.colors['pubugn6']
   opts.legend_bbox    = (0,0.98,1.,0.1)
   brg_plot.add_plot( opts )
 
+  # add iaccess
+  opts.data           = yaxis_data  
+  opts.labels         = [labels,legend_labels]
+  opts.legend_ncol    = 6
+  opts.legend_enabled = True
+  opts.plot_idx       = 2
+  opts.ylabel         = "Normalized Instruction Access (%)"
+  opts.normalize_line = 100
+  opts.colors         = brg_plot.colors['pubugn6']
+  opts.legend_bbox    = (0,0.98,1.,0.1)
+  brg_plot.add_plot( opts )
+
+
   opts.fig.text( 0.5, 1.0, "%s" % runtime.upper(), ha='center', fontsize=10)
   brg_plot.plt.tight_layout()
-  file_name = '%s-ideal-l0-locality.pdf' % runtime
+  file_name = '%s-mimd-dynamic.pdf' % runtime
   brg_plot.plt.savefig( file_name, bbox_inches="tight" )

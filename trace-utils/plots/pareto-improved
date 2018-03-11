@@ -119,7 +119,7 @@ def normalize_results( df ):
 
 def per_app_per_config( df, group_dict, configs_dict ):
   with open( "pareto_configs.csv", "w" ) as out:
-    out.write( "runtime,app,group,cfg,delay,yaxis\n" )
+    out.write( "runtime,app,group,config,delay,yaxis\n" )
     for runtime in ['spmd','wsrt']:
       rt_df = df.loc[df.config.str.contains(runtime)]
       for app in app_list:
