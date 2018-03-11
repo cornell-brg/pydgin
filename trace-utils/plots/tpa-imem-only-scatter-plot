@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-imem-fe-only-one-vs-two-plot [options]
+# tpa-imem-only-scatter-plot [options]
 #=========================================================================
 #
 #  -h --help          Display this message
 #
 #  --runtime          Select runtime
 #                       [spmd,wsrt]
+#  --insn_ports       Select insn_ports
+#                       [1,2]
 #
 # Author : Shreesha Srinath
 # Date   : March 11th, 2018
@@ -47,6 +49,7 @@ def parse_cmdline():
 
   # Additional commane line arguments for the simulator
 
+  p.add_argument( "--insn_ports", type=int, action="store", default=1)
   p.add_argument( "--runtime", action="store", default="spmd",
                   choices=["spmd", "wsrt"])
 
@@ -58,44 +61,42 @@ def parse_cmdline():
 # global variables
 #-------------------------------------------------------------------------
 
-g_cfg_prefix = "simt-%s"
+g_cfg_prefix = "conj-cores-%s"
 g_cfg_str    = "-%dL0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
 
 #-------------------------------------------------------------------------
 # populate_configs()
 #-------------------------------------------------------------------------
 
-def populate_configs( runtime ):
+def populate_configs( runtime, insn_ports ):
   ncores         = 4
   limit_lockstep = 0
+  lockstep       = 0
   adaptive_hint  = 0
+  analysis       = 0
 
-  # fix these parameters and only change frontend
-  l0_buffer_sz  = 1
-  coalescing    = 1
-  barrier_limit = 1000
-  lockstep      = 1
-  resources     = 4
-  analysis      = 1
-
-  configs_list = []
-  cfg_prefix = g_cfg_prefix % runtime
-  for frontend in [1,2]:
-    configs_list.append(
-      cfg_prefix +
-      g_cfg_str % (
-        l0_buffer_sz,
-        frontend,
-        frontend,
-        resources,
-        coalescing,
-        analysis,
-        lockstep,
-        barrier_limit,
-        limit_lockstep,
-        adaptive_hint
-      )
-    )
+  configs_list   = []
+  cfg_prefix     = g_cfg_prefix % runtime
+  for l0_buffer_sz in [0,1]:
+    for coalescing in [0,1]:
+      for barrier_limit in [1,1000]:
+        if coalescing == 0 and barrier_limit == 1000:
+          continue
+        configs_list.append(
+          cfg_prefix +
+          g_cfg_str % (
+            l0_buffer_sz,
+            insn_ports,
+            ncores,
+            ncores,
+            coalescing,
+            analysis,
+            lockstep,
+            barrier_limit,
+            limit_lockstep,
+            adaptive_hint
+          )
+        )
   return configs_list
 
 #-------------------------------------------------------------------------
@@ -121,10 +122,7 @@ def normalize_results( df, base_df, runtime, total_yaxis ):
 # plot()
 #-------------------------------------------------------------------------
 
-def plot( df, base_df, runtime, configs_list ):
-
-  # filter the configs
-  fe_1_list, fe_2_list = filter_configs( "-1F-", configs_list )
+def plot( df, base_df, runtime, configs_list, insn_ports ):
 
   # determine the apps
   kernels_list = []
@@ -138,17 +136,26 @@ def plot( df, base_df, runtime, configs_list ):
 
   # populate data
   data  = []
-  for cfg_list in [fe_1_list, fe_2_list]:
+  for cfg in configs_list:
     temp = []
-    for cfg in cfg_list:
-      for app in kernels_list:
-        try:
-          delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
-          yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_yaxis'].iloc[0]
-          temp.append( [delay, yaxis] )
-        except:
-          continue
+    for app in kernels_list:
+      try:
+        delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
+        yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_yaxis'].iloc[0]
+        temp.append( [delay, yaxis] )
+      except:
+        continue
     if temp: data.append( temp )
+
+  # legend labels
+  legend_labels = [
+    'base',
+    'coalesce',
+    'coalesce+hint',
+    'l0',
+    'l0+coalesce',
+    'l0+coalesce+hint',
+  ]  
 
   # create plot options dict
   opts = brg_plot.PlotOptions()
@@ -166,21 +173,21 @@ def plot( df, base_df, runtime, configs_list ):
     setattr( opts, name, value )
 
   # plot array 
-  opts.num_cols          = 1
-  opts.num_rows          = 1 
-  opts.scatter_bar_arrow = True
-  opts.data              = data
-  opts.index             = 1
-  opts.labels            = [[],['1 frontend','2 frontends']]
-  opts.legend_enabled    = True
-  opts.legend_ncol       = 2
-  opts.colors            = ['#616161', '#8aae92'] 
-  opts.title             = runtime
-  opts.ylabel            = 'Normalized Instruction Access (%)' 
-  opts.xlabel            = 'Normalized Delay'
-  opts.file_name         = '%s-imem-fe-only-one-vs-two.pdf' % ( runtime )
+  opts.num_cols        = 1
+  opts.num_rows        = 1 
+  opts.data            = data
+  opts.index           = 1
+  opts.labels          = [[],legend_labels]
+  opts.legend_enabled  = True
+  opts.legend_ncol     = 6
+  opts.title           = runtime
+  opts.colors          = brg_plot.colors['qualitative_paired']
+  opts.ylabel          = 'Normalized Insntruction Access (%)' 
+  opts.xlabel          = 'Normalized Delay'
+  opts.file_name       = '%s-imem-only-%d-insn_ports-scatter.pdf' % ( runtime, insn_ports )
   
   brg_plot.add_plot( opts )
+
 
 #-------------------------------------------------------------------------
 # main
@@ -192,6 +199,9 @@ if __name__ == "__main__":
   
   # get the runtime
   runtime = opts.runtime
+
+  # get the number of insn ports
+  insn_ports = opts.insn_ports
 
   # read the results
   all_results = pd.read_csv( "sim-l0-results.csv" )
@@ -207,7 +217,7 @@ if __name__ == "__main__":
   base_df = pd.read_csv( g_sim_results_file )
 
   # populate all configs
-  configs_list = populate_configs( runtime )
+  configs_list = populate_configs( runtime, insn_ports )
 
   # get the dataframe of interest
   df = all_results[all_results.config.isin( configs_list )].copy()
@@ -216,4 +226,4 @@ if __name__ == "__main__":
   df = normalize_results( df, base_df, runtime, 'total_iaccess' )
 
   # plot
-  plot( df, base_df, runtime, configs_list )  
+  plot( df, base_df, runtime, configs_list, insn_ports )  

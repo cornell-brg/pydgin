@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-mimd-static-one-vs-two-plot [options]
+# tpa-imem-only-one-vs-two-plot [options]
 #=========================================================================
 #
 #  -h --help          Display this message
@@ -178,7 +178,7 @@ def plot( df, base_df, runtime, configs_list ):
   opts.title             = runtime
   opts.ylabel            = 'Normalized Insn. Access (%)' 
   opts.xlabel            = 'Normalized Delay'
-  opts.file_name         = '%s-mimd-static-one-vs-two.pdf' % runtime
+  opts.file_name         = '%s-imem-only-one-vs-two.pdf' % runtime
   
   brg_plot.add_plot( opts )
 

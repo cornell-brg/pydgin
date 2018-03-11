@@ -177,9 +177,8 @@ def plot( df, base_df, runtime, configs_list, frontend ):
   opts.legend_enabled    = True
   opts.legend_ncol       = 2
   opts.colors            = ['#616161', '#8aae92'] 
-  opts.symbols           = ['o', 'o']
   opts.title             = runtime
-  opts.ylabel            = 'Normalized Insn. Access (%)' 
+  opts.ylabel            = 'Normalized Instruction Access (%)' 
   opts.xlabel            = 'Normalized Delay'
   opts.file_name         = '%s-imem-fe-only-scatter-%d-frontend.pdf' % ( runtime, frontend )
   
