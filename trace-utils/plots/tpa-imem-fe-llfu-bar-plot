@@ -1,0 +1,254 @@
+#!/usr/bin/env python
+#=========================================================================
+# tpa-imem-fe-llfu-bar-plot [options]
+#=========================================================================
+#
+#  -h --help          Display this message
+#
+#  --runtime          Select runtime
+#                       [spmd,wsrt]
+#  --resources        Select resources
+#                       [1,2]
+#
+# Author : Shreesha Srinath
+# Date   : March 11th, 2018
+#
+
+import argparse
+import re
+import math
+import sys
+
+import pandas as pd
+pd.set_option('display.width', 100)
+
+import brg_plot
+
+from common import *
+from common_configs import *
+
+#-------------------------------------------------------------------------
+# Command line processing
+#-------------------------------------------------------------------------
+
+class ArgumentParserWithCustomError(argparse.ArgumentParser):
+  def error( self, msg = "" ):
+    if ( msg ): print("\n ERROR: %s" % msg)
+    print("")
+    file = open( sys.argv[0] )
+    for ( lineno, line ) in enumerate( file ):
+      if ( line[0] != '#' ): sys.exit(msg != "")
+      if ( (lineno == 2) or (lineno >= 4) ): print( line[1:].rstrip("\n") )
+
+def parse_cmdline():
+  p = ArgumentParserWithCustomError( add_help=False )
+
+  # Standard command line arguments
+
+  p.add_argument( "-h", "--help",    action="store_true" )
+
+  # Additional commane line arguments for the simulator
+
+  p.add_argument( "--resources", type=int, action="store", default=1)
+  p.add_argument( "--runtime", action="store", default="spmd",
+                  choices=["spmd", "wsrt"])
+
+  opts = p.parse_args()
+  if opts.help: p.error()
+  return opts
+
+#-------------------------------------------------------------------------
+# global variables
+#-------------------------------------------------------------------------
+
+g_cfg_prefix = "simt-%s"
+g_cfg_str    = "-%dL0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
+
+#-------------------------------------------------------------------------
+# populate_configs()
+#-------------------------------------------------------------------------
+
+def populate_configs( runtime, resources ):
+  ncores         = 4
+  limit_lockstep = 0
+  adaptive_hint  = 0
+
+  # fix these parameters and only change lockstep 
+  l0_buffer_sz  = 1
+  coalescing    = 1
+  lockstep      = 1
+
+  configs_list = []
+  cfg_prefix = g_cfg_prefix % runtime
+  for analysis in [0,1]:
+    for barrier_limit in [1,1000]:
+      configs_list.append(
+        cfg_prefix +
+        g_cfg_str % (
+          l0_buffer_sz,
+          resources,
+          resources,
+          resources,
+          coalescing,
+          analysis,
+          lockstep,
+          barrier_limit,
+          limit_lockstep,
+          adaptive_hint
+        )
+      )
+  return configs_list
+
+#-------------------------------------------------------------------------
+# normalize_results
+#-------------------------------------------------------------------------
+
+def normalize_results( df, base_df, runtime, total_yaxis ):
+  base_cfg = g_mimd_base_str % runtime
+  for app in app_list:
+    try:
+      base_steps = float(base_df.loc[(base_df.app == app) & (base_df.config == base_cfg), 'steps'].iloc[0])
+      df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_delay'] = \
+        df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_delay'] / base_steps
+
+      base_yaxis = float(base_df.loc[(base_df.app == app) & (base_df.config == base_cfg), total_yaxis].iloc[0])
+      df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_yaxis'] = \
+        df.loc[(df.app==app) & df.config.str.contains(runtime), 'normalized_yaxis'] * 100/ base_yaxis
+    except:
+      continue
+  return df    
+
+#-------------------------------------------------------------------------
+# plot()
+#-------------------------------------------------------------------------
+
+def plot( df, base_df, runtime, configs_list, resources ):
+
+  # determine the apps
+  kernels_list = []
+  if   runtime == "spmd":
+    kernels_list += app_custom_list
+    kernels_list += app_pbbs_list
+  elif runtime == "wsrt":
+    kernels_list += app_custom_list
+    kernels_list += app_pbbs_list
+    kernels_list += app_cilk_list
+
+  # populate data
+  delay_data = []
+  yaxis_data = []
+  labels = []
+  for app in kernels_list:
+    temp_delay = []
+    temp_yaxis = []
+    for cfg in configs_list:
+      try:
+        delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
+        yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_yaxis'].iloc[0]
+        temp_delay.append( delay ) 
+        temp_yaxis.append( yaxis ) 
+        if app not in labels:
+          labels.append( app )
+      except:
+        continue
+    # some apps + spmd combinations break and hence, this check
+    if temp_delay: delay_data.append( temp_delay )
+    if temp_yaxis: yaxis_data.append( temp_yaxis )
+
+  # create plot options dict
+  opts = brg_plot.PlotOptions()
+  attribute_dict = \
+  {
+    'show'            : False,
+    'plot_type'       : 'bar',
+    'figsize'         : (16.0, 8.0),
+    'rotate_labels'   : True,
+    'rotate_angle'    : 30,
+    'markersize'      : 60,
+    'labels_fontsize' : 1,
+    'legend_enabled'  : False,
+  }
+  for name, value in attribute_dict.iteritems():
+    setattr( opts, name, value )
+
+  # plot array 
+  opts.num_cols = 1
+  opts.num_rows = 2
+
+  # legend labels
+  legend_labels = [
+    'rr',
+    'rr+hint',
+    'mpc',
+    'mpc+hint',
+  ]  
+
+  # plot delay 
+  opts.data           = delay_data  
+  opts.labels         = [labels,legend_labels]
+  opts.legend_ncol    = 4
+  opts.legend_enabled = True
+  opts.plot_idx       = 1
+  opts.ylabel         = "Normalized Delay"
+  opts.normalize_line = 1
+  opts.colors         = brg_plot.colors['pubugn4']
+  opts.legend_bbox    = (0,0.98,1.,0.1)
+
+  brg_plot.add_plot( opts )
+
+  # add iaccess
+  opts.data           = yaxis_data  
+  opts.labels         = [labels,legend_labels]
+  opts.legend_ncol    = 4
+  opts.legend_enabled = True
+  opts.plot_idx       = 2
+  opts.ylabel         = "Normalized Instruction Access (%)"
+  opts.normalize_line = 100
+  opts.colors         = brg_plot.colors['pubugn4']
+  opts.legend_bbox    = (0,0.98,1.,0.1)
+  brg_plot.add_plot( opts )
+
+  opts.fig.text( 0.5, 1.0, "%s" % runtime.upper(), ha='center', fontsize=10)
+  brg_plot.plt.tight_layout()
+  file_name = '%s-imem-fe-llfu-%d-resources-bar.pdf' % ( runtime, resources )
+  brg_plot.plt.savefig( file_name, bbox_inches="tight" )
+
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+  # parse options
+  opts = parse_cmdline()
+  
+  # get the number of resources
+  resources = opts.resources
+
+  # get the runtime
+  runtime = opts.runtime
+
+  # read the results
+  all_results = pd.read_csv( "sim-l0-results.csv" )
+
+  # skip non-zero values which indicate missing data
+  all_results = all_results[all_results!=0]
+
+  # add new columns
+  all_results['normalized_delay'] = all_results['steps']
+  all_results['normalized_yaxis'] = all_results['unique_iaccess']
+
+  # baseline mimd results are present in a different file
+  base_df = pd.read_csv( g_sim_results_file )
+
+  # populate all configs
+  configs_list = populate_configs( runtime, resources )
+
+  # get the dataframe of interest
+  df = all_results[all_results.config.isin( configs_list )].copy()
+
+  # get normalized results
+  df = normalize_results( df, base_df, runtime, 'total_iaccess' )
+
+  # plot
+  plot( df, base_df, runtime, configs_list, resources )  
