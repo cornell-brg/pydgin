@@ -293,7 +293,7 @@ if __name__ == "__main__":
       #  delay   = stats.loc[(stats.config == cfg), 'normalized_delay'].iloc[0]
       #  yaxis   = stats.loc[(stats.config == cfg), 'normalized_yaxis'].iloc[0]
       #  optimal = stats.loc[(stats.config == cfg), 'is_pareto' ].iloc[0]
-      #  print name, optimal, delay, yaxis
+      #  print "{:15s} {:5s} {:f} {:f}".format( name, str(optimal), delay, yaxis )
       #print
     except:
       continue
