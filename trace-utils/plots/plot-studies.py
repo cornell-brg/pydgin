@@ -129,7 +129,7 @@ if __name__ == "__main__":
   for runtime in ['spmd', 'wsrt']:
     plot = './tpa-share-all-bar-plot --runtime %s' % ( runtime )
     cmds.append( plot )
-    cmds.append( 'mv %s-share-all-bar.pdf results/share-all/.' )
+    cmds.append( 'mv %s-share-all-bar.pdf results/share-all/.' % ( runtime ) )
     plot = './tpa-share-all-scatter-plot --runtime %s' % ( runtime )
     cmds.append( plot )
     cmds.append( 'mv %s-share-all-scatter.pdf results/share-all/.' % ( runtime ) )
