@@ -180,7 +180,7 @@ def plot( df, base_df, runtime, configs_list, frontend ):
   opts.title             = runtime
   opts.ylabel            = 'Normalized Instruction Access (%)' 
   opts.xlabel            = 'Normalized Delay'
-  opts.file_name         = '%s-imem-fe-only-scatter-%d-frontend.pdf' % ( runtime, frontend )
+  opts.file_name         = '%s-imem-fe-only-%d-frontend-scatter.pdf' % ( runtime, frontend )
   
   brg_plot.add_plot( opts )
 

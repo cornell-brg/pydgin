@@ -179,7 +179,7 @@ def plot( df, base_df, runtime, configs_list, resources ):
   opts.title             = runtime
   opts.ylabel            = 'Normalized Instruction Access (%)' 
   opts.xlabel            = 'Normalized Delay'
-  opts.file_name         = '%s-imem-fe-llfu-scatter-%d-resources.pdf' % ( runtime, resources )
+  opts.file_name         = '%s-imem-fe-llfu-%d-resources-scatter.pdf' % ( runtime, resources )
   
   brg_plot.add_plot( opts )
 
