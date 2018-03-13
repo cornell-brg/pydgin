@@ -28,7 +28,7 @@ def execute(cmd):
 # global variables
 #-------------------------------------------------------------------------
 
-g_prefix_path = "../new-spin/"
+g_prefix_path = "../final/"
 
 g_configs_dict = {}
 
@@ -74,7 +74,7 @@ def summarize():
 
     columns  = 'app,config,total_insts,'
     columns += 'integer,load,store,amo,fpu,mdu,'
-    columns += 'total_wsrt,total_rt,total_task\n'
+    columns += 'total_spmd,total_wsrt,total_rt,total_task\n'
     out.write( columns )
 
     for config_dir,config in g_configs_dict.iteritems():
@@ -104,6 +104,7 @@ def summarize():
           fpu_insts   = 0
           mdu_insts   = 0
 
+          total_spmd  = 0
           total_wsrt  = 0
           total_rt    = 0
           total_task  = 0
@@ -126,6 +127,8 @@ def summarize():
                 fpu_insts = int( line.split()[-1] )
               elif 'mdu     =' in line:
                 mdu_insts = int( line.split()[-1] )
+              elif "Total insts in spmd region" in line:
+                total_spmd = int(line.split()[-1])
               elif "Total insts in wsrt region" in line:
                 total_wsrt = int(line.split()[-1])
               elif "Total insts in runtime" in line:
@@ -139,7 +142,7 @@ def summarize():
               base_str.format(
                 app,config,total_insts,
                 int_insts,load_insts,store_insts,amo_insts,fpu_insts,mdu_insts,
-                total_wsrt,total_rt,total_task
+                total_spmd,total_wsrt,total_rt,total_task
               )
             )
           else:
@@ -147,15 +150,15 @@ def summarize():
               base_str.format(
                 app_short_name_dict[app],config,total_insts,
                 int_insts,load_insts,store_insts,amo_insts,fpu_insts,mdu_insts,
-                total_wsrt,total_rt,total_task
+                total_spmd,total_wsrt,total_rt,total_task
               )
             )
         except:
           print "{} {}: Results file not present".format( config, subfolder )
           if config == "serial":
-            out.write( base_str.format(app,config,0,0,0,0,0,0,0,0,0,0) )
+            out.write( base_str.format(app,config,0,0,0,0,0,0,0,0,0,0,0) )
           else:
-            out.write( base_str.format(app_short_name_dict[app],config,0,0,0,0,0,0,0,0,0,0) )
+            out.write( base_str.format(app_short_name_dict[app],config,0,0,0,0,0,0,0,0,0,0,0) )
           continue
 
 #-------------------------------------------------------------------------
