@@ -94,7 +94,7 @@ if __name__ == "__main__":
   {
     'show'            : False,
     'plot_type'       : 'bar',
-    'figsize'         : (16.0, 8.0),
+    'figsize'         : (8.0, 6.0),
     'rotate_labels'   : True,
     'rotate_angle'    : 30,
     'markersize'      : 60,
