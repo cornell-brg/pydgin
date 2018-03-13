@@ -19,6 +19,8 @@ import re
 import math
 import sys
 
+import numpy as np
+
 import pandas as pd
 pd.set_option('display.width', 1000)
 
@@ -184,33 +186,40 @@ def populate_optimal_configs( runtime ):
   return configs_dict
 
 #-------------------------------------------------------------------------
-# is_pareto_front()
+# isclose
 #-------------------------------------------------------------------------
+# copylifted:
+# https://stackoverflow.com/questions/5595425/what-is-the-best-way-to-compare-floats-for-almost-equality-in-python
 
-def is_pareto_front(row, stats, xlabel, ylabel):
-  x = row[xlabel]
-  y = row[ylabel]
-
-  # look for points with the same y value but smaller x value
-  is_min_x = stats.loc[stats[ylabel]==y].max()[xlabel] >= x
-  # look for points with the same x value but smaller y value
-  is_min_y = stats.loc[stats[xlabel]==x].max()[ylabel] >= y
-
-  # look for points that are smaller in both x and y
-  is_min_xy = len(stats.loc[(stats[xlabel]<x) & (stats[ylabel]<y)])==0
-
-  return is_min_x and is_min_y and is_min_xy
+def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+    return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 #-------------------------------------------------------------------------
-# get_pareto_data()
+# pareto_frontier
 #-------------------------------------------------------------------------
+# NOTE: abandoning the old method which had issues with comparing values
+# with rounding. The new method below works any may not be elegant but does
+# the trick for now!
 
-def get_pareto_data( frame_data ):  
-  columns=['config','app','delay','yaxis']
-  stats = pd.DataFrame(frame_data,columns=columns)  
-  is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'delay', 'yaxis'), axis=1)
-  pareto_data = stats.loc[is_pareto].sort_values(by='delay')
-  return [pareto_data['delay'].values, pareto_data['yaxis'].values]
+def pareto_frontier( delay, yaxis, stats ):
+  # sort the values based on delay numbers
+  vals = sorted( [[delay[i], yaxis[i]] for i in range( len( delay ) )] )
+
+  # add the first value from the sorted list to the frontier
+  p_front = [ vals[0] ]
+  # loop through the sorted list
+  for pair in vals[1:]:
+    # look for lower values of y and add it to the frontier
+    if pair[1] < p_front[-1][1] or isclose( pair[1], p_front[-1][1], abs_tol=0.5 ): 
+      p_front.append( pair )
+
+  # mark pareto configs in place
+  stats['is_pareto'] = False
+  for pair in p_front:
+    for index, row in stats.iterrows():
+      if row['normalized_delay'] == pair[0] and row['normalized_yaxis'] == pair[1]:
+        stats.set_value(index,'is_pareto',True)
+  return stats
 
 #-------------------------------------------------------------------------
 # normalize_results
@@ -279,32 +288,37 @@ if __name__ == "__main__":
     try:
       # get the subframe
       stats = df.loc[df.app==app].copy()
-      # get the series which indicates pareto optimality
-      stats['is_pareto'] = stats.apply(lambda row: is_pareto_front(row, stats, 'normalized_delay', 'normalized_yaxis'), axis=1)
+      stats = stats.round(1)
+      # update stats with a pareto optimal column 
+      stats = pareto_frontier( stats['normalized_delay'].values.tolist(), stats['normalized_yaxis'].values.tolist(), stats )
+      # populate the table entries
       pareto_list = []
       for cfg in configs_dict.itervalues():
         pareto = stats.loc[(stats.config==cfg),'is_pareto'].values[0] 
-        pareto = "\checkmark" if pareto else ""
-        pareto_list.append( pareto )
+        pareto = "\cellcolor{cbxgreenA}" if pareto else "\cellcolor{white}"
+        delay = stats.loc[(stats.config==cfg),'normalized_delay'].values[0] 
+        yaxis = stats.loc[(stats.config==cfg),'normalized_yaxis'].values[0] 
+        pareto_list.append( pareto + " ({:4.2f},{:5.2f})".format(delay,yaxis) )
       pareto_frame = pareto_frame.append( pd.Series([app] + pareto_list, index=pareto_frame.columns),ignore_index=True )
       # DEBUG prints
-      #print app
-      #for name,cfg in configs_dict.iteritems():
-      #  delay   = stats.loc[(stats.config == cfg), 'normalized_delay'].iloc[0]
-      #  yaxis   = stats.loc[(stats.config == cfg), 'normalized_yaxis'].iloc[0]
-      #  optimal = stats.loc[(stats.config == cfg), 'is_pareto' ].iloc[0]
-      #  print "{:15s} {:5s} {:f} {:f}".format( name, str(optimal), delay, yaxis )
-      #print
+      print app
+      for name,cfg in configs_dict.iteritems():
+        delay   = stats.loc[(stats.config == cfg), 'normalized_delay'].iloc[0]
+        yaxis   = stats.loc[(stats.config == cfg), 'normalized_yaxis'].iloc[0]
+        optimal = stats.loc[(stats.config == cfg), 'is_pareto' ].iloc[0]
+        print "{:15s} {:5s} {:f} {:f}".format( name, str(optimal), delay, yaxis )
+      print
     except:
       continue
 
-  print "\\begin{table}"
-  print "\centering"
-  print "{\cbxcaptionsize"
-  print "\\tabcolsep 2.0pt"
-  print "\\renewcommand\\tabcolsep{4pt}"
-  print pareto_frame.to_latex(index=False,encoding='str')
-  print "}"
-  print "\caption[Test table]{Test Table}" 
-  print "\label{tbl-test}"
-  print "\end{table}"
+  with open( 'tbl-test.tex', 'w' ) as out:
+    out.write( "\\begin{table}\n" )
+    out.write( "\centering\n" )
+    out.write( "\\scalebox{0.8}{\cbxcaptionsize\n" )
+    out.write( "\\tabcolsep 2.0pt\n" )
+    out.write( "\\renewcommand\\tabcolsep{4pt}\n" )
+    out.write( pareto_frame.to_latex(index=False,encoding='str') )
+    out.write( "}\n" )
+    out.write( "\caption[Test table]{Test Table}\n" )
+    out.write( "\label{tbl-test}\n" )
+    out.write( "\end{table}" )
