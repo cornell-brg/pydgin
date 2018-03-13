@@ -77,7 +77,7 @@ g_short_cfg_names = [
   "2 imem+llfu",
   "1 imem+fe+llfu",
   "2 imem+fe+llfu",
-  "share all",
+  #"share all",
 ]
 
 #-------------------------------------------------------------------------
@@ -171,16 +171,16 @@ def populate_optimal_configs( runtime ):
     configs_list.append( cfg )
 
   # share everything
-  mt_cfg_prefix = "mt-%s"
-  mt_cfg_str    = "-%dTS-%d-%dAH"
-  for analysis in [0,1]:  
-    cfg  = mt_cfg_prefix % ( runtime )
-    cfg += mt_cfg_str % (
-            analysis,
-            barrier_limit,
-            adaptive_hint  
-           )
-    configs_list.append( cfg )
+  #mt_cfg_prefix = "mt-%s"
+  #mt_cfg_str    = "-%dTS-%d-%dAH"
+  #for analysis in [0,1]:  
+  #  cfg  = mt_cfg_prefix % ( runtime )
+  #  cfg += mt_cfg_str % (
+  #          analysis,
+  #          barrier_limit,
+  #          adaptive_hint  
+  #         )
+  #  configs_list.append( cfg )
 
   configs_dict = OrderedDict( zip( g_short_cfg_names, configs_list ) )
   return configs_dict
@@ -252,7 +252,7 @@ if __name__ == "__main__":
   runtime = opts.runtime
 
   # read the results
-  all_results = pd.read_csv( g_sim_results_file )
+  all_results = pd.read_csv( "sim-l0-results.csv" )
 
   # skip non-zero values which indicate missing data
   all_results = all_results[all_results!=0]
@@ -298,7 +298,11 @@ if __name__ == "__main__":
         pareto = "\cellcolor{cbxgreenA}" if pareto else "\cellcolor{white}"
         delay = stats.loc[(stats.config==cfg),'normalized_delay'].values[0] 
         yaxis = stats.loc[(stats.config==cfg),'normalized_yaxis'].values[0] 
-        pareto_list.append( pareto + " ({:4.2f},{:5.2f})".format(delay,yaxis) )
+        # only for mis 2-imem+llfu
+        if not math.isnan( delay ):
+          pareto_list.append( pareto + " ({:4.2f},{:5.2f})".format(delay,yaxis) )
+        else:
+          pareto_list.append( "" )
       pareto_frame = pareto_frame.append( pd.Series([app] + pareto_list, index=pareto_frame.columns),ignore_index=True )
       # DEBUG prints
       print app
