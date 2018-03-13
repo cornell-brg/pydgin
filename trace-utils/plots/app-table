@@ -1,12 +1,22 @@
+#!/usr/bin/env python
 #=========================================================================
-# app-table.py
+# app-table
 #=========================================================================
 # Author : Shreesha Srinath
 # Date   : March 13th, 2018
 #
+#  -h --help          Display this message
+#
+#  --runtime          Select runtime
+#                       [spmd,wsrt]
+#
 # Script to dump the app table
 
 import re
+import argparse
+import re
+import math
+import sys
 
 import pandas as pd
 pd.set_option('display.width', 100)
@@ -15,6 +25,35 @@ from collections import OrderedDict
 
 from common import *
 from common_configs import *
+
+#-------------------------------------------------------------------------
+# Command line processing
+#-------------------------------------------------------------------------
+
+class ArgumentParserWithCustomError(argparse.ArgumentParser):
+  def error( self, msg = "" ):
+    if ( msg ): print("\n ERROR: %s" % msg)
+    print("")
+    file = open( sys.argv[0] )
+    for ( lineno, line ) in enumerate( file ):
+      if ( line[0] != '#' ): sys.exit(msg != "")
+      if ( (lineno == 2) or (lineno >= 4) ): print( line[1:].rstrip("\n") )
+
+def parse_cmdline():
+  p = ArgumentParserWithCustomError( add_help=False )
+
+  # Standard command line arguments
+
+  p.add_argument( "-h", "--help",    action="store_true" )
+
+  # Additional commane line arguments for the simulator
+
+  p.add_argument( "--runtime", action="store", default="spmd",
+                  choices=["spmd", "wsrt"])
+
+  opts = p.parse_args()
+  if opts.help: p.error()
+  return opts
 
 #-------------------------------------------------------------------------
 # add_column
@@ -26,7 +65,7 @@ def add_column( df, table, column_name, stats_label, apps_list ):
     try:
       total_insts = float(df.loc[(df.config == base_cfg) & (df.app == app),'total_insts'].iloc[0])
       insts = float(df.loc[(df.config == base_cfg) & (df.app == app),stats_label].iloc[0])
-      stats.append( "{:4.2f}".format( 100*float(insts/total_insts) ) )
+      stats.append( "{:4.7f}".format( 100*float(insts/total_insts) ) )
     except:
       # need this to skip spmd apps that don't exist
       dyn_insts.append("")
@@ -38,6 +77,18 @@ def add_column( df, table, column_name, stats_label, apps_list ):
 #-------------------------------------------------------------------------
 
 if __name__ == "__main__":
+  # parse arguments
+  opts = parse_cmdline()
+
+  # get the runtime
+  runtime = opts.runtime
+
+  # set the base config
+  base_cfg = 'mimd-spmd-1-0AH' if runtime == 'spmd' else 'mimd-wsrt-1-0AH'
+
+  # select the app list
+  apps_list = app_spmd_list if runtime == 'spmd' else app_list
+
   # read the results
   df = pd.read_csv( "imix-results.csv" )
 
@@ -45,11 +96,9 @@ if __name__ == "__main__":
   table = pd.DataFrame()
 
   # add the apps column
-  apps_list = app_spmd_list
   table['Name'] = apps_list
 
   # collect dynamic instruction counts in millions for spmd first
-  base_cfg = 'mimd-spmd-1-0AH'
   dyn_insts = []
   million = 1000000.0
   for app in apps_list:
@@ -71,6 +120,9 @@ if __name__ == "__main__":
   stats_labels_dict['amo'] = 'AMO'
   stats_labels_dict['mdu'] = 'MDU'
   stats_labels_dict['fpu'] = 'FPU'
+  if runtime == 'wsrt':
+    stats_labels_dict['total_task'] = 'Tasks'
+    stats_labels_dict['total_rt'] = 'Runtime'
 
   for stats_label, column_name in stats_labels_dict.iteritems():
     add_column( df, table, column_name, stats_label, apps_list )
