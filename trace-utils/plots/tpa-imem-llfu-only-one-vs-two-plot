@@ -155,7 +155,7 @@ def plot( df, base_df, runtime, configs_list ):
   {
     'show'            : False,
     'plot_type'       : 'scatter',
-    'figsize'         : (8.0, 8.0),
+    'figsize'         : (4.0, 4.0),
     'rotate_labels'   : False,
     'markersize'      : 60,
     'labels_fontsize' : 1,
@@ -171,6 +171,7 @@ def plot( df, base_df, runtime, configs_list ):
   opts.data              = data
   opts.index             = 1
   opts.labels            = [[],['1 resource','2 resources']]
+  opts.legend_bbox       = (0,1.1,1.,0.1)
   opts.legend_enabled    = True
   opts.legend_ncol       = 2
   opts.colors            = ['#616161', '#8aae92'] 

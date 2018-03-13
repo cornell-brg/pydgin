@@ -161,7 +161,7 @@ def plot( df, base_df, runtime, configs_list, resources ):
   {
     'show'            : False,
     'plot_type'       : 'bar',
-    'figsize'         : (16.0, 8.0),
+    'figsize'         : (8.0, 8.0),
     'rotate_labels'   : True,
     'rotate_angle'    : 30,
     'markersize'      : 60,
