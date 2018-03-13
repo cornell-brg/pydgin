@@ -158,7 +158,7 @@ def plot( df, base_df, runtime, configs_list, frontend ):
   {
     'show'            : False,
     'plot_type'       : 'scatter',
-    'figsize'         : (8.0, 8.0),
+    'figsize'         : (4.0, 4.0),
     'rotate_labels'   : False,
     'markersize'      : 60,
     'labels_fontsize' : 1,
@@ -173,6 +173,7 @@ def plot( df, base_df, runtime, configs_list, frontend ):
   opts.scatter_bar_arrow = True
   opts.data              = data
   opts.index             = 1
+  opts.legend_bbox       = (0,1.1,1.,0.1)
   opts.labels            = [[],['rr','mpc']]
   opts.legend_enabled    = True
   opts.legend_ncol       = 2
