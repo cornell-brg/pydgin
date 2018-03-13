@@ -136,7 +136,7 @@ def summarize():
               elif "Total insts in tasks" in line:
                 total_task = int(line.split()[-1])
 
-          base_str = '{},'*11 + '{}\n'
+          base_str = '{},'*12 + '{}\n'
           if config == "serial":
             out.write(
               base_str.format(

@@ -65,7 +65,7 @@ def add_column( df, table, column_name, stats_label, apps_list ):
     try:
       total_insts = float(df.loc[(df.config == base_cfg) & (df.app == app),'total_insts'].iloc[0])
       insts = float(df.loc[(df.config == base_cfg) & (df.app == app),stats_label].iloc[0])
-      stats.append( "{:4.7f}".format( 100*float(insts/total_insts) ) )
+      stats.append( "{:4.2f}".format( 100*float(insts/total_insts) ) )
     except:
       # need this to skip spmd apps that don't exist
       dyn_insts.append("")
@@ -127,4 +127,14 @@ if __name__ == "__main__":
   for stats_label, column_name in stats_labels_dict.iteritems():
     add_column( df, table, column_name, stats_label, apps_list )
 
-  print table.to_latex(index=False)
+  with open( 'tbl-apps-%s.tex' % runtime, 'w' ) as out:
+    out.write( "\\begin{table}\n" )
+    out.write( "\centering\n" )
+    out.write( "\\scalebox{0.8}{\cbxcaptionsize\n" )
+    out.write( "\\tabcolsep 2.0pt\n" )
+    out.write( "\\renewcommand\\tabcolsep{4pt}\n" )
+    out.write( table.to_latex(index=False) )
+    out.write( "}\n" )
+    out.write( "\caption[Test table]{Test Table}\n" )
+    out.write( "\label{tbl-apps-%s}\n" % runtime )
+    out.write( "\end{table}" )
