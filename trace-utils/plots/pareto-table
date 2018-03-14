@@ -315,7 +315,7 @@ if __name__ == "__main__":
     except:
       continue
 
-  with open( 'tbl-test.tex', 'w' ) as out:
+  with open( 'tbl-pareto-table-%s.tex' % runtime, 'w' ) as out:
     out.write( "\\begin{table}\n" )
     out.write( "\centering\n" )
     out.write( "\\scalebox{0.8}{\cbxcaptionsize\n" )
@@ -324,5 +324,5 @@ if __name__ == "__main__":
     out.write( pareto_frame.to_latex(index=False,encoding='str') )
     out.write( "}\n" )
     out.write( "\caption[Test table]{Test Table}\n" )
-    out.write( "\label{tbl-test}\n" )
+    out.write( "\label{tbl-pareto-table-%s}\n" % runtime )
     out.write( "\end{table}" )
