@@ -20,7 +20,7 @@ import math
 import sys
 
 import pandas as pd
-pd.set_option('display.width', 100)
+pd.set_option('display.width', 1000)
 
 import brg_plot
 
@@ -150,6 +150,31 @@ def plot( df, base_df, runtime, configs_list, resources ):
         except:
           continue
     if temp: data.append( temp )
+
+  for app in kernels_list:
+    temp = []
+    for cfg_list in [rr_list, mpc_list]:
+      for cfg in cfg_list:
+        try:
+          delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
+          yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_yaxis'].iloc[0]
+          temp.append( [delay, yaxis] )
+        except:
+          continue
+    if temp: 
+      print "{:12s}".format(app), temp, 
+      print "{:4.2f}".format(100*(temp[0][0]-temp[1][0])/temp[0][0]),
+      print "{:4.2f}".format(100*(temp[0][1]-temp[1][1])/temp[0][1])
+      
+
+  for cfg_list in [rr_list, mpc_list]:
+    for cfg in cfg_list:
+      print cfg
+      print (df.loc[(df.config == cfg), 'normalized_delay'].describe().to_frame().T)
+      print (df.loc[(df.config == cfg), 'normalized_yaxis'].describe().to_frame().T)
+
+
+
 
   # create plot options dict
   opts = brg_plot.PlotOptions()

@@ -155,6 +155,9 @@ if __name__ == "__main__":
     if temp_delay: delay_data.append( temp_delay )
     if temp_yaxis: yaxis_data.append( temp_yaxis )
 
+  for i,label in enumerate( labels ):
+    print "{:10s}".format( label ), delay_data[i]
+
   # add plot
   opts.data           = yaxis_data  
   opts.labels         = [labels,['baseline','hint']]

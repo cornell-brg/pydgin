@@ -20,7 +20,7 @@ import math
 import sys
 
 import pandas as pd
-pd.set_option('display.width', 100)
+pd.set_option('display.width', 1000)
 
 import brg_plot
 

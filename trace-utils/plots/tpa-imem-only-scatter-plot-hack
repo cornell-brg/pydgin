@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 #=========================================================================
-# tpa-imem-fe-only-scatter-plot [options]
+# tpa-imem-only-scatter-plot [options]
 #=========================================================================
 #
 #  -h --help          Display this message
 #
 #  --runtime          Select runtime
 #                       [spmd,wsrt]
-#  --frontend        Select frontend
+#  --insn_ports       Select insn_ports
 #                       [1,2]
 #
 # Author : Shreesha Srinath
@@ -20,7 +20,7 @@ import math
 import sys
 
 import pandas as pd
-pd.set_option('display.width', 1000)
+pd.set_option('display.width', 100)
 
 import brg_plot
 
@@ -49,7 +49,7 @@ def parse_cmdline():
 
   # Additional commane line arguments for the simulator
 
-  p.add_argument( "--frontend", type=int, action="store", default=1)
+  p.add_argument( "--insn_ports", type=int, action="store", default=1)
   p.add_argument( "--runtime", action="store", default="spmd",
                   choices=["spmd", "wsrt"])
 
@@ -61,44 +61,73 @@ def parse_cmdline():
 # global variables
 #-------------------------------------------------------------------------
 
-g_cfg_prefix = "simt-%s"
+g_cfg_prefix = "conj-cores-%s"
 g_cfg_str    = "-%dL0-%dI-%dF-%dL-%dC-%dTS-%dLO-%d-%dLL-%dAH"
 
 #-------------------------------------------------------------------------
 # populate_configs()
 #-------------------------------------------------------------------------
 
-def populate_configs( runtime, frontend ):
+def populate_configs( runtime, insn_ports ):
   ncores         = 4
   limit_lockstep = 0
+  lockstep       = 0
   adaptive_hint  = 0
+  analysis       = 0
 
-  # fix these parameters and only change rr vs. min-pc
-  l0_buffer_sz  = 1
-  coalescing    = 1
-  barrier_limit = 1000
-  lockstep      = 1
-  resources     = 4
-
-  configs_list = []
-  cfg_prefix = g_cfg_prefix % runtime
-  for analysis in [0,1]:
-    configs_list.append(
-      cfg_prefix +
-      g_cfg_str % (
-        l0_buffer_sz,
-        frontend,
-        frontend,
-        resources,
-        coalescing,
-        analysis,
-        lockstep,
-        barrier_limit,
-        limit_lockstep,
-        adaptive_hint
-      )
-    )
+  configs_list   = []
+  cfg_prefix     = g_cfg_prefix % runtime
+  for l0_buffer_sz in [0,1]:
+    for coalescing in [0,1]:
+      for barrier_limit in [1,1000]:
+        if coalescing == 0 and barrier_limit == 1000:
+          continue
+        configs_list.append(
+          cfg_prefix +
+          g_cfg_str % (
+            l0_buffer_sz,
+            insn_ports,
+            ncores,
+            ncores,
+            coalescing,
+            analysis,
+            lockstep,
+            barrier_limit,
+            limit_lockstep,
+            adaptive_hint
+          )
+        )
   return configs_list
+
+#-------------------------------------------------------------------------
+# is_pareto_front()
+#-------------------------------------------------------------------------
+
+def is_pareto_front(row, stats, xlabel, ylabel):
+  x = row[xlabel]
+  y = row[ylabel]
+
+  # look for points with the same y value but smaller x value
+  is_min_x = stats.loc[stats[ylabel]==y].max()[xlabel] >= x
+  # look for points with the same x value but smaller y value
+  is_min_y = stats.loc[stats[xlabel]==x].max()[ylabel] >= y
+
+  # look for points that are smaller in both x and y
+  is_min_xy = len(stats.loc[(stats[xlabel]<x) & (stats[ylabel]<y)])==0
+
+  return is_min_x and is_min_y and is_min_xy
+
+#-------------------------------------------------------------------------
+# get_pareto_data()
+#-------------------------------------------------------------------------
+
+def get_pareto_data( frame_data ):  
+  columns=['config','app','delay','yaxis']
+  stats = pd.DataFrame(frame_data,columns=columns)  
+  is_pareto = stats.apply(lambda row: is_pareto_front(row, stats, 'delay', 'yaxis'), axis=1)
+  pareto_data = stats.loc[is_pareto].sort_values(by='delay')
+  return [pareto_data['delay'].values, pareto_data['yaxis'].values]
+
 
 #-------------------------------------------------------------------------
 # normalize_results
@@ -123,10 +152,7 @@ def normalize_results( df, base_df, runtime, total_yaxis ):
 # plot()
 #-------------------------------------------------------------------------
 
-def plot( df, base_df, runtime, configs_list, frontend ):
-
-  # filter the configs
-  rr_list, min_pc_list = filter_configs( "-0TS-", configs_list )
+def plot( df, base_df, runtime, configs_list, insn_ports ):
 
   # determine the apps
   kernels_list = []
@@ -137,43 +163,35 @@ def plot( df, base_df, runtime, configs_list, frontend ):
     kernels_list += app_custom_list
     kernels_list += app_pbbs_list
     kernels_list += app_cilk_list
+  #kernels_list = ['sampsort-2']
 
   # populate data
   data  = []
-  for cfg_list in [rr_list, min_pc_list]:
+  stats = []
+  for cfg in configs_list:
     temp = []
-    for cfg in cfg_list:
-      for app in kernels_list:
-        try:
-          delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
-          yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_yaxis'].iloc[0]
-          temp.append( [delay, yaxis] )
-        except:
-          continue
+    for app in kernels_list:
+      try:
+        delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
+        yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_yaxis'].iloc[0]
+        temp.append( [delay, yaxis] )
+        stats.append( [cfg, app, delay, yaxis] )
+      except:
+        continue
     if temp: data.append( temp )
 
-  for app in kernels_list:
-    temp = []
-    for cfg_list in [rr_list, min_pc_list]:
-      for cfg in cfg_list:
-        try:
-          delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
-          yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_yaxis'].iloc[0]
-          temp.append( [delay, yaxis] )
-        except:
-          continue
-    if temp: 
-      print "{:12s}".format(app), temp, 
-      print "{:4.2f}".format(100*(temp[0][0]-temp[1][0])/temp[0][0]),
-      print "{:4.2f}".format(100*(temp[0][1]-temp[1][1])/temp[0][1])
-      
+  # collect pareto points
+  pareto_data = get_pareto_data( stats )
 
-  for cfg_list in [rr_list, min_pc_list]:
-    for cfg in cfg_list:
-      print cfg
-      print (df.loc[(df.config == cfg), 'normalized_delay'].describe().to_frame().T)
-      print (df.loc[(df.config == cfg), 'normalized_yaxis'].describe().to_frame().T)
-
+  # legend labels
+  legend_labels = [
+    'base',
+    'coalesce',
+    'coalesce+hint',
+    'l0',
+    'l0+coalesce',
+    'l0+coalesce+hint',
+  ]  
 
   # create plot options dict
   opts = brg_plot.PlotOptions()
@@ -181,7 +199,7 @@ def plot( df, base_df, runtime, configs_list, frontend ):
   {
     'show'            : False,
     'plot_type'       : 'scatter',
-    'figsize'         : (4.0, 4.0),
+    'figsize'         : (8.0, 8.0),
     'rotate_labels'   : False,
     'markersize'      : 60,
     'labels_fontsize' : 1,
@@ -191,22 +209,23 @@ def plot( df, base_df, runtime, configs_list, frontend ):
     setattr( opts, name, value )
 
   # plot array 
-  opts.num_cols          = 1
-  opts.num_rows          = 1 
-  opts.scatter_bar_arrow = True
-  opts.data              = data
-  opts.index             = 1
-  opts.legend_bbox       = (0,1.1,1.,0.1)
-  opts.labels            = [[],['rr','mpc']]
-  opts.legend_enabled    = True
-  opts.legend_ncol       = 2
-  opts.colors            = ['#616161', '#8aae92'] 
-  opts.title             = runtime
-  opts.ylabel            = 'Normalized Instruction Access (%)' 
-  opts.xlabel            = 'Normalized Delay'
-  opts.file_name         = '%s-imem-fe-only-%d-frontend-scatter.pdf' % ( runtime, frontend )
+  opts.pareto_points   = False
+  opts.pareto_data     = pareto_data
+  opts.num_cols        = 1
+  opts.num_rows        = 1 
+  opts.data            = data
+  opts.index           = 1
+  opts.labels          = [[],legend_labels]
+  opts.legend_enabled  = True
+  opts.legend_ncol     = 6
+  opts.title           = runtime
+  opts.colors          = brg_plot.colors['qualitative_paired']
+  opts.ylabel          = 'Normalized Insntruction Access (%)' 
+  opts.xlabel          = 'Normalized Delay'
+  opts.file_name       = '%s-imem-only-%d-insn_ports-scatter.pdf' % ( runtime, insn_ports )
   
   brg_plot.add_plot( opts )
+
 
 #-------------------------------------------------------------------------
 # main
@@ -216,11 +235,11 @@ if __name__ == "__main__":
   # parse options
   opts = parse_cmdline()
   
-  # get the number of frontends
-  frontend = opts.frontend
-
   # get the runtime
   runtime = opts.runtime
+
+  # get the number of insn ports
+  insn_ports = opts.insn_ports
 
   # read the results
   all_results = pd.read_csv( "sim-l0-results.csv" )
@@ -236,7 +255,7 @@ if __name__ == "__main__":
   base_df = pd.read_csv( g_sim_results_file )
 
   # populate all configs
-  configs_list = populate_configs( runtime, frontend )
+  configs_list = populate_configs( runtime, insn_ports )
 
   # get the dataframe of interest
   df = all_results[all_results.config.isin( configs_list )].copy()
@@ -245,4 +264,4 @@ if __name__ == "__main__":
   df = normalize_results( df, base_df, runtime, 'total_iaccess' )
 
   # plot
-  plot( df, base_df, runtime, configs_list, frontend )  
+  plot( df, base_df, runtime, configs_list, insn_ports )  

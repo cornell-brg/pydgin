@@ -149,6 +149,19 @@ def plot( df, base_df, runtime, configs_list ):
           continue
     if temp: data.append( temp )
 
+  for app in kernels_list:
+    temp = []
+    for cfg_list in [imem_1_list, imem_2_list]:
+      for cfg in cfg_list:
+        try:
+          delay = df.loc[(df.config == cfg) & (df.app == app), 'normalized_delay'].iloc[0]
+          yaxis = df.loc[(df.config == cfg) & (df.app == app), 'normalized_yaxis'].iloc[0]
+          temp.append( [delay, yaxis] )
+        except:
+          continue
+    if temp: 
+      print app, temp
+
   # create plot options dict
   opts = brg_plot.PlotOptions()
   attribute_dict = \
