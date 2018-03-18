@@ -1,0 +1,100 @@
+#!/usr/bin/env python
+#=========================================================================
+# plot-clock-trends
+#=========================================================================
+#
+#  -h --help          Display this message
+#
+# Author : Shreesha Srinath
+# Date   : March 18th, 2018
+#
+# data collected from Stanford CPUDB and this link:
+# https://github.com/karlrupp/microprocessor-trend-data/blob/master/42yrs/frequency.dat
+
+import argparse
+import re
+import math
+import sys
+
+import pandas as pd
+pd.set_option('display.width', 1000)
+
+import brg_plot
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+ 
+  # create plot options dict
+  opts = brg_plot.PlotOptions()
+  attribute_dict = \
+  {
+    'show'            : False,
+    'plot_type'       : 'scatter',
+    'figsize'         : (4.0, 4.0),
+    'rotate_labels'   : False,
+    'markersize'      : 10,
+    'labels_fontsize' : 1,
+    'legend_enabled'  : False,
+  }
+  for name, value in attribute_dict.iteritems():
+    setattr( opts, name, value )
+
+  # get data
+  df = pd.read_csv('cpudb-clean.csv')
+
+  ylabel = 'max_clock'
+  yaxis = df.loc[:,ylabel].tolist()
+  xaxis = df.loc[:,'year'].tolist()
+  data = []
+  for x,y in zip( xaxis, yaxis ):
+    data.append( [x,y] )
+
+  # new data
+  # https://github.com/karlrupp/microprocessor-trend-data/blob/master/42yrs/frequency.dat
+  new_data = [
+  [2011,   3470],
+  [2011,   2400],
+  [2011,   3000],
+  [2012,   3100],
+  [2012,   2900],
+  [2012,   3700],
+  [2012,   2500],
+  [2013,   1200],
+  [2013,   2700],
+  [2014,   2800],
+  [2014,   3700],
+  [2014,   3200],
+  [2014,   2600],
+  [2014,   2300],
+  [2016,   2200],
+  [2016,   1500],
+  [2016,   4000],
+  [2017,   2200],
+  [2017,   2100],
+  [2017,   2500],
+  ]
+
+  data = data + new_data
+
+  opts.num_cols          = 1
+  opts.num_rows          = 1 
+  opts.data              = [data]
+  opts.index             = 1
+  opts.log_yaxis         = True
+  opts.colors            = ['#8aae92'] 
+  opts.ylabel            = 'Clock Frequency MHz' 
+  opts.grid_enabled      = False
+  
+  brg_plot.add_plot( opts )
+
+  ax = opts.fig.gca()
+  ax.axvline( x=1995, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
+
+  brg_plot.plt.tight_layout()
+  file_name = 'clock.pdf'
+  brg_plot.plt.savefig( file_name, bbox_inches="tight" )
