@@ -415,12 +415,26 @@ if __name__ == "__main__":
   opts.num_rows = 1
   
   data  = []
+  idx = 0
+  prev_delay = 0
+  prev_yaxis = 0
   for cfg in configs_dict.values():
     temp = []
     delay = gmean(df.loc[df.config == cfg, 'normalized_delay'])
     yaxis = gmean(df.loc[df.config == cfg, 'normalized_yaxis'])
     temp.append( [delay, yaxis] )
     data.append( temp )
+
+    print "{:16s}".format( g_short_cfg_names[idx] ), delay, yaxis,
+    if idx % 2 != 0:
+      print "{:4.2f}".format(100*(prev_delay-delay)/prev_delay),
+      print "{:4.2f}".format(100*(prev_yaxis-yaxis)/prev_yaxis)
+    else:
+      print 
+
+    idx = idx + 1
+    prev_delay = delay
+    prev_yaxis = yaxis
 
   # add the last data point for mimd
   data = data + [[[1,100]]]

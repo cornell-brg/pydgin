@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+#=========================================================================
+# plot-transistor-trends
+#=========================================================================
+#
+#  -h --help          Display this message
+#
+# Author : Shreesha Srinath
+# Date   : March 18th, 2018
+#
+# data collected from Stanford CPUDB and this link:
+# https://github.com/karlrupp/microprocessor-trend-data/blob/master/42yrs/transistors.dat
+
+import argparse
+import re
+import math
+import sys
+
+import pandas as pd
+pd.set_option('display.width', 1000)
+
+import brg_plot
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+ 
+  # create plot options dict
+  opts = brg_plot.PlotOptions()
+  attribute_dict = \
+  {
+    'show'            : False,
+    'plot_type'       : 'scatter',
+    'figsize'         : (4.0, 4.0),
+    'rotate_labels'   : False,
+    'markersize'      : 10,
+    'labels_fontsize' : 1,
+    'legend_enabled'  : False,
+  }
+  for name, value in attribute_dict.iteritems():
+    setattr( opts, name, value )
+
+  # get data
+  df = pd.read_csv('cpudb-clean.csv')
+  df.loc[:,'transistors'] *= 1000
+
+  ylabel = 'transistors'
+  yaxis = df.loc[:,ylabel].tolist()
+  xaxis = df.loc[:,'year'].tolist()
+  data = []
+  for x,y in zip( xaxis, yaxis ):
+    data.append( [x,y] )
+
+  # new data
+  # https://github.com/karlrupp/microprocessor-trend-data/blob/master/42yrs/transistors.dat
+  new_data = [
+  [2011,1170000],
+  [2011,2600000],
+  [2011,1200000],
+  [2012,2400000],
+  [2012,2300000],
+  [2012,2100000],
+  [2012,1200000],
+  [2013,5000000],
+  [2013,4300000],
+  [2014,4300000],
+  [2014,4200000],
+  [2014,2600000],
+  [2014,3800000],
+  [2014,5700000],
+  [2016,7200000],
+  [2016,8000000],
+  [2017,19200000]
+  ]
+
+  data = data + new_data
+
+  opts.num_cols          = 1
+  opts.num_rows          = 1 
+  opts.data              = [data]
+  opts.index             = 1
+  opts.log_yaxis         = True
+  opts.colors            = ['#8aae92'] 
+  opts.ylabel            = 'Number of Transistors' 
+  opts.grid_enabled      = False
+  
+  brg_plot.add_plot( opts )
+
+  ax = opts.fig.gca()
+  ax.axvline( x=1995, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
+
+  brg_plot.plt.tight_layout()
+  file_name = 'transistors.pdf'
+  brg_plot.plt.savefig( file_name, bbox_inches="tight" )

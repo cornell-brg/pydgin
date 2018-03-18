@@ -237,6 +237,8 @@ class PlotOptions:
     self.combined_line_plot     = []
     self.combined_line_ylabel   = ''
 
+    self.grid_enabled = True
+
     random.seed( 0xdeadbeef )
 
   def get_color( self, idx ):
@@ -531,6 +533,13 @@ def add_heatmap_plot( ax, opt ):
 
 def add_scatter_plot( ax, opt ):
 
+  if   opt.log_yaxis and not opt.log_xaxis:
+    ax.semilogy()
+  elif not opt.log_yaxis and opt.log_xaxis:
+    ax.semilogx()
+  elif opt.log_yaxis and opt.log_xaxis:
+    ax.loglog()
+
   # for scatter plots, the normalize lines are a tuple for x, y
   if opt.normalize_line is not None:
     x, y = opt.normalize_line[:2]
@@ -615,8 +624,10 @@ def add_scatter_plot( ax, opt ):
   set_legend( ax, opt, legend, legend_labels )
   set_common( ax, opt )
 
-  ax.xaxis.grid(True)
-  ax.yaxis.grid(True)
+  if opt.grid_enabled:
+    ax.xaxis.grid(True)
+    ax.yaxis.grid(True)
+
 
 def add_clustered_stacked_bar( ax, opt ):
 
