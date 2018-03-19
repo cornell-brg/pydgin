@@ -46,10 +46,10 @@ if __name__ == "__main__":
 
   ylabel = 'vdd_low'
   yaxis  = df.loc[:,ylabel].tolist()
-  ylabel = 'vdd_high'
-  yaxis += df.loc[:,ylabel].tolist()
+  #ylabel = 'vdd_high'
+  #yaxis += df.loc[:,ylabel].tolist()
   xaxis  = df.loc[:,'year'].tolist()
-  xaxis += df.loc[:,'year'].tolist()
+  #xaxis += df.loc[:,'year'].tolist()
   data   = []
   for x,y in zip( xaxis, yaxis ):
     data.append( [x,y] )
@@ -66,7 +66,7 @@ if __name__ == "__main__":
   brg_plot.add_plot( opts )
 
   ax = opts.fig.gca()
-  ax.axvline( x=1995, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=1985, zorder=1, linewidth=0.5, color='k')
   ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
   ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
 

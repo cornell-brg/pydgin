@@ -1,0 +1,144 @@
+#!/usr/bin/env python
+#=========================================================================
+# plot-core-trends
+#=========================================================================
+#
+#  -h --help          Display this message
+#
+# Author : Shreesha Srinath
+# Date   : March 19th, 2018
+#
+# data collected from Stanford CPUDB and this link:
+# https://github.com/karlrupp/microprocessor-trend-data/blob/master/42yrs/cores.dat
+
+import argparse
+import re
+import math
+import sys
+
+import pandas as pd
+pd.set_option('display.width', 1000)
+
+import brg_plot
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+ 
+  # create plot options dict
+  opts = brg_plot.PlotOptions()
+  attribute_dict = \
+  {
+    'show'            : False,
+    'plot_type'       : 'scatter',
+    'figsize'         : (4.0, 4.0),
+    'rotate_labels'   : False,
+    'markersize'      : 10,
+    'labels_fontsize' : 1,
+    'legend_enabled'  : False,
+  }
+  for name, value in attribute_dict.iteritems():
+    setattr( opts, name, value )
+  
+  data = [
+    [1971,  1],
+    [1972,  1],
+    [1974,  1],
+    [1979,  1],
+    [1982,  1],
+    [1985,  1],
+    [1986,  1],
+    [1988,  1],
+    [1989,  1],
+    [1990,  1],
+    [1992,  1],
+    [1992,  1],
+    [1992,  1],
+    [1993,  1],
+    [1994,  1],
+    [1995,  1],
+    [1995,  1],
+    [1996,  1],
+    [1996,  1],
+    [1996,  1],
+    [1997,  1],
+    [1997,  1],
+    [1997,  1],
+    [1998,  1],
+    [1999,  1],
+    [1999,  1],
+    [2000,  1],
+    [2000,  1],
+    [2001,  1],
+    [2001,  1],
+    [2001,  1],
+    [2002,  1],
+    [2002,  1],
+    [2002,  1],
+    [2003,  1],
+    [2003,  1],
+    [2003,  1],
+    [2004,  2],
+    [2004,  1],
+    [2005,  2],
+    [2005,  1],
+    [2005,  8],
+    [2006,  2],
+    [2006,  2],
+    [2007,  2],
+    [2007,  4],
+    [2007,  9],
+    [2007,  2],
+    [2007,  2],
+    [2007,  8],
+    [2008,  4],
+    [2008,  2],
+    [2009,  3],
+    [2009,  4],
+    [2009,  4],
+    [2009,  3],
+    [2009,  8],
+    [2009,  6],
+    [2010,  16],
+    [2011,  12],
+    [2011,  20],
+    [2011,  8],
+    [2012,  16],
+    [2012,  16],
+    [2012,  32],
+    [2012,  16],
+    [2013,  240],
+    [2013,  24],
+    [2014,  30],
+    [2014,  64],
+    [2014,  16],
+    [2014,  24],
+    [2014,  36],
+    [2016,  44],
+    [2016,  272],
+    [2016,  96],
+    [2017,  64],
+    [2017,  44],
+    [2017,  56],
+  ]
+
+  opts.num_cols          = 1
+  opts.num_rows          = 1 
+  opts.data              = [data]
+  opts.index             = 1
+  opts.log_yaxis         = True
+  opts.colors            = ['#8aae92'] 
+  opts.ylabel            = 'Numer of Cores'
+  opts.grid_enabled      = False
+  
+  brg_plot.add_plot( opts )
+
+  ax = opts.fig.gca()
+  ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
+
+  brg_plot.plt.tight_layout()
+  file_name = 'numcores.pdf'
+  brg_plot.plt.savefig( file_name, bbox_inches="tight" )
