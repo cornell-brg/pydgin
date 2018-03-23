@@ -1,0 +1,305 @@
+#!/usr/bin/env python
+#=========================================================================
+# plot-tech-trends
+#=========================================================================
+#
+#  -h --help          Display this message
+#
+# Author : Shreesha Srinath
+# Date   : March 18th, 2018
+#
+# data collected from Stanford CPUDB
+
+import argparse
+import re
+import math
+import sys
+
+import pandas as pd
+pd.set_option('display.width', 1000)
+
+import brg_plot
+
+from matplotlib.pyplot import Text
+
+#-------------------------------------------------------------------------
+# main
+#-------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+  # get data
+  df = pd.read_csv('cpudb-clean.csv')
+
+  # create plot options dict
+  opts = brg_plot.PlotOptions()
+  attribute_dict = \
+  {
+    'show'            : False,
+    'plot_type'       : 'scatter',
+    'figsize'         : (8.0, 8.0),
+    'rotate_labels'   : False,
+    'markersize'      : 10,
+    'labels_fontsize' : 1,
+    'legend_enabled'  : False,
+  }
+  for name, value in attribute_dict.iteritems():
+    setattr( opts, name, value )
+
+  opts.num_cols          = 2
+  opts.num_rows          = 2 
+
+  #-----------------------------------------------------------------------
+  # Number of transistors
+  #-----------------------------------------------------------------------
+  # convert data to absolute numbers
+
+  df.loc[:,'transistors'] *= 1000000
+
+  ylabel = 'transistors'
+  yaxis = df.loc[:,ylabel].tolist()
+  xaxis = df.loc[:,'year'].tolist()
+  data = []
+  for x,y in zip( xaxis, yaxis ):
+    if not math.isnan( y ):
+      data.append( [x,y] )
+
+  # new data
+  # https://github.com/karlrupp/microprocessor-trend-data/blob/master/42yrs/transistors.dat
+  new_data = [
+  [2011,1170000000],
+  [2011,2600000000],
+  [2011,1200000000],
+  [2012,2400000000],
+  [2012,2300000000],
+  [2012,2100000000],
+  [2012,1200000000],
+  [2013,5000000000],
+  [2013,4300000000],
+  [2014,4300000000],
+  [2014,4200000000],
+  [2014,2600000000],
+  [2014,3800000000],
+  [2014,5700000000],
+  [2016,7200000000],
+  [2016,8000000000],
+  [2017,19200000000]
+  ]
+
+  data = data + new_data
+
+  opts.data              = [data]
+  opts.index             = 1
+  opts.log_yaxis         = True
+  opts.colors            = ['#8aae92'] 
+  opts.ylabel            = 'Transistors per Chip' 
+  opts.grid_enabled      = False
+  
+  brg_plot.add_plot( opts )
+
+  ax = opts.fig.gca()
+  ax.axvline( x=1985, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
+  ax.get_yaxis().set_label_coords(-0.25,0.5)
+
+  # get a common x axis limits
+  commonx = ax.get_xlim()
+
+  ax.set_yticklabels(
+    [
+      Text(0,0,u''), 
+      Text(0,1,u''),
+      Text(0,10,u'10 k'),
+      Text(0,100,u'100 k'),
+      Text(0,1000,u'1 M'),
+      Text(0,10000,u'10 M'),
+      Text(0,100000,u'100 M'),
+      Text(0,1e+06,u'1 B'),
+      Text(0,1e+07,u'10 B'), 
+      Text(0,0,u''), 
+      Text(0,0,u'')
+    ]
+  )
+
+  #-----------------------------------------------------------------------
+  # clock frequency
+  #-----------------------------------------------------------------------
+
+  ylabel = 'max_clock'
+  yaxis = df.loc[:,ylabel].tolist()
+  xaxis = df.loc[:,'year'].tolist()
+  data = []
+  for x,y in zip( xaxis, yaxis ):
+    data.append( [x,y] )
+
+  # new data
+  # https://github.com/karlrupp/microprocessor-trend-data/blob/master/42yrs/frequency.dat
+  new_data = [
+  [2011,   3470],
+  [2011,   2400],
+  [2011,   3000],
+  [2012,   3100],
+  [2012,   2900],
+  [2012,   3700],
+  [2012,   2500],
+  [2013,   1200],
+  [2013,   2700],
+  [2014,   2800],
+  [2014,   3700],
+  [2014,   3200],
+  [2014,   2600],
+  [2014,   2300],
+  [2016,   2200],
+  [2016,   1500],
+  [2016,   4000],
+  [2017,   2200],
+  [2017,   2100],
+  [2017,   2500],
+  ]
+
+  data = data + new_data
+
+  opts.data              = [data]
+  opts.index             = 2
+  opts.log_yaxis         = True
+  opts.colors            = ['#8aae92'] 
+  opts.ylabel            = 'Processor Clock Frequency' 
+  opts.grid_enabled      = False
+  
+  brg_plot.add_plot( opts )
+
+  ax = opts.fig.gca()
+  ax.axvline( x=1985, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
+  ax.get_yaxis().set_label_coords(-0.25,0.5)
+
+  ax.set_xlim( commonx )
+
+  ax.set_yticklabels(
+    [
+      Text(0,0,u''), 
+      Text(0,0,u''), 
+      Text(0,0.1,u''),
+      Text(0,1,u'1 MHz'),
+      Text(0,10,u'10 MHz'),
+      Text(0,100,u'100 MHz'),
+      Text(0,1000,u'1 GHz'), 
+      Text(0,0,u''), 
+      Text(0,0,u''),
+      Text(0,0,u'4 Ghz'),
+    ]
+  )
+  ylim = ax.get_ylim()
+  ax.set_yticks( list( ax.get_yticks() ) + [4000] )
+  ax.set_ylim( ylim )
+  ax.axhline( y=4000, zorder=100, color='#a63603', linewidth=1 )
+
+  #-----------------------------------------------------------------------
+  # voltage
+  #-----------------------------------------------------------------------
+
+  ylabel = 'vdd_low'
+  yaxis  = df.loc[:,ylabel].tolist()
+  xaxis  = df.loc[:,'year'].tolist()
+  data   = []
+  for x,y in zip( xaxis, yaxis ):
+    data.append( [x,y] )
+
+  opts.yrange            = [0,5.1]
+  opts.data              = [data]
+  opts.index             = 3
+  opts.colors            = ['#8aae92'] 
+  opts.ylabel            = 'Supply Voltage' 
+  opts.log_yaxis         = False
+  opts.grid_enabled      = False
+  
+  brg_plot.add_plot( opts )
+
+  ax = opts.fig.gca()
+  ax.axvline( x=1985, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
+  ax.get_yaxis().set_label_coords(-0.25,0.5)
+  ax.set_yticklabels(['','1 V','2 V','3 V','4 V','5 V', ''])
+
+  ax.set_xlim( commonx )
+
+  #-----------------------------------------------------------------------
+  # power
+  #-----------------------------------------------------------------------
+
+  ylabel = 'tdp'
+  yaxis = df.loc[:,ylabel].tolist()
+  xaxis = df.loc[:,'year'].tolist()
+  data = []
+  for x,y in zip( xaxis, yaxis ):
+    data.append( [x,y] )
+
+  # new data
+  # https://github.com/karlrupp/microprocessor-trend-data/blob/master/42yrs/watts.dat
+  new_data = [
+  [2011,   130],
+  [2011,   130],
+  [2011,   95],
+  [2012,   140],
+  [2012,   130],
+  [2012,   200],
+  [2012,   115],
+  [2013,   300],
+  [2013,   130],
+  [2014,   155],
+  [2014,   200],
+  [2014,   135],
+  [2014,   135],
+  [2014,   140],
+  [2016,   145],
+  [2016,   245],
+  [2017,   180],
+  [2017,   140],
+  [2017,   205],
+  ]
+
+  data = data + new_data
+
+  opts.yrange            = None
+  opts.data              = [data]
+  opts.index             = 4
+  opts.log_yaxis         = True
+  opts.colors            = ['#8aae92'] 
+  opts.ylabel            = 'Typical Power' 
+  opts.grid_enabled      = False
+  
+  brg_plot.add_plot( opts )
+
+  ax = opts.fig.gca()
+  ax.axvline( x=1985, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
+  ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
+  ax.get_yaxis().set_label_coords(-0.25,0.5)
+  ax.set_xlim( commonx )
+
+  ax.set_yticklabels(
+    [
+      Text(0,0,u''), 
+      Text(0,0,u''), 
+      Text(0,1,u'1 W'),
+      Text(0,10,u'10 W'),
+      Text(0,100,u'100 W'), 
+      Text(0,0,u''), 
+      Text(0,0,u''),
+      Text(0,0,u'150 W')
+    ]
+  )
+
+  ylim = ax.get_ylim()
+  ax.set_yticks( list( ax.get_yticks() ) + [150] )
+  ax.set_ylim( ylim )
+  ax.axhline( y=150, zorder=100, color='#a63603', linewidth=1 )
+
+  brg_plot.plt.tight_layout()
+  file_name = 'test.pdf'
+  brg_plot.plt.savefig( file_name, bbox_inches="tight" )
+
+
