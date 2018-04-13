@@ -21,6 +21,8 @@ pd.set_option('display.width', 1000)
 
 import brg_plot
 
+from matplotlib.pyplot import Text
+
 #-------------------------------------------------------------------------
 # main
 #-------------------------------------------------------------------------
@@ -79,21 +81,46 @@ if __name__ == "__main__":
 
   data = data + new_data
 
+  opts.xrange            = [1970, 2018]
   opts.num_cols          = 1
   opts.num_rows          = 1 
   opts.data              = [data]
   opts.index             = 1
   opts.log_yaxis         = True
   opts.colors            = ['#8aae92'] 
-  opts.ylabel            = 'Clock Frequency MHz' 
+  opts.ylabel            = 'Processor Clock Frequency' 
   opts.grid_enabled      = False
   
   brg_plot.add_plot( opts )
 
   ax = opts.fig.gca()
+
+  ax.get_yaxis().set_label_coords(-0.25,0.5)
+
+  ax.set_yticklabels(
+    [
+      Text(0,0,u''), 
+      Text(0,0,u''), 
+      Text(0,0.1,u''),
+      Text(0,1,u'1 MHz'),
+      Text(0,10,u'10 MHz'),
+      Text(0,100,u'100 MHz'),
+      Text(0,1000,u'1 GHz'), 
+      Text(0,0,u''), 
+      Text(0,0,u''),
+      Text(0,0,u'4 Ghz'),
+    ]
+  )
+
+
   ax.axvline( x=1985, zorder=1, linewidth=0.5, color='k')
   ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
   ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
+
+  ylim = ax.get_ylim()
+  ax.set_yticks( list( ax.get_yticks() ) + [4000] )
+  ax.set_ylim( ylim )
+  ax.axhline( y=4000, zorder=100, color='#a63603', linewidth=1 )
 
   brg_plot.plt.tight_layout()
   file_name = 'clock.pdf'

@@ -54,13 +54,14 @@ if __name__ == "__main__":
   for x,y in zip( xaxis, yaxis ):
     data.append( [x,y] )
 
+  opts.xrange            = [1970, 2018]
   opts.yrange            = [0,5.1]
   opts.num_cols          = 1
   opts.num_rows          = 1 
   opts.data              = [data]
   opts.index             = 1
   opts.colors            = ['#8aae92'] 
-  opts.ylabel            = 'Voltage' 
+  opts.ylabel            = 'Supply Voltage' 
   opts.grid_enabled      = False
   
   brg_plot.add_plot( opts )
@@ -69,6 +70,9 @@ if __name__ == "__main__":
   ax.axvline( x=1985, zorder=1, linewidth=0.5, color='k')
   ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
   ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
+
+  ax.get_yaxis().set_label_coords(-0.25,0.5)
+  ax.set_yticklabels(['','1 V','2 V','3 V','4 V','5 V', ''])
 
   brg_plot.plt.tight_layout()
   file_name = 'voltage.pdf'

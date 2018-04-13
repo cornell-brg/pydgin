@@ -21,6 +21,8 @@ pd.set_option('display.width', 1000)
 
 import brg_plot
 
+from matplotlib.pyplot import Text
+
 #-------------------------------------------------------------------------
 # main
 #-------------------------------------------------------------------------
@@ -78,6 +80,7 @@ if __name__ == "__main__":
 
   data = data + new_data
 
+  opts.xrange            = [1970, 2018]
   opts.num_cols          = 1
   opts.num_rows          = 1 
   opts.data              = [data]
@@ -90,9 +93,32 @@ if __name__ == "__main__":
   brg_plot.add_plot( opts )
 
   ax = opts.fig.gca()
+
+  ax.get_yaxis().set_label_coords(-0.25,0.5)
+
   ax.axvline( x=1985, zorder=1, linewidth=0.5, color='k')
   ax.axvline( x=2004, zorder=1, linewidth=0.5, color='k')
   ax.axvline( x=2012, zorder=1, linewidth=0.5, color='k')
+
+  ax.set_yticklabels(
+    [
+      Text(0,0,u''), 
+      Text(0,0,u''), 
+      Text(0,1,u'1 W'),
+      Text(0,10,u'10 W'),
+      Text(0,100,u'100 W'), 
+      Text(0,0,u''), 
+      Text(0,0,u''),
+      Text(0,0,u'150 W')
+    ]
+  )
+
+  ylim = ax.get_ylim()
+  ax.set_yticks( list( ax.get_yticks() ) + [150] )
+  ax.set_ylim( ylim )
+  ax.axhline( y=150, zorder=100, color='#a63603', linewidth=1 )
+
+
 
   brg_plot.plt.tight_layout()
   file_name = 'power.pdf'
